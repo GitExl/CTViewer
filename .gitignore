@@ -1,11 +1,22 @@
+# Build data.
 /target
 /debug_output
+/release
+
+# Game data paths.
 /ct_steam
-/info
+*.smc
+
+# Runtime binary data.
 *.dll
 *.lib
-*.smc
+
+# Internal documentation.
+/info
+
+# Rust Rover data
 .idea
 
+# Game data missing from PC version.
 data/epoch_sprites.bmp
 data/pc_sprites.bmp
