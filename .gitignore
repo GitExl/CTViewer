@@ -1,0 +1,11 @@
+/target
+/debug_output
+/ct_steam
+/info
+*.dll
+*.lib
+*.smc
+.idea
+
+data/epoch_sprites.bmp
+data/pc_sprites.bmp

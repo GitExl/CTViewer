@@ -1,0 +1,59 @@
+# CT Viewer
+
+A utility to display Chrono Trigger scene and world maps. Supports the North American SNES version and the Steam version.
+
+## Usage
+
+`ctview [OPTIONS] --path <PATH>`
+
+Options:
+- `-p`, `--path <PATH>`    Source data path
+- `-w`, `--world <WORLD>`  Index of the world to load [default: -1]
+- `-s`, `--scene <SCENE>`  Index of the scene to load [default: -1]
+- `--scale <SCALE>`        Display scale [default: 4]
+- `-d`, `--dump`           Dump information and debug data
+- `-h`, `--help`           Print help
+
+The source data path can be a headered or unheadered North American SNES ROM file, or the extracted contents of the
+`resources.bin` file from the Steam version. You can use the "CT Explore" utility by River Nixx (download from
+https://rivernyxx.com/downloads.html) to extract the data from the Steam version.
+
+## Keys
+
+When viewing scenes or worlds, the following keys are available:
+
+- `wasd` to move around
+- `esc` to exit
+- `1` toggle rendering of layer 1
+- `2` toggle rendering of layer 2
+- `3` toggle rendering of layer 3
+- `4` toggle rendering of test sprites
+- `5` toggle rendering of the map palette
+
+When viewing worlds, the following keys are available:
+
+- `z` disable debug rendering
+- `x` render collision data 
+- `c` render exit data
+- `v` render music transition data
+
+When viewing scenes, the following keys are available:
+
+- `z` disable debug rendering
+- `x` render collision data
+- `c` render NPC collision data
+- `v` render battle collision data
+- `b` render Z plane data
+- `n` render tile movement data
+- `m` render door data
+- `,` render tile layer 1/layer 2 source data
+- `.` render sprite over layer 1 or layer 2 data
+- `/` render exit data
+
+## Compiling
+
+Install Rust from https://www.rust-lang.org/tools/install and build it like any other Cargo project by running
+`cargo run -- [parameters]`.
+
+The SDL2 libraries are required to be in the path to be able to run. Get the `SDL2.lib` and `SDL2.dll` development
+libraries for your platform from https://github.com/libsdl-org/SDL/releases

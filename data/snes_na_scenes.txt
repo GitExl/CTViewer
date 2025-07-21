@@ -1,0 +1,512 @@
+Load Screen
+Crono's Kitchen
+Crono's Room
+Lucca's Kitchen
+Lucca's Workshop
+Millennial Fair
+Gato's Exhibit
+Prehistoric Exhibit
+Telepod Exhibit
+Lara's Room
+Lucca's Room
+Ending Selector
+Truce Inn (Present)
+Truce Mayor's Manor 1F
+Truce Mayor's Manor 2F
+Truce Single Woman Residence
+Truce Happy Screaming Couple Residence
+Truce Market (Present)
+Truce Ticket Office
+Guardia Forest (Present)
+Guardia Forest Dead End
+Guardia Throneroom (Present)
+King's Chamber (Present)
+Queen's Chamber (Present)
+Guardia Kitchen (Present)
+Guardia Barracks (Present)
+Guardia Basement
+Courtroom
+Prison Catwalks
+Prison Supervisor's Office
+Prison Torture Storage Room
+Medina Square
+Zenan Bridge (Present)
+Medina Elder's House 1F
+Medina Elder's House 2F
+Medina Inn
+Medina Portal
+Ending: Legendary Hero
+Guardia Throneroom (Ending: Legendary Hero)
+Medina Market
+Melchior's Kitchen
+Melchior's Workshop
+Forest Ruins
+Cursed Woods (Ending: The Unknown Past)
+Leene Square (Future)
+Denadoro Mountain Vista (Ending: Legendary Hero)
+Castle Magus Throne of Defense (Ending: Legendary Hero)
+Heckran Cave Passageways
+Heckran Cave Entrance
+Heckran Cave Underground River
+Porre Mayor's Manor 1F (Present)
+Porre Mayor's Manor 2F (Present)
+Porre Residence (Present)
+Snail Stop
+Porre Market (Present)
+Porre Inn (Present)
+Porre Ticket Office
+Fiona's Shrine
+Choras Mayor's Manor 1F
+Choras Mayor's Manor 2F
+Castle Magus Hall of Aggression (Ending: Legendary Hero)
+Choras Carpenter's Residence (Present)
+Choras Inn (Present)
+West Cape
+Sun Keep (Present)
+Northern Ruins Entrance
+Northern Ruins Basement Corridor
+Northern Ruins Landing
+Northern Ruins Antechamber
+Northern Ruins Vestibule
+Northern Ruins Back Room
+Prison Cells
+Prison Stairwells
+Northern Ruins Hero's Grave (Present)
+Unknown
+Prison Exterior
+Unknown (Lavos Spawn)
+Unknown (Lavos Spawn)
+Unknown (Lavos Spawn)
+Guardia Throneroom (Ending: Moonlight Parade)
+Millennial Fair (Ending: Moonlight Parade)
+Leene Square (Ending: Moonlight Parade)
+Ending Selector
+Fiona's Forest Recriminations
+End of Time (Ending: Moonlight Parade)
+Telepod Exhibit (Ending: Moonlight Parade)
+Death Peak Summit (Ending: Moonlight Parade)
+Manoria Sanctuary (Ending: The Successor of Guardia)
+The End
+Zenan Bridge (Ending: Moonlight Parade)
+Prison Catwalks (Ending: Moonlight Parade)
+Ending: People of the Times (Part 1)
+Ending: People of the Times (Part 2)
+Ending: People of the Times (Part 3)
+Ending: People of the Times (Part 4)
+Ending: People of the Times (Part 5)
+Black Omen 98F Astral Progeny
+Black Omen Lower Teleporters
+Black Omen Upper Teleporters
+Black Omen Platform
+Black Omen Platform Shaft (Downward)
+Black Omen Platform Shaft (Upward)
+Black Omen Celestial Gate (no map)
+Black Omen Celestial Gate (no map)
+Black Omen Celestial Gate (no map)
+Black Omen Celestial Gate (no map)
+Black Omen Celestial Gate (no map)
+Black Omen Celestial Gate
+Lucca Explains Paradoxes
+Ancient Tyrano Lair
+Ancient Tyrano Lair Traps
+Ancient Tyrano Lair Nizbel's Room
+Truce Canyon
+Truce Canyon Portal
+Truce Couple's Residence (Middle Ages)
+Truce Smithy's Residence
+Truce Inn 1F (Middle Ages)
+Truce Inn 2F (Middle Ages)
+Truce Market (Middle Ages)
+Guardia Forest (Middle Ages)
+Guardia Throneroom (Middle Ages)
+Guardia King's Chamber (Middle Ages)
+Guardia Queen's Chamber (Middle Ages)
+Guardia Kitchen (Middle Ages)
+Guardia Barracks (Middle Ages)
+Castle Magus Doppleganger Corridor
+Geno Dome Main Conveyor
+Geno Dome Elevator
+Geno Dome Long Corridor
+Manoria Sanctuary
+Manoria Main Hall
+Manoria Headquarters
+Manoria Royal Guard Hall
+Zenan Bridge (Wrecked)
+Zenan Bridge (Middle Ages, no map)
+Zenan Bridge (Middle Ages)
+Sandorino Pervert Residence
+Sandorino Elder's House
+Sandorino Inn
+Sandorino Market
+Cursed Woods
+Frog's Burrow
+Denadoro South Face
+Denadoro Cave of the Masamune Exterior
+Denadoro North Face
+Denadoro Entrance
+Denadoro Lower East Face
+Denadoro Upper East Face
+Denadoro Mountain Vista
+Denadoro West Face
+Denadoro Gauntlet
+Denadoro Cave of the Masamune
+Tata's House 1F
+Tata's House 2F
+Porre Elder's House (Middle Ages)
+Porre Cafe (Middle Ages)
+Porre Inn (Middle Ages)
+Porre Market (Middle Ages)
+Fiona's Villa
+Sunken Desert Entrance
+Sunken Desert Parasytes
+Sunken Desert Devourer
+Ozzie's Fort Entrance (no map)
+Magic Cave Exterior
+Magic Cave Interior
+Castle Magus Exterior
+Castle Magus Entrance
+Castle Magus Chamber of Guillotines
+Castle Magus Chamber of Pits
+Castle Magus Throne of Strength
+Castle Magus Hall of Aggression
+Castle Magus Hall of Deceit
+Castle Magus Inner Sanctum
+Castle Magus Throne of Magic
+Castle Magus Throne of Defense
+Castle Magus Hall of Apprehension
+Castle Magus Lower Battlements
+Ozzie's Fort Entrance
+Ozzie's Fort Hall of Disregard
+Ozzie's Fort Chamber of Kitchen Knives
+Ozzie's Fort Last Stand
+Ozzie's Fort Throne of Incompetence
+Ozzie's Fort Throne of Impertinence (wrong map)
+Ozzie's Fort Throne of Impertinence
+Ozzie's Fort Throne of Ineptitude
+Choras Old Couple Residence (Middle Ages)
+Choras Carpenter's Residence 1F (Middle Ages)
+Choras Carpenter's Residence 2F (Middle Ages)
+Choras Cafe
+Choras Inn (Middle Ages)
+Choras Market (Middle Ages)
+Sun Keep (Middle Ages)
+empty
+empty
+empty
+Giant's Claw Entrance
+Giant's Claw Caverns
+Giant's Claw Last Tyranno
+Manoria Command
+Manoria Confinement
+Manoria Shrine Antechamber
+Manoria Storage
+Manoria Kitchen
+Manoria Shrine
+Guardia Forest Frog King Battle
+Denadoro Cyrus's Last Battle
+Guardia Throneroom Cyrus's Final Mission
+Schala's Room (no map)
+Bangor Dome
+Bangor Dome Sealed Room
+Trann Dome
+Trann Dome Sealed Room
+Lab 16 West
+Lab 16 East
+Arris Dome
+Arris Dome Infestation
+Arris Dome Auxiliary Console
+Arris Dome Lower Commons
+Arris Dome Command Central
+Arris Dome Guardian Chamber
+Arris Dome Sealed Room
+Arris Dome Rafters
+Reptite Lair 2F
+Lab 32 West Entrance
+Lab 32
+Lab 32 East Entrance
+Proto Dome
+Proto Dome Portal
+Factory Ruins Entrance
+Factory Ruins Auxiliary Console
+Factory Ruins Security Center
+Factory Ruins Crane Room
+Factory Ruins Infestation
+Factory Ruins Crane Control Room
+Factory Ruins Information Archive
+Factory Ruins Power Core
+Sewer Access B1
+Sewer Access B2
+Prehistoric Hut (Ending: The Dream Project) (wrong map)
+Ending: A Slide Show?
+Ending: Goodnight
+Keeper's Dome
+Keeper's Dome Corridor
+Keeper's Dome Hanger
+Death Peak Entrance
+Death Peak South Face
+Death Peak Southeast Face
+Death Peak Northeast Face
+Geno Dome Entrance
+Geno Dome Conveyor Entrance
+Geno Dome Conveyor Exit
+Sun Palace
+Millennial Fair (Ending: Dino Age)
+Sun Keep (Last Village)
+Skill Tutorial
+Sun Keep (Future)
+Geno Dome Labs
+Geno Dome Storage
+Geno Dome Robot Hub
+Factory Ruins Data Core
+Death Peak Northwest Face
+Prehistoric Canyon
+Death Peak Upper North Face
+Death Peak Lower North Face
+Death Peak Cave
+Death Peak Summit
+Prehistoric Hut (Ending: The Dream Project) (wrong map)
+Geno Dome Robot Elevator Access
+Geno Dome Mainframe
+Geno Dome Waste Disposal
+Leene's Square (Ending: Dino Age)
+Special Purpose Area
+Mystic Mtn Portal
+Mystic Mtn Base
+Mystic Mtn Gulch
+Chief's Hut
+Ioka Southwestern Hut
+Ioka Trading Post
+Ioka Sweet Water Hut
+Ioka Meeting Site
+Ioka Meeting Site (Party)
+Forest Maze Entrance
+Forest Maze
+Reptite Lair Entrance
+Reptite Lair 1F
+Reptite Lair Weevil Burrows B1
+Reptite Lair Weevil Burrows B2
+Reptite Lair Commons
+Reptite Lair Tunnel
+Reptite Lair Azala's Room
+Reptite Lair Access Shaft
+Hunting Range
+Laruba Ruins
+Dactyl Nest, Lower
+Dactyl Nest, Upper
+Dactyl Nest Summit
+Giant's Claw Lair Entrance
+Giant's Claw Lair Throneroom
+Tyrano Lair Exterior
+Tyrano Lair Entrance
+Tyrano Lair Throneroom
+Tyrano Lair Keep
+Tyrano Lair Antechambers
+Tyrano Lair Storage
+Tyrano Lair Nizbel's Room
+Tyrano Lair Room of Vertigo
+Debug Room?
+Lair Ruins Portal
+Black Omen 1F Entrance
+Black Omen 1F Walkway
+Black Omen 1F Defense Corridor
+Black Omen 1F Stairway
+Black Omen 3F Walkway
+Black Omen 47F Auxilary Command
+Black Omen 47F Grand Hall
+Black Omen 47F Emporium
+Black Omen 47F Royal Path
+Black Omen 47F Royal Ballroom
+Black Omen 47F Royal Assembly
+Black Omen 47F Royal Promenade
+Black Omen Royal Teleporter (Lower)
+Black Omen Royal Teleporter (Upper)
+Black Omen 63F Divine Esplenade
+Black Omen 63F Divine Guardian
+Black Omen 97F Astral Walkway
+Black Omen 98F Astral Guardian
+Black Omen 98F Astral Walkway
+Sunkeep (Prehistoric)
+Zeal Palace Schala's Room
+Zeal Palace Regal Hall
+Zeal Palace Corridor to the Mammon Machine
+Zeal Palace Hall of the Mammon Machine
+Zeal Palace Zeal Throneroom
+Zeal Palace Hall of the Mammon Machine (Night)
+Zeal Palace Zeal Throneroom (Night)
+Enhasa (wrong map)
+Land Bridge
+Skyway?
+Present Age Home Room (Ending: The Dream Project)
+Prehistoric Age Jungle (Ending: The Dream Project)
+Dark Age Ocean Palace Room (Ending: The Dream Project)
+Present Age Jail Cell (Ending: The Dream Project)
+Dark Age Earthbound Room (Ending: The Dream Project)
+Present Age Northern Ruins Room (Ending: The Dream Project)
+Arris Dome Food Locker
+Lucca's Workshop (Ending: The Oath)
+Arris Dome Guardian Chamber (Battle with Lavos)
+Prison Catwalks (Battle with Lavos)
+Heckran Cave (Battle with Lavos)
+Zenan Bridge (Battle with Lavos)
+Cave of the Masamune (Battle with Lavos)
+Dark Ages Portal
+Land Bridge
+Land Bridge
+Skyway
+Enhasa
+Skyway
+Kajar
+Kajar Study
+Kajar Belthasar's Private Study
+Kajar Magic Lab
+Enhasa Belthasar's Private Study
+Blackbird Scaffolding
+Blackbird Left Wing
+Blackbird Right Port
+Blackbird Left Port
+Blackbird Overhead
+Blackbird Hanger
+Blackbird Rear Halls
+Blackbird Forward Halls
+Blackbird Treasury
+Blackbird Cell
+Blackbird Barracks
+Blackbird Armory 3
+Blackbird Inventory
+Blackbird Lounge
+Blackbird Ducts
+Reborn Epoch
+Future Age Room (Ending: The Dream Project)
+End of Time (Ending: The Dream Project)
+Algetty
+Algetty Inn
+Algetty Elder's Grotto
+Algetty Commoner Grotto
+Algetty Shop
+Algetty Tsunami (wrong map)
+Algetty Entrance
+The Beast's Nest (wrong map)
+The Beast's Nest
+Zeal Teleporters
+Prehistoric Hut (Ending: The Dream Project)
+Castle Magus Room (Ending: The Dream Project)
+Mt. Woe Western Face
+Mt. Woe Lower Eastern Face
+Mt. Woe Middle Eastern Face
+Mt. Woe Upper Eastern Face
+Mt. Woe Summit (wrong map)
+Mt. Woe Summit
+Leene Square (Ending: What the Prophet Seeks)
+Crono's Kitchen (Ending: What the Prophet Seeks)
+The End (Ending: Multiple?)
+Zeal Palace
+Zeal Palace Hallway
+Zeal Palace Study
+Ocean Palace Entrance
+Ocean Palace Piazza
+Ocean Palace Side Rooms
+Ocean Palace Forward Area
+Ocean Palace B3 Landing
+Ocean Palace Grand Stairwell
+Ocean Palace B20 Landing
+Ocean Palace Southern Access Lift
+Ocean Palace Security Pool
+Ocean Palace Security Esplanade
+Ocean Palace Regal Antechamber
+Ocean Palace Throneroom
+Ocean Palace
+Ocean Palace Eastern Access Lift
+Ocean Palace Western Access Lift
+Ocean Palace Time Freeze (wrong map)
+Ocean Palace Time Freeze (wrong map)
+Ocean Palace Time Freeze (wrong map)
+Time Distortion, The Profane Machine
+Ocean Palace Time Freeze
+Last Village Commons
+Last Village Empty Hut
+Last Village Shop
+Last Village Residence
+North Cape
+Death Peak Summit
+Tyrano Lair Main Cell
+Title Screen (wrong map)
+Flying Epoch
+Title Screen
+Bekkler's Lab
+Magic Cave Exterior (after cutscene)
+Fiona's Forest Campfire
+Factory Ruins Robot Storage
+Courtroom King's Trial
+Leene Square
+Guardia Rear Storage
+Courtroom Lobby
+Blackbird Access Shaft
+Blackbird Armory 2
+Blackbird Armory 1
+Blackbird Storage
+Castle Magus Upper Battlements
+Castle Magus Grand Stairway
+corrupt
+Black Omen Entrance
+Black Omen 98F Omega Defense
+Black Omen 99F Seat of Agelessness
+corrupt
+corrupt
+corrupt
+corrupt
+Reptite Lair (Battle with Lavos)
+Castle Magus Inner Sanctum (Battle with Lavos)
+Tyrano Lair Keep (Battle with Lavos)
+Mt. Woe Summit (Battle with Lavos)
+Credits (Ending: The Oath)
+empty
+empty
+empty
+End of Time
+Spekkio
+Apocalypse Lavos
+Lavos
+Guardia Queen's Tower (Middle Ages)
+Castle Magus Corridor of Combat
+Castle Magus Hall of Ambush
+Castle Magus Dungeon
+Apocalypse Epoch
+End of Time Epoch
+Lavos Tunnel
+Lavos Core
+Truce Dome
+Emergence of the Black Omen
+Blackbird Wing Access
+Tesseract
+Guardia King's Tower (Middle Ages)
+Death of the Blackbird
+Blackbird (no exits)
+Blackbird (no exits)
+Blackbird (no exits)
+Blackbird (no exits)
+Guardia King's Tower (Present)
+Guardia Queen's Tower (Present)
+Guardia Lawgiver's Tower
+Guardia Prison Tower
+Ancient Tyrano Lair Room of Vertigo
+empty
+empty
+Algetty Tsunami
+Paradise Lost
+Death Peak Guardian Spawn
+Present
+Middle Ages
+Future
+Prehistoric
+Dark Ages
+Kingdom of Zeal
+Last Village
+Apocalypse
+empty
+empty
+empty
+empty
+empty
+empty
+empty
+empty

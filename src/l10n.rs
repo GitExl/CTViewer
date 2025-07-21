@@ -1,0 +1,53 @@
+use std::collections::HashMap;
+use crate::filesystem::filesystem::FileSystem;
+
+#[repr(usize)]
+pub enum IndexedType {
+    WorldExit,
+    Scene,
+    World,
+}
+
+static INDEXED_ITER: [IndexedType; 3] = [
+    IndexedType::WorldExit,
+    IndexedType::Scene,
+    IndexedType::World,
+];
+
+pub struct L10n {
+    indexed_strings: Vec<Vec<String>>,
+    strings: HashMap<String, String>,
+}
+
+impl L10n {
+    pub fn new(language: &str, fs: &FileSystem) -> L10n {
+        let mut indexed_strings = Vec::new();
+        for index_type in &INDEXED_ITER {
+            indexed_strings.push(match index_type {
+                IndexedType::WorldExit => fs.read_world_exit_names(language),
+                IndexedType::Scene => fs.read_scene_names(language),
+                IndexedType::World => fs.read_world_names(language),
+            });
+        }
+
+        let strings: HashMap<String, String> = HashMap::new();
+
+        L10n {
+            indexed_strings,
+            strings,
+        }
+    }
+
+    pub fn get_indexed(&self, indexed_type: IndexedType, index: usize) -> String {
+        let source = &self.indexed_strings[indexed_type as usize];
+        if index >= source.len() {
+            return format!("IDX_{}", index);
+        }
+
+        source[index].clone()
+    }
+
+    pub fn get_keyed(&self, key: &String) -> String {
+        self.strings.get(key).unwrap_or_else(|| key).clone()
+    }
+}
