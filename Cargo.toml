@@ -1,5 +1,5 @@
 [package]
-name = "ctview"
+name = "ctviewer"
 version = "0.1.0"
 edition = "2021"
 

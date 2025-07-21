@@ -4,7 +4,7 @@ A utility to display Chrono Trigger scene and world maps. Supports the North Ame
 
 ## Usage
 
-`ctview [OPTIONS] --path <PATH>`
+`ctviewer [OPTIONS] --path <PATH>`
 
 Options:
 - `-p`, `--path <PATH>`    Source data path
@@ -13,6 +13,11 @@ Options:
 - `--scale <SCALE>`        Display scale [default: 4]
 - `-d`, `--dump`           Dump information and debug data
 - `-h`, `--help`           Print help
+
+Examples:
+- `ctviewer -p ./chrono-trigger.smc -s 144`  View Denadaro North Face
+- `ctviewer -p ./chrono-trigger.smc -w 2`    View 2100 A.D.
+- `ctviewer -p ./ct_steam -s 1 -d`           View Chrono's Kitchen and output debug info and bitmaps from the PC version.
 
 The source data path can be a headered or unheadered North American SNES ROM file, or the extracted contents of the
 `resources.bin` file from the Steam version. You can use the "CT Explore" utility by River Nixx (download from
