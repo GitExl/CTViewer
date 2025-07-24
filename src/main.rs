@@ -32,7 +32,6 @@ mod gamestate;
 
 const SCREEN_WIDTH: u32 = 256;
 const SCREEN_HEIGHT: u32 = 224;
-const SCREEN_ASPECT_RATIO: f64 = 8.0 / 7.0;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
@@ -53,8 +52,12 @@ struct Args {
     scene: isize,
 
     /// Display scale.
-    #[arg(long, default_value_t = 4)]
-    scale: u32,
+    #[arg(long, default_value_t = -1)]
+    scale: i32,
+
+    /// Aspect ratio.
+    #[arg(short, long, default_value_t = 4.0 / 3.0)]
+    aspect_ratio: f64,
 
     /// Dump information and debug data.
     #[arg(short, long, default_value_t = false)]
@@ -79,8 +82,20 @@ fn main() -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
 
-    let output_width = (SCREEN_WIDTH as f64 * SCREEN_ASPECT_RATIO).ceil() as u32 * args.scale;
-    let output_height = SCREEN_HEIGHT * args.scale;
+    // Auto-adjust scale to display size.
+    let output_scale = if args.scale < 1 {
+        let current_mode = video_subsystem.current_display_mode(0)?;
+        let scale_w = (current_mode.w as f64 / (SCREEN_HEIGHT as f64 * args.aspect_ratio)).floor();
+        let scale_h = (current_mode.h as f64 / SCREEN_HEIGHT as f64).floor();
+        scale_w.min(scale_h.max(1.0)) as u32
+    } else {
+        args.scale as u32
+    };
+
+    // Calculate final output size.
+    let output_width = (SCREEN_HEIGHT as f64 * args.aspect_ratio).ceil() as u32 * output_scale;
+    let output_height = SCREEN_HEIGHT * output_scale;
+    println!("Display size is {}x{}", output_width, output_height);
 
     let window = video_subsystem.window("Chrono Trigger", output_width, output_height)
         .position_centered()
@@ -97,16 +112,22 @@ fn main() -> Result<(), String> {
     let size = canvas.window().size();
     let canvas_rect = Some(Rect::new(0, 0, size.0, size.1));
 
+    // Internal SNES rendering target.
     let mut target_surface = Surface::new(SCREEN_WIDTH, SCREEN_HEIGHT);
 
+    // Create a surface to copy the internal output to. This is used as the source for the
+    // initial integer scaling.
     let texture_creator = canvas.texture_creator();
     sdl2::hint::set("SDL_RENDER_SCALE_QUALITY", "nearest");
     let mut texture = texture_creator
         .create_texture_streaming(PixelFormatEnum::ABGR8888, SCREEN_WIDTH, SCREEN_HEIGHT)
         .unwrap();
+
+    // Create a surface to scale the output to. This will be scaled to match the final output size
+    // linearly to mask uneven pixel widths.
     sdl2::hint::set("SDL_RENDER_SCALE_QUALITY", "linear");
     let mut scaled_texture = texture_creator
-        .create_texture_target(PixelFormatEnum::ABGR8888, SCREEN_WIDTH * args.scale, SCREEN_HEIGHT * args.scale)
+        .create_texture_target(PixelFormatEnum::ABGR8888, SCREEN_WIDTH * output_scale, SCREEN_HEIGHT * output_scale)
         .unwrap();
 
     let mut gamestate: Box<dyn GameStateTrait>;
