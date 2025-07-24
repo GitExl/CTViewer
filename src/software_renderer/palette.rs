@@ -1,5 +1,3 @@
-use std::io::Cursor;
-use byteorder::ReadBytesExt;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::draw::draw_box;
 use crate::software_renderer::surface::Surface;

@@ -19,55 +19,6 @@ pub enum SurfaceBlendOps {
     Blend,
 }
 
-// pub fn blit_bitmap_to_source(src_bitmap: &Bitmap, dest_bitmap: &mut Bitmap, src_x: i32, src_y: i32, src_width: i32, src_height: i32, dest_x: i32, dest_y: i32, value: u8, flags: BitmapBlitFlags) {
-//     let delta_x;
-//     let start_cx;
-//     if flags.contains(BitmapBlitFlags::FLIP_X) {
-//         delta_x = -1;
-//         start_cx = src_width - 1;
-//     } else {
-//         delta_x = 1;
-//         start_cx = 0;
-//     }
-//
-//     let delta_y;
-//     let mut cy;
-//     if flags.contains(BitmapBlitFlags::FLIP_Y) {
-//         delta_y = -1;
-//         cy = src_height - 1;
-//     } else {
-//         delta_y = 1;
-//         cy = 0;
-//     }
-//
-//     let skip_0 = flags.contains(BitmapBlitFlags::SKIP_0);
-//
-//     for y in dest_y..dest_y + src_height {
-//         if !(y < dest_bitmap.clip.top || y >= dest_bitmap.clip.bottom) {
-//
-//             let mut cx = start_cx;
-//             let mut src = src_x + cx + ((src_y + cy) * src_bitmap.width as i32);
-//             let mut dest = (src_x + (y * dest_bitmap.width as i32)) as usize;
-//
-//             for x in dest_x..dest_x + src_width {
-//                 if !(x < dest_bitmap.clip.left || x >= dest_bitmap.clip.right) {
-//                     let src_pixel = src_bitmap.data[src as usize] as usize;
-//                     if src_pixel != 0 || !skip_0 {
-//                         dest_bitmap.data[dest] = value;
-//                     }
-//                 }
-//
-//                 src += delta_x;
-//                 dest += 1;
-//                 cx += delta_x;
-//             }
-//
-//         }
-//
-//         cy += delta_y;
-//     }
-// }
-
 pub fn blit_bitmap_to_surface_and_source(bitmap: &Bitmap, surface: &mut Surface, dest_bitmap: &mut Bitmap, src_x: i32, src_y: i32, src_width: i32, src_height: i32, dest_x: i32, dest_y: i32, palette: &Palette, color_offset: usize, source_value: u8, flags: BitmapBlitFlags) {
     let delta_x;
     let start_cx;
