@@ -1,6 +1,8 @@
 # CT Viewer
 
-A utility to display Chrono Trigger scene and world maps. Supports the North American SNES version and the Steam version.
+A utility to display Chrono Trigger scene and world maps. It supports the North American SNES version and the Steam
+version. It can display relevant tile and palette animations for the maps, as well as display some animated test
+sprites.
 
 ## Usage
 
@@ -34,6 +36,7 @@ When viewing scenes or worlds, the following keys are available:
 - `3` toggle rendering of layer 3
 - `4` toggle rendering of test sprites
 - `5` toggle rendering of the map palette
+- `\` to write a screenshot of the internal render buffer to `debug_output/screenshot.bmp`
 
 When viewing worlds, the following keys are available:
 
@@ -54,6 +57,15 @@ When viewing scenes, the following keys are available:
 - `,` render tile layer 1/layer 2 source data
 - `.` render sprite over layer 1 or layer 2 data
 - `/` render exit data
+
+## Examples
+
+These are some screenshots from various scenes. They have been scaled to a 4/3 aspect ratio.
+
+![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png)
+![Denadoro South Face](/readme/Denadoro%20South%20Face.png)
+![Crono's Kitchen](/readme/Crono's%20Kitchen.png)
+![Zeal Kingdom](/readme/Zeal%20Kingdom.png)
 
 ## Compiling
 

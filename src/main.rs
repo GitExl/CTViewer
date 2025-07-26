@@ -167,6 +167,10 @@ fn main() -> Result<(), String> {
                 Event::KeyDown { keycode, .. } => {
                     match keycode {
                         Some(Keycode::Escape) => break 'running,
+                        Some(Keycode::Backslash) => {
+                            target_surface.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
+                            println!("Saved render target to debug_output/screenshot.bmp");
+                        },
                         _ => {},
                     }
                 },
