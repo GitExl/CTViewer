@@ -1,34 +1,15 @@
+use crate::software_renderer::clip::Rect;
 use super::blit::SurfaceBlendOps;
 use super::palette::Color;
 use super::surface::Surface;
 
-pub fn draw_box(surface: &mut Surface, mut x: i32, mut y: i32, mut width: i32, mut height: i32, color: Color, blend_op: SurfaceBlendOps) {
+pub fn draw_box(surface: &mut Surface, rect: Rect, color: Color, blend_op: SurfaceBlendOps) {
+    let draw = rect.clip_to(&surface.clip);
 
-    // Clamp to surface.
-    if x < 0 {
-        width = width + x;
-        x = 0;
-    } else if x + width >= surface.width as i32 {
-        width = surface.width as i32 - x;
-    }
-    if width <= 0 {
-        return;
-    }
+    for y in draw.top..draw.bottom {
+        let mut dest = (draw.left + (y * surface.width as i32)) as usize * 4;
 
-    if y < 0 {
-        height = height + y;
-        y = 0;
-    } else if y + height >= surface.height as i32 {
-        height = surface.height as i32 - y;
-    }
-    if height <= 0 {
-        return;
-    }
-
-    for y in y..y + height {
-        let mut dest = (x + (y * surface.width as i32)) as usize * 4;
-
-        for _ in 0..width {
+        for _ in draw.left..draw.right {
             let dest_color = &mut surface.data[dest..dest + 4];
             dest += 4;
 

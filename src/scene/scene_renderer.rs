@@ -15,6 +15,7 @@ use crate::scene::scene_map::SceneTileCollision;
 use crate::scene::scene_map::SceneTileFlags;
 use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
+use crate::software_renderer::clip::Rect;
 use crate::software_renderer::draw::draw_box;
 use crate::software_renderer::palette::render_palette;
 use crate::software_renderer::surface::Surface;
@@ -126,7 +127,7 @@ impl SceneRenderer {
         for exit in exits {
             let x = exit.x - camera.lerp_x.floor() as i32;
             let y = exit.y - camera.lerp_y.floor() as i32;
-            draw_box(surface, x, y, exit.width as i32, exit.height as i32, [255, 255, 0, 191], SurfaceBlendOps::Blend);
+            draw_box(surface, Rect::new(x, y, x + exit.width as i32, y + exit.height as i32), [255, 255, 0, 191], SurfaceBlendOps::Blend);
         }
     }
 

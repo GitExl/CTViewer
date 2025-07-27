@@ -1,4 +1,5 @@
 use crate::software_renderer::blit::SurfaceBlendOps;
+use crate::software_renderer::clip::Rect;
 use crate::software_renderer::draw::draw_box;
 use crate::software_renderer::surface::Surface;
 
@@ -27,7 +28,7 @@ pub fn render_palette(palette: &Palette, surface: &mut Surface, scale: i32) {
     let mut x = 0;
     let mut y = 0;
     for color in &palette.colors {
-        draw_box(surface, x, y, 8, 8, *color, SurfaceBlendOps::Copy);
+        draw_box(surface, Rect::new( x, y, x + 8, y + 8), *color, SurfaceBlendOps::Copy);
         x += scale;
         if x >= scale * 16  {
             x = 0;

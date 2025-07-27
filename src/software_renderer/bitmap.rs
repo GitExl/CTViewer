@@ -1,10 +1,10 @@
 use std::ptr::write_bytes;
-use crate::software_renderer::clip::ClipRect;
+use crate::software_renderer::clip::Rect;
 
 pub struct Bitmap {
     pub width: u32,
     pub height: u32,
-    pub clip: ClipRect,
+    pub clip: Rect,
     pub data: Vec<u8>,
 }
 
@@ -13,7 +13,7 @@ impl Bitmap {
         Bitmap {
             width,
             height,
-            clip: ClipRect::new(0, 0, width as i32, height as i32),
+            clip: Rect::new(0, 0, width as i32, height as i32),
             data: vec![0; (width * height) as usize],
         }
     }
@@ -22,7 +22,7 @@ impl Bitmap {
         Bitmap {
             width,
             height,
-            clip: ClipRect::new(0, 0, width as i32, height as i32),
+            clip: Rect::new(0, 0, width as i32, height as i32),
             data,
         }
     }

@@ -1,5 +1,4 @@
 use std::path::Path;
-use bitflags::bitflags;
 use crate::actor::Actor;
 use crate::game_palette::GamePalette;
 use crate::l10n::{IndexedType, L10n};

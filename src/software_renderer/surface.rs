@@ -7,13 +7,13 @@ use byteorder::LittleEndian;
 use byteorder::WriteBytesExt;
 use png::ColorType;
 use png::Decoder;
-use crate::software_renderer::clip::ClipRect;
+use crate::software_renderer::clip::Rect;
 use super::palette::Color;
 
 pub struct Surface {
     pub width: u32,
     pub height: u32,
-    pub clip: ClipRect,
+    pub clip: Rect,
     pub data: Vec<u8>,
 }
 
@@ -23,7 +23,7 @@ impl Surface {
         Surface {
             width,
             height,
-            clip: ClipRect::new(0, 0, width as i32, height as i32),
+            clip: Rect::new(0, 0, width as i32, height as i32),
             data: vec![0; len],
         }
     }
