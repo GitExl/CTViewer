@@ -45,10 +45,13 @@ pub trait FileSystemBackendTrait {
     fn get_scene_tileset12_animation_data(&self, chip_anims_index: usize) -> Option<Cursor<Vec<u8>>>;
     fn get_scene_exit_data(&self, scene_index: usize) -> Cursor<Vec<u8>>;
     fn get_scene_names(&self, language: &str) -> Vec<String>;
+    fn get_scene_treasure_data(&self) -> (Vec<u32>, Cursor<Vec<u8>>);
 
     fn get_sprite_header_data(&self, sprite_index: usize) -> Cursor<Vec<u8>>;
     fn get_sprite_assembly_data(&self, sprite_assembly_index: usize) -> Cursor<Vec<u8>>;
     fn get_sprite_animation_data(&self) -> (Vec<usize>, Cursor<Vec<u8>>, Vec<usize>, Cursor<Vec<u8>>);
     fn get_sprite_palette(&self, sprite_index: usize) -> Option<Palette>;
     fn get_sprite_graphics(&self, sprite_index: usize, chip_count: usize, compressed: bool) -> Vec<u8>;
+
+    fn get_item_names(&self, language: &str) -> Vec<String>;
 }

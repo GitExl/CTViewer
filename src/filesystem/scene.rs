@@ -1,8 +1,9 @@
+use std::io::{Seek, SeekFrom};
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
-use crate::scene::scene::{Scene, SceneExit, SceneExitFacing, ScrollMask};
+use crate::scene::scene::{Scene, SceneExit, SceneExitFacing, SceneTreasure, ScrollMask};
 
 struct SceneHeader {
 
@@ -93,6 +94,7 @@ impl FileSystem {
         let palette = self.read_scene_palette(header.palette_index);
         let palette_anims = self.read_palette_anim_set(header.palette_anims_index);
         let exits = self.read_scene_exits(scene_index);
+        let treasure = self.read_scene_treasure(scene_index);
 
         if header.scroll_mask.left == 2048 || header.scroll_mask.left == -2048 {
             header.scroll_mask.left = 0;
@@ -115,6 +117,7 @@ impl FileSystem {
             palette,
             palette_anims,
             exits,
+            treasure,
             actors: Vec::new(),
             render_sprites: Vec::new(),
         }
@@ -196,7 +199,7 @@ impl FileSystem {
                         _ => panic!(),
                     };
 
-                    let size = (((size_bits & 0x7F) + 1) * 16) as u32;
+                    let size = ((size_bits & 0x7F) + 1) as u32 * 16;
                     (width, height) = if size_bits & 0x80 > 0 {
                         (16, size)
                     } else {
@@ -225,5 +228,60 @@ impl FileSystem {
         }
 
         exits
+    }
+
+    pub fn read_scene_treasure(&self, scene_index: usize) -> Vec<SceneTreasure> {
+        let (pointers, mut data) = self.backend.get_scene_treasure_data();
+        let treasure_count = match self.parse_mode {
+            ParseMode::Pc => (pointers[scene_index + 1] - pointers[scene_index]) / 6,
+            ParseMode::Snes => (pointers[scene_index + 1] - pointers[scene_index]) / 4,
+        };
+
+        let mut treasure: Vec<SceneTreasure> = Vec::new();
+        data.seek(SeekFrom::Start(pointers[scene_index] as u64)).unwrap();
+        for index in 0..treasure_count {
+            let id = format!("{}_{}", scene_index, index);
+            let x = data.read_u8().unwrap();
+            let y = data.read_u8().unwrap();
+            let contents = data.read_u16::<LittleEndian>().unwrap();
+
+            // Pointer to other location chest data.
+            if x == 0 && y == 0 {
+                return self.read_scene_treasure(contents as usize);
+            // Gold.
+            } else if contents & 0x8000 > 0 {
+                treasure.push(SceneTreasure {
+                    id,
+                    tile_x: x as u32,
+                    tile_y: y as u32,
+                    gold: (contents & 0x3FFF) as u32 * 2,
+                    item: 0,
+                })
+            // Empty.
+            } else if contents & 0x4000 > 0 {
+                treasure.push(SceneTreasure {
+                    id,
+                    tile_x: x as u32,
+                    tile_y: y as u32,
+                    gold: 0,
+                    item: 0,
+                })
+            // Item.
+            } else {
+                treasure.push(SceneTreasure {
+                    id,
+                    tile_x: x as u32,
+                    tile_y: y as u32,
+                    gold: 0,
+                    item: (contents & 0x3FFF) as usize,
+                })
+            }
+
+            if matches!(self.parse_mode, ParseMode::Pc) {
+                data.read_u16::<LittleEndian>().unwrap();
+            }
+        }
+
+        treasure
     }
 }

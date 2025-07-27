@@ -1,4 +1,5 @@
 use std::path::Path;
+use bitflags::bitflags;
 use crate::actor::Actor;
 use crate::game_palette::GamePalette;
 use crate::l10n::{IndexedType, L10n};
@@ -48,6 +49,28 @@ impl SceneExit {
     }
 }
 
+pub struct SceneTreasure {
+    pub id: String,
+    pub tile_x: u32,
+    pub tile_y: u32,
+    pub gold: u32,
+    pub item: usize,
+}
+
+impl SceneTreasure {
+    pub fn dump(&self, l10n: &L10n) {
+        println!("Treasure '{}'", self.id);
+        println!("  At {} x {}", self.tile_x, self.tile_y);
+        if self.gold > 0 {
+            println!("  Contains {} gold", self.gold);
+        }
+        if self.item > 0 {
+            println!("  Contains '{}'", l10n.get_indexed(IndexedType::Item, self.item));
+        }
+        println!();
+    }
+}
+
 pub struct Scene {
     pub index: usize,
 
@@ -62,6 +85,7 @@ pub struct Scene {
     pub palette: GamePalette,
     pub palette_anims: PaletteAnimSet,
     pub exits: Vec<SceneExit>,
+    pub treasure: Vec<SceneTreasure>,
     pub actors: Vec<Actor>,
     pub render_sprites: Vec<MapRendererSprite>,
 }
@@ -102,6 +126,10 @@ impl Scene {
 
         for exit in &self.exits {
             exit.dump(l10n);
+        }
+
+        for treasure in &self.treasure {
+            treasure.dump(l10n);
         }
 
         self.tileset_l12.render_chips_to_surface(&self.tileset_l12.chip_bitmaps).write_to_bmp(Path::new("debug_output/scene_chips_l12.bmp"));

@@ -354,6 +354,25 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.remove_string_list_keys(self.read_text_string_list(data, None, None))
     }
 
+    fn get_scene_treasure_data(&self) -> (Vec<u32>, Cursor<Vec<u8>>) {
+        let mut data = self.file_get(&"Game/common/TakaraDataTbl.dat".to_string());
+        let mut offsets_data = self.file_get(&"Game/common/TakaraOffsetTbl.dat".to_string());
+
+        let ptr_count = offsets_data.read_u32::<LittleEndian>().unwrap() as usize;
+        let mut offsets = vec![0u32; ptr_count];
+        for offset in offsets.iter_mut() {
+            *offset = offsets_data.read_u16::<LittleEndian>().unwrap() as u32 * 6 + 4;
+        }
+
+        // Add a last entry so that the number of chests can be calculated like the SNES version.
+        offsets.push(offsets[ptr_count - 1]);
+
+        (
+            offsets,
+            self.get_bytes_cursor(&mut data, None, None),
+        )
+    }
+
     fn get_sprite_header_data(&self, sprite_index: usize) -> Cursor<Vec<u8>> {
         self.get_file_cursor(&format!("Game/chara/dat/c{:0>3}.dat", sprite_index), None, None)
     }
@@ -424,5 +443,10 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         }
 
         tile_data
+    }
+
+    fn get_item_names(&self, language: &str) -> Vec<String> {
+        let data = self.get_file_cursor(&format!("Localize/{}/msg/item.txt", language), None, None);
+        self.read_text_string_list(data, None, None)
     }
 }

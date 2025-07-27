@@ -3,6 +3,25 @@ use byteorder::{LittleEndian, ReadBytesExt};
 
 const DICTIONARY_LENGTH: u8 = 0x9F;
 
+const FONT_8_MAP: [&str; 256] = [
+    "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
+    "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
+    "<BLADE>", "<BOW>", "<GUN>", "<ARM>", "<SWORD>", "<FIST>", "<SCYTHE>", "<HELM>", "<ARMOR>", "<RING>", "<H>", "<M>", "<P>", ":", "<SHIELD>", "<STAR>",
+    "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
+    "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
+    "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "<LEFT>", "<RIGHT>", "(", ")", ":",
+    "<HAND1>", "<HAND2>", "<HAND3>", "<HAND4>", "<H>", "<M>", "<P>", "<HP0>", "<HP1>", "<HP2>", "<HP3>", "<HP4>", "<HP5>", "<HP6>", "<HP7>", "<HP8>",
+    "¶", "¶", "°", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "{D}", "{Z}", "{UP}",
+    "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
+    "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
+    "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f",
+    "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",
+    "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?",
+    "/", "“", "”", ":", "&", "(", ")", "'", ".", ",", "=", "-", "+", "%", "#", " ",
+    "°", "{A}", "#", "#", "{L}", "{R}", "{H}", "{M}", "{P}", "̖", "{CORNER}", "(", ")", "¶", "¶", " "
+];
+
 pub struct TextDecoder {
     pub words: Vec<String>,
 }
@@ -26,7 +45,7 @@ impl TextDecoder {
         }
     }
 
-    pub fn decode_string(&self, data: &mut Cursor<Vec<u8>>) -> String {
+    pub fn decode_huffman_string(&self, data: &mut Cursor<Vec<u8>>) -> String {
         let mut parts = Vec::<String>::new();
 
         loop {
@@ -66,6 +85,14 @@ impl TextDecoder {
         }
 
         parts.join("")
+    }
+
+    pub fn decode_mapped_string(&self, data: Vec<u8>) -> String {
+        let mut parts = Vec::<String>::new();
+        for char in data {
+            parts.push(FONT_8_MAP[char as usize].to_string());
+        }
+        parts.join("").trim_end().to_string()
     }
 }
 

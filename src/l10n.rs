@@ -6,12 +6,14 @@ pub enum IndexedType {
     WorldExit,
     Scene,
     World,
+    Item,
 }
 
-static INDEXED_ITER: [IndexedType; 3] = [
+static INDEXED_ITER: [IndexedType; 4] = [
     IndexedType::WorldExit,
     IndexedType::Scene,
     IndexedType::World,
+    IndexedType::Item,
 ];
 
 pub struct L10n {
@@ -27,6 +29,7 @@ impl L10n {
                 IndexedType::WorldExit => fs.read_world_exit_names(language),
                 IndexedType::Scene => fs.read_scene_names(language),
                 IndexedType::World => fs.read_world_names(language),
+                IndexedType::Item => fs.read_item_names(language),
             });
         }
 

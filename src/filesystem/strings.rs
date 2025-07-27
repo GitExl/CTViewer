@@ -24,4 +24,8 @@ impl FileSystem {
             names[5].clone(),
         ].to_vec()
     }
+
+    pub fn read_item_names(&self, language: &str) -> Vec<String> {
+        self.backend.get_item_names(language)
+    }
 }

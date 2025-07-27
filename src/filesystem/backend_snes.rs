@@ -251,7 +251,7 @@ impl FileSystemBackendSnes {
         let mut strings = Vec::<String>::with_capacity(count);
         for entry in entries.iter() {
             cursor.seek(SeekFrom::Start(entry.address as u64)).unwrap();
-            strings.push(self.text_decoder.decode_string(&mut cursor));
+            strings.push(self.text_decoder.decode_huffman_string(&mut cursor));
         }
 
         strings
@@ -419,6 +419,19 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         self.read_text_string_list(Cursor::new(buffer), None, None)
     }
 
+    fn get_scene_treasure_data(&self) -> (Vec<u32>, Cursor<Vec<u8>>) {
+        let mut pointer_data = self.get_bytes_cursor(0x35F000, 0x402);
+        let mut pointers = vec![0u32; 513];
+        for pointer in pointers.iter_mut() {
+            *pointer = pointer_data.read_u16::<LittleEndian>().unwrap() as u32 - 0xF402;
+        }
+
+        (
+            pointers,
+            self.get_bytes_cursor(0x35F402, 0x3E4),
+        )
+    }
+
     fn get_sprite_header_data(&self, sprite_index: usize) -> Cursor<Vec<u8>> {
 
         // Regular PC/NPC sprites.
@@ -474,6 +487,19 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         };
 
         self.convert_planar_chips_to_linear(data, 4)
+    }
+
+    fn get_item_names(&self, _language: &str) -> Vec<String> {
+        let mut data = self.get_bytes_cursor(0xC0B5E, 0xA71);
+
+        let mut strings = Vec::<String>::new();
+        for _ in 0..data.get_ref().len() / 11 {
+            let mut item = vec![0u8; 11];
+            data.read_exact(&mut item).unwrap();
+            strings.push(self.text_decoder.decode_mapped_string(item));
+        }
+
+        strings
     }
 }
 
