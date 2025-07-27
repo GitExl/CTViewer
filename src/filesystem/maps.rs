@@ -39,9 +39,32 @@ impl FileSystem {
         let mut layer_2 = MapLayer::new(192, 128);
         let mut layer_3 = MapLayer::new(64, 32);
 
-        // Hardcoded scroll speed that matches world 0 cloud speed and direction.
-        layer_3.scroll_speed_x = -16.0;
-        layer_3.scroll_speed_y = 8.0;
+        // todo fix hardcoded layer animation. Where is this stored or set? World script calling 0x22F0F?
+        let mut screen_flags = ScreenFlags::SCREEN_L1_MAIN | ScreenFlags::SCREEN_L2_MAIN | ScreenFlags::SCREEN_L3_SUB | ScreenFlags::SCREEN_SPR_MAIN;
+        let effect_flags = EffectFlags::EFFECT_L1 | EffectFlags::EFFECT_L2 | EffectFlags::EFFECT_SPR | EffectFlags::EFFECT_HALF_INTENSITY;
+        if index == 0 {
+            layer_3.scroll_speed_x = -16.0;
+            layer_3.scroll_speed_y = 8.0;
+        } else if index == 1 {
+            layer_3.scroll_speed_x = -16.0;
+            layer_3.scroll_speed_y = 8.0;
+        } else if index == 2 {
+            screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
+            screen_flags.insert(ScreenFlags::SCREEN_L3_MAIN);
+        } else if index == 3 {
+            layer_3.scroll_speed_x = -16.0;
+            layer_3.scroll_speed_y = 8.0;
+        } else if index == 4 {
+            screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
+        } else if index == 5 {
+            layer_3.scroll_speed_x = -16.0;
+            layer_3.scroll_speed_y = 8.0;
+        } else if index == 6 {
+            layer_3.scroll_speed_x = -16.0;
+            layer_3.scroll_speed_y = 8.0;
+        } else if index == 7 {
+            layer_1.scroll_speed_x = 16.0;
+        }
 
         // Read 2x2 chip map tiles and assemble chips from them.
         read_map_layer_tiles(&mut layer_1, &mut data_map, 0);
@@ -104,8 +127,8 @@ impl FileSystem {
             },
             Map {
                 index,
-                effect_flags: EffectFlags::empty(),
-                screen_flags: ScreenFlags::empty(),
+                effect_flags,
+                screen_flags,
                 layers: [layer_1, layer_2, layer_3],
                 layer_priorities: [3, 2, 2, 1],
             }

@@ -1,12 +1,6 @@
 use std::path::Path;
 
 use crate::camera::Camera;
-use crate::map::EffectFlags;
-use crate::map::Map;
-use crate::map::ScreenFlags;
-use crate::map_renderer::LayerBlendMode;
-use crate::map_renderer::LayerFlags;
-use crate::map_renderer::MapRenderer;
 use crate::scene::scene::Scene;
 use crate::scene::scene::SceneExit;
 use crate::scene::scene_map::SceneMap;
@@ -46,64 +40,6 @@ impl SceneRenderer {
             debug_tiles: Surface::from_png(Path::new("data/scene_debug_tiles.png")),
             debug_layer: SceneDebugLayer::Disabled,
             debug_palette: false,
-        }
-    }
-
-    pub fn setup_map_renderer(&self, map: &Map, map_renderer: &mut MapRenderer) {
-        if map.screen_flags.contains(ScreenFlags::SCREEN_L1_MAIN) {
-            map_renderer.layer_target_main |= LayerFlags::Layer1;
-        }
-        if map.screen_flags.contains(ScreenFlags::SCREEN_L2_MAIN) {
-            map_renderer.layer_target_main |= LayerFlags::Layer2;
-        }
-        if map.screen_flags.contains(ScreenFlags::SCREEN_L3_MAIN) {
-            map_renderer.layer_target_main |= LayerFlags::Layer3;
-        }
-        if map.screen_flags.contains(ScreenFlags::SCREEN_SPR_MAIN) {
-            map_renderer.layer_target_main |= LayerFlags::Sprites;
-        }
-
-        if map.screen_flags.contains(ScreenFlags::SCREEN_L1_SUB) {
-            map_renderer.layer_target_sub |= LayerFlags::Layer1;
-        }
-        if map.screen_flags.contains(ScreenFlags::SCREEN_L2_SUB) {
-            map_renderer.layer_target_sub |= LayerFlags::Layer2;
-        }
-        if map.screen_flags.contains(ScreenFlags::SCREEN_L3_SUB) {
-            map_renderer.layer_target_sub |= LayerFlags::Layer3;
-        }
-        if map.screen_flags.contains(ScreenFlags::SCREEN_SPR_SUB) {
-            map_renderer.layer_target_sub |= LayerFlags::Sprites;
-        }
-
-        if map.effect_flags.contains(EffectFlags::EFFECT_L1) {
-            map_renderer.layer_blend_enable |= LayerFlags::Layer1;
-        }
-        if map.effect_flags.contains(EffectFlags::EFFECT_L2) {
-            map_renderer.layer_blend_enable |= LayerFlags::Layer2;
-        }
-        if map.effect_flags.contains(EffectFlags::EFFECT_L3) {
-            map_renderer.layer_blend_enable |= LayerFlags::Layer3;
-        }
-        if map.effect_flags.contains(EffectFlags::EFFECT_SPR) {
-            map_renderer.layer_blend_enable |= LayerFlags::Sprites;
-        }
-        if map.effect_flags.contains(EffectFlags::EFFECT_DEFAULT_COL) {
-            map_renderer.layer_blend_enable |= LayerFlags::Background;
-        }
-
-        if map.effect_flags.contains(EffectFlags::EFFECT_SUBTRACT) {
-            if map.effect_flags.contains(EffectFlags::EFFECT_HALF_INTENSITY) {
-                map_renderer.layer_blend_mode = LayerBlendMode::SubHalf;
-            } else {
-                map_renderer.layer_blend_mode = LayerBlendMode::Sub;
-            }
-        } else {
-            if map.effect_flags.contains(EffectFlags::EFFECT_HALF_INTENSITY) {
-                map_renderer.layer_blend_mode = LayerBlendMode::AddHalf;
-            } else {
-                map_renderer.layer_blend_mode = LayerBlendMode::Add;
-            }
         }
     }
 

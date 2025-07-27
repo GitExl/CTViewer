@@ -76,7 +76,7 @@ impl GameStateScene<'_> {
 
         let scene_renderer = SceneRenderer::new();
         let mut map_renderer = MapRenderer::new(target_surface.width, target_surface.height - 12);
-        scene_renderer.setup_map_renderer(&scene.map, &mut map_renderer);
+        map_renderer.setup_for_map(&mut scene.map);
 
         GameStateScene {
             scene,

@@ -2,7 +2,7 @@ use bitflags::bitflags;
 
 use crate::camera::Camera;
 use crate::game_palette::GamePalette;
-use crate::map::LayerScrollMode;
+use crate::map::{EffectFlags, LayerScrollMode, ScreenFlags};
 use crate::map::Map;
 use crate::map::MapChipFlags;
 use crate::map::MapLayer;
@@ -100,6 +100,64 @@ impl MapRenderer {
             layer_blend_enable: LayerFlags::default(),
             layer_blend_mode: LayerBlendMode::Add,
             layer_blend_color: [0, 0, 0, 0],
+        }
+    }
+
+    pub fn setup_for_map(&mut self, map: &Map) {
+        if map.screen_flags.contains(ScreenFlags::SCREEN_L1_MAIN) {
+            self.layer_target_main |= LayerFlags::Layer1;
+        }
+        if map.screen_flags.contains(ScreenFlags::SCREEN_L2_MAIN) {
+            self.layer_target_main |= LayerFlags::Layer2;
+        }
+        if map.screen_flags.contains(ScreenFlags::SCREEN_L3_MAIN) {
+            self.layer_target_main |= LayerFlags::Layer3;
+        }
+        if map.screen_flags.contains(ScreenFlags::SCREEN_SPR_MAIN) {
+            self.layer_target_main |= LayerFlags::Sprites;
+        }
+
+        if map.screen_flags.contains(ScreenFlags::SCREEN_L1_SUB) {
+            self.layer_target_sub |= LayerFlags::Layer1;
+        }
+        if map.screen_flags.contains(ScreenFlags::SCREEN_L2_SUB) {
+            self.layer_target_sub |= LayerFlags::Layer2;
+        }
+        if map.screen_flags.contains(ScreenFlags::SCREEN_L3_SUB) {
+            self.layer_target_sub |= LayerFlags::Layer3;
+        }
+        if map.screen_flags.contains(ScreenFlags::SCREEN_SPR_SUB) {
+            self.layer_target_sub |= LayerFlags::Sprites;
+        }
+
+        if map.effect_flags.contains(EffectFlags::EFFECT_L1) {
+            self.layer_blend_enable |= LayerFlags::Layer1;
+        }
+        if map.effect_flags.contains(EffectFlags::EFFECT_L2) {
+            self.layer_blend_enable |= LayerFlags::Layer2;
+        }
+        if map.effect_flags.contains(EffectFlags::EFFECT_L3) {
+            self.layer_blend_enable |= LayerFlags::Layer3;
+        }
+        if map.effect_flags.contains(EffectFlags::EFFECT_SPR) {
+            self.layer_blend_enable |= LayerFlags::Sprites;
+        }
+        if map.effect_flags.contains(EffectFlags::EFFECT_DEFAULT_COL) {
+            self.layer_blend_enable |= LayerFlags::Background;
+        }
+
+        if map.effect_flags.contains(EffectFlags::EFFECT_SUBTRACT) {
+            if map.effect_flags.contains(EffectFlags::EFFECT_HALF_INTENSITY) {
+                self.layer_blend_mode = LayerBlendMode::SubHalf;
+            } else {
+                self.layer_blend_mode = LayerBlendMode::Sub;
+            }
+        } else {
+            if map.effect_flags.contains(EffectFlags::EFFECT_HALF_INTENSITY) {
+                self.layer_blend_mode = LayerBlendMode::AddHalf;
+            } else {
+                self.layer_blend_mode = LayerBlendMode::Add;
+            }
         }
     }
 

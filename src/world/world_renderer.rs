@@ -2,9 +2,6 @@ use std::path::Path;
 
 use crate::camera::Camera;
 use crate::map::Map;
-use crate::map_renderer::LayerBlendMode;
-use crate::map_renderer::LayerFlags;
-use crate::map_renderer::MapRenderer;
 use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::palette::render_palette;
@@ -36,13 +33,6 @@ impl WorldRenderer {
             debug_layer: WorldDebugLayer::Disabled,
             debug_palette: false,
         }
-    }
-
-    pub fn setup_map_renderer(&self, _map: &Map, map_renderer: &mut MapRenderer) {
-        map_renderer.layer_target_main = LayerFlags::Layer1 | LayerFlags::Layer2 | LayerFlags::Sprites;
-        map_renderer.layer_target_sub = LayerFlags::Layer3;
-        map_renderer.layer_blend_enable = LayerFlags::Layer1 | LayerFlags::Layer2 | LayerFlags::Sprites;
-        map_renderer.layer_blend_mode = LayerBlendMode::AddHalf;
     }
 
     pub fn render(&mut self, lerp: f64, camera: &Camera, world: &mut World, surface: &mut Surface) {

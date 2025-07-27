@@ -64,7 +64,7 @@ impl GameStateWorld<'_> {
 
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(target_surface.width, target_surface.height);
-        world_renderer.setup_map_renderer(&world.map, &mut map_renderer);
+        map_renderer.setup_for_map(&mut world.map);
 
         GameStateWorld {
             world,
