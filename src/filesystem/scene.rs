@@ -248,34 +248,13 @@ impl FileSystem {
             // Pointer to other location chest data.
             if x == 0 && y == 0 {
                 return self.read_scene_treasure(contents as usize);
-            // Gold.
-            } else if contents & 0x8000 > 0 {
-                treasure.push(SceneTreasure {
-                    id,
-                    tile_x: x as u32,
-                    tile_y: y as u32,
-                    gold: (contents & 0x3FFF) as u32 * 2,
-                    item: 0,
-                })
-            // Empty.
-            } else if contents & 0x4000 > 0 {
-                treasure.push(SceneTreasure {
-                    id,
-                    tile_x: x as u32,
-                    tile_y: y as u32,
-                    gold: 0,
-                    item: 0,
-                })
-            // Item.
-            } else {
-                treasure.push(SceneTreasure {
-                    id,
-                    tile_x: x as u32,
-                    tile_y: y as u32,
-                    gold: 0,
-                    item: (contents & 0x3FFF) as usize,
-                })
             }
+
+            let item = match self.parse_mode {
+                ParseMode::Snes => parse_snes_treasure(id, x, y, contents),
+                ParseMode::Pc => parse_pc_treasure(id, x, y, contents),
+            };
+            treasure.push(item);
 
             if matches!(self.parse_mode, ParseMode::Pc) {
                 data.read_u16::<LittleEndian>().unwrap();
@@ -283,5 +262,62 @@ impl FileSystem {
         }
 
         treasure
+    }
+}
+
+fn parse_pc_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure {
+
+    let mut gold = 0;
+    let mut item = 0;
+
+    // Gold.
+    if contents & 0x8000 > 0 {
+        gold = (contents & 0x7FFF) as u32 * 2;
+    }
+    // Items.
+    else if contents & 0xFF00 == 0x5000 {
+        item = (contents & 0x1FF) as usize + 302;
+    // Consumables.
+    } else if contents & 0xFF00 == 0x4000 {
+        item = (contents & 0x1FF) as usize + 259;
+    // Accessories.
+    } else if contents & 0xFF00 == 0x3000 {
+        item = (contents & 0x1FF) as usize + 200;
+    // Helmet.
+    } else if contents & 0xFF00 == 0x2000 {
+        item = (contents & 0x1FF) as usize + 161;
+    // Armor.
+    } else if contents & 0xFF00 == 0x1000 {
+        item = (contents & 0x1FF) as usize + 111;
+    // Weapon.
+    } else if contents & 0xFF00 == 0 {
+        item = (contents & 0x1FF) as usize;
+    }
+
+    SceneTreasure {
+        id,
+        tile_x: x as u32,
+        tile_y: y as u32,
+        gold,
+        item,
+    }
+}
+
+fn parse_snes_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure {
+    let mut gold = 0;
+    let mut item = 0;
+
+    if contents & 0x8000 > 0 {
+        gold = (contents & 0x7FFF) as u32 * 2;
+    } else if contents & 0x4000 == 0 {
+        item = (contents & 0x1FF) as usize
+    }
+
+    SceneTreasure {
+        id,
+        tile_x: x as u32,
+        tile_y: y as u32,
+        gold,
+        item,
     }
 }
