@@ -1,4 +1,4 @@
-use sdl2::event::Event;
+use sdl3::event::Event;
 use crate::l10n::L10n;
 use crate::software_renderer::surface::Surface;
 

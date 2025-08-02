@@ -5,6 +5,7 @@ use crate::software_renderer::surface::Surface;
 
 pub type Color = [u8; 4];
 
+
 #[derive(Clone)]
 pub struct Palette {
     pub colors: Vec<Color>,
@@ -13,7 +14,7 @@ pub struct Palette {
 impl Palette {
     pub fn new(color_count: usize) -> Palette {
         Palette {
-            colors: vec![[0, 0, 0, 0]; color_count],
+            colors: vec![[0, 0, 0, 0xFF]; color_count],
         }
     }
 

@@ -3,7 +3,6 @@
 use std::path::Path;
 use filesystem::filesystem::FileSystem;
 use software_renderer::surface::Surface;
-use sdl2::{event::Event, keyboard::Keycode, pixels::PixelFormatEnum, rect::Rect};
 use util::timer::Timer;
 use crate::filesystem::backend_pc::FileSystemBackendPc;
 use crate::filesystem::backend_snes::FileSystemBackendSnes;
@@ -13,6 +12,11 @@ use crate::gamestate::gamestate_scene::GameStateScene;
 use crate::gamestate::gamestate_world::GameStateWorld;
 use crate::l10n::L10n;
 use clap::Parser;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::{PixelFormat, PixelFormatEnum};
+use sdl3::render::ScaleMode;
+use sdl3::sys;
 
 mod actor;
 mod camera;
@@ -55,16 +59,27 @@ struct Args {
     #[arg(long, default_value_t = -1)]
     scale: i32,
 
-    /// Aspect ratio.
+    /// Scale output using linear scaling.
+    #[arg(long, default_value_t = false)]
+    scale_linear: bool,
+
+    /// Set the output aspect ratio.
     #[arg(short, long, default_value_t = 4.0 / 3.0)]
     aspect_ratio: f64,
 
     /// Dump information and debug data.
     #[arg(short, long, default_value_t = false)]
     dump: bool,
+
+    /// Disable vertical sync.
+    #[arg(long, default_value_t = false)]
+    no_vsync: bool,
 }
 
 fn main() -> Result<(), String> {
+    println!("SDL3: {}", sdl3::version::version());
+    println!("SDL3 TTF: {}", sdl3::ttf::get_linked_version());
+
     let args = Args::parse();
 
     let src = Path::new(&args.path);
@@ -79,12 +94,20 @@ fn main() -> Result<(), String> {
 
     let l10n = L10n::new("en", &fs);
 
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
+    let sdl = sdl3::init().unwrap();
+    let video = sdl.video().unwrap();
+
+    // Text render test.
+    // let ttf_context = sdl3::ttf::init().unwrap();
+    // let mut font = ttf_context.load_font(&"data/chronotype/ChronoType.ttf", 8.0).unwrap();
+    // font.set_style(sdl3::ttf::FontStyle::NORMAL);
+    // let surface = font
+    //     .render("Good morning, Crono!")
+    //     .blended(Color::RGBA(255, 255, 255, 255)).unwrap();
 
     // Auto-adjust scale to display size.
     let output_scale = if args.scale < 1 {
-        let current_mode = video_subsystem.current_display_mode(0)?;
+        let current_mode = video.displays().unwrap()[0].get_mode().unwrap();
         let scale_w = (current_mode.w as f64 / (SCREEN_HEIGHT as f64 * args.aspect_ratio)).floor();
         let scale_h = (current_mode.h as f64 / SCREEN_HEIGHT as f64).floor();
         scale_w.min(scale_h.max(1.0)) as u32
@@ -97,20 +120,8 @@ fn main() -> Result<(), String> {
     let output_height = SCREEN_HEIGHT * output_scale;
     println!("Display size is {}x{}", output_width, output_height);
 
-    let window = video_subsystem.window("Chrono Trigger", output_width, output_height)
-        .position_centered()
-        .build()
-        .unwrap();
-
-    let mut canvas = window
-        .into_canvas()
-        .accelerated()
-        .present_vsync()
-        .build()
-        .unwrap();
-
-    let size = canvas.window().size();
-    let canvas_rect = Some(Rect::new(0, 0, size.0, size.1));
+    let mut canvas = video.window_and_renderer("Chrono Trigger", output_width, output_height).unwrap();
+    unsafe { sys::render::SDL_SetRenderVSync(canvas.raw(), if args.no_vsync { 0 } else { 1 }); }
 
     // Internal SNES rendering target.
     let mut target_surface = Surface::new(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -118,17 +129,17 @@ fn main() -> Result<(), String> {
     // Create a surface to copy the internal output to. This is used as the source for the
     // initial integer scaling.
     let texture_creator = canvas.texture_creator();
-    sdl2::hint::set("SDL_RENDER_SCALE_QUALITY", "nearest");
     let mut texture = texture_creator
-        .create_texture_streaming(PixelFormatEnum::ABGR8888, SCREEN_WIDTH, SCREEN_HEIGHT)
+        .create_texture_streaming(PixelFormat::from(PixelFormatEnum::ABGR8888), SCREEN_WIDTH, SCREEN_HEIGHT)
         .unwrap();
+    texture.set_scale_mode(if args.scale_linear { ScaleMode::Linear } else { ScaleMode::Nearest });
 
     // Create a surface to scale the output to. This will be scaled to match the final output size
     // linearly to mask uneven pixel widths.
-    sdl2::hint::set("SDL_RENDER_SCALE_QUALITY", "linear");
     let mut scaled_texture = texture_creator
-        .create_texture_target(PixelFormatEnum::ABGR8888, SCREEN_WIDTH * output_scale, SCREEN_HEIGHT * output_scale)
+        .create_texture_target(PixelFormat::from(PixelFormatEnum::ABGR8888), SCREEN_WIDTH * output_scale, SCREEN_HEIGHT * output_scale)
         .unwrap();
+    scaled_texture.set_scale_mode(ScaleMode::Linear);
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {
@@ -146,10 +157,10 @@ fn main() -> Result<(), String> {
     let title = format!("Chrono Trigger - {}", gamestate.get_title(&l10n));
     canvas.window_mut().set_title(title.as_str()).unwrap();
 
-    let mut timer_loop = Timer::new(sdl_context.timer()?);
-    let mut timer_render = Timer::new(sdl_context.timer()?);
-    let mut timer_update = Timer::new(sdl_context.timer()?);
-    let mut timer_stats = Timer::new(sdl_context.timer()?);
+    let mut timer_loop = Timer::new();
+    let mut timer_render = Timer::new();
+    let mut timer_update = Timer::new();
+    let mut timer_stats = Timer::new();
     let mut stat_render_time: f64 = 0.0;
     let mut stat_render_count: usize = 0;
     let mut stat_update_time: f64 = 0.0;
@@ -157,7 +168,7 @@ fn main() -> Result<(), String> {
 
     let mut accumulator = 0.0;
 
-    let mut event_pump = sdl_context.event_pump()?;
+    let mut event_pump = sdl.event_pump().unwrap();
     'running: loop {
 
         // Process input.
@@ -203,20 +214,27 @@ fn main() -> Result<(), String> {
         // Render a frame.
         timer_render.start();
 
-        target_surface.clear();
+        target_surface.fill([0, 0, 0, 0xFF]);
         gamestate.render(lerp, &mut target_surface);
 
-        // Scale the scene texture up to the integer scale factor. The texture has nearest filtering
-        // set so this will keep the pixels crisp.
-        texture.with_lock(None, |buffer: &mut [u8], _: usize| {
-            buffer.copy_from_slice(&target_surface.data);
-        })?;
-        // Copy the scaled scene texture to the window texture. This will resize with linear
-        // filtering to match the correct aspect ratio without uneven pixel sizes.
-        canvas.with_texture_canvas(&mut scaled_texture, |texture_canvas| {
-            texture_canvas.copy(&texture, None, None).unwrap();
-        }).unwrap();
-        canvas.copy(&scaled_texture, None, canvas_rect)?;
+        // Linear scaling can output the scene directly to the window.
+        if args.scale_linear {
+            texture.with_lock(None, |buffer: &mut [u8], _: usize| {
+                buffer.copy_from_slice(&target_surface.data);
+            }).unwrap();
+            canvas.copy(&texture, None, None).unwrap();
+
+        // Nearest scaling takes care to first scale the scene up to the nearest integer size.
+        // Then scales that to the desired aspect ratio linearly.
+        } else {
+            texture.with_lock(None, |buffer: &mut [u8], _: usize| {
+                buffer.copy_from_slice(&target_surface.data);
+            }).unwrap();
+            canvas.with_texture_canvas(&mut scaled_texture, |texture_canvas| {
+                texture_canvas.copy(&texture, None, None).unwrap();
+            }).unwrap();
+            canvas.copy(&scaled_texture, None, None).unwrap();
+        }
 
         stat_render_time += timer_render.stop();
         stat_render_count += 1;

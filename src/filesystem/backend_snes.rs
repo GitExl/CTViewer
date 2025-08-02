@@ -166,12 +166,12 @@ impl FileSystemBackendSnes {
     fn read_palette(&self, mut data: Cursor<Vec<u8>>, skip: usize, set_size: usize, set_count: usize, set_start: usize, set_pad: usize) -> Palette {
         let mut colors = Vec::<Color>::new();
         for _ in 0..skip {
-            colors.push(Color::default());
+            colors.push([0, 0, 0, 0xFF]);
         }
 
         for _ in 0..set_count {
             for _ in 0..set_start {
-                colors.push(Color::default());
+                colors.push([0, 0, 0, 0xFF]);
             }
 
             for _ in 0..set_size {
@@ -179,7 +179,7 @@ impl FileSystemBackendSnes {
             }
 
             for _ in 0..set_pad {
-                colors.push(Color::default());
+                colors.push([0, 0, 0, 0xFF]);
             }
         }
 

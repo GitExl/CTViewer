@@ -1,5 +1,5 @@
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
 
 use crate::actor::Actor;
 use crate::camera::Camera;
@@ -134,24 +134,24 @@ impl GameStateTrait for GameStateScene<'_> {
                     Some(Keycode::S) => self.key_down = true,
                     Some(Keycode::D) => self.key_right = true,
 
-                    Some(Keycode::Num1) => {
+                    Some(Keycode::_1) => {
                         self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
                         println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
                     },
-                    Some(Keycode::Num2) => {
+                    Some(Keycode::_2) => {
                         self.map_renderer.layer_enabled.toggle(LayerFlags::Layer2);
                         println!("Render layer 2: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer2));
                     },
-                    Some(Keycode::Num3) => {
+                    Some(Keycode::_3) => {
                         self.map_renderer.layer_enabled.toggle(LayerFlags::Layer3);
                         println!("Render layer 3: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer3));
                     },
-                    Some(Keycode::Num4) => {
+                    Some(Keycode::_4) => {
                         self.map_renderer.layer_enabled.toggle(LayerFlags::Sprites);
                         println!("Render sprites: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Sprites));
                     },
 
-                    Some(Keycode::Num5) => {
+                    Some(Keycode::_5) => {
                         self.scene_renderer.debug_palette = !self.scene_renderer.debug_palette;
                         println!("Render palette.");
                     }

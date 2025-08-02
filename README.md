@@ -13,7 +13,10 @@ Options:
 - `-w`, `--world <WORLD>`  Index of the world to load [default: -1]
 - `-s`, `--scene <SCENE>`  Index of the scene to load [default: -1]
 - `--scale <SCALE>`        Display scale [default: 4]
+- `--scale-linear`         Scale output using linear scaling
+- `-a`, `--aspect-ratio`   Set the output aspect ratio [default: 1.333]
 - `-d`, `--dump`           Dump information and debug data
+- `--no-vsync`             Disable vertical sync
 - `-h`, `--help`           Print help
 
 Examples:
@@ -72,5 +75,5 @@ These are some screenshots from various scenes. They have been scaled to a 4/3 a
 Install Rust from https://www.rust-lang.org/tools/install and build it like any other Cargo project by running
 `cargo run -- [parameters]`.
 
-The SDL2 libraries are required to be in the path to be able to run. Get the `SDL2.lib` and `SDL2.dll` development
-libraries for your platform from https://github.com/libsdl-org/SDL/releases
+The SDL3 libraries are required to be in the path to be able to run. Get the `SDL3.lib`, `SDL3.dll`, `SDL3_ttf.lib` and
+`SDL3_ttf.dll` development libraries for your platform from https://github.com/libsdl-org/SDL/releases
