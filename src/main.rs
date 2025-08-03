@@ -17,6 +17,8 @@ use sdl3::keyboard::Keycode;
 use sdl3::pixels::{PixelFormat, PixelFormatEnum};
 use sdl3::render::ScaleMode;
 use sdl3::sys;
+use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
+use crate::software_renderer::text::{text_draw_to_surface, TextRenderFlags};
 
 mod actor;
 mod camera;
@@ -97,14 +99,11 @@ fn main() -> Result<(), String> {
     let sdl = sdl3::init().unwrap();
     let video = sdl.video().unwrap();
 
-    // Text render test.
-    // let ttf_context = sdl3::ttf::init().unwrap();
-    // let mut font = ttf_context.load_font(&"data/chronotype/ChronoType.ttf", 8.0).unwrap();
-    // font.set_style(sdl3::ttf::FontStyle::NORMAL);
-    // let surface = font
-    //     .render("Good morning, Crono!")
-    //     .blended(Color::RGBA(255, 255, 255, 255)).unwrap();
-
+    // Font setup.
+    let ttf_context = sdl3::ttf::init().unwrap();
+    let mut font = ttf_context.load_font(&"data/chronotype/ChronoType.ttf", 16.0).unwrap();
+    font.set_style(sdl3::ttf::FontStyle::NORMAL);
+    
     // Auto-adjust scale to display size.
     let output_scale = if args.scale < 1 {
         let current_mode = video.displays().unwrap()[0].get_mode().unwrap();
@@ -116,7 +115,8 @@ fn main() -> Result<(), String> {
     };
 
     // Calculate final output size.
-    let output_width = (SCREEN_HEIGHT as f64 * args.aspect_ratio).ceil() as u32 * output_scale;
+    let mut output_width = (SCREEN_HEIGHT as f64 * args.aspect_ratio).ceil() as u32 * output_scale;
+    output_width += output_width % 4;
     let output_height = SCREEN_HEIGHT * output_scale;
     println!("Display size is {}x{}", output_width, output_height);
 
@@ -165,6 +165,7 @@ fn main() -> Result<(), String> {
     let mut stat_render_count: usize = 0;
     let mut stat_update_time: f64 = 0.0;
     let mut stat_update_count: usize = 0;
+    let mut stats_surface = Surface::new(32, 32);
 
     let mut accumulator = 0.0;
 
@@ -216,6 +217,7 @@ fn main() -> Result<(), String> {
 
         target_surface.fill([0, 0, 0, 0xFF]);
         gamestate.render(lerp, &mut target_surface);
+        blit_surface_to_surface(&stats_surface, &mut target_surface, 0, 0, stats_surface.width as i32, stats_surface.height as i32, 255 - stats_surface.width as i32, 1, SurfaceBlendOps::Blend);
 
         // Linear scaling can output the scene directly to the window.
         if args.scale_linear {
@@ -244,11 +246,15 @@ fn main() -> Result<(), String> {
         // Output stats.
         if timer_stats.elapsed() >= 1.0 {
             timer_stats.start();
+
             println!("r {:.1} ns, u {:.1} ns, {} FPS",
                 (stat_render_time / stat_render_count as f64) * 1000000.0,
                 (stat_update_time / stat_update_count as f64) * 1000000.0,
                 stat_render_count,
             );
+
+            stats_surface = text_draw_to_surface(format!("{} FPS", stat_render_count,).as_str(), &font, [223, 223, 223, 255], TextRenderFlags::SHADOW);
+
             stat_render_time = 0.0;
             stat_render_count = 0;
             stat_update_time = 0.0;

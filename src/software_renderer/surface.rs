@@ -28,6 +28,19 @@ impl Surface {
         }
     }
 
+    pub fn from_data(width: u32, height: u32, src_height: u32, src_pitch: u32, src_data: Vec<u8>) -> Surface {
+        let mut surface = Surface::new(width, height);
+
+        let dest_pitch = width as usize * 4;
+        for y in 0..src_height as usize {
+            let src = y * src_pitch as usize;
+            let dest = y * dest_pitch;
+            surface.data[dest..dest + dest_pitch].copy_from_slice(&src_data[src..src + dest_pitch]);
+        }
+
+        surface
+    }
+
     pub fn from_png(path: &Path) -> Surface {
         let decoder = Decoder::new(File::open(path).unwrap());
         let mut reader = decoder.read_info().unwrap();

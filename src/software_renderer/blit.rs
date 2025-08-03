@@ -17,6 +17,7 @@ pub enum SurfaceBlendOps {
     Copy,
     CopyAlpha,
     Blend,
+    CopyAlphaGreyscale,
 }
 
 pub fn blit_bitmap_to_surface_and_source(bitmap: &Bitmap, surface: &mut Surface, dest_bitmap: &mut Bitmap, src_x: i32, src_y: i32, src_width: i32, src_height: i32, dest_x: i32, dest_y: i32, palette: &Palette, color_offset: usize, source_value: u8, flags: BitmapBlitFlags) {
@@ -168,22 +169,37 @@ pub fn blit_surface_to_surface(src_surface: &Surface, dest_surface: &mut Surface
                     if src_color[3] == 0 {
                         continue;
                     } else if src_color[3] == 255 {
-                        dest_color.copy_from_slice(&src_color);
+                        dest_color[0] = src_color[0];
+                        dest_color[1] = src_color[1];
+                        dest_color[2] = src_color[2];
+                        dest_color[3] = 0xFF;
                     } else {
-                        // dest[channel] = (source[alpha] * (source[channel] - dest[channel])) / 255 + dest[channel]
-                        dest_color[0] = ((src_color[3] as i32 * src_color[0].saturating_sub(dest_color[0]) as i32) / 255 + dest_color[0] as i32) as u8;
-                        dest_color[1] = ((src_color[3] as i32 * src_color[1].saturating_sub(dest_color[1]) as i32) / 255 + dest_color[1] as i32) as u8;
-                        dest_color[2] = ((src_color[3] as i32 * src_color[2].saturating_sub(dest_color[2]) as i32) / 255 + dest_color[2] as i32) as u8;
+                        dest_color[0] = ((src_color[3] as i32 * src_color[0] as i32 + (255 - src_color[3] as i32) * dest_color[0] as i32 + 127) / 255) as u8;
+                        dest_color[1] = ((src_color[3] as i32 * src_color[1] as i32 + (255 - src_color[3] as i32) * dest_color[1] as i32 + 127) / 255) as u8;
+                        dest_color[2] = ((src_color[3] as i32 * src_color[2] as i32 + (255 - src_color[3] as i32) * dest_color[2] as i32 + 127) / 255) as u8;
+                        dest_color[3] = 0xFF;
                     }
                 },
                 SurfaceBlendOps::CopyAlpha => {
                     if src_color[3] == 0 {
                         continue;
                     }
-                    dest_color.copy_from_slice(&src_color);
+                    dest_color[0] = src_color[0];
+                    dest_color[1] = src_color[1];
+                    dest_color[2] = src_color[2];
+                    dest_color[3] = 0xFF;
                 }
                 SurfaceBlendOps::Copy => {
-                    dest_color.copy_from_slice(&src_color);
+                    dest_color[0] = src_color[0];
+                    dest_color[1] = src_color[1];
+                    dest_color[2] = src_color[2];
+                    dest_color[3] = 0xFF;
+                },
+                SurfaceBlendOps::CopyAlphaGreyscale => {
+                    dest_color[0] = src_color[3];
+                    dest_color[1] = src_color[3];
+                    dest_color[2] = src_color[3];
+                    dest_color[3] = 0xFF;
                 }
             }
         }

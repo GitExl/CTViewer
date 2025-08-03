@@ -18,22 +18,37 @@ pub fn draw_box(surface: &mut Surface, rect: Rect, color: Color, blend_op: Surfa
                     if color[3] == 0 {
                         continue;
                     } else if color[3] == 255 {
-                        dest_color.copy_from_slice(&color);
+                        dest_color[0] = color[0];
+                        dest_color[1] = color[1];
+                        dest_color[2] = color[2];
+                        dest_color[3] = 0xFF;
                     } else {
-                        // dest[channel] = (source[alpha] * (source[channel] - dest[channel])) / 255 + dest[channel]
-                        dest_color[0] = ((color[3] as i32 * color[0].saturating_sub(dest_color[0]) as i32) / 255 + dest_color[0] as i32) as u8;
-                        dest_color[1] = ((color[3] as i32 * color[1].saturating_sub(dest_color[1]) as i32) / 255 + dest_color[1] as i32) as u8;
-                        dest_color[2] = ((color[3] as i32 * color[2].saturating_sub(dest_color[2]) as i32) / 255 + dest_color[2] as i32) as u8;
+                        dest_color[0] = ((color[3] as i32 * color[0] as i32 + (255 - color[3] as i32) * dest_color[0] as i32 + 127) / 255) as u8;
+                        dest_color[1] = ((color[3] as i32 * color[1] as i32 + (255 - color[3] as i32) * dest_color[1] as i32 + 127) / 255) as u8;
+                        dest_color[2] = ((color[3] as i32 * color[2] as i32 + (255 - color[3] as i32) * dest_color[2] as i32 + 127) / 255) as u8;
+                        dest_color[3] = 0xFF;
                     }
                 },
                 SurfaceBlendOps::CopyAlpha => {
                     if color[3] == 0 {
                         continue;
                     }
-                    dest_color.copy_from_slice(&color);
+                    dest_color[0] = color[0];
+                    dest_color[1] = color[1];
+                    dest_color[2] = color[2];
+                    dest_color[3] = 0xFF;
                 }
                 SurfaceBlendOps::Copy => {
-                    dest_color.copy_from_slice(&color);
+                    dest_color[0] = color[0];
+                    dest_color[1] = color[1];
+                    dest_color[2] = color[2];
+                    dest_color[3] = 0xFF;
+                },
+                SurfaceBlendOps::CopyAlphaGreyscale => {
+                    dest_color[0] = color[3];
+                    dest_color[1] = color[3];
+                    dest_color[2] = color[3];
+                    dest_color[3] = 0xFF;
                 }
             }
         }
