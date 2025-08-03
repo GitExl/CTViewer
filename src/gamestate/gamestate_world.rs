@@ -8,7 +8,7 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::software_renderer::surface::Surface;
+use crate::renderer::Renderer;
 use crate::sprites::sprite_manager::SpriteManager;
 use crate::sprites::sprite_manager::WORLD_SPRITE_INDEX;
 use crate::world::world::World;
@@ -30,7 +30,7 @@ pub struct GameStateWorld<'a> {
 }
 
 impl GameStateWorld<'_> {
-    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, target_surface: &mut Surface, world_index: usize) -> GameStateWorld<'a> {
+    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, world_index: usize) -> GameStateWorld<'a> {
         let mut sprites = SpriteManager::new(&fs);
         let mut world = fs.read_world(world_index);
         sprites.load_world_sprite(world_index, world.sprite_graphics, &world.palette.palette);
@@ -57,13 +57,13 @@ impl GameStateWorld<'_> {
 
         let camera = Camera::new(
             0.0, 0.0,
-            target_surface.width as f64, target_surface.height as f64,
+            renderer.target.width as f64, renderer.target.height as f64,
             0.0, 0.0,
             (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
         );
 
         let world_renderer = WorldRenderer::new();
-        let mut map_renderer = MapRenderer::new(target_surface.width, target_surface.height);
+        let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);
         map_renderer.setup_for_map(&mut world.map);
 
         GameStateWorld {
@@ -103,10 +103,10 @@ impl GameStateTrait for GameStateWorld<'_> {
         self.world.tick(delta, &self.sprites);
     }
 
-    fn render(&mut self, lerp: f64, mut target_surface: &mut Surface) {
+    fn render(&mut self, lerp: f64, renderer: &mut Renderer) {
         self.camera.lerp(lerp);
-        self.map_renderer.render(lerp, &self.camera, &mut target_surface, &self.world.map, &self.world.tileset_l12, &self.world.tileset_l3, &self.world.palette, &self.world.render_sprites, &self.sprites);
-        self.world_renderer.render(lerp, &self.camera, &mut self.world, &mut target_surface);
+        self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.world.map, &self.world.tileset_l12, &self.world.tileset_l3, &self.world.palette, &self.world.render_sprites, &self.sprites);
+        self.world_renderer.render(lerp, &self.camera, &mut self.world, &mut renderer.target);
     }
 
     fn get_title(&self, l10n: &L10n) -> String {

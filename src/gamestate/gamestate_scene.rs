@@ -8,9 +8,9 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
+use crate::renderer::Renderer;
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
-use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_manager::SpriteManager;
 
 pub struct GameStateScene<'a> {
@@ -29,7 +29,7 @@ pub struct GameStateScene<'a> {
 }
 
 impl GameStateScene<'_> {
-    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, target_surface: &mut Surface, scene_index: usize) -> GameStateScene<'a> {
+    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, scene_index: usize) -> GameStateScene<'a> {
         let mut sprites = SpriteManager::new(&fs);
         let mut scene = fs.read_scene(scene_index);
 
@@ -68,14 +68,14 @@ impl GameStateScene<'_> {
 
         let camera = Camera::new(
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
-            target_surface.width as f64, target_surface.height as f64 - 12.0,
+            renderer.target.width as f64, renderer.target.height as f64 - 12.0,
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
             scene.scroll_mask.right as f64, scene.scroll_mask.bottom as f64,
         );
-        target_surface.clip.bottom = target_surface.height as i32 - 12;
+        renderer.target.clip.bottom = renderer.target.height as i32 - 12;
 
         let scene_renderer = SceneRenderer::new();
-        let mut map_renderer = MapRenderer::new(target_surface.width, target_surface.height - 12);
+        let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height - 12);
         map_renderer.setup_for_map(&mut scene.map);
 
         GameStateScene {
@@ -115,10 +115,10 @@ impl GameStateTrait for GameStateScene<'_> {
         self.scene.tick(delta, &self.sprites);
     }
 
-    fn render(&mut self, lerp: f64, mut target_surface: &mut Surface) {
+    fn render(&mut self, lerp: f64, renderer: &mut Renderer) {
         self.camera.lerp(lerp);
-        self.map_renderer.render(lerp, &self.camera, &mut target_surface, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.render_sprites, &self.sprites);
-        self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut target_surface);
+        self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.render_sprites, &self.sprites);
+        self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut renderer.target);
     }
 
     fn get_title(&self, l10n: &L10n) -> String {
@@ -127,6 +127,9 @@ impl GameStateTrait for GameStateScene<'_> {
 
     fn event(&mut self, event: &Event) {
         match event {
+            Event::MouseMotion { x, y, .. } => {
+                println!("x: {}, y: {}", x, y);
+            },
             Event::KeyDown { keycode, .. } => {
                 match keycode {
                     Some(Keycode::W) => self.key_up = true,
