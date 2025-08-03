@@ -177,6 +177,10 @@ impl GameStateTrait for GameStateWorld<'_> {
         }
     }
 
+    fn mouse_motion(&mut self, _x: i32, _y: i32) {
+
+    }
+
     fn dump(&mut self) {
         self.world.dump(self.l10n);
 

@@ -2,7 +2,6 @@
 
 use std::path::Path;
 use filesystem::filesystem::FileSystem;
-use software_renderer::surface::Surface;
 use util::timer::Timer;
 use crate::filesystem::backend_pc::FileSystemBackendPc;
 use crate::filesystem::backend_snes::FileSystemBackendSnes;
@@ -15,8 +14,6 @@ use clap::Parser;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use crate::renderer::Renderer;
-use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
-use crate::software_renderer::text::{text_draw_to_surface, TextRenderFlags};
 
 mod actor;
 mod camera;
@@ -119,7 +116,6 @@ fn main() -> Result<(), String> {
     let mut stat_render_count: usize = 0;
     let mut stat_update_time: f64 = 0.0;
     let mut stat_update_count: usize = 0;
-    let mut stats_surface = Surface::new(32, 32);
 
     let mut accumulator = 0.0;
 
@@ -129,6 +125,10 @@ fn main() -> Result<(), String> {
         // Process input.
         for event in event_pump.poll_iter() {
             match event {
+                Event::MouseMotion { x, y, .. } => {
+                    let (x, y) = renderer.window_to_target_coordinates(x, y);
+                    gamestate.mouse_motion(x, y);
+                },
                 Event::Quit {..} => break 'running,
                 Event::KeyDown { keycode, .. } => {
                     match keycode {
@@ -171,7 +171,6 @@ fn main() -> Result<(), String> {
 
         renderer.clear();
         gamestate.render(lerp, &mut renderer);
-        blit_surface_to_surface(&stats_surface, &mut renderer.target, 0, 0, stats_surface.width as i32, stats_surface.height as i32, 255 - stats_surface.width as i32, 1, SurfaceBlendOps::Blend);
         renderer.copy_to_canvas();
 
         stat_render_time += timer_render.stop();
@@ -188,8 +187,6 @@ fn main() -> Result<(), String> {
                 (stat_update_time / stat_update_count as f64) * 1000000.0,
                 stat_render_count,
             );
-
-            stats_surface = text_draw_to_surface(format!("{} FPS", stat_render_count,).as_str(), &renderer.font, [223, 223, 223, 255], TextRenderFlags::SHADOW);
 
             stat_render_time = 0.0;
             stat_render_count = 0;

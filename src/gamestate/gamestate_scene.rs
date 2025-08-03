@@ -8,9 +8,10 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::Renderer;
+use crate::renderer::{Renderer, TextAlign, TextRenderable};
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
+use crate::software_renderer::text::TextRenderFlags;
 use crate::sprites::sprite_manager::SpriteManager;
 
 pub struct GameStateScene<'a> {
@@ -26,6 +27,8 @@ pub struct GameStateScene<'a> {
     key_down: bool,
     key_left: bool,
     key_right: bool,
+
+    debug_text: Option<TextRenderable>,
 }
 
 impl GameStateScene<'_> {
@@ -91,6 +94,8 @@ impl GameStateScene<'_> {
             key_left: false,
             key_right: false,
             key_up: false,
+
+            debug_text: None,
         }
     }
 }
@@ -119,6 +124,10 @@ impl GameStateTrait for GameStateScene<'_> {
         self.camera.lerp(lerp);
         self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.render_sprites, &self.sprites);
         self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut renderer.target);
+
+        if self.debug_text.is_some() {
+            renderer.render_text(&mut self.debug_text.as_mut().unwrap(), 254, 2, TextAlign::End, TextAlign::Start);
+        }
     }
 
     fn get_title(&self, l10n: &L10n) -> String {
@@ -127,9 +136,6 @@ impl GameStateTrait for GameStateScene<'_> {
 
     fn event(&mut self, event: &Event) {
         match event {
-            Event::MouseMotion { x, y, .. } => {
-                println!("x: {}, y: {}", x, y);
-            },
             Event::KeyDown { keycode, .. } => {
                 match keycode {
                     Some(Keycode::W) => self.key_up = true,
@@ -215,6 +221,25 @@ impl GameStateTrait for GameStateScene<'_> {
             },
 
             _ => {},
+        }
+    }
+
+    fn mouse_motion(&mut self, x: i32, y: i32) {
+        let local_x = (x as f64 + self.camera.x) as i32;
+        let local_y = (y as f64 + self.camera.y) as i32;
+
+        let mut found = false;
+        for exit in self.scene.exits.iter() {
+            if local_x < exit.x || local_x >= exit.x + exit.width || local_y < exit.y || local_y >= exit.y + exit.height {
+                continue;
+            }
+            self.debug_text = Some(TextRenderable::new(format!("Exit to 0x{:03X}", exit.destination_index), [223, 223, 223, 255], TextRenderFlags::SHADOW, 0));
+            found = true;
+            break;
+        }
+
+        if !found {
+            self.debug_text = None;
         }
     }
 

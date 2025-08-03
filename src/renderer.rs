@@ -1,18 +1,25 @@
+use bitflags::bitflags;
 use sdl3::pixels::{PixelFormat, PixelFormatEnum};
 use sdl3::render::{Texture, TextureCreator, WindowCanvas};
 use sdl3::{sys, Sdl};
 use sdl3::sys::everything::SDL_ScaleMode;
 use sdl3::ttf::Font;
 use sdl3::video::WindowContext;
+use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
+use crate::software_renderer::palette::Color;
 use crate::software_renderer::surface::Surface;
+use crate::software_renderer::text::{text_draw_to_surface, text_draw_to_surface_wrapped, TextRenderFlags};
 
 const SCREEN_WIDTH: u32 = 256;
 const SCREEN_HEIGHT: u32 = 224;
 
 pub struct Renderer<'a> {
     pub scale: i32,
-    scale_linear: bool,
+    scale_factor_x: f32,
+    scale_factor_y: f32,
+
     aspect_ratio: f64,
+    scale_linear: bool,
     vsync: bool,
 
     texture_creator: TextureCreator<WindowContext>,
@@ -22,6 +29,32 @@ pub struct Renderer<'a> {
 
     pub target: Surface,
     pub canvas: WindowCanvas,
+}
+
+pub struct TextRenderable {
+    text: String,
+    color: Color,
+    flags: TextRenderFlags,
+    wrap_width: i32,
+    surface: Option<Surface>,
+}
+
+impl TextRenderable {
+    pub fn new(text: String, color: Color, flags: TextRenderFlags, wrap_width: i32) -> TextRenderable {
+        TextRenderable {
+            text,
+            color,
+            flags,
+            wrap_width,
+            surface: None
+        }
+    }
+}
+
+pub enum TextAlign {
+    Start,
+    Center,
+    End,
 }
 
 impl<'a> Renderer<'a> {
@@ -73,6 +106,9 @@ impl<'a> Renderer<'a> {
 
         Renderer {
             scale,
+            scale_factor_x: target.width as f32 / output_width as f32,
+            scale_factor_y: target.height as f32 / output_height as f32,
+
             scale_linear,
             aspect_ratio,
             vsync,
@@ -119,5 +155,39 @@ impl<'a> Renderer<'a> {
 
     pub fn clear(&mut self) {
         self.target.fill([0, 0, 0, 0xFF]);
+    }
+
+    pub fn render_text(&mut self, renderable: &mut TextRenderable, x: i32, y: i32, align_h: TextAlign, align_v: TextAlign) {
+        if renderable.surface.is_none() {
+            if renderable.wrap_width > 0 {
+                renderable.surface = Some(text_draw_to_surface_wrapped(&renderable.text.as_str(), &self.font, renderable.color, renderable.flags, renderable.wrap_width));
+            } else {
+                renderable.surface = Some(text_draw_to_surface(&renderable.text.as_str(), &self.font, renderable.color, renderable.flags));
+            }
+        }
+        let surface = renderable.surface.as_mut().unwrap();
+
+        let width = surface.width as i32;
+        let dest_x = match align_h {
+            TextAlign::Start => { x },
+            TextAlign::Center => { x - width / 2 },
+            TextAlign::End => { x - width },
+        };
+
+        let height = surface.width as i32;
+        let dest_y = match align_v {
+            TextAlign::Start => { y },
+            TextAlign::Center => { y - height / 2 },
+            TextAlign::End => { y - height },
+        };
+
+        blit_surface_to_surface(&surface, &mut self.target, 0, 0, surface.width as i32, surface.height as i32, dest_x, dest_y, SurfaceBlendOps::Blend);
+    }
+
+    pub fn window_to_target_coordinates(&self, x: f32, y: f32) -> (i32, i32) {
+        (
+            (x * self.scale_factor_x).floor() as i32,
+            (y * self.scale_factor_y).floor() as i32,
+        )
     }
 }

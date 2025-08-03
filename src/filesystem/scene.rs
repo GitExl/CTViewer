@@ -156,7 +156,7 @@ impl FileSystem {
                     dest_x = data.read_u8().unwrap() as i32;
                     dest_y = data.read_u8().unwrap() as i32;
 
-                    let size = (((size_bits & 0x7F) + 1) * 16) as u32;
+                    let size = (((size_bits & 0x7F) + 1) * 16) as i32;
                     (width, height) = if size_bits & 0x80 > 0 {
                         (16, size)
                     } else {
@@ -199,7 +199,7 @@ impl FileSystem {
                         _ => panic!(),
                     };
 
-                    let size = ((size_bits & 0x7F) + 1) as u32 * 16;
+                    let size = ((size_bits & 0x7F) + 1) as i32 * 16;
                     (width, height) = if size_bits & 0x80 > 0 {
                         (16, size)
                     } else {
