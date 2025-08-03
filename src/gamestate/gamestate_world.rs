@@ -8,7 +8,8 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::Renderer;
+use crate::renderer::{Renderer, TextAlign, TextRenderable};
+use crate::software_renderer::text::TextRenderFlags;
 use crate::sprites::sprite_manager::SpriteManager;
 use crate::sprites::sprite_manager::WORLD_SPRITE_INDEX;
 use crate::world::world::World;
@@ -27,6 +28,8 @@ pub struct GameStateWorld<'a> {
     key_down: bool,
     key_left: bool,
     key_right: bool,
+
+    debug_text: Option<TextRenderable>,
 }
 
 impl GameStateWorld<'_> {
@@ -79,6 +82,8 @@ impl GameStateWorld<'_> {
             key_left: false,
             key_right: false,
             key_up: false,
+
+            debug_text: None,
         }
     }
 }
@@ -107,6 +112,10 @@ impl GameStateTrait for GameStateWorld<'_> {
         self.camera.lerp(lerp);
         self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.world.map, &self.world.tileset_l12, &self.world.tileset_l3, &self.world.palette, &self.world.render_sprites, &self.sprites);
         self.world_renderer.render(lerp, &self.camera, &mut self.world, &mut renderer.target);
+
+        if self.debug_text.is_some() {
+            renderer.render_text(&mut self.debug_text.as_mut().unwrap(), 254, 2, TextAlign::End, TextAlign::Start);
+        }
     }
 
     fn get_title(&self, l10n: &L10n) -> String {
@@ -177,8 +186,26 @@ impl GameStateTrait for GameStateWorld<'_> {
         }
     }
 
-    fn mouse_motion(&mut self, _x: i32, _y: i32) {
+    fn mouse_motion(&mut self, x: i32, y: i32) {
+        let local_x = (x as f64 + self.camera.x) as i32;
+        let local_y = (y as f64 + self.camera.y) as i32;
 
+        // Output exit or treasure data at mouse position.
+        let mut found = false;
+        for exit in self.world.exits.iter() {
+            if local_x < exit.x || local_x >= exit.x + 16 || local_y < exit.y || local_y >= exit.y + 16 {
+                continue;
+            }
+
+            let text = format!("{}\n0x{:03X} '{}'", self.l10n.get_indexed(IndexedType::WorldExit, exit.name_index), exit.scene_index, self.l10n.get_indexed(IndexedType::Scene, exit.scene_index));
+            self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextRenderFlags::SHADOW, 124));
+            found = true;
+            break;
+        }
+
+        if !found {
+            self.debug_text = None;
+        }
     }
 
     fn dump(&mut self) {

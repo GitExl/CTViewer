@@ -239,7 +239,7 @@ impl GameStateTrait for GameStateScene<'_> {
                 continue;
             }
 
-            let text = format!("Exit to 0x{:03X}: {}", exit.destination_index, self.l10n.get_indexed(IndexedType::Scene, exit.destination_index));
+            let text = format!("To 0x{:03X} '{}'", exit.destination_index, self.l10n.get_indexed(IndexedType::Scene, exit.destination_index));
             self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextRenderFlags::SHADOW, 124));
             found = true;
             break;
@@ -254,7 +254,7 @@ impl GameStateTrait for GameStateScene<'_> {
                 let text = if treasure.gold > 0 {
                     format!("{} gold", treasure.gold)
                 } else if treasure.item > 0 {
-                    format!("Item 0x{:03X}: {}", treasure.item, self.l10n.get_indexed(IndexedType::Item, treasure.item))
+                    format!("0x{:03X} '{}'", treasure.item, self.l10n.get_indexed(IndexedType::Item, treasure.item))
                 } else {
                     "Empty".to_string()
                 };
