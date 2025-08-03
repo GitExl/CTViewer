@@ -17,14 +17,14 @@ use crate::software_renderer::surface::Surface;
 #[derive(PartialEq, Eq)]
 pub enum SceneDebugLayer {
     Disabled,
-    Layer1Layer2,
-    Sprite1Sprite2,
-    Door,
+    SpritePriority,
+    DoorTrigger,
     Movement,
     Collision,
     CollisionNpc,
     CollisionBattle,
     ZPlane,
+    ZPlaneFlags,
     Exits,
     Treasure,
 }
@@ -108,31 +108,16 @@ impl SceneRenderer {
 
                 let src_x;
                 let src_y;
-                if self.debug_layer == SceneDebugLayer::Layer1Layer2 {
-                    if tile.flags.contains(SceneTileFlags::L1_TILE_ADD) && tile.flags.contains(SceneTileFlags::L2_TILE_ADD) {
-                        (src_x, src_y) = (2, 0);
-                    }
-                    else if tile.flags.contains(SceneTileFlags::L1_TILE_ADD) {
-                        (src_x, src_y) = (0, 0);
-                    }
-                    else if tile.flags.contains(SceneTileFlags::L2_TILE_ADD) {
-                        (src_x, src_y) = (1, 0);
+                if self.debug_layer == SceneDebugLayer::SpritePriority {
+                    if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L1) && tile.flags.contains(SceneTileFlags::SPRITE_OVER_L2) {
+                        (src_x, src_y) = (7, 10);
+                    } else if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L1) {
+                        (src_x, src_y) = (5, 10);
+                    } else if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L2) {
+                        (src_x, src_y) = (6, 10);
                     } else {
                         continue;
                     }
-
-                } else if self.debug_layer == SceneDebugLayer::Sprite1Sprite2 {
-                        if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L1) && tile.flags.contains(SceneTileFlags::SPRITE_OVER_L2) {
-                            (src_x, src_y) = (7, 10);
-                        }
-                       else if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L1) {
-                            (src_x, src_y) = (5, 10);
-                        }
-                        else if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L2) {
-                            (src_x, src_y) = (6, 10);
-                        } else {
-                            continue;
-                        }
 
                 } else if self.debug_layer == SceneDebugLayer::ZPlane {
                     (src_x, src_y) = match tile.z_plane {
@@ -142,6 +127,15 @@ impl SceneRenderer {
                         3 => (4, 5),
                         _ => continue,
                     };
+
+                } else if self.debug_layer == SceneDebugLayer::ZPlaneFlags {
+                    if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) {
+                        (src_x, src_y) = (5, 5);
+                    } else if tile.flags.contains(SceneTileFlags::Z_NEUTRAL) {
+                        (src_x, src_y) = (6, 5);
+                    } else {
+                        continue;
+                    }
 
                 } else if self.debug_layer == SceneDebugLayer::CollisionNpc {
                     if tile.flags.contains(SceneTileFlags::COLLISION_NPC) {
@@ -157,8 +151,8 @@ impl SceneRenderer {
                         continue;
                     }
 
-                } else if self.debug_layer == SceneDebugLayer::Door {
-                    if tile.flags.contains(SceneTileFlags::DOOR) {
+                } else if self.debug_layer == SceneDebugLayer::DoorTrigger {
+                    if tile.flags.contains(SceneTileFlags::DOOR_TRIGGER) {
                         (src_x, src_y) = (0, 6);
                     } else {
                         continue;

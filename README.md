@@ -55,9 +55,9 @@ When viewing scenes, the following keys are available:
 - `c` render NPC collision data
 - `v` render battle collision data
 - `b` render Z plane data
-- `n` render tile movement data
-- `m` render door data
-- `,` render tile layer 1/layer 2 source data
+- `n` render Z plane flags
+- `m` render tile movement data
+- `,` render door data
 - `.` render sprite over layer 1 or layer 2 data
 - `/` render exit data
 - `'` render treasure data

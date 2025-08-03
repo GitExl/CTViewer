@@ -186,20 +186,20 @@ impl GameStateTrait for GameStateScene<'_> {
                         println!("Debug layer for Z plane.");
                     },
                     Some(Keycode::N) => {
+                        self.scene_renderer.debug_layer = SceneDebugLayer::ZPlaneFlags;
+                        println!("Debug layer for Z plane flags.");
+                    },
+                    Some(Keycode::M) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Movement;
                         println!("Debug layer for movement.");
                     },
-                    Some(Keycode::M) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Door;
-                        println!("Debug layer for doors.");
-                    },
                     Some(Keycode::Comma) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Layer1Layer2;
-                        println!("Debug layer for layer1/layer2 data.");
+                        self.scene_renderer.debug_layer = SceneDebugLayer::DoorTrigger;
+                        println!("Debug layer for door triggers.");
                     },
                     Some(Keycode::Period) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Sprite1Sprite2;
-                        println!("Debug layer for sprite1/sprite2 data.");
+                        self.scene_renderer.debug_layer = SceneDebugLayer::SpritePriority;
+                        println!("Debug layer for sprite priority data.");
                     },
                     Some(Keycode::Slash) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Exits;

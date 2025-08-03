@@ -423,7 +423,7 @@ fn parse_scene_tile_props(data: [u8; 3]) -> SceneTileProps {
     }
 
     if data[1] & 0x10 != 0 {
-        flags |= SceneTileFlags::DOOR;
+        flags |= SceneTileFlags::DOOR_TRIGGER;
     }
     if data[1] & 0x20 != 0 {
         flags |= SceneTileFlags::UNKNOWN_1;

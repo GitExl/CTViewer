@@ -5,7 +5,7 @@ bitflags! {
     pub struct SceneTileFlags: u32 {
         const L1_TILE_ADD = 0x001;
         const L2_TILE_ADD = 0x002;
-        const DOOR = 0x004;
+        const DOOR_TRIGGER = 0x004;
         const UNKNOWN_1 = 0x008;
         const UNKNOWN_2 = 0x010;
         const SPRITE_OVER_L1 = 0x020;
