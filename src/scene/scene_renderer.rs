@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use crate::camera::Camera;
-use crate::scene::scene::Scene;
+use crate::scene::scene::{Scene, SceneTreasure};
 use crate::scene::scene::SceneExit;
 use crate::scene::scene_map::SceneMap;
 use crate::scene::scene_map::SceneMoveDirection;
@@ -26,6 +26,7 @@ pub enum SceneDebugLayer {
     CollisionBattle,
     ZPlane,
     Exits,
+    Treasure,
 }
 
 pub struct SceneRenderer {
@@ -52,6 +53,8 @@ impl SceneRenderer {
 
         if self.debug_layer == SceneDebugLayer::Exits {
             self.render_debug_exits(&scene.exits, &camera, surface);
+        } else if self.debug_layer == SceneDebugLayer::Treasure {
+            self.render_debug_treasure(&scene.treasure, &camera, surface);
         }
 
         if self.debug_palette {
@@ -64,6 +67,14 @@ impl SceneRenderer {
             let x = exit.x - camera.lerp_x.floor() as i32;
             let y = exit.y - camera.lerp_y.floor() as i32;
             draw_box(surface, Rect::new(x, y, x + exit.width as i32, y + exit.height as i32), [255, 255, 0, 191], SurfaceBlendOps::Blend);
+        }
+    }
+
+    fn render_debug_treasure(&mut self, treasure: &Vec<SceneTreasure>, camera: &Camera, surface: &mut Surface) {
+        for item in treasure {
+            let x = item.tile_x as i32 * 16 - camera.lerp_x.floor() as i32;
+            let y = item.tile_y as i32 * 16 - camera.lerp_y.floor() as i32;
+            draw_box(surface, Rect::new(x, y, x + 16, y + 16), [0, 255, 0, 191], SurfaceBlendOps::Blend);
         }
     }
 

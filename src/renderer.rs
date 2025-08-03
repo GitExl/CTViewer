@@ -1,4 +1,3 @@
-use bitflags::bitflags;
 use sdl3::pixels::{PixelFormat, PixelFormatEnum};
 use sdl3::render::{Texture, TextureCreator, WindowCanvas};
 use sdl3::{sys, Sdl};

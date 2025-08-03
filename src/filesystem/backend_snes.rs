@@ -499,6 +499,9 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
             strings.push(self.text_decoder.decode_mapped_string(item));
         }
 
+        // todo: remove first character, this is either a space or item type symbol we do not
+        //  need (yet).
+
         strings
     }
 }

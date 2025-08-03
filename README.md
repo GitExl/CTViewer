@@ -60,6 +60,9 @@ When viewing scenes, the following keys are available:
 - `,` render tile layer 1/layer 2 source data
 - `.` render sprite over layer 1 or layer 2 data
 - `/` render exit data
+- `'` render treasure data
+
+Information about exits and treasure items is displayed when the mouse is over them.
 
 ## Examples
 

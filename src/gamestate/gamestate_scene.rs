@@ -205,6 +205,10 @@ impl GameStateTrait for GameStateScene<'_> {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Exits;
                         println!("Debug layer for exits.");
                     },
+                    Some(Keycode::Apostrophe) => {
+                        self.scene_renderer.debug_layer = SceneDebugLayer::Treasure;
+                        println!("Debug layer for treasure.");
+                    },
 
                     _ => {},
                 }
@@ -228,14 +232,36 @@ impl GameStateTrait for GameStateScene<'_> {
         let local_x = (x as f64 + self.camera.x) as i32;
         let local_y = (y as f64 + self.camera.y) as i32;
 
+        // Output exit or treasure data at mouse position.
         let mut found = false;
         for exit in self.scene.exits.iter() {
             if local_x < exit.x || local_x >= exit.x + exit.width || local_y < exit.y || local_y >= exit.y + exit.height {
                 continue;
             }
-            self.debug_text = Some(TextRenderable::new(format!("Exit to 0x{:03X}", exit.destination_index), [223, 223, 223, 255], TextRenderFlags::SHADOW, 0));
+
+            let text = format!("Exit to 0x{:03X}: {}", exit.destination_index, self.l10n.get_indexed(IndexedType::Scene, exit.destination_index));
+            self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextRenderFlags::SHADOW, 124));
             found = true;
             break;
+        }
+
+        if !found {
+            for treasure in self.scene.treasure.iter() {
+                if local_x < treasure.tile_x as i32 * 16 || local_x >= treasure.tile_x as i32 * 16 + 16 || local_y < treasure.tile_y as i32 * 16 || local_y >= treasure.tile_y as i32 * 16 + 16 {
+                    continue;
+                }
+
+                let text = if treasure.gold > 0 {
+                    format!("{} gold", treasure.gold)
+                } else if treasure.item > 0 {
+                    format!("Item 0x{:03X}: {}", treasure.item, self.l10n.get_indexed(IndexedType::Item, treasure.item))
+                } else {
+                    "Empty".to_string()
+                };
+                self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextRenderFlags::SHADOW, 124));
+                found = true;
+                break;
+            }
         }
 
         if !found {
