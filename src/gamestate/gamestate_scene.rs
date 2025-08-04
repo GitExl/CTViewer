@@ -170,42 +170,38 @@ impl GameStateTrait for GameStateScene<'_> {
                         println!("Debug layer disabled.");
                     },
                     Some(Keycode::X) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Collision;
-                        println!("Debug layer for collision.");
+                        self.scene_renderer.debug_layer = SceneDebugLayer::PcCollision;
+                        println!("Debug layer for player collision.");
                     },
                     Some(Keycode::C) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::CollisionNpc;
+                        self.scene_renderer.debug_layer = SceneDebugLayer::NpcCollision;
                         println!("Debug layer for NPC collision.");
                     },
                     Some(Keycode::V) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::CollisionBattle;
-                        println!("Debug layer for battle collision.");
-                    },
-                    Some(Keycode::B) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::ZPlane;
                         println!("Debug layer for Z plane.");
                     },
-                    Some(Keycode::N) => {
+                    Some(Keycode::B) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::ZPlaneFlags;
                         println!("Debug layer for Z plane flags.");
                     },
-                    Some(Keycode::M) => {
+                    Some(Keycode::N) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Movement;
                         println!("Debug layer for movement.");
                     },
-                    Some(Keycode::Comma) => {
+                    Some(Keycode::M) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::DoorTrigger;
                         println!("Debug layer for door triggers.");
                     },
-                    Some(Keycode::Period) => {
+                    Some(Keycode::Comma) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::SpritePriority;
                         println!("Debug layer for sprite priority data.");
                     },
-                    Some(Keycode::Slash) => {
+                    Some(Keycode::Period) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Exits;
                         println!("Debug layer for exits.");
                     },
-                    Some(Keycode::Apostrophe) => {
+                    Some(Keycode::Slash) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Treasure;
                         println!("Debug layer for treasure.");
                     },

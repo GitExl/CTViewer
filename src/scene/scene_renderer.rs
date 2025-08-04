@@ -20,9 +20,8 @@ pub enum SceneDebugLayer {
     SpritePriority,
     DoorTrigger,
     Movement,
-    Collision,
-    CollisionNpc,
-    CollisionBattle,
+    PcCollision,
+    NpcCollision,
     ZPlane,
     ZPlaneFlags,
     Exits,
@@ -129,7 +128,9 @@ impl SceneRenderer {
                     };
 
                 } else if self.debug_layer == SceneDebugLayer::ZPlaneFlags {
-                    if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) {
+                    if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) && tile.flags.contains(SceneTileFlags::Z_NEUTRAL) {
+                        (src_x, src_y) = (7, 5);
+                    } else if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) {
                         (src_x, src_y) = (5, 5);
                     } else if tile.flags.contains(SceneTileFlags::Z_NEUTRAL) {
                         (src_x, src_y) = (6, 5);
@@ -137,16 +138,13 @@ impl SceneRenderer {
                         continue;
                     }
 
-                } else if self.debug_layer == SceneDebugLayer::CollisionNpc {
-                    if tile.flags.contains(SceneTileFlags::COLLISION_NPC) {
-                        (src_x, src_y) = (3, 0);
-                    } else {
-                        continue;
-                    }
-
-                } else if self.debug_layer == SceneDebugLayer::CollisionBattle {
-                    if tile.flags.contains(SceneTileFlags::COLLISION_BATTLE) {
+                } else if self.debug_layer == SceneDebugLayer::NpcCollision {
+                    if tile.flags.contains(SceneTileFlags::NPC_COLLISION_BATTLE) && tile.flags.contains(SceneTileFlags::NPC_COLLISION) {
+                        (src_x, src_y) = (2, 0);
+                    } else if tile.flags.contains(SceneTileFlags::NPC_COLLISION_BATTLE) {
                         (src_x, src_y) = (4, 0);
+                    } else if tile.flags.contains(SceneTileFlags::NPC_COLLISION) {
+                        (src_x, src_y) = (3, 0);
                     } else {
                         continue;
                     }
@@ -170,7 +168,7 @@ impl SceneRenderer {
                         continue;
                     }
 
-                } else if self.debug_layer == SceneDebugLayer::Collision {
+                } else if self.debug_layer == SceneDebugLayer::PcCollision {
                     if tile.flags.contains(SceneTileFlags::COLLISION_INVERTED) {
                         (src_x, src_y) = match tile.collision {
                             SceneTileCollision::None => continue,

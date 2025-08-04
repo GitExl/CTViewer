@@ -45,22 +45,21 @@ When viewing worlds, the following keys are available:
 
 - `z` disable debug rendering
 - `x` render collision data 
-- `c` render exit data
+- `c` render exit
 - `v` render music transition data
 
 When viewing scenes, the following keys are available:
 
 - `z` disable debug rendering
-- `x` render collision data
-- `c` render NPC collision data
-- `v` render battle collision data
-- `b` render Z plane data
-- `n` render Z plane flags
-- `m` render tile movement data
-- `,` render door data
-- `.` render sprite over layer 1 or layer 2 data
-- `/` render exit data
-- `'` render treasure data
+- `x` render player collision data
+- `c` render NPC/battle collision data
+- `v` render Z plane data
+- `b` render Z plane flags
+- `n` render tile movement data
+- `m` render door data
+- `,` render sprite priority data
+- `.` render exits
+- `/` render treasure
 
 Information about exits and treasure items is displayed when the mouse is over them.
 

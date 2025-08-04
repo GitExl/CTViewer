@@ -10,8 +10,8 @@ bitflags! {
         const UNKNOWN_2 = 0x010;
         const SPRITE_OVER_L1 = 0x020;
         const SPRITE_OVER_L2 = 0x040;
-        const COLLISION_BATTLE = 0x080;
-        const COLLISION_NPC = 0x100;
+        const NPC_COLLISION_BATTLE = 0x080;
+        const NPC_COLLISION = 0x100;
         const COLLISION_IGNORE_Z = 0x200;
         const COLLISION_INVERTED = 0x400;
         const Z_NEUTRAL = 0x800;
