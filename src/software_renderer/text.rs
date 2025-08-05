@@ -8,12 +8,12 @@ use crate::software_renderer::surface::Surface;
 
 bitflags! {
     #[derive(Clone, Default, Copy)]
-    pub struct TextRenderFlags: u8 {
+    pub struct TextDrawFlags: u8 {
         const SHADOW = 0x01;
     }
 }
 
-pub fn text_draw_to_surface(text: &str, sdl_font: &Font, color: Color, flags: TextRenderFlags) -> Surface {
+pub fn text_draw_to_surface(text: &str, sdl_font: &Font, color: Color, flags: TextDrawFlags) -> Surface {
     let sdl_surface = sdl_font
         .render(&text)
         .blended(SDLColor { r: color[2], g: color[1], b: color[0], a: color[3] }).unwrap();
@@ -21,7 +21,7 @@ pub fn text_draw_to_surface(text: &str, sdl_font: &Font, color: Color, flags: Te
     text_sdl_surface_to_surface(sdl_surface, color, flags)
 }
 
-pub fn text_draw_to_surface_wrapped(text: &str, sdl_font: &Font, color: Color, flags: TextRenderFlags, wrap_width: i32) -> Surface {
+pub fn text_draw_to_surface_wrapped(text: &str, sdl_font: &Font, color: Color, flags: TextDrawFlags, wrap_width: i32) -> Surface {
     let sdl_surface = sdl_font
         .render(&text)
         .blended_wrapped(SDLColor { r: color[2], g: color[1], b: color[0], a: color[3] }, wrap_width).unwrap();
@@ -29,7 +29,7 @@ pub fn text_draw_to_surface_wrapped(text: &str, sdl_font: &Font, color: Color, f
     text_sdl_surface_to_surface(sdl_surface, color, flags)
 }
 
-fn text_sdl_surface_to_surface(sdl_surface: SDLSurface, color: Color, flags: TextRenderFlags) -> Surface {
+fn text_sdl_surface_to_surface(sdl_surface: SDLSurface, color: Color, flags: TextDrawFlags) -> Surface {
     let mut text;
     unsafe {
         text = Surface::from_data(
@@ -41,7 +41,7 @@ fn text_sdl_surface_to_surface(sdl_surface: SDLSurface, color: Color, flags: Tex
         );
     }
 
-    if flags.contains(TextRenderFlags::SHADOW) {
+    if flags.contains(TextDrawFlags::SHADOW) {
 
         // Simulate the Chrono Trigger SNES character shadow colors.
         // 47 if the color is 223.

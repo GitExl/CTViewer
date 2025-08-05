@@ -8,8 +8,8 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::{Renderer, TextAlign, TextRenderable};
-use crate::software_renderer::text::TextRenderFlags;
+use crate::renderer::{Renderer, TextFlags, TextRenderable};
+use crate::software_renderer::text::TextDrawFlags;
 use crate::sprites::sprite_manager::SpriteManager;
 use crate::sprites::sprite_manager::WORLD_SPRITE_INDEX;
 use crate::world::world::World;
@@ -30,6 +30,8 @@ pub struct GameStateWorld<'a> {
     key_right: bool,
 
     debug_text: Option<TextRenderable>,
+    debug_text_x: i32,
+    debug_text_y: i32,
 }
 
 impl GameStateWorld<'_> {
@@ -84,6 +86,8 @@ impl GameStateWorld<'_> {
             key_up: false,
 
             debug_text: None,
+            debug_text_x: 0,
+            debug_text_y: 0,
         }
     }
 }
@@ -114,7 +118,7 @@ impl GameStateTrait for GameStateWorld<'_> {
         self.world_renderer.render(lerp, &self.camera, &mut self.world, &mut renderer.target);
 
         if self.debug_text.is_some() {
-            renderer.render_text(&mut self.debug_text.as_mut().unwrap(), 254, 2, TextAlign::End, TextAlign::Start);
+            renderer.render_text(&mut self.debug_text.as_mut().unwrap(), self.debug_text_x, self.debug_text_y, TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget);
         }
     }
 
@@ -198,13 +202,16 @@ impl GameStateTrait for GameStateWorld<'_> {
             }
 
             let text = format!("{}\n0x{:03X} '{}'", self.l10n.get_indexed(IndexedType::WorldExit, exit.name_index), exit.scene_index, self.l10n.get_indexed(IndexedType::Scene, exit.scene_index));
-            self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextRenderFlags::SHADOW, 124));
+            self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextDrawFlags::SHADOW, 192));
             found = true;
             break;
         }
 
         if !found {
             self.debug_text = None;
+        } else {
+            self.debug_text_x = x;
+            self.debug_text_y = y;
         }
     }
 
