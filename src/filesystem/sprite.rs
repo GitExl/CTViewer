@@ -145,7 +145,7 @@ impl FileSystem {
         // Extend the palette up to 16 colors if needed.
         let missing_colors = 16 - palette.colors.len();
         for _ in 0..missing_colors {
-            palette.colors.push([0, 0, 0, 0]);
+            palette.colors.push([0, 0, 0, 0xFF]);
         }
 
         Some(palette)

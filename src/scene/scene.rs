@@ -50,8 +50,8 @@ impl SceneExit {
 
 pub struct SceneTreasure {
     pub id: String,
-    pub tile_x: u32,
-    pub tile_y: u32,
+    pub tile_x: i32,
+    pub tile_y: i32,
     pub gold: u32,
     pub item: usize,
 }

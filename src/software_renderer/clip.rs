@@ -16,6 +16,15 @@ impl Rect {
         }
     }
 
+    pub fn moved_by(&self, x: i32, y: i32) -> Rect {
+        Rect {
+            left: self.left + x,
+            top: self.top + y,
+            right: self.right + x,
+            bottom: self.bottom + y,
+        }
+    }
+
     pub fn clip_to(&self, other: &Rect) -> Rect {
         Rect {
             top: other.top.max(self.top),

@@ -6,6 +6,8 @@ use sdl3::sys::everything::SDL_ScaleMode;
 use sdl3::ttf::Font;
 use sdl3::video::WindowContext;
 use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
+use crate::software_renderer::clip::Rect;
+use crate::software_renderer::draw::draw_box;
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::surface::Surface;
 use crate::software_renderer::text::{text_draw_to_surface, text_draw_to_surface_wrapped, TextDrawFlags};
@@ -29,6 +31,22 @@ pub struct Renderer<'a> {
 
     pub target: Surface,
     pub canvas: WindowCanvas,
+}
+
+pub struct BoxRenderable {
+    rect: Rect,
+    color: Color,
+    blend_op: SurfaceBlendOps,
+}
+
+impl BoxRenderable {
+    pub fn new(x1: i32, y1: i32, x2: i32, y2: i32, color: Color, blend_op: SurfaceBlendOps) -> BoxRenderable {
+        BoxRenderable {
+            rect: Rect::new(x1, y1, x2, y2),
+            color,
+            blend_op,
+        }
+    }
 }
 
 pub struct TextRenderable {
@@ -199,6 +217,10 @@ impl<'a> Renderer<'a> {
         }
 
         blit_surface_to_surface(&surface, &mut self.target, 0, 0, surface.width as i32, surface.height as i32, dest_x, dest_y, SurfaceBlendOps::Blend);
+    }
+
+    pub fn render_box(&mut self, rect: Rect, color: Color, blend_op: SurfaceBlendOps) {
+        draw_box(&mut self.target, rect, color, blend_op);
     }
 
     pub fn window_to_target_coordinates(&self, x: f32, y: f32) -> (i32, i32) {

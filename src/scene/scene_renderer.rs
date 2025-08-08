@@ -65,15 +65,15 @@ impl SceneRenderer {
         for exit in exits {
             let x = exit.x - camera.lerp_x.floor() as i32;
             let y = exit.y - camera.lerp_y.floor() as i32;
-            draw_box(surface, Rect::new(x, y, x + exit.width as i32, y + exit.height as i32), [255, 255, 0, 191], SurfaceBlendOps::Blend);
+            draw_box(surface, Rect::new(x, y, x + exit.width, y + exit.height), [255, 0, 255, 127], SurfaceBlendOps::Blend);
         }
     }
 
     fn render_debug_treasure(&mut self, treasure: &Vec<SceneTreasure>, camera: &Camera, surface: &mut Surface) {
         for item in treasure {
-            let x = item.tile_x as i32 * 16 - camera.lerp_x.floor() as i32;
-            let y = item.tile_y as i32 * 16 - camera.lerp_y.floor() as i32;
-            draw_box(surface, Rect::new(x, y, x + 16, y + 16), [0, 255, 0, 191], SurfaceBlendOps::Blend);
+            let x = item.tile_x * 16 - camera.lerp_x.floor() as i32;
+            let y = item.tile_y * 16 - camera.lerp_y.floor() as i32;
+            draw_box(surface, Rect::new(x, y, x + 16, y + 16), [0, 255, 0, 127], SurfaceBlendOps::Blend);
         }
     }
 

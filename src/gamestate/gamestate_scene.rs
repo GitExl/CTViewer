@@ -8,9 +8,11 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::{Renderer, TextFlags, TextRenderable};
+use crate::renderer::{BoxRenderable, Renderer, TextFlags, TextRenderable};
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
+use crate::software_renderer::blit::SurfaceBlendOps;
+use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
 use crate::sprites::sprite_manager::SpriteManager;
 
@@ -31,6 +33,7 @@ pub struct GameStateScene<'a> {
     debug_text: Option<TextRenderable>,
     debug_text_x: i32,
     debug_text_y: i32,
+    debug_box: Option<Rect>,
 }
 
 impl GameStateScene<'_> {
@@ -100,6 +103,7 @@ impl GameStateScene<'_> {
             debug_text: None,
             debug_text_x: 0,
             debug_text_y: 0,
+            debug_box: None,
         }
     }
 }
@@ -130,7 +134,18 @@ impl GameStateTrait for GameStateScene<'_> {
         self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut renderer.target);
 
         if self.debug_text.is_some() {
-            renderer.render_text(&mut self.debug_text.as_mut().unwrap(), self.debug_text_x, self.debug_text_y, TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget);
+            renderer.render_text(
+                &mut self.debug_text.as_mut().unwrap(),
+                self.debug_text_x - self.camera.x as i32, self.debug_text_y - self.camera.y as i32,
+                TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
+            );
+        }
+        if self.debug_box.is_some() {
+            renderer.render_box(
+                self.debug_box.as_mut().unwrap().moved_by(-self.camera.x as i32, -self.camera.y as i32),
+                [255, 255, 255, 127],
+                SurfaceBlendOps::Blend,
+            );
         }
     }
 
@@ -239,15 +254,26 @@ impl GameStateTrait for GameStateScene<'_> {
                 continue;
             }
 
-            let text = format!("To 0x{:03X} '{}'", exit.destination_index, self.l10n.get_indexed(IndexedType::Scene, exit.destination_index));
-            self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextDrawFlags::SHADOW, 128));
+            let text = format!("0x{:03X} {}", exit.destination_index, self.l10n.get_indexed(IndexedType::Scene, exit.destination_index));
+            self.debug_text = Some(TextRenderable::new(
+                text,
+                [223, 223, 223, 255],
+                TextDrawFlags::SHADOW,
+                0,
+            ));
+            self.debug_text_x = exit.x + exit.width / 2;
+            self.debug_text_y = exit.y;
+            self.debug_box = Some(Rect::new(
+                exit.x, exit.y,
+                exit.x + exit.width, exit.y + exit.height,
+            ));
             found = true;
             break;
         }
 
         if !found {
             for treasure in self.scene.treasure.iter() {
-                if map_x < treasure.tile_x as i32 * 16 || map_x >= treasure.tile_x as i32 * 16 + 16 || map_y < treasure.tile_y as i32 * 16 || map_y >= treasure.tile_y as i32 * 16 + 16 {
+                if map_x < treasure.tile_x * 16 || map_x >= treasure.tile_x * 16 + 16 || map_y < treasure.tile_y * 16 || map_y >= treasure.tile_y * 16 + 16 {
                     continue;
                 }
 
@@ -258,7 +284,18 @@ impl GameStateTrait for GameStateScene<'_> {
                 } else {
                     "Empty".to_string()
                 };
-                self.debug_text = Some(TextRenderable::new(text, [223, 223, 223, 255], TextDrawFlags::SHADOW, 192));
+                self.debug_text = Some(TextRenderable::new(
+                    text,
+                    [223, 223, 223, 255],
+                    TextDrawFlags::SHADOW,
+                    0,
+                ));
+                self.debug_text_x = treasure.tile_x * 16 + 8;
+                self.debug_text_y = treasure.tile_y * 16;
+                self.debug_box = Some(Rect::new(
+                    treasure.tile_x * 16, treasure.tile_y * 16,
+                    treasure.tile_x * 16 + 16, treasure.tile_y * 16 + 16,
+                ));
                 found = true;
                 break;
             }
@@ -266,9 +303,9 @@ impl GameStateTrait for GameStateScene<'_> {
 
         if !found {
             self.debug_text = None;
-        } else {
-            self.debug_text_x = x;
-            self.debug_text_y = y;
+            self.debug_box = None;
+            self.debug_text_x = 0;
+            self.debug_text_y = 0;
         }
     }
 

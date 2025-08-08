@@ -13,6 +13,7 @@ bitflags! {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum SurfaceBlendOps {
     Copy,
     CopyAlpha,

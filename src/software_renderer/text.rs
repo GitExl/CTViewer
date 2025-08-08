@@ -44,8 +44,7 @@ fn text_sdl_surface_to_surface(sdl_surface: SDLSurface, color: Color, flags: Tex
     if flags.contains(TextDrawFlags::SHADOW) {
 
         // Simulate the Chrono Trigger SNES character shadow colors.
-        // 47 if the color is 223.
-        // 23 if the color is 223.
+        // 47 and 23 if the color is 223.
         let color_mid = [
             (color[0] as f64 * 0.214) as u8,
             (color[1] as f64 * 0.214) as u8,

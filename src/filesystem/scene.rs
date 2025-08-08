@@ -296,8 +296,8 @@ fn parse_pc_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure {
 
     SceneTreasure {
         id,
-        tile_x: x as u32,
-        tile_y: y as u32,
+        tile_x: x as i32,
+        tile_y: y as i32,
         gold,
         item,
     }
@@ -315,8 +315,8 @@ fn parse_snes_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure
 
     SceneTreasure {
         id,
-        tile_x: x as u32,
-        tile_y: y as u32,
+        tile_x: x as i32,
+        tile_y: y as i32,
         gold,
         item,
     }
