@@ -341,9 +341,9 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         // Determine how many exits there are based on the current and next offset.
         let size;
         if scene_index == offsets.len() - 1 {
-            size = (len - offset) / 8;
+            size = len - offset;
         } else {
-            size = (offsets[scene_index + 1] - offset) / 8;
+            size = offsets[scene_index + 1] - offset;
         }
 
         Cursor::new(data.get_ref()[offset..offset + size].to_vec())
@@ -351,7 +351,11 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
 
     fn get_scene_names(&self, language: &str) -> Vec<String> {
         let data = self.get_file_cursor(&format!("Localize/{}/msg/debug_map.txt", language), None, None);
-        self.remove_string_list_keys(self.read_text_string_list(data, None, None))
+        let mut strings = Vec::<String>::new();
+        strings.push("".to_string());
+        strings.append(&mut self.remove_string_list_keys(self.read_text_string_list(data, None, None)));
+
+        strings
     }
 
     fn get_scene_treasure_data(&self) -> (Vec<u32>, Cursor<Vec<u8>>) {
@@ -420,7 +424,7 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
             colors[index][0] = color[0];
             colors[index][1] = color[1];
             colors[index][2] = color[2];
-            colors[index][3] = color[3];
+            colors[index][3] = 0xFF;
         }
 
         Some(Palette::from_colors(&colors))
