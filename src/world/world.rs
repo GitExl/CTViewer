@@ -1,5 +1,6 @@
 use std::path::Path;
 use crate::actor::Actor;
+use crate::Facing;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::l10n::L10n;
@@ -8,14 +9,6 @@ use crate::map_renderer::MapRendererSprite;
 use crate::sprites::sprite_manager::SpriteManager;
 use crate::tileset::TileSet;
 use crate::world::world_map::WorldMap;
-
-#[derive(Debug)]
-pub enum WorldExitFacing {
-    Up,
-    Down,
-    Left,
-    Right,
-}
 
 pub struct WorldExit {
     pub index: usize,
@@ -28,7 +21,7 @@ pub struct WorldExit {
     pub scene_index: usize,
     pub scene_x: i32,
     pub scene_y: i32,
-    pub facing: WorldExitFacing,
+    pub facing: Facing,
 
     pub unknown: u32,
 }

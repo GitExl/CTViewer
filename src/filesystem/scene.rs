@@ -1,9 +1,9 @@
 use std::io::{Seek, SeekFrom};
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
-
+use crate::Facing;
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
-use crate::scene::scene::{Scene, SceneExit, SceneExitFacing, SceneTreasure, ScrollMask};
+use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
 
 struct SceneHeader {
 
@@ -153,8 +153,8 @@ impl FileSystem {
                     let size_bits = data.read_u8().unwrap();
                     let facing_shift = data.read_u8().unwrap();
                     dest_index = data.read_u16::<LittleEndian>().unwrap() as usize;
-                    dest_x = data.read_u8().unwrap() as i32;
-                    dest_y = data.read_u8().unwrap() as i32;
+                    dest_x = data.read_u8().unwrap() as i32 * 8;
+                    dest_y = data.read_u8().unwrap() as i32 * 8;
 
                     let size = (((size_bits & 0x7F) + 1) * 16) as i32;
                     (width, height) = if size_bits & 0x80 > 0 {
@@ -164,12 +164,20 @@ impl FileSystem {
                     };
 
                     facing = match facing_shift & 0x3 {
-                        0 => SceneExitFacing::Up,
-                        1 => SceneExitFacing::Down,
-                        2 => SceneExitFacing::Left,
-                        3 => SceneExitFacing::Right,
+                        0 => Facing::Up,
+                        1 => Facing::Down,
+                        2 => Facing::Left,
+                        3 => Facing::Right,
                         _ => panic!(),
                     };
+
+                    if dest_index >= 0x1F0 && dest_index <= 0x1FF {
+                        dest_x *= 8;
+                        dest_y *= 8;
+                    } else {
+                        dest_x *= 16;
+                        dest_y *= 16;
+                    }
 
                     // Shift destination if flags are set.
                     if facing_shift & 0x4 > 0 {
@@ -192,10 +200,10 @@ impl FileSystem {
 
                     dest_index = dest_index_facing & 0x1FF;
                     facing = match (dest_index_facing & 0x600) >> 9 {
-                        0 => SceneExitFacing::Up,
-                        1 => SceneExitFacing::Down,
-                        2 => SceneExitFacing::Left,
-                        3 => SceneExitFacing::Right,
+                        0 => Facing::Up,
+                        1 => Facing::Down,
+                        2 => Facing::Left,
+                        3 => Facing::Right,
                         _ => panic!(),
                     };
 
@@ -205,6 +213,14 @@ impl FileSystem {
                     } else {
                         (size, 16)
                     };
+
+                    if dest_index >= 0x1F0 && dest_index <= 0x1FF {
+                        dest_x *= 8;
+                        dest_y *= 8;
+                    } else {
+                        dest_x *= 16;
+                        dest_y *= 16;
+                    }
 
                     // Shift destination if flags are set.
                     if dest_index_facing & 0x800 > 0 {

@@ -1,5 +1,6 @@
 use std::path::Path;
 use crate::actor::Actor;
+use crate::Facing;
 use crate::game_palette::GamePalette;
 use crate::l10n::{IndexedType, L10n};
 use crate::map::Map;
@@ -16,14 +17,6 @@ pub struct ScrollMask {
     pub bottom: isize,
 }
 
-#[derive(Debug)]
-pub enum SceneExitFacing {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
 pub struct SceneExit {
     pub index: usize,
 
@@ -35,7 +28,7 @@ pub struct SceneExit {
     pub destination_index: usize,
     pub destination_x: i32,
     pub destination_y: i32,
-    pub facing: SceneExitFacing,
+    pub facing: Facing,
 }
 
 impl SceneExit {

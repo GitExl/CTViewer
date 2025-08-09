@@ -35,6 +35,29 @@ mod renderer;
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
 
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum Facing {
+    Up,
+    Down,
+    Left,
+    Right,
+}
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum GameEvent {
+    LoadScene {
+        scene: usize,
+        x: i32,
+        y: i32,
+        facing: Facing,
+    },
+    LoadWorld {
+        world: usize,
+        x: i32,
+        y: i32,
+    },
+}
+
 /// Load and display Chrono Trigger game data.
 #[derive(Parser, Debug)]
 struct Args {
@@ -94,9 +117,9 @@ fn main() -> Result<(), String> {
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {
-        gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, args.scene as usize));
+        gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, args.scene as usize, 0, 0));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, args.world as usize));
+        gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, args.world as usize, 0, 0));
     } else {
         panic!("Must load a scene or a world.");
     }
@@ -157,7 +180,17 @@ fn main() -> Result<(), String> {
         while accumulator > UPDATE_INTERVAL {
             timer_update.start();
 
-            gamestate.tick(UPDATE_INTERVAL);
+            let game_event = gamestate.tick(UPDATE_INTERVAL);
+            if game_event.is_some() {
+                match game_event.unwrap() {
+                    GameEvent::LoadScene { scene, x, y, .. } => {
+                        gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, scene, x, y));
+                    },
+                    GameEvent::LoadWorld { world, x, y } => {
+                        gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, world, x, y));
+                    },
+                }
+            }
 
             stat_update_time += timer_update.stop();
             stat_update_count += 1;

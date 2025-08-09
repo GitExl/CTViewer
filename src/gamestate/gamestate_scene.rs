@@ -1,14 +1,15 @@
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
-
+use sdl3::mouse::MouseButton;
 use crate::actor::Actor;
 use crate::camera::Camera;
 use crate::filesystem::filesystem::FileSystem;
+use crate::GameEvent;
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::{BoxRenderable, Renderer, TextFlags, TextRenderable};
+use crate::renderer::{Renderer, TextFlags, TextRenderable};
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
 use crate::software_renderer::blit::SurfaceBlendOps;
@@ -30,14 +31,19 @@ pub struct GameStateScene<'a> {
     key_left: bool,
     key_right: bool,
 
+    mouse_x: i32,
+    mouse_y: i32,
+
     debug_text: Option<TextRenderable>,
     debug_text_x: i32,
     debug_text_y: i32,
     debug_box: Option<Rect>,
+
+    next_game_event: Option<GameEvent>,
 }
 
 impl GameStateScene<'_> {
-    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, scene_index: usize) -> GameStateScene<'a> {
+    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, scene_index: usize, x: i32, y: i32) -> GameStateScene<'a> {
         let mut sprites = SpriteManager::new(&fs);
         let mut scene = fs.read_scene(scene_index);
 
@@ -74,17 +80,20 @@ impl GameStateScene<'_> {
         scene.add_actor(actor);
 
 
-        let camera = Camera::new(
+        let mut camera = Camera::new(
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
             renderer.target.width as f64, renderer.target.height as f64 - 12.0,
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
             scene.scroll_mask.right as f64, scene.scroll_mask.bottom as f64,
         );
+
         renderer.target.clip.bottom = renderer.target.height as i32 - 12;
 
         let scene_renderer = SceneRenderer::new();
         let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height - 12);
         map_renderer.setup_for_map(&mut scene.map);
+
+        camera.center_to(x as f64, y as f64);
 
         GameStateScene {
             scene,
@@ -100,16 +109,21 @@ impl GameStateScene<'_> {
             key_right: false,
             key_up: false,
 
+            mouse_x: 0,
+            mouse_y: 0,
+
             debug_text: None,
             debug_text_x: 0,
             debug_text_y: 0,
             debug_box: None,
+
+            next_game_event: None,
         }
     }
 }
 
 impl GameStateTrait for GameStateScene<'_> {
-    fn tick(&mut self, delta: f64) {
+    fn tick(&mut self, delta: f64) -> Option<GameEvent> {
         self.camera.tick(delta);
         if self.key_up {
             self.camera.y -= 300.0 * delta;
@@ -126,6 +140,14 @@ impl GameStateTrait for GameStateScene<'_> {
         self.camera.clamp();
 
         self.scene.tick(delta, &self.sprites);
+
+        if self.next_game_event.is_some() {
+            let event = self.next_game_event;
+            self.next_game_event = None;
+            return event;
+        }
+
+        None
     }
 
     fn render(&mut self, lerp: f64, renderer: &mut Renderer) {
@@ -136,13 +158,13 @@ impl GameStateTrait for GameStateScene<'_> {
         if self.debug_text.is_some() {
             renderer.render_text(
                 &mut self.debug_text.as_mut().unwrap(),
-                self.debug_text_x - self.camera.x as i32, self.debug_text_y - self.camera.y as i32,
+                self.debug_text_x - self.camera.lerp_x as i32, self.debug_text_y - self.camera.lerp_y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
         if self.debug_box.is_some() {
             renderer.render_box(
-                self.debug_box.as_mut().unwrap().moved_by(-self.camera.x as i32, -self.camera.y as i32),
+                self.debug_box.as_mut().unwrap().moved_by(-self.camera.lerp_x as i32, -self.camera.lerp_y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
             );
@@ -239,21 +261,42 @@ impl GameStateTrait for GameStateScene<'_> {
                 }
             },
 
+            Event::MouseButtonDown { mouse_btn, .. } => {
+                if *mouse_btn == MouseButton::Left {
+                    let index = self.get_exit_at(self.mouse_x, self.mouse_y);
+                    if index.is_some() {
+                        let exit = &self.scene.exits[index.unwrap()];
+                        if exit.destination_index >= 0x1F0 && exit.destination_index <= 0x1FF {
+                            self.next_game_event = Some(GameEvent::LoadWorld {
+                                world: exit.destination_index - 0x1F0,
+                                x: exit.destination_x,
+                                y: exit.destination_y,
+                            });
+                        } else {
+                            self.next_game_event = Some(GameEvent::LoadScene {
+                                scene: exit.destination_index,
+                                x: exit.destination_x,
+                                y: exit.destination_y,
+                                facing: exit.facing,
+                            });
+                        }
+                    }
+                }
+            },
+
             _ => {},
         }
     }
 
     fn mouse_motion(&mut self, x: i32, y: i32) {
-        let map_x = (x as f64 + self.camera.x) as i32;
-        let map_y = (y as f64 + self.camera.y) as i32;
 
-        // Output exit or treasure data at mouse position.
-        let mut found = false;
-        for exit in self.scene.exits.iter() {
-            if map_x < exit.x || map_x >= exit.x + exit.width || map_y < exit.y || map_y >= exit.y + exit.height {
-                continue;
-            }
+        // Keep world coordinate mouse position.
+        self.mouse_x = (x as f64 + self.camera.x) as i32;
+        self.mouse_y = (y as f64 + self.camera.y) as i32;
 
+        let mut index = self.get_exit_at(self.mouse_x, self.mouse_y);
+        if index.is_some() {
+            let exit = &self.scene.exits[index.unwrap()];
             let text = format!("0x{:03X} {}", exit.destination_index, self.l10n.get_indexed(IndexedType::Scene, exit.destination_index));
             self.debug_text = Some(TextRenderable::new(
                 text,
@@ -267,16 +310,12 @@ impl GameStateTrait for GameStateScene<'_> {
                 exit.x, exit.y,
                 exit.x + exit.width, exit.y + exit.height,
             ));
-            found = true;
-            break;
         }
 
-        if !found {
-            for treasure in self.scene.treasure.iter() {
-                if map_x < treasure.tile_x * 16 || map_x >= treasure.tile_x * 16 + 16 || map_y < treasure.tile_y * 16 || map_y >= treasure.tile_y * 16 + 16 {
-                    continue;
-                }
-
+        if index.is_none() {
+            index = self.get_treasure_at(self.mouse_x, self.mouse_y);
+            if index.is_some() {
+                let treasure = &self.scene.treasure[index.unwrap()];
                 let text = if treasure.gold > 0 {
                     format!("{} gold", treasure.gold)
                 } else if treasure.item > 0 {
@@ -296,12 +335,10 @@ impl GameStateTrait for GameStateScene<'_> {
                     treasure.tile_x * 16, treasure.tile_y * 16,
                     treasure.tile_x * 16 + 16, treasure.tile_y * 16 + 16,
                 ));
-                found = true;
-                break;
             }
         }
 
-        if !found {
+        if index.is_none() {
             self.debug_text = None;
             self.debug_box = None;
             self.debug_text_x = 0;
@@ -315,5 +352,30 @@ impl GameStateTrait for GameStateScene<'_> {
         // for (_, set) in sprites.anim_sets.iter() {
         //     set.dump();
         // }
+    }
+}
+
+impl GameStateScene<'_> {
+
+    fn get_exit_at(&self, x: i32, y: i32) -> Option<usize> {
+        for (index, exit) in self.scene.exits.iter().enumerate() {
+            if x < exit.x - 4 || x >= exit.x + exit.width + 4 || y < exit.y - 4 || y >= exit.y + exit.height + 4 {
+                continue;
+            }
+            return Some(index);
+        }
+
+        None
+    }
+
+    fn get_treasure_at(&self, x: i32, y: i32) -> Option<usize> {
+        for (index, treasure) in self.scene.treasure.iter().enumerate() {
+            if x < treasure.tile_x * 16 || x >= treasure.tile_x * 16 + 16 || y < treasure.tile_y * 16 || y >= treasure.tile_y * 16 + 16 {
+                continue;
+            }
+            return Some(index);
+        }
+
+        None
     }
 }

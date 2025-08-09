@@ -3,11 +3,10 @@ use std::io::SeekFrom;
 
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
-
+use crate::Facing;
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 
 use crate::world::world::WorldExit;
-use crate::world::world::WorldExitFacing;
 use crate::world::world::ScriptedWorldExit;
 use crate::world::world::World;
 
@@ -186,10 +185,10 @@ impl FileSystem {
             exits.push(WorldExit {
                 index: exit_index,
                 facing: match facing {
-                    0 => WorldExitFacing::Up,
-                    1 => WorldExitFacing::Down,
-                    2 => WorldExitFacing::Left,
-                    3 => WorldExitFacing::Right,
+                    0 => Facing::Up,
+                    1 => Facing::Down,
+                    2 => Facing::Left,
+                    3 => Facing::Right,
                     _ => panic!("Unknown world exit facing."),
                 },
                 x: tile_x as i32 * 16,
