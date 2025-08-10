@@ -6,7 +6,6 @@ use crate::camera::Camera;
 use crate::filesystem::filesystem::FileSystem;
 use crate::GameEvent;
 use crate::gamestate::gamestate::GameStateTrait;
-use crate::gamestate::gamestate_scene::GameStateScene;
 use crate::l10n::{IndexedType, L10n};
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
@@ -76,6 +75,8 @@ impl GameStateWorld<'_> {
             0.0, 0.0,
             (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
         );
+
+        renderer.target.clip.bottom = renderer.target.height as i32;
 
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);
@@ -228,11 +229,8 @@ impl GameStateTrait for GameStateWorld<'_> {
                     let index = self.get_exit_at(self.mouse_x, self.mouse_y);
                     if index.is_some() {
                         let exit = &self.world.exits[index.unwrap()];
-                        self.next_game_event = Some(GameEvent::LoadScene {
-                            scene: exit.scene_index,
-                            x: exit.scene_x,
-                            y: exit.scene_y,
-                            facing: exit.facing,
+                        self.next_game_event = Some(GameEvent::GotoDestination {
+                            destination: exit.destination,
                         });
                     }
                 }
@@ -250,7 +248,8 @@ impl GameStateTrait for GameStateWorld<'_> {
         let index = self.get_exit_at(self.mouse_x, self.mouse_y);
         if index.is_some() {
             let exit = &self.world.exits[index.unwrap()];
-            let text = format!("{} - 0x{:03X}", self.l10n.get_indexed(IndexedType::WorldExit, exit.name_index), exit.scene_index);
+            let text = exit.destination.info(&self.l10n);
+
             self.debug_text = Some(TextRenderable::new(
                 text,
                 [223, 223, 223, 255],

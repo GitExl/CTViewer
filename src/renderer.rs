@@ -84,7 +84,7 @@ bitflags! {
 }
 
 impl<'a> Renderer<'a> {
-    pub fn new(sdl: &Sdl, scale: i32, scale_linear: bool, aspect_ratio: f64, vsync: bool) -> Renderer {
+    pub fn new(sdl: &'_ Sdl, scale: i32, scale_linear: bool, aspect_ratio: f64, vsync: bool) -> Renderer<'_> {
         let video = sdl.video().unwrap();
 
         // Font setup.

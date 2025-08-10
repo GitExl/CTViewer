@@ -59,10 +59,11 @@ impl Camera {
     pub fn center_to(&mut self, x: f64, y: f64) {
         self.x = x - self.width / 2.0;
         self.y = y - self.height / 2.0;
+        self.clamp();
+
         self.last_x = self.x;
         self.last_y = self.y;
         self.lerp_x = self.x;
         self.lerp_y = self.y;
-        self.clamp();
     }
 }

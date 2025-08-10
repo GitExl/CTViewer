@@ -1,7 +1,7 @@
 use std::io::{Seek, SeekFrom};
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
-use crate::Facing;
+use crate::destination::{Destination, Facing};
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
 
@@ -232,14 +232,26 @@ impl FileSystem {
                 },
             };
 
+            let destination = if dest_index >= 0x1F0 && dest_index <= 0x1FF {
+                Destination::World {
+                    index: dest_index - 0x1F0,
+                    x: dest_x,
+                    y: dest_y,
+                }
+            } else {
+                Destination::Scene {
+                    index: dest_index,
+                    x: dest_x,
+                    y: dest_y,
+                    facing,
+                }
+            };
+
             exits.push(SceneExit {
                 index: exit_index,
                 x, y,
                 width, height,
-                destination_index: dest_index,
-                destination_x: dest_x,
-                destination_y: dest_y,
-                facing,
+                destination,
             });
         }
 

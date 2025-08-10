@@ -1,6 +1,6 @@
 use std::path::Path;
 use crate::actor::Actor;
-use crate::Facing;
+use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::l10n::L10n;
@@ -18,11 +18,7 @@ pub struct WorldExit {
     pub is_available: bool,
     pub name_index: usize,
 
-    pub scene_index: usize,
-    pub scene_x: i32,
-    pub scene_y: i32,
-    pub facing: Facing,
-
+    pub destination: Destination,
     pub unknown: u32,
 }
 
@@ -31,7 +27,15 @@ impl WorldExit {
         println!("World exit {} - {}", self.index, l10n.get_indexed(IndexedType::WorldExit, self.name_index));
         println!("  Position: {} x {}", self.x, self.y);
         println!("  Available: {}", self.is_available);
-        println!("  Destination: 0x{:03X} - {}, {} x {} facing {:?}", self.scene_index, l10n.get_indexed(IndexedType::Scene, self.scene_index), self.scene_x, self.scene_y, self.facing);
+        match self.destination {
+            Destination::Scene { index, x, y, facing } => {
+                println!("  To scene 0x{:03X} - {}, {} x {} facing {:?}", index, l10n.get_indexed(IndexedType::Scene, index), x, y, facing);
+            },
+            Destination::World { index, x, y } => {
+                println!("  To world 0x{:03X} - {}, {} x {}", index, l10n.get_indexed(IndexedType::World, index), x, y);
+            },
+        }
+
         println!("  Unknown: {}", self.unknown);
         println!();
     }

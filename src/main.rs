@@ -13,6 +13,7 @@ use crate::l10n::L10n;
 use clap::Parser;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
+use crate::destination::Destination;
 use crate::renderer::Renderer;
 
 mod actor;
@@ -31,30 +32,17 @@ mod scene;
 mod l10n;
 mod gamestate;
 mod renderer;
+mod destination;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
 
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum Facing {
-    Up,
-    Down,
-    Left,
-    Right,
-}
+
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum GameEvent {
-    LoadScene {
-        scene: usize,
-        x: i32,
-        y: i32,
-        facing: Facing,
-    },
-    LoadWorld {
-        world: usize,
-        x: i32,
-        y: i32,
+    GotoDestination {
+        destination: Destination,
     },
 }
 
@@ -119,7 +107,7 @@ fn main() -> Result<(), String> {
     if args.scene > -1 {
         gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, args.scene as usize, 0, 0));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, args.world as usize, 0, 0));
+        gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, args.world as usize, 768, 512));
     } else {
         panic!("Must load a scene or a world.");
     }
@@ -183,11 +171,15 @@ fn main() -> Result<(), String> {
             let game_event = gamestate.tick(UPDATE_INTERVAL);
             if game_event.is_some() {
                 match game_event.unwrap() {
-                    GameEvent::LoadScene { scene, x, y, .. } => {
-                        gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, scene, x, y));
-                    },
-                    GameEvent::LoadWorld { world, x, y } => {
-                        gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, world, x, y));
+                    GameEvent::GotoDestination { destination } => {
+                        match destination {
+                            Destination::Scene { index, x, y, .. } => {
+                                gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, index, x, y));
+                            },
+                            Destination::World { index, x, y } => {
+                                gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, index, x, y));
+                            },
+                        };
                     },
                 }
             }

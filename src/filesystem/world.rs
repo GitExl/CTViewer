@@ -3,7 +3,7 @@ use std::io::SeekFrom;
 
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
-use crate::Facing;
+use crate::destination::{Destination, Facing};
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 
 use crate::world::world::WorldExit;
@@ -182,8 +182,10 @@ impl FileSystem {
                 },
             };
 
-            exits.push(WorldExit {
-                index: exit_index,
+            let destination = Destination::Scene {
+                index: scene_index,
+                x: (exit_data.scene_tile_x as i32 * 16) - if shift_left { 8 } else { 0 },
+                y: (exit_data.scene_tile_y as i32 * 16) - if shift_up { 8 } else { 0 },
                 facing: match facing {
                     0 => Facing::Up,
                     1 => Facing::Down,
@@ -191,15 +193,17 @@ impl FileSystem {
                     3 => Facing::Right,
                     _ => panic!("Unknown world exit facing."),
                 },
+            };
+
+            exits.push(WorldExit {
+                index: exit_index,
+
                 x: tile_x as i32 * 16,
                 y: tile_y as i32 * 16 - 8,
                 is_available,
                 name_index: exit_data.name_index as usize,
 
-                scene_index,
-                scene_x: (exit_data.scene_tile_x as i32 * 16) - if shift_left { 8 } else { 0 },
-                scene_y: (exit_data.scene_tile_y as i32 * 16) - if shift_up { 8 } else { 0 },
-
+                destination,
                 unknown,
             });
         }

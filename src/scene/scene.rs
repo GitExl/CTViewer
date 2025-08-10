@@ -1,6 +1,6 @@
 use std::path::Path;
 use crate::actor::Actor;
-use crate::Facing;
+use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::{IndexedType, L10n};
 use crate::map::Map;
@@ -25,18 +25,24 @@ pub struct SceneExit {
     pub width: i32,
     pub height: i32,
 
-    pub destination_index: usize,
-    pub destination_x: i32,
-    pub destination_y: i32,
-    pub facing: Facing,
+    pub destination: Destination
 }
 
 impl SceneExit {
     pub fn dump(&self, l10n: &L10n) {
         println!("Scene exit {}", self.index);
         println!("  At {} x {}, {} by {}", self.x, self.y, self.width, self.height);
-        println!("  To 0x{:03X} - {}", self.destination_index, l10n.get_indexed(IndexedType::Scene, self.destination_index));
-        println!("  At {} x {} facing {:?}", self.destination_x, self.destination_y, self.facing);
+        match self.destination {
+            Destination::Scene { index, x, y, facing } => {
+                println!("  To scene 0x{:03X} - {}", index, l10n.get_indexed(IndexedType::Scene, index));
+                println!("  At {} x {} facing {:?}", x, y, facing);
+            },
+            Destination::World { index, x, y } => {
+                println!("  To world 0x{:03X} - {}", index, l10n.get_indexed(IndexedType::World, index));
+                println!("  At {} x {}", x, y);
+            }
+        }
+
         println!();
     }
 }

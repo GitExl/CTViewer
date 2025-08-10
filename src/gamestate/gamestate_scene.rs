@@ -266,20 +266,9 @@ impl GameStateTrait for GameStateScene<'_> {
                     let index = self.get_exit_at(self.mouse_x, self.mouse_y);
                     if index.is_some() {
                         let exit = &self.scene.exits[index.unwrap()];
-                        if exit.destination_index >= 0x1F0 && exit.destination_index <= 0x1FF {
-                            self.next_game_event = Some(GameEvent::LoadWorld {
-                                world: exit.destination_index - 0x1F0,
-                                x: exit.destination_x,
-                                y: exit.destination_y,
-                            });
-                        } else {
-                            self.next_game_event = Some(GameEvent::LoadScene {
-                                scene: exit.destination_index,
-                                x: exit.destination_x,
-                                y: exit.destination_y,
-                                facing: exit.facing,
-                            });
-                        }
+                        self.next_game_event = Some(GameEvent::GotoDestination {
+                            destination: exit.destination,
+                        });
                     }
                 }
             },
@@ -297,7 +286,8 @@ impl GameStateTrait for GameStateScene<'_> {
         let mut index = self.get_exit_at(self.mouse_x, self.mouse_y);
         if index.is_some() {
             let exit = &self.scene.exits[index.unwrap()];
-            let text = format!("0x{:03X} {}", exit.destination_index, self.l10n.get_indexed(IndexedType::Scene, exit.destination_index));
+            let text = exit.destination.info(&self.l10n);
+
             self.debug_text = Some(TextRenderable::new(
                 text,
                 [223, 223, 223, 255],

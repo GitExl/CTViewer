@@ -56,7 +56,7 @@ pub struct SpriteManager<'a> {
 }
 
 impl SpriteManager<'_> {
-    pub fn new(fs: &FileSystem) -> SpriteManager {
+    pub fn new(fs: &'_ FileSystem) -> SpriteManager<'_> {
         let manager = SpriteManager {
             fs,
             sprites: HashMap::new(),
