@@ -180,6 +180,9 @@ fn main() -> Result<(), String> {
                                 gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, index, x, y));
                             },
                         };
+
+                        let title = format!("Chrono Trigger - {}", gamestate.get_title(&l10n));
+                        renderer.set_title(title.as_str());
                     },
                 }
             }
