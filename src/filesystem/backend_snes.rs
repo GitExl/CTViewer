@@ -79,7 +79,7 @@ impl FileSystemBackendSnes {
 
         let text_decoder = TextDecoder::from_cursor(&mut Cursor::new(data[0x1EFA00..0x1EFF00].to_vec()), 128, 0xFA00);
 
-        let world_header_entries = get_local_entries(&data, 0x6FD00, 8, 0x6FDF0);
+        let world_header_entries = get_local_entries(&data, 0x6FD00, 8, 0x6FDF0, false);
         let world_map_tile_entries = get_entries(&data, 0x6FF20, 8, 0x6C7F7);
         let world_map_props_entries = get_entries(&data, 0x6FF80, 8, 0x6DA76);
         let world_tileset_entries = get_entries(&data, 0x6FE20, 42, 0x59A56);
@@ -95,14 +95,14 @@ impl FileSystemBackendSnes {
         let scene_tileset12_assembly_entries = get_entries(&data, 0x362100, 64, 0x2F7F41);
         let scene_tileset12_animation_entries = get_relative_entries(&data, 0x3DF290, 64, 0x3DF310, 0x3DF9CC);
         let scene_tileset3_assembly_entries = get_entries(&data, 0x3621C0, 19, 0x2FB168);
-        let scene_exit_entries = get_local_entries(&data, 0x250000, 512, 0x251A44);
+        let scene_exit_entries = get_local_entries(&data, 0x250000, 512, 0x251A44, true);
 
-        let sprite_pointer_entries = get_local_entries(&data, 0x24FFE0, 7, 0x24FFEE);
+        let sprite_pointer_entries = get_local_entries(&data, 0x24FFE0, 7, 0x24FFEE, false);
         let sprite_entries = get_entries(&data, sprite_pointer_entries[0].address, 248, 0x21DDB2);
         let sprite_assembly_entries = get_entries(&data, sprite_pointer_entries[1].address, 231, 0x23F8C0);
-        let sprite_anim_frame_entries = get_local_entries(&data, sprite_pointer_entries[2].address, 194, 0x24A800);
-        let sprite_anim_duration_entries = get_local_entries(&data, sprite_pointer_entries[3].address, 194, 0x24F000);
-        let sprite_palette_entries = get_local_entries(&data, sprite_pointer_entries[4].address, 253, 0x243000);
+        let sprite_anim_frame_entries = get_local_entries(&data, sprite_pointer_entries[2].address, 194, 0x24A800, false);
+        let sprite_anim_duration_entries = get_local_entries(&data, sprite_pointer_entries[3].address, 194, 0x24F000, false);
+        let sprite_palette_entries = get_local_entries(&data, sprite_pointer_entries[4].address, 253, 0x243000, false);
         let sprite_anim_frame_data_entry = Entry {
             address: sprite_pointer_entries[5].address,
             length: 30208,
@@ -408,6 +408,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
     }
 
     fn get_scene_exit_data(&self, scene_index: usize) -> Cursor<Vec<u8>> {
+        println!("{} {}", self.scene_exit_entries[scene_index].address, self.scene_exit_entries[scene_index].length);
         self.get_bytes_cursor(self.scene_exit_entries[scene_index].address, self.scene_exit_entries[scene_index].length)
     }
 
@@ -523,6 +524,17 @@ fn calculate_entry_sizes(entries: &mut Vec<Entry>, end_address: usize) {
     }
 }
 
+fn calculate_ordered_entry_sizes(entries: &mut Vec<Entry>, end_address: usize) {
+    for j in 0..entries.len() - 1 {
+        let next = if j == entries.len() - 1 {
+            end_address
+        } else {
+            entries[j + 1].address
+        };
+        entries[j].length = next - entries[j].address;
+    }
+}
+
 fn get_entries(data: &Vec<u8>, pointers_address: usize, pointer_count: usize, last_entry_end_address: usize) -> Vec<Entry> {
     let mut entries = Vec::<Entry>::with_capacity(pointer_count);
 
@@ -548,7 +560,7 @@ fn get_entries(data: &Vec<u8>, pointers_address: usize, pointer_count: usize, la
     entries
 }
 
-fn get_local_entries(data: &Vec<u8>, pointers_address: usize, pointer_count: usize, last_entry_end_address: usize) -> Vec<Entry> {
+fn get_local_entries(data: &Vec<u8>, pointers_address: usize, pointer_count: usize, last_entry_end_address: usize, ordered: bool) -> Vec<Entry> {
     let mut entries = Vec::<Entry>::with_capacity(pointer_count);
 
     let page_start = pointers_address & 0xFF0000;
@@ -560,7 +572,11 @@ fn get_local_entries(data: &Vec<u8>, pointers_address: usize, pointer_count: usi
         });
     }
 
-    calculate_entry_sizes(&mut entries, last_entry_end_address);
+    if ordered {
+        calculate_ordered_entry_sizes(&mut entries, last_entry_end_address);
+    } else {
+        calculate_entry_sizes(&mut entries, last_entry_end_address);
+    }
 
     entries
 }

@@ -136,7 +136,6 @@ impl FileSystem {
         // Read exits.
         let mut exits = Vec::new();
         for exit_index in 0..count {
-
             let width;
             let height;
             let x;
@@ -156,19 +155,19 @@ impl FileSystem {
                     dest_x = data.read_u8().unwrap() as i32;
                     dest_y = data.read_u8().unwrap() as i32;
 
-                    let size = (((size_bits & 0x7F) + 1) * 16) as i32;
-                    (width, height) = if size_bits & 0x80 > 0 {
-                        (16, size)
-                    } else {
-                        (size, 16)
-                    };
-
                     facing = match facing_shift & 0x3 {
                         0 => Facing::Up,
                         1 => Facing::Down,
                         2 => Facing::Left,
                         3 => Facing::Right,
                         _ => panic!(),
+                    };
+
+                    let size = (((size_bits & 0x7F) + 1) * 16) as i32;
+                    (width, height) = if size_bits & 0x80 > 0 {
+                        (16, size)
+                    } else {
+                        (size, 16)
                     };
 
                     if dest_index >= 0x1F0 && dest_index <= 0x1FF {
