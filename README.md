@@ -6,27 +6,29 @@ sprites.
 
 ## Usage
 
-`ctviewer [OPTIONS] --path <PATH>`
+`ctviewer [OPTIONS] <PATH>`
+
+Arguments:
+- `<PATH>`  The source data path.
+
+The source data path can be a headered or unheadered North American SNES ROM file, or the extracted contents of the
+`resources.bin` file from the Steam version. You can use the "CT Explore" utility by River Nixx (download from
+https://rivernyxx.com/downloads.html) to extract the data from the Steam version.
 
 Options:
-- `-p`, `--path <PATH>`    Source data path
 - `-w`, `--world <WORLD>`  Index of the world to load [default: -1]
 - `-s`, `--scene <SCENE>`  Index of the scene to load [default: -1]
 - `--scale <SCALE>`        Display scale [default: 4]
 - `--scale-linear`         Scale output using linear scaling
 - `-a`, `--aspect-ratio`   Set the output aspect ratio [default: 1.333]
-- `-d`, `--dump`           Dump information and debug data
+- `-d`, `--dump`           Dump information and debug data to `stdout` and `/debug_output`
 - `--no-vsync`             Disable vertical sync
 - `-h`, `--help`           Print help
 
 Examples:
-- `ctviewer -p ./chrono-trigger.smc -s 144`  View Denadaro North Face
-- `ctviewer -p ./chrono-trigger.smc -w 2`    View 2100 A.D.
+- `ctviewer -p ./chrono-trigger.smc -s 144`  View Denadaro North Face from the SNES version.
+- `ctviewer -p ./chrono-trigger.smc -w 2`    View 2100 A.D. from the SNES version.
 - `ctviewer -p ./ct_steam -s 1 -d`           View Chrono's Kitchen and output debug info and bitmaps from the PC version.
-
-The source data path can be a headered or unheadered North American SNES ROM file, or the extracted contents of the
-`resources.bin` file from the Steam version. You can use the "CT Explore" utility by River Nixx (download from
-https://rivernyxx.com/downloads.html) to extract the data from the Steam version.
 
 ## Keys
 
@@ -37,7 +39,7 @@ When viewing scenes or worlds, the following keys are available:
 - `1` toggle rendering of layer 1
 - `2` toggle rendering of layer 2
 - `3` toggle rendering of layer 3
-- `4` toggle rendering of test sprites
+- `4` toggle rendering of sprites (disabled by default, only displays some test sprites)
 - `5` toggle rendering of the map palette
 - `\` to write a screenshot of the internal render buffer to `debug_output/screenshot.bmp`
 
@@ -45,20 +47,20 @@ When viewing worlds, the following keys are available:
 
 - `z` disable debug rendering
 - `x` render collision data 
-- `c` render exit
-- `v` render music transition data
+- `c` render exits
+- `v` render music data
 
 When viewing scenes, the following keys are available:
 
 - `z` disable debug rendering
 - `x` render player collision data
-- `c` render NPC/battle collision data
-- `v` render Z plane data & flags
+- `c` render NPC and battle collision data
+- `v` render Z plane data and flags
 - `b` render tile movement data
 - `n` render door data
 - `m` render sprite priority data
 - `,` render exits
-- `.` render treasure
+- `.` render treasures
 
 Information about exits and treasure items is displayed when the mouse is over them. You can move to another scene
 or world by clicking on exits.
@@ -67,10 +69,13 @@ or world by clicking on exits.
 
 These are some screenshots from various scenes. They have been scaled to a 4/3 aspect ratio.
 
-![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png)
-![Denadoro South Face](/readme/Denadoro%20South%20Face.png)
-![Crono's Kitchen](/readme/Crono's%20Kitchen.png)
-![Zeal Kingdom](/readme/Zeal%20Kingdom.png)
+![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png "Castle Magus Throne of Strength")
+![Denadoro South Face](/readme/Denadoro%20South%20Face.png "Denadoro South Face")
+![Crono's Kitchen](/readme/Crono's%20Kitchen.png "Chrono's Kitchen")
+![Zeal Kingdom](/readme/Zeal%20Kingdom.png "Zeal Kingdom world.")
+![Frog's Burrow](/readme/Frog's%20Burrow.png "Fro's Burrow with treasure contents.")
+![Mountain of Woe Z Debug data](/readme/Mt%20Woe%20Debug.png "Mountain of Woe with Z debug information.")
+![1000 A.D.](/readme/1000%20AD.png "1000 A.D. with exit debug information.")
 
 ## Compiling
 

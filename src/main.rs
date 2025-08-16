@@ -50,7 +50,6 @@ pub enum GameEvent {
 #[derive(Parser, Debug)]
 struct Args {
     /// Source data path.
-    #[arg(short, long)]
     path: String,
 
     /// Index of the world to load.
@@ -109,7 +108,8 @@ fn main() -> Result<(), String> {
     } else if args.world > -1 {
         gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, args.world as usize, 768, 512));
     } else {
-        panic!("Must load a scene or a world.");
+        println!("No scene or world specified, loading scene 0x1.");
+        gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, 1, 0, 0));
     }
 
     if args.dump {

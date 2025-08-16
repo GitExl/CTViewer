@@ -91,6 +91,7 @@ impl GameStateScene<'_> {
 
         let scene_renderer = SceneRenderer::new();
         let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height - 12);
+        map_renderer.layer_enabled.remove(LayerFlags::Sprites);
         map_renderer.setup_for_map(&mut scene.map);
 
         camera.center_to(x as f64, y as f64);

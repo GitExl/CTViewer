@@ -80,6 +80,7 @@ impl GameStateWorld<'_> {
 
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);
+        map_renderer.layer_enabled.remove(LayerFlags::Sprites);
         map_renderer.setup_for_map(&mut world.map);
 
         camera.center_to(x as f64, y as f64);
