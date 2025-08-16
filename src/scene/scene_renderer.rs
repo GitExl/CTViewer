@@ -23,7 +23,6 @@ pub enum SceneDebugLayer {
     PcCollision,
     NpcCollision,
     ZPlane,
-    ZPlaneFlags,
     Exits,
     Treasure,
 }
@@ -117,7 +116,6 @@ impl SceneRenderer {
                     } else {
                         continue;
                     }
-
                 } else if self.debug_layer == SceneDebugLayer::ZPlane {
                     (src_x, src_y) = match tile.z_plane {
                         0 => (1, 5),
@@ -126,18 +124,6 @@ impl SceneRenderer {
                         3 => (4, 5),
                         _ => continue,
                     };
-
-                } else if self.debug_layer == SceneDebugLayer::ZPlaneFlags {
-                    if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) && tile.flags.contains(SceneTileFlags::Z_NEUTRAL) {
-                        (src_x, src_y) = (7, 5);
-                    } else if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) {
-                        (src_x, src_y) = (5, 5);
-                    } else if tile.flags.contains(SceneTileFlags::Z_NEUTRAL) {
-                        (src_x, src_y) = (6, 5);
-                    } else {
-                        continue;
-                    }
-
                 } else if self.debug_layer == SceneDebugLayer::NpcCollision {
                     if tile.flags.contains(SceneTileFlags::NPC_COLLISION_BATTLE) && tile.flags.contains(SceneTileFlags::NPC_COLLISION) {
                         (src_x, src_y) = (2, 0);
@@ -148,14 +134,12 @@ impl SceneRenderer {
                     } else {
                         continue;
                     }
-
                 } else if self.debug_layer == SceneDebugLayer::DoorTrigger {
                     if tile.flags.contains(SceneTileFlags::DOOR_TRIGGER) {
                         (src_x, src_y) = (0, 6);
                     } else {
                         continue;
                     }
-
                 } else if self.debug_layer == SceneDebugLayer::Movement {
                     if tile.move_speed > 0 {
                         (src_x, src_y) = match tile.move_direction {
@@ -167,7 +151,6 @@ impl SceneRenderer {
                     } else {
                         continue;
                     }
-
                 } else if self.debug_layer == SceneDebugLayer::PcCollision {
                     if tile.flags.contains(SceneTileFlags::COLLISION_INVERTED) {
                         (src_x, src_y) = match tile.collision {
@@ -262,7 +245,6 @@ impl SceneRenderer {
                             SceneTileCollision::Invalid => (7, 5),
                         };
                     }
-
                 } else {
                     continue;
                 }
@@ -270,6 +252,22 @@ impl SceneRenderer {
                 let px = tile_x * 16 - camera.lerp_x.floor() as i32;
                 let py = tile_y * 16 - camera.lerp_y.floor() as i32;
                 blit_surface_to_surface(&self.debug_tiles, surface, src_x * 16, src_y * 16, 16, 16, px, py, SurfaceBlendOps::Blend);
+
+                // Second pass for some layers.
+                let src_x;
+                let src_y;
+                if self.debug_layer == SceneDebugLayer::ZPlane {
+                    if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) && tile.flags.contains(SceneTileFlags::Z_NEUTRAL) {
+                        (src_x, src_y) = (7, 5);
+                    } else if tile.flags.contains(SceneTileFlags::COLLISION_IGNORE_Z) {
+                        (src_x, src_y) = (5, 5);
+                    } else if tile.flags.contains(SceneTileFlags::Z_NEUTRAL) {
+                        (src_x, src_y) = (6, 5);
+                    } else {
+                        continue;
+                    }
+                    blit_surface_to_surface(&self.debug_tiles, surface, src_x * 16, src_y * 16, 16, 16, px, py, SurfaceBlendOps::Blend);
+                }
             }
         }
     }

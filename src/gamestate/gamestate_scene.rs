@@ -172,7 +172,7 @@ impl GameStateTrait for GameStateScene<'_> {
     }
 
     fn get_title(&self, l10n: &L10n) -> String {
-        l10n.get_indexed(IndexedType::Scene, self.scene.index)
+        format!("0x{:03X} - {}", self.scene.index, l10n.get_indexed(IndexedType::Scene, self.scene.index))
     }
 
     fn event(&mut self, event: &Event) {
@@ -220,29 +220,25 @@ impl GameStateTrait for GameStateScene<'_> {
                     },
                     Some(Keycode::V) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::ZPlane;
-                        println!("Debug layer for Z plane.");
+                        println!("Debug layer for Z plane data & flags.");
                     },
                     Some(Keycode::B) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::ZPlaneFlags;
-                        println!("Debug layer for Z plane flags.");
-                    },
-                    Some(Keycode::N) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Movement;
                         println!("Debug layer for movement.");
                     },
-                    Some(Keycode::M) => {
+                    Some(Keycode::N) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::DoorTrigger;
                         println!("Debug layer for door triggers.");
                     },
-                    Some(Keycode::Comma) => {
+                    Some(Keycode::M) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::SpritePriority;
                         println!("Debug layer for sprite priority data.");
                     },
-                    Some(Keycode::Period) => {
+                    Some(Keycode::Comma) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Exits;
                         println!("Debug layer for exits.");
                     },
-                    Some(Keycode::Slash) => {
+                    Some(Keycode::Period) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Treasure;
                         println!("Debug layer for treasure.");
                     },

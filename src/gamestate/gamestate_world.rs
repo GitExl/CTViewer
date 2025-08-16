@@ -161,7 +161,7 @@ impl GameStateTrait for GameStateWorld<'_> {
     }
 
     fn get_title(&self, l10n: &L10n) -> String {
-        l10n.get_indexed(IndexedType::World, self.world.index)
+        format!("0x{:03X} - {}", self.world.index, l10n.get_indexed(IndexedType::World, self.world.index))
     }
 
     fn event(&mut self, event: &Event) {
