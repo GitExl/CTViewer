@@ -4,13 +4,13 @@ pub struct Camera {
     pub width: f64,
     pub height: f64,
 
-    pub x1: f64,
-    pub y1: f64,
-    pub x2: f64,
-    pub y2: f64,
+    x1: f64,
+    y1: f64,
+    x2: f64,
+    y2: f64,
 
-    pub last_x: f64,
-    pub last_y: f64,
+    last_x: f64,
+    last_y: f64,
     pub lerp_x: f64,
     pub lerp_y: f64,
 }
@@ -53,7 +53,19 @@ impl Camera {
     }
 
     pub fn wrap(&mut self) {
-        // todo
+        // @todo broken, wraps but not to the correct spot
+
+        if self.x < self.x1 {
+            self.x = self.x2 - self.width + (self.x - self.x1);
+        } else if self.x + self.width >= self.x2 {
+            self.x = self.x1 + (self.x + self.width - self.x2);
+        }
+
+        if self.y < self.y1 {
+            self.y = self.y2 - self.height + (self.y - self.y1);
+        } else if self.y + self.height >= self.y2 {
+            self.y = self.y1 + (self.y + self.height - self.y2);
+        }
     }
 
     pub fn center_to(&mut self, x: f64, y: f64) {
