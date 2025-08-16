@@ -153,8 +153,8 @@ impl FileSystem {
                     let size_bits = data.read_u8().unwrap();
                     let facing_shift = data.read_u8().unwrap();
                     dest_index = data.read_u16::<LittleEndian>().unwrap() as usize;
-                    dest_x = data.read_u8().unwrap() as i32 * 8;
-                    dest_y = data.read_u8().unwrap() as i32 * 8;
+                    dest_x = data.read_u8().unwrap() as i32;
+                    dest_y = data.read_u8().unwrap() as i32;
 
                     let size = (((size_bits & 0x7F) + 1) * 16) as i32;
                     (width, height) = if size_bits & 0x80 > 0 {
