@@ -1,5 +1,4 @@
-use std::fs::File;
-use std::io::BufReader;
+use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 
@@ -24,41 +23,41 @@ pub struct Bmp {
 }
 
 impl Bmp {
-    pub fn from_reader(reader: &mut BufReader<File>) -> Bmp {
+    pub fn from_cursor(cursor: &mut Cursor<Vec<u8>>) -> Bmp {
 
         // BitmapHeader
-        let id = reader.read_u16::<LittleEndian>().unwrap();
+        let id = cursor.read_u16::<LittleEndian>().unwrap();
         if id != 0x4D42 {
             panic!("Bitmap has a bad id.");
         }
 
-        let file_size = reader.read_u32::<LittleEndian>().unwrap() as u64;
-        if file_size != reader.get_ref().metadata().unwrap().len() {
+        let file_size = cursor.read_u32::<LittleEndian>().unwrap() as u64;
+        if file_size != cursor.get_ref().len() as u64 {
             panic!("Bitmap size does not match file size.");
         }
 
-        reader.read_u16::<LittleEndian>().unwrap();
-        reader.read_u16::<LittleEndian>().unwrap();
-        let data_offset = reader.read_u32::<LittleEndian>().unwrap() as u64;
-        if data_offset >= reader.get_ref().metadata().unwrap().len() {
+        cursor.read_u16::<LittleEndian>().unwrap();
+        cursor.read_u16::<LittleEndian>().unwrap();
+        let data_offset = cursor.read_u32::<LittleEndian>().unwrap() as u64;
+        if data_offset >= cursor.get_ref().len() as u64 {
             panic!("Bitmap has data past the file size.");
         }
 
         // BitmapInfoHeader
-        let header_size = reader.read_u32::<LittleEndian>().unwrap();
+        let header_size = cursor.read_u32::<LittleEndian>().unwrap();
         if header_size != 108 && header_size != 40 {
             panic!("Bitmap has a BitmapInfoHeader that is not 108 or 40 bytes.");
         }
-        let width = reader.read_i32::<LittleEndian>().unwrap() as u32;
-        let height = reader.read_i32::<LittleEndian>().unwrap() as u32;
+        let width = cursor.read_i32::<LittleEndian>().unwrap() as u32;
+        let height = cursor.read_i32::<LittleEndian>().unwrap() as u32;
         if width > 32767 || height > 32767 {
             panic!("Bitmap has bad dimensions.");
         }
-        let planes = reader.read_u16::<LittleEndian>().unwrap();
+        let planes = cursor.read_u16::<LittleEndian>().unwrap();
         if planes != 1 {
             panic!("Bitmap must have 1 plane.");
         }
-        let bpp = match reader.read_u16::<LittleEndian>().unwrap() {
+        let bpp = match cursor.read_u16::<LittleEndian>().unwrap() {
             1 => BPP::Bpp1,
             2 => BPP::Bpp2,
             4 => BPP::Bpp4,
@@ -67,44 +66,44 @@ impl Bmp {
                 panic!("Bitmap must be paletted.");
             }
         };
-        let compression_method = reader.read_u32::<LittleEndian>().unwrap();
+        let compression_method = cursor.read_u32::<LittleEndian>().unwrap();
         if compression_method != 0 {
             panic!("Bitmap must be uncompressed.")
         }
-        reader.read_u32::<LittleEndian>().unwrap();
-        reader.read_u32::<LittleEndian>().unwrap();
-        reader.read_u32::<LittleEndian>().unwrap();
-        let color_count = reader.read_u32::<LittleEndian>().unwrap() as usize;
-        reader.read_u32::<LittleEndian>().unwrap();
+        cursor.read_u32::<LittleEndian>().unwrap();
+        cursor.read_u32::<LittleEndian>().unwrap();
+        cursor.read_u32::<LittleEndian>().unwrap();
+        let color_count = cursor.read_u32::<LittleEndian>().unwrap() as usize;
+        cursor.read_u32::<LittleEndian>().unwrap();
 
         // Skip BITMAPV4HEADER color correction stuff.
-        reader.seek(std::io::SeekFrom::Current(68)).expect("Bitmap cannot seek past header.");
+        cursor.seek(std::io::SeekFrom::Current(68)).expect("Bitmap cannot seek past header.");
 
         // Palette.
         let mut palette: Vec<BmpColor> = vec![[0, 0, 0, 0]; color_count];
         for i in 0..color_count {
             // ARGB > RGBA
-            palette[i][2] = reader.read_u8().unwrap();
-            palette[i][1] = reader.read_u8().unwrap();
-            palette[i][0] = reader.read_u8().unwrap();
-            palette[i][3] = reader.read_u8().unwrap();
+            palette[i][2] = cursor.read_u8().unwrap();
+            palette[i][1] = cursor.read_u8().unwrap();
+            palette[i][0] = cursor.read_u8().unwrap();
+            palette[i][3] = cursor.read_u8().unwrap();
         }
 
-        reader.seek(std::io::SeekFrom::Start(data_offset))
+        cursor.seek(std::io::SeekFrom::Start(data_offset))
             .expect("Bitmap could not seek to start of image data.");
-        let pixels = read_pixels(reader, width, height, &bpp);
+        let pixels = read_pixels(cursor, width, height, &bpp);
 
         Bmp {
-            width: width,
-            height: height,
-            bpp: bpp,
-            palette: palette,
-            pixels: pixels,
+            width,
+            height,
+            bpp,
+            palette,
+            pixels,
         }
     }
 }
 
-fn read_pixels(reader: &mut BufReader<File>, width: u32, height: u32, bpp: &BPP) -> Vec<u8> {
+fn read_pixels(reader: &mut Cursor<Vec<u8>>, width: u32, height: u32, bpp: &BPP) -> Vec<u8> {
     let bytes_per_row = match bpp {
         BPP::Bpp1 => width / 8,
         BPP::Bpp2 => width / 4,

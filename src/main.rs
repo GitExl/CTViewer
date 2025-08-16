@@ -3,7 +3,7 @@
 use std::path::Path;
 use filesystem::filesystem::FileSystem;
 use util::timer::Timer;
-use crate::filesystem::backend_pc::FileSystemBackendPc;
+use crate::filesystem::backend_pc::{FileSystemBackendPc, FileSystemBackendPcMode};
 use crate::filesystem::backend_snes::FileSystemBackendSnes;
 use crate::filesystem::filesystem::ParseMode;
 use crate::gamestate::gamestate::GameStateTrait;
@@ -86,19 +86,8 @@ fn main() -> Result<(), String> {
     println!("SDL3 TTF: {}", sdl3::ttf::get_linked_version());
 
     let args = Args::parse();
-
-    let src = Path::new(&args.path);
-    let fs;
-    if src.is_dir() {
-        let backend = FileSystemBackendPc::new(&src.into());
-        fs = FileSystem::new(Box::new(backend), ParseMode::Pc);
-    } else {
-        let backend = FileSystemBackendSnes::new(&src);
-        fs = FileSystem::new(Box::new(backend), ParseMode::Snes);
-    }
-
+    let fs = create_filesystem(args.path);
     let l10n = L10n::new("en", &fs);
-
     let sdl = sdl3::init().unwrap();
     let mut renderer = Renderer::new(&sdl, args.scale, args.scale_linear, args.aspect_ratio, !args.no_vsync);
 
@@ -224,4 +213,23 @@ fn main() -> Result<(), String> {
     };
 
     Ok(())
+}
+
+fn create_filesystem(path: String) -> FileSystem {
+    let src = Path::new(&path);
+
+    // A directory is assumed to be the extracted version of the Steam resources.bin file.
+    if src.is_dir() {
+        let backend = FileSystemBackendPc::new(&src.into(), FileSystemBackendPcMode::FileSystem);
+        return FileSystem::new(Box::new(backend), ParseMode::Pc);
+
+    // Steam version resources.bin.
+    } else if src.file_name().unwrap().to_ascii_lowercase() == "resources.bin" {
+        let backend = FileSystemBackendPc::new(&src.into(), FileSystemBackendPcMode::ResourcesBin);
+        return FileSystem::new(Box::new(backend), ParseMode::Pc);
+    }
+
+    // Any other file is assumed to be an SNES ROM image.
+    let backend = FileSystemBackendSnes::new(&src);
+    FileSystem::new(Box::new(backend), ParseMode::Snes)
 }

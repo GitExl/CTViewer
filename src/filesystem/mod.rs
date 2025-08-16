@@ -11,4 +11,5 @@ mod sprite;
 mod world;
 mod strings;
 mod text_decoder;
+mod resourcesbin;
 

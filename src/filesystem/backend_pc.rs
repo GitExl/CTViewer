@@ -1,38 +1,72 @@
 use std::fs::File;
-use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::filesystem::backend::FileSystemBackendTrait;
 use crate::filesystem::filesystem::{FileSystem};
+use crate::filesystem::resourcesbin::ResourcesBin;
 use crate::software_renderer::palette::{Color, Palette};
 use crate::util::bmp_reader::Bmp;
 use crate::util::lz_decompress::lz_decompress;
 
+#[derive(Debug)]
+pub enum FileSystemBackendPcMode {
+    FileSystem,
+    ResourcesBin,
+}
+
 pub struct FileSystemBackendPc {
     base_path: Box<Path>,
+    mode: FileSystemBackendPcMode,
+    resources: Option<ResourcesBin>
 }
 
 impl FileSystemBackendPc {
-    pub fn new(base_path: &Box<Path>) -> Self {
-        println!("Using PC data backend at {}.", base_path.display());
+    pub fn new(base_path: &Box<Path>, mode: FileSystemBackendPcMode) -> Self {
+        println!("Using PC data backend with '{}' in {:?} mode.", base_path.display(), mode);
+
+        let resources = if matches!(mode, FileSystemBackendPcMode::ResourcesBin) {
+            Some(ResourcesBin::new(base_path))
+        } else {
+            None
+        };
 
         FileSystemBackendPc {
             base_path: base_path.clone(),
+            mode,
+            resources,
         }
     }
 
-    fn file_get(&self, filename: &String) -> BufReader<File> {
-        let path = self.base_path.join(Path::new(&filename));
-        let file = File::open(&path).expect(&format!("Could not open file {}.", filename));
-        BufReader::new(file)
+    fn file_get(&self, filename: &str) -> Cursor<Vec<u8>> {
+        match self.resources {
+            None => {
+                let path = self.base_path.join(Path::new(&filename));
+                let mut file = File::open(&path).expect(&format!("Could not open file {}.", filename));
+                let mut data = vec![0; file.metadata().unwrap().len() as usize];
+                file.read_exact(&mut data).unwrap();
+
+                Cursor::new(data)
+            },
+            Some(ref res) => {
+                res.file_get(filename)
+            }
+        }
     }
 
     fn file_exists(&self, filename: &String) -> bool {
-        let path = self.base_path.join(Path::new(&filename));
-        path.exists()
+        match self.resources {
+            None => {
+                let path = self.base_path.join(Path::new(&filename));
+                path.exists()
+            },
+            Some(ref res) => {
+                res.file_exists(filename)
+            },
+        }
     }
 
-    fn get_bytes(&self, reader: &mut BufReader<File>, len: Option<usize>, start: Option<usize>) -> Vec<u8> {
+    fn get_bytes(&self, reader: &mut Cursor<Vec<u8>>, len: Option<usize>, start: Option<usize>) -> Vec<u8> {
         let mut buffer;
 
         let mut offset = 0;
@@ -42,7 +76,7 @@ impl FileSystemBackendPc {
         }
 
         if len.is_none() {
-            buffer = vec![0u8; reader.get_mut().metadata().unwrap().len() as usize - offset];
+            buffer = vec![0u8; reader.get_mut().len() - offset];
         } else {
             buffer = vec![0u8; len.unwrap()];
         }
@@ -51,7 +85,7 @@ impl FileSystemBackendPc {
         buffer
     }
 
-    fn get_bytes_cursor(&self, reader: &mut BufReader<File>, len: Option<usize>, start: Option<usize>) -> Cursor<Vec<u8>> {
+    fn get_bytes_cursor(&self, reader: &mut Cursor<Vec<u8>>, len: Option<usize>, start: Option<usize>) -> Cursor<Vec<u8>> {
         let buffer = self.get_bytes(reader, len, start);
         Cursor::new(buffer)
     }
@@ -211,22 +245,26 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
             _ => return None,
         };
 
-        let bitmap = Bmp::from_reader(&mut self.file_get(&name.to_string()));
+        let bitmap = Bmp::from_cursor(&mut self.file_get(&name.to_string()));
         Some(bitmap.pixels)
     }
 
     fn get_world_player_sprite_graphics(&self) -> Option<Vec<u8>> {
-        let file = File::open(Path::new("data/pc_sprites_empty.bmp")).unwrap();
-        let mut reader = BufReader::new(file);
-        let bmp = Bmp::from_reader(&mut reader);
+        let mut file = File::open(Path::new("data/pc_sprites_empty.bmp")).unwrap();
+        let mut data = vec![0u8; file.metadata().unwrap().len() as usize];
+        file.read_exact(&mut data).unwrap();
+        let mut cursor = Cursor::new(data);
+        let bmp = Bmp::from_cursor(&mut cursor);
 
         Some(bmp.pixels)
     }
 
     fn get_world_epoch_sprite_graphics(&self) -> Option<Vec<u8>> {
-        let file = File::open(Path::new("data/epoch_sprites_empty.bmp")).unwrap();
-        let mut reader = BufReader::new(file);
-        let bmp = Bmp::from_reader(&mut reader);
+        let mut file = File::open(Path::new("data/epoch_sprites_empty.bmp")).unwrap();
+        let mut data = vec![0u8; file.metadata().unwrap().len() as usize];
+        file.read_exact(&mut data).unwrap();
+        let mut cursor = Cursor::new(data);
+        let bmp = Bmp::from_cursor(&mut cursor);
 
         Some(bmp.pixels)
     }
@@ -416,7 +454,7 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         }
 
         let mut bmp_reader = self.file_get(&filename);
-        let bmp = Bmp::from_reader(&mut bmp_reader);
+        let bmp = Bmp::from_cursor(&mut bmp_reader);
 
         // Normalize the BMP palette into raw RGBA color bytes.
         let mut colors = vec![Color::default(); bmp.palette.len()];
@@ -441,7 +479,7 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
             }
 
             let mut reader = self.file_get(&filename);
-            let bmp = Bmp::from_reader(&mut reader);
+            let bmp = Bmp::from_cursor(&mut reader);
             let offset = bitmap_index * 0x10000;
             tile_data[offset..offset + bmp.pixels.len()].copy_from_slice(&bmp.pixels);
         }

@@ -144,6 +144,7 @@ dependencies = [
  "bitflags 2.9.1",
  "byteorder",
  "clap",
+ "flate2",
  "png",
  "sdl3",
 ]

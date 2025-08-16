@@ -8,6 +8,7 @@ byteorder = "1.5.0"
 bitflags = "2.9.1"
 png = "0.17.13"
 clap = { version = "4.5.41", features = ["derive"] }
+flate2 = "1.1.2"
 
 [dependencies.sdl3]
 version = "0.14.36"
