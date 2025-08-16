@@ -60,7 +60,8 @@ When viewing scenes, the following keys are available:
 - `,` render exits
 - `.` render treasure
 
-Information about exits and treasure items is displayed when the mouse is over them.
+Information about exits and treasure items is displayed when the mouse is over them. You can move to another scene
+or world by clicking on exits.
 
 ## Examples
 
