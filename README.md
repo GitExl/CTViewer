@@ -16,9 +16,9 @@ The source data path can be a headered or unheadered North American SNES ROM fil
 https://rivernyxx.com/downloads.html) to extract the data from the Steam version.
 
 Options:
-- `-w`, `--world <WORLD>`  Index of the world to load [default: -1]
-- `-s`, `--scene <SCENE>`  Index of the scene to load [default: -1]
-- `--scale <SCALE>`        Display scale [default: 4]
+- `-w`, `--world <WORLD>`  Index of the world to load [default: -1 / none]
+- `-s`, `--scene <SCENE>`  Index of the scene to load [default: -1 / none]
+- `--scale <SCALE>`        Display scale [default: -1 / auto]
 - `--scale-linear`         Scale output using linear scaling
 - `-a`, `--aspect-ratio`   Set the output aspect ratio [default: 1.333]
 - `-d`, `--dump`           Dump information and debug data to `stdout` and `/debug_output`
@@ -79,8 +79,8 @@ These are some screenshots from various scenes. They have been scaled to a 4/3 a
 
 ## Compiling
 
-Install Rust from https://www.rust-lang.org/tools/install and build it like any other Cargo project by running
-`cargo run -- [parameters]`.
-
-The SDL3 libraries are required to be in the path to be able to run. Get the `SDL3.lib`, `SDL3.dll`, `SDL3_ttf.lib` and
+1. Install Rust from https://www.rust-lang.org/tools/install/.
+2. SDL3 libraries are required to be in the path to be able to build and run it. Get the `SDL3.lib`, `SDL3.dll`, `SDL3_ttf.lib` and
 `SDL3_ttf.dll` development libraries for your platform from https://github.com/libsdl-org/SDL/releases
+3. Build and run a debug build using Cargo with `cargo run -- [parameters]`.
+4. Build and run an optimized release build with `cargo run -r -- [parameters]`.
