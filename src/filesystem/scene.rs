@@ -150,7 +150,7 @@ impl FileSystem {
                 ParseMode::Pc => {
                     x = data.read_u8().unwrap() as i32 * 16;
                     y = data.read_u8().unwrap() as i32 * 16;
-                    let size_bits = data.read_u8().unwrap();
+                    let size_bits = data.read_u8().unwrap() as u32;
                     let facing_shift = data.read_u8().unwrap();
                     dest_index = data.read_u16::<LittleEndian>().unwrap() as usize;
                     dest_x = data.read_u8().unwrap() as i32;
@@ -193,7 +193,7 @@ impl FileSystem {
                 ParseMode::Snes => {
                     x = data.read_u8().unwrap() as i32 * 16;
                     y = data.read_u8().unwrap() as i32 * 16;
-                    let size_bits = data.read_u8().unwrap();
+                    let size_bits = data.read_u8().unwrap() as u32;
                     let dest_index_facing = data.read_u16::<LittleEndian>().unwrap() as usize;
                     dest_x = data.read_u8().unwrap() as i32;
                     dest_y = data.read_u8().unwrap() as i32;
