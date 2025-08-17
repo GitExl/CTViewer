@@ -70,13 +70,29 @@ or world by clicking on exits.
 
 These are some screenshots from various scenes. They have been scaled to a 4/3 aspect ratio.
 
-![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png "Castle Magus Throne of Strength (SNES)")
-![Denadoro South Face](/readme/Denadoro%20South%20Face.png "Denadoro South Face (SNES)")
-![Crono's Kitchen](/readme/Crono's%20Kitchen.png "Chrono's Kitchen (SNES)")
+![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png "Castle Magus Throne of Strength. (SNES)")
+![Denadoro South Face](/readme/Denadoro%20South%20Face.png "Denadoro South Face. (SNES)")
+![Crono's Kitchen](/readme/Crono's%20Kitchen.png "Chrono's Kitchen. (SNES)")
 ![Zeal Kingdom](/readme/Zeal%20Kingdom.png "Zeal Kingdom world. (SNES)")
 ![Frog's Burrow](/readme/Frog's%20Burrow.png "Frog's Burrow with treasure contents. (PC)")
 ![Mountain of Woe Z Debug data](/readme/Mt%20Woe%20Debug.png "Mountain of Woe with Z debug information. (PC)")
 ![1000 A.D.](/readme/1000%20AD.png "1000 A.D. with exit debug information. (PC)")
+
+## Known issues
+
+### General
+
+- The format of world sprite animation and assembly data is still not entirely understood.
+- World layer 3 animation is currently hardcoded. It is unknown where this information is stored.
+- Scanline animation effects (usually on layer 3) are not present. This requires a different tilemap rendering approach.
+- World palette animations are hardcoded. It is unknown where this information is stored.
+- World camera wrapping works, but not smoothly.
+
+### PC version
+
+- The map extensions are not supported, as a result widescreen display isn't either.
+- The priority map data is not used to rearrange layer priorities, so some scene maps like 97 (Black Omen upper level 4)
+look wrong.
 
 ## Compiling
 
