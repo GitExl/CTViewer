@@ -46,7 +46,7 @@ impl ResourcesBin {
 
         // Validate header.
         if signature != "ARC1" {
-            panic!("Not a valid resources file: no signature.")
+            panic!("Not a valid resources file: unknown signature.")
         }
         let file_len = reader.get_ref().metadata().unwrap().len();
         if file_len != file_length {

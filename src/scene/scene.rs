@@ -32,16 +32,7 @@ impl SceneExit {
     pub fn dump(&self, l10n: &L10n) {
         println!("Scene exit {}", self.index);
         println!("  At {} x {}, {} by {}", self.x, self.y, self.width, self.height);
-        match self.destination {
-            Destination::Scene { index, x, y, facing } => {
-                println!("  To scene 0x{:03X} - {}", index, l10n.get_indexed(IndexedType::Scene, index));
-                println!("  At {} x {} facing {:?}", x, y, facing);
-            },
-            Destination::World { index, x, y } => {
-                println!("  To world 0x{:03X} - {}", index, l10n.get_indexed(IndexedType::World, index));
-                println!("  At {} x {}", x, y);
-            }
-        }
+        self.destination.dump(&l10n);
 
         println!();
     }
@@ -91,7 +82,7 @@ pub struct Scene {
 impl Scene {
     pub fn dump(&self, l10n: &L10n) {
         println!("Scene {} - {}", self.index, l10n.get_indexed(IndexedType::Scene, self.index));
-        println!("  Music 0x{:02X}, map {}, script 0x{:02X}",
+        println!("  Music {}, map {}, script {}",
             self.music_index,
             self.map.index,
             self.script_index,

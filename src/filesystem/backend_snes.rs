@@ -408,7 +408,6 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
     }
 
     fn get_scene_exit_data(&self, scene_index: usize) -> Cursor<Vec<u8>> {
-        println!("{} {}", self.scene_exit_entries[scene_index].address, self.scene_exit_entries[scene_index].length);
         self.get_bytes_cursor(self.scene_exit_entries[scene_index].address, self.scene_exit_entries[scene_index].length)
     }
 

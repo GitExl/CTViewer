@@ -27,14 +27,7 @@ impl WorldExit {
         println!("World exit {} - {}", self.index, l10n.get_indexed(IndexedType::WorldExit, self.name_index));
         println!("  Position: {} x {}", self.x, self.y);
         println!("  Available: {}", self.is_available);
-        match self.destination {
-            Destination::Scene { index, x, y, facing } => {
-                println!("  To scene 0x{:03X} - {}, {} x {} facing {:?}", index, l10n.get_indexed(IndexedType::Scene, index), x, y, facing);
-            },
-            Destination::World { index, x, y } => {
-                println!("  To world 0x{:03X} - {}, {} x {}", index, l10n.get_indexed(IndexedType::World, index), x, y);
-            },
-        }
+        self.destination.dump(&l10n);
 
         println!("  Unknown: {}", self.unknown);
         println!();
