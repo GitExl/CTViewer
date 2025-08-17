@@ -2,7 +2,7 @@ use bitflags::bitflags;
 
 bitflags! {
     #[derive(Clone, Default)]
-    pub struct SpriteAssemblyTileFlags: u32 {
+    pub struct SpriteAssemblyChipFlags: u32 {
         const FLIP_X = 0x01;
         const FLIP_Y = 0x02;
         const UNUSED = 0x04;
@@ -12,27 +12,29 @@ bitflags! {
 
 // An assembly tile is drawn at a position, analogous to an SNES sprite.
 #[derive(Clone, Default)]
-pub struct SpriteAssemblyTile {
+pub struct SpriteAssemblyChip {
     pub x: i32,
     pub y: i32,
-    pub src_x: i32,
-    pub src_y: i32,
     pub width: i32,
     pub height: i32,
-    pub chip: usize,
-    pub flags: SpriteAssemblyTileFlags,
+
+    pub src_index: usize,
+    pub src_x: i32,
+    pub src_y: i32,
+
+    pub flags: SpriteAssemblyChipFlags,
 }
 
 // A frame lists tiles to draw.
 #[derive(Clone)]
 pub struct SpriteAssemblyFrame {
-    pub tiles: Vec<SpriteAssemblyTile>,
+    pub chips: Vec<SpriteAssemblyChip>,
 }
 
 impl SpriteAssemblyFrame {
     pub fn new() -> SpriteAssemblyFrame {
         SpriteAssemblyFrame {
-            tiles: Vec::new(),
+            chips: Vec::new(),
         }
     }
 }
@@ -64,19 +66,19 @@ impl SpriteAssembly {
 
         for (frame_index, frame) in self.frames.iter().enumerate() {
             println!("    Frame {}, {} tiles",
-            frame_index,
-                frame.tiles.len(),
+                     frame_index,
+                     frame.chips.len(),
             );
 
-            for tile in &frame.tiles {
+            for tile in &frame.chips {
                 println!("      Tile {:>5} {:0>16b}, x {:>4}, y {:>4}, {:>2}x{:>2} {:>6} {:>6} {:>6} {:>7}",
-                    tile.chip, tile.chip,
-                    tile.x, tile.y,
-                    tile.width, tile.height,
-                    if tile.flags.contains(SpriteAssemblyTileFlags::FLIP_X) { "FLIP_X" } else { "" },
-                    if tile.flags.contains(SpriteAssemblyTileFlags::FLIP_Y) { "FLIP_Y" } else { "" },
-                    if tile.flags.contains(SpriteAssemblyTileFlags::UNUSED) { "UNUSED" } else { "" },
-                    if tile.flags.contains(SpriteAssemblyTileFlags::UNKNOWN) { "UNKNOWN" } else { "" },
+                         tile.src_index, tile.src_index,
+                         tile.x, tile.y,
+                         tile.width, tile.height,
+                         if tile.flags.contains(SpriteAssemblyChipFlags::FLIP_X) { "FLIP_X" } else { "" },
+                         if tile.flags.contains(SpriteAssemblyChipFlags::FLIP_Y) { "FLIP_Y" } else { "" },
+                         if tile.flags.contains(SpriteAssemblyChipFlags::UNUSED) { "UNUSED" } else { "" },
+                         if tile.flags.contains(SpriteAssemblyChipFlags::UNKNOWN) { "UNKNOWN" } else { "" },
                 );
             }
         }

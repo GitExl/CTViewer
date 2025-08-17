@@ -1,7 +1,11 @@
 // Sprite descriptors contain data and references to data needed to load a sprite.
 pub struct SpriteHeader {
     pub index: usize,
-    pub assembly_set_count: u32,
+
+    // Contains the number of 4 tile groups in the first two bits.
+    // Bit 0x8 indicates this is a primary enemy.
+    // The rest are unknown flags.
+    pub size_flags: u32,
 
     // Index into other data.
     pub bitmap_index: usize,
@@ -31,8 +35,8 @@ impl SpriteHeader {
             self.assembly_index,
             self.palette_index,
         );
-        println!("  Assembly set count {}, animations {:03X}, flags {:0>8b}",
-            self.assembly_set_count,
+        println!("  Size flags {:08b}, animations {:03X}, flags {:0>8b}",
+            self.size_flags,
             self.anim_index,
             self.flags,
         );

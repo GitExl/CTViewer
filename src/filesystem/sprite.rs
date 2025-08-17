@@ -13,8 +13,8 @@ use crate::sprites::sprite_anim::SpriteAnimSet;
 use crate::sprites::sprite_anim::DIRECTION_COUNT;
 use crate::sprites::sprite_assembly::SpriteAssembly;
 use crate::sprites::sprite_assembly::SpriteAssemblyFrame;
-use crate::sprites::sprite_assembly::SpriteAssemblyTile;
-use crate::sprites::sprite_assembly::SpriteAssemblyTileFlags;
+use crate::sprites::sprite_assembly::SpriteAssemblyChip;
+use crate::sprites::sprite_assembly::SpriteAssemblyChipFlags;
 use crate::sprites::sprite_header::SpriteHeader;
 use crate::sprites::sprite_manager::WORLD_ANIM_SET_INDEX;
 use crate::sprites::sprite_manager::WORLD_ASSEMBLY_SET_INDEX;
@@ -30,7 +30,7 @@ impl FileSystem {
                 bitmap_index: data.read_u8().unwrap() as usize,
                 assembly_index: data.read_u8().unwrap() as usize,
                 palette_index: data.read_u8().unwrap() as usize,
-                assembly_set_count: data.read_u8().unwrap() as u32 + 1,
+                size_flags: data.read_u8().unwrap() as u32,
                 anim_index: data.read_u8().unwrap() as usize,
                 flags: data.read_u8().unwrap() as u32,
                 hand_x: 0,
@@ -45,7 +45,7 @@ impl FileSystem {
                 assembly_index: data.read_u8().unwrap() as usize,
                 palette_index: data.read_u8().unwrap() as usize,
                 anim_index: data.read_u8().unwrap() as usize,
-                assembly_set_count: data.read_u8().unwrap() as u32 + 1,
+                size_flags: data.read_u8().unwrap() as u32,
                 flags: 0,
                 hand_x: 0,
                 hand_y: 0,
@@ -54,7 +54,7 @@ impl FileSystem {
                 enemy_unknown3: 0,
             },
         };
-        
+
         if matches!(self.parse_mode, ParseMode::Pc) {
             header.bitmap_index = index;
             header.assembly_index = index;
@@ -77,15 +77,28 @@ impl FileSystem {
     pub fn read_sprite_assembly(&self, index: usize, sprite_header: &SpriteHeader) -> SpriteAssembly {
         let mut data = self.backend.get_sprite_assembly_data(index);
 
-        match self.parse_mode {
+        let assembly = match self.parse_mode {
             ParseMode::Pc => {
                 data.seek(SeekFrom::Start(3)).unwrap();
                 parse_pc_sprite_assembly(index, &mut data)
             },
             ParseMode::Snes => {
-                parse_snes_sprite_assembly(index, sprite_header.assembly_set_count as usize, &mut data)
+                let (groups_per_frame, tiles_per_group) = match sprite_header.size_flags & 0x3 {
+                    0 => (1, 4),
+                    1 => (1, 8),
+                    2 => (3, 4),
+                    3 => (3, 8),
+                    _ => (1, 4),
+                };
+                parse_snes_sprite_assembly(index, groups_per_frame, tiles_per_group, &mut data)
             },
+        };
+
+        if assembly.frames.len() == 0 {
+            panic!("Sprite assembly {} has no frames.", assembly.index);
         }
+
+        assembly
     }
 
     // Read all sprite animations.
@@ -258,22 +271,22 @@ impl FileSystem {
                     data.seek(SeekFrom::Start(ptr - 0xE000)).unwrap();
                     let tile_count = data.read_u8().unwrap();
                     let mut frame = SpriteAssemblyFrame {
-                        tiles: Vec::new(),
+                        chips: Vec::new(),
                     };
                     for _ in 0..tile_count {
                         let x = data.read_i8().unwrap() as i32;
                         let y = data.read_i8().unwrap() as i32;
                         let mut chip_index = data.read_u16::<LittleEndian>().unwrap() as usize;
 
-                        let mut flags: SpriteAssemblyTileFlags = SpriteAssemblyTileFlags::default();
+                        let mut flags: SpriteAssemblyChipFlags = SpriteAssemblyChipFlags::default();
                         if chip_index & 0x2000 > 0 {
-                            flags |= SpriteAssemblyTileFlags::UNKNOWN;
+                            flags |= SpriteAssemblyChipFlags::UNKNOWN;
                         }
                         if chip_index & 0x4000 > 0 {
-                            flags |= SpriteAssemblyTileFlags::FLIP_X;
+                            flags |= SpriteAssemblyChipFlags::FLIP_X;
                         }
                         if chip_index & 0x8000 > 0 {
-                            flags |= SpriteAssemblyTileFlags::FLIP_Y;
+                            flags |= SpriteAssemblyChipFlags::FLIP_Y;
                         }
 
                         chip_index &= 0x1FFF;
@@ -281,11 +294,11 @@ impl FileSystem {
                         let src_y = ((chip_index / 32) * 16) as i32;
 
                         assembly.chip_max = std::cmp::max(assembly.chip_max, chip_index);
-                        frame.tiles.push(SpriteAssemblyTile {
+                        frame.chips.push(SpriteAssemblyChip {
                             x, y,
                             width: 16, height: 16,
                             src_x, src_y,
-                            chip: chip_index,
+                            src_index: chip_index,
                             flags,
                         });
                     }
@@ -442,22 +455,22 @@ fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -
             assembly.chip_max = assembly.chip_max.max(chip);
 
             // Map flags to internal ones.
-            let mut flags = SpriteAssemblyTileFlags::default();
+            let mut flags = SpriteAssemblyChipFlags::default();
             if flags_value & 0x01 != 0 {
-                flags |= SpriteAssemblyTileFlags::FLIP_X;
+                flags |= SpriteAssemblyChipFlags::FLIP_X;
             }
             if flags_value & 0x02 != 0 {
-                flags |= SpriteAssemblyTileFlags::UNUSED;
+                flags |= SpriteAssemblyChipFlags::UNUSED;
             }
             if weird_bit != 0 {
-                flags |= SpriteAssemblyTileFlags::UNKNOWN;
+                flags |= SpriteAssemblyChipFlags::UNKNOWN;
             }
 
             let src_x = ((chip % 32) * 8) as i32;
             let src_y = ((chip / 32) * 16) as i32;
 
-            frame.tiles.push(SpriteAssemblyTile {
-                chip,
+            frame.chips.push(SpriteAssemblyChip {
+                src_index: chip,
                 x, y,
                 src_x, src_y,
                 width: 16,
@@ -470,70 +483,79 @@ fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -
     assembly
 }
 
-fn parse_snes_sprite_assembly(assembly_index: usize, set_count: usize, data: &mut Cursor<Vec<u8>>) -> SpriteAssembly {
-    let frame_count = data.get_ref().len() / (set_count * 4 * 10);
+fn parse_snes_sprite_assembly(assembly_index: usize, groups_per_frame: usize, tiles_per_group: usize, data: &mut Cursor<Vec<u8>>) -> SpriteAssembly {
+    let tiles_per_frame = groups_per_frame * tiles_per_group;
+    let chips_per_group = tiles_per_group * 4;
+    let frame_count = data.get_ref().len() / (tiles_per_frame * 10);
     let mut assembly = SpriteAssembly {
         index: assembly_index,
         chip_max: 0,
         frames: vec![SpriteAssemblyFrame::new(); frame_count],
     };
 
+    // Read chip data.
     for frame in assembly.frames.iter_mut() {
-        frame.tiles.resize(set_count * 16, SpriteAssemblyTile::default());
+        frame.chips.resize(tiles_per_frame * 4, SpriteAssemblyChip::default());
 
-        for set in 0..set_count {
+        for group in 0..groups_per_frame {
+            let group_start = group * chips_per_group;
 
-            // Upper row.
-            for tile in 0..4 {
-                frame.tiles[set * 16 + tile * 4 + 0] = parse_snes_sprite_assembly_tile(data, 0, 0);
-                frame.tiles[set * 16 + tile * 4 + 1] = parse_snes_sprite_assembly_tile(data, 8, 0);
+            // Upper row chips.
+            for tile in 0..tiles_per_group {
+                frame.chips[group_start + tile * 4 + 0] = parse_snes_sprite_assembly_chip(data, 0, 0);
+                frame.chips[group_start + tile * 4 + 1] = parse_snes_sprite_assembly_chip(data, 8, 0);
             }
 
-            // Bottom row.
-            for tile in 0..4 {
-                frame.tiles[set * 16 + tile * 4 + 2] = parse_snes_sprite_assembly_tile(data, 0, 8);
-                frame.tiles[set * 16 + tile * 4 + 3] = parse_snes_sprite_assembly_tile(data, 8, 8);
+            // Bottom row chips.
+            for tile in 0..tiles_per_group {
+                frame.chips[group_start + tile * 4 + 2] = parse_snes_sprite_assembly_chip(data, 0, 8);
+                frame.chips[group_start + tile * 4 + 3] = parse_snes_sprite_assembly_chip(data, 8, 8);
             }
         }
 
-        // Offsets.
-        for set in 0..set_count {
-            for tile in 0..4 {
+        // Set tile offsets for each chip.
+        // Offsets are stored per tile, but we expand them to each chip internally.
+        for group in 0..groups_per_frame {
+            let group_start = group * chips_per_group;
+
+            for tile in 0..tiles_per_group {
+                let tile_start = group_start + tile * 4;
+
                 let ox = data.read_i8().unwrap() as i32;
                 let oy = data.read_i8().unwrap() as i32;
                 for chip in 0..4 {
-                    frame.tiles[set * 16 + tile * 4 + chip].x += ox;
-                    frame.tiles[set * 16 + tile * 4 + chip].y += oy;
+                    frame.chips[tile_start + chip].x += ox;
+                    frame.chips[tile_start + chip].y += oy;
                 }
             }
         }
 
-        // Track highest chip index.
-        for tile in frame.tiles.iter() {
-            assembly.chip_max = assembly.chip_max.max(tile.chip);
+        // Track the highest chip index.
+        for tile in frame.chips.iter() {
+            assembly.chip_max = assembly.chip_max.max(tile.src_index);
         }
     }
 
     assembly
 }
 
-fn parse_snes_sprite_assembly_tile(data: &mut Cursor<Vec<u8>>, x: i32, y: i32) -> SpriteAssemblyTile {
+fn parse_snes_sprite_assembly_chip(data: &mut Cursor<Vec<u8>>, x: i32, y: i32) -> SpriteAssemblyChip {
     let value = data.read_u16::<LittleEndian>().unwrap();
 
     let chip = (value & 0x3FF) as usize;
     let src_x = ((chip % 16) * 8) as i32;
     let src_y = ((chip / 16) * 8) as i32;
 
-    let mut flags = SpriteAssemblyTileFlags::default();
+    let mut flags = SpriteAssemblyChipFlags::default();
     if value & 0x4000 != 0 {
-        flags |= SpriteAssemblyTileFlags::FLIP_X;
+        flags |= SpriteAssemblyChipFlags::FLIP_X;
     }
     if value & 0x8000 != 0 {
-        flags |= SpriteAssemblyTileFlags::FLIP_Y;
+        flags |= SpriteAssemblyChipFlags::FLIP_Y;
     }
 
-    SpriteAssemblyTile {
-        chip,
+    SpriteAssemblyChip {
+        src_index: chip,
         x, y,
         src_x, src_y,
         width: 8,

@@ -77,7 +77,14 @@ impl SpriteManager<'_> {
 
         let sprite = self.sprites.get(&state.sprite_index).unwrap();
         let anim_set = self.anim_sets.get(&sprite.anim_set_index).unwrap();
-        let frame = &anim_set.anims[state.anim_index].frames[0];
+        let frame = if anim_set.anims[state.anim_index].frames.len() == 0 {
+            println!("Warning: sprite {} animation {} has no frames. Using animation 0.", sprite.index, anim_index);
+            state.anim_index = 0;
+            &anim_set.anims[0].frames[0]
+        } else {
+            &anim_set.anims[state.anim_index].frames[0]
+        };
+
         state.sprite_frame = frame.sprite_frames[state.direction];
         state.anim_timer = 0.0;
     }

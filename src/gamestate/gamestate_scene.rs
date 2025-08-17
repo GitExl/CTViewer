@@ -49,36 +49,55 @@ impl GameStateScene<'_> {
 
         // Test sprites.
         sprites.load(0);
-        sprites.load(2);
-        sprites.load(6);
-        sprites.load(16);
-        sprites.load(128);
-        sprites.load(402);
-
         let mut actor = Actor::spawn(70.0, 100.0, 0, 2);
         sprites.set_animation(&mut actor.sprite_state, 23);
         scene.add_actor(actor);
 
+        sprites.load(2);
         let mut actor = Actor::spawn(50.0, 190.0, 2, 3);
         sprites.set_animation(&mut actor.sprite_state, 1);
         scene.add_actor(actor);
 
+        sprites.load(6);
         let mut actor = Actor::spawn(170.0, 170.0, 6, 1);
         sprites.set_animation(&mut actor.sprite_state, 6);
         scene.add_actor(actor);
 
-        let mut actor = Actor::spawn(230.0, 150.0, 16, 0);
+        sprites.load(16);
+        let mut actor = Actor::spawn(230.0, 150.0, 16, 2);
         sprites.set_animation(&mut actor.sprite_state, 1);
         scene.add_actor(actor);
 
-        let mut actor = Actor::spawn(110.0, 70.0, 128, 0);
+        sprites.load(128);
+        let mut actor = Actor::spawn(96.0, 70.0, 128, 0);
         sprites.set_animation(&mut actor.sprite_state, 0);
         scene.add_actor(actor);
 
-        let mut actor = Actor::spawn(120.0, 192.0, 402, 1);
-        sprites.set_animation(&mut actor.sprite_state, 6);
+        sprites.load(1);
+        let mut actor = Actor::spawn(120.0, 192.0, 1, 1);
+        sprites.set_animation(&mut actor.sprite_state, 10);
         scene.add_actor(actor);
 
+        sprites.load(3);
+        let mut actor = Actor::spawn(120.0, 64.0, 3, 1);
+        sprites.set_animation(&mut actor.sprite_state, 3);
+        scene.add_actor(actor);
+
+        sprites.load(4);
+        let mut actor = Actor::spawn(172.0, 80.0, 4, 2);
+        sprites.set_animation(&mut actor.sprite_state, 26);
+        scene.add_actor(actor);
+
+        sprites.load(5);
+        let mut actor = Actor::spawn(88.0, 184.0, 5, 1);
+        sprites.set_animation(&mut actor.sprite_state, 26);
+        scene.add_actor(actor);
+
+        sprites.load(0x1B0);
+        let mut actor = Actor::spawn(128.0, 144.0, 0x1B0, 0);
+        sprites.set_animation(&mut actor.sprite_state, 0);
+        actor.priority = 3;
+        scene.add_actor(actor);
 
         let mut camera = Camera::new(
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
@@ -173,7 +192,7 @@ impl GameStateTrait for GameStateScene<'_> {
     }
 
     fn get_title(&self, l10n: &L10n) -> String {
-        format!("0x{:03X} - {}", self.scene.index, l10n.get_indexed(IndexedType::Scene, self.scene.index))
+        format!("{} - {}", self.scene.index, l10n.get_indexed(IndexedType::Scene, self.scene.index))
     }
 
     fn event(&mut self, event: &Event) {
@@ -306,7 +325,7 @@ impl GameStateTrait for GameStateScene<'_> {
                 let text = if treasure.gold > 0 {
                     format!("{} gold", treasure.gold)
                 } else if treasure.item > 0 {
-                    format!("0x{:03X} '{}'", treasure.item, self.l10n.get_indexed(IndexedType::Item, treasure.item))
+                    format!("Item {} {}", treasure.item, self.l10n.get_indexed(IndexedType::Item, treasure.item))
                 } else {
                     "Empty".to_string()
                 };
@@ -346,7 +365,7 @@ impl GameStateScene<'_> {
 
     fn get_exit_at(&self, x: i32, y: i32) -> Option<usize> {
         for (index, exit) in self.scene.exits.iter().enumerate() {
-            if x < exit.x - 4 || x >= exit.x + exit.width + 4 || y < exit.y - 4 || y >= exit.y + exit.height + 4 {
+            if x < exit.x - 8 || x >= exit.x + exit.width + 8 || y < exit.y - 8 || y >= exit.y + exit.height + 8 {
                 continue;
             }
             return Some(index);
