@@ -52,10 +52,10 @@ impl FileSystem {
                 palette_anims_index: data.read_u8().unwrap() as usize,
                 script_index: data.read_u16::<LittleEndian>().unwrap() as usize,
                 scroll_mask: ScrollMask {
-                    left: data.read_u8().unwrap() as isize * 16,
-                    top: data.read_u8().unwrap() as isize * 16,
-                    right: data.read_u8().unwrap() as isize * 16 + 16,
-                    bottom: data.read_u8().unwrap() as isize * 16,
+                    left: data.read_u8().unwrap() as isize,
+                    top: data.read_u8().unwrap() as isize,
+                    right: data.read_u8().unwrap() as isize,
+                    bottom: data.read_u8().unwrap() as isize,
                 },
             },
             ParseMode::Pc => SceneHeader {
@@ -70,10 +70,10 @@ impl FileSystem {
                 chip_anims_index: data.read_u16::<LittleEndian>().unwrap() as usize,
                 script_index: data.read_u32::<LittleEndian>().unwrap() as usize,
                 scroll_mask: ScrollMask {
-                    left: data.read_i8().unwrap() as isize * 16,
-                    top: data.read_i8().unwrap() as isize * 16,
-                    right: data.read_i8().unwrap() as isize * 16 + 16,
-                    bottom: data.read_i8().unwrap() as isize * 16 + 16,
+                    left: data.read_u8().unwrap() as isize,
+                    top: data.read_u8().unwrap() as isize,
+                    right: data.read_u8().unwrap() as isize,
+                    bottom: data.read_u8().unwrap() as isize,
                 },
             },
         };
@@ -96,12 +96,22 @@ impl FileSystem {
         let exits = self.read_scene_exits(scene_index);
         let treasure = self.read_scene_treasure(scene_index);
 
-        if header.scroll_mask.left == 2048 || header.scroll_mask.left == -2048 {
+        // A disabled scroll mask must cover the entire map.
+        if header.scroll_mask.left == 0x80 {
             header.scroll_mask.left = 0;
             header.scroll_mask.top = 0;
-            header.scroll_mask.right = map.layers[0].tile_width as isize * 16;
-            header.scroll_mask.bottom = map.layers[0].tile_height as isize * 16;
+            header.scroll_mask.right = map.layers[0].tile_width as isize;
+            header.scroll_mask.bottom = map.layers[0].tile_height as isize;
+        } else {
+            header.scroll_mask.right += 1;
+            header.scroll_mask.bottom += 1;
         }
+
+        // Expand scroll mask to pixel coordinates.
+        header.scroll_mask.left *= 16;
+        header.scroll_mask.top *= 16;
+        header.scroll_mask.right *= 16;
+        header.scroll_mask.bottom *= 16;
 
         Scene {
             index: scene_index,

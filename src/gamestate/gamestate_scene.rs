@@ -101,15 +101,15 @@ impl GameStateScene<'_> {
 
         let mut camera = Camera::new(
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
-            renderer.target.width as f64, renderer.target.height as f64 - 12.0,
+            renderer.target.width as f64, renderer.target.height as f64,
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
             scene.scroll_mask.right as f64, scene.scroll_mask.bottom as f64,
         );
 
-        renderer.target.clip.bottom = renderer.target.height as i32 - 12;
+        renderer.target.clip.bottom = renderer.target.height as i32;
 
         let scene_renderer = SceneRenderer::new();
-        let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height - 12);
+        let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);
         map_renderer.layer_enabled.remove(LayerFlags::Sprites);
         map_renderer.setup_for_map(&mut scene.map);
 
