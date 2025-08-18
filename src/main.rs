@@ -72,10 +72,6 @@ struct Args {
     #[arg(short, long, default_value_t = 4.0 / 3.0)]
     aspect_ratio: f64,
 
-    /// Dump information and debug data.
-    #[arg(short, long, default_value_t = false)]
-    dump: bool,
-
     /// Disable vertical sync.
     #[arg(long, default_value_t = false)]
     no_vsync: bool,
@@ -99,10 +95,6 @@ fn main() -> Result<(), String> {
     } else {
         println!("No scene or world specified, loading scene 0x1.");
         gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, 1, 0, 0));
-    }
-
-    if args.dump {
-        gamestate.dump();
     }
 
     let title = format!("Chrono Trigger - {}", gamestate.get_title(&l10n));
@@ -133,6 +125,7 @@ fn main() -> Result<(), String> {
                 Event::KeyDown { keycode, .. } => {
                     match keycode {
                         Some(Keycode::Escape) => break 'running,
+                        Some(Keycode::Backspace) => gamestate.dump(),
                         Some(Keycode::Backslash) => {
                             renderer.target.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
                             println!("Saved render target to debug_output/screenshot.bmp");

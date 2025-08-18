@@ -22,7 +22,6 @@ Options:
 - `--scale <SCALE>`        Display scale [default: -1 / auto]
 - `--scale-linear`         Scale output using linear scaling
 - `-a`, `--aspect-ratio`   Set the output aspect ratio [default: 1.333]
-- `-d`, `--dump`           Dump information and debug data to `stdout` and `/debug_output`
 - `--no-vsync`             Disable vertical sync
 - `-h`, `--help`           Print help
 
@@ -42,6 +41,7 @@ When viewing scenes or worlds, the following keys are available:
 - `3` toggle rendering of layer 3
 - `4` toggle rendering of sprites (disabled by default, only displays some test sprites)
 - `5` toggle rendering of the map palette
+- `backspace` to dump information and debug data to `stdout` and `/debug_output`
 - `\` to write a screenshot of the internal render buffer to `debug_output/screenshot.bmp`
 
 When viewing worlds, the following keys are available:
