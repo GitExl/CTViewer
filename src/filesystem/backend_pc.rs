@@ -415,6 +415,11 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         )
     }
 
+    fn get_scene_script_data(&self, scene_script_index: usize) -> Cursor<Vec<u8>> {
+        panic!("Not implemented.");
+        Cursor::new(vec![])
+    }
+
     fn get_sprite_header_data(&self, sprite_index: usize) -> Cursor<Vec<u8>> {
         self.get_file_cursor(&format!("Game/chara/dat/c{:0>3}.dat", sprite_index), None, None)
     }

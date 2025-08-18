@@ -1,9 +1,10 @@
-use std::io::{Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 use crate::destination::{Destination, Facing};
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
+use crate::scene::scene_script::{SceneActorScript, SceneScript};
 
 struct SceneHeader {
 
@@ -95,6 +96,7 @@ impl FileSystem {
         let palette_anims = self.read_palette_anim_set(header.palette_anims_index);
         let exits = self.read_scene_exits(scene_index);
         let treasure = self.read_scene_treasure(scene_index);
+        let script = self.read_scene_script(header.script_index);
 
         // A disabled scroll mask must cover the entire map.
         if header.scroll_mask.left == 0x80 {
@@ -128,9 +130,30 @@ impl FileSystem {
             palette_anims,
             exits,
             treasure,
+            script,
             actors: Vec::new(),
             render_sprites: Vec::new(),
         }
+    }
+
+    pub fn read_scene_script(&self, script_index: usize) -> SceneScript {
+        let mut data = self.backend.get_scene_script_data(script_index);
+
+        let mut actor_scripts: Vec<SceneActorScript> = Vec::new();
+        let actor_count = data.read_u8().unwrap() as usize;
+        let header_size = actor_count * 32;
+        for _ in 0..actor_count {
+            let mut ptrs = [0; 16];
+            for ptr in ptrs.iter_mut() {
+                *ptr = data.read_u16::<LittleEndian>().unwrap() as usize - header_size;
+            }
+            actor_scripts.push(SceneActorScript::new(ptrs));
+        }
+
+        let mut script_data = vec![0u8; data.get_ref().len() - header_size - 1];
+        data.read_exact(&mut script_data).unwrap();
+
+        SceneScript::new(script_index, script_data, actor_scripts)
     }
 
     // Read exits from scenes.

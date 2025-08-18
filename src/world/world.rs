@@ -89,7 +89,7 @@ impl World {
             sprite.frame = actor.sprite_state.sprite_frame;
             sprite.x = actor.x;
             sprite.y = actor.y;
-            sprite.priority = actor.priority;
+            sprite.priority = actor.sprite_priority;
             sprite.palette_offset = actor.sprite_state.palette_offset;
         }
 
@@ -123,7 +123,7 @@ impl World {
             x: actor.x,
             y: actor.y,
             frame: actor.sprite_state.sprite_frame,
-            priority: actor.priority,
+            priority: actor.sprite_priority,
             sprite_index: actor.sprite_state.sprite_index,
             palette_offset: actor.sprite_state.palette_offset,
         });

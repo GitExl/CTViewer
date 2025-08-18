@@ -35,6 +35,7 @@ pub struct FileSystemBackendSnes {
     scene_tileset12_animation_entries: Vec<Entry>,
     scene_tileset3_assembly_entries: Vec<Entry>,
     scene_exit_entries: Vec<Entry>,
+    scene_script_entries: Vec<Entry>,
 
     sprite_entries: Vec<Entry>,
     sprite_assembly_entries: Vec<Entry>,
@@ -96,6 +97,7 @@ impl FileSystemBackendSnes {
         let scene_tileset12_animation_entries = get_relative_entries(&data, 0x3DF290, 64, 0x3DF310, 0x3DF9CC);
         let scene_tileset3_assembly_entries = get_entries(&data, 0x3621C0, 19, 0x2FB168);
         let scene_exit_entries = get_local_entries(&data, 0x250000, 512, 0x251A44, true);
+        let scene_script_entries = get_entries(&data, 0x3CF9F0, 513, 0x3D9FEA);
 
         let sprite_pointer_entries = get_local_entries(&data, 0x24FFE0, 7, 0x24FFEE, false);
         let sprite_entries = get_entries(&data, sprite_pointer_entries[0].address, 248, 0x21DDB2);
@@ -134,6 +136,7 @@ impl FileSystemBackendSnes {
             scene_tileset12_animation_entries,
             scene_tileset3_assembly_entries,
             scene_exit_entries,
+            scene_script_entries,
 
             sprite_entries,
             sprite_assembly_entries,
@@ -430,6 +433,10 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
             pointers,
             self.get_bytes_cursor(0x35F402, 0x3E4),
         )
+    }
+
+    fn get_scene_script_data(&self, scene_script_index: usize) -> Cursor<Vec<u8>> {
+        self.get_bytes_cursor_lz(self.scene_script_entries[scene_script_index].address)
     }
 
     fn get_sprite_header_data(&self, sprite_index: usize) -> Cursor<Vec<u8>> {

@@ -93,6 +93,7 @@ impl PaletteAnimSet {
         for anim in &self.anims {
             anim.dump();
         }
+        println!();
     }
 
     pub fn tick(&mut self, delta: f64, palette: &mut Palette) {

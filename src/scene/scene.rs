@@ -7,6 +7,7 @@ use crate::map::Map;
 use crate::map_renderer::MapRendererSprite;
 use crate::palette_anim::PaletteAnimSet;
 use crate::scene::scene_map::SceneMap;
+use crate::scene::scene_script::SceneScript;
 use crate::sprites::sprite_manager::SpriteManager;
 use crate::tileset::TileSet;
 
@@ -75,6 +76,7 @@ pub struct Scene {
     pub palette_anims: PaletteAnimSet,
     pub exits: Vec<SceneExit>,
     pub treasure: Vec<SceneTreasure>,
+    pub script: SceneScript,
     pub actors: Vec<Actor>,
     pub render_sprites: Vec<MapRendererSprite>,
 }
@@ -82,10 +84,12 @@ pub struct Scene {
 impl Scene {
     pub fn dump(&self, l10n: &L10n) {
         println!("Scene {} - {}", self.index, l10n.get_indexed(IndexedType::Scene, self.index));
-        println!("  Music {}, map {}, script {}",
+        println!("  Music {}, map {}",
             self.music_index,
             self.map.index,
-            self.script_index,
+        );
+        println!("  Script {}",
+            self.script_index
         );
         println!("  Palette {}",
             self.palette.index,
@@ -112,6 +116,7 @@ impl Scene {
         self.tileset_l3.dump();
         self.palette.dump();
         self.palette_anims.dump();
+        self.script.dump();
 
         for exit in &self.exits {
             exit.dump(l10n);
@@ -160,6 +165,6 @@ fn update_render_sprite(actor: &Actor, sprite: &mut MapRendererSprite) {
     sprite.frame = actor.sprite_state.sprite_frame;
     sprite.x = actor.x;
     sprite.y = actor.y;
-    sprite.priority = actor.priority;
+    sprite.priority = actor.sprite_priority;
     sprite.palette_offset = actor.sprite_state.palette_offset;
 }

@@ -96,7 +96,7 @@ impl GameStateScene<'_> {
         sprites.load(0x1B0);
         let mut actor = Actor::spawn(128.0, 144.0, 0x1B0, 0);
         sprites.set_animation(&mut actor.sprite_state, 0);
-        actor.priority = 3;
+        actor.sprite_priority = 3;
         scene.add_actor(actor);
 
         let mut camera = Camera::new(
@@ -105,8 +105,6 @@ impl GameStateScene<'_> {
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
             scene.scroll_mask.right as f64, scene.scroll_mask.bottom as f64,
         );
-
-        renderer.target.clip.bottom = renderer.target.height as i32;
 
         let scene_renderer = SceneRenderer::new();
         let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);

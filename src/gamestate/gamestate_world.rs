@@ -76,8 +76,6 @@ impl GameStateWorld<'_> {
             (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
         );
 
-        renderer.target.clip.bottom = renderer.target.height as i32;
-
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);
         map_renderer.layer_enabled.remove(LayerFlags::Sprites);

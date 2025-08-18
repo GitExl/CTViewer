@@ -46,6 +46,7 @@ pub trait FileSystemBackendTrait {
     fn get_scene_exit_data(&self, scene_index: usize) -> Cursor<Vec<u8>>;
     fn get_scene_names(&self, language: &str) -> Vec<String>;
     fn get_scene_treasure_data(&self) -> (Vec<u32>, Cursor<Vec<u8>>);
+    fn get_scene_script_data(&self, scene_script_index: usize) -> Cursor<Vec<u8>>;
 
     fn get_sprite_header_data(&self, sprite_index: usize) -> Cursor<Vec<u8>>;
     fn get_sprite_assembly_data(&self, sprite_assembly_index: usize) -> Cursor<Vec<u8>>;
