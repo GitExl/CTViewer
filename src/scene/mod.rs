@@ -2,4 +2,4 @@ pub mod scene;
 pub mod scene_map;
 pub mod scene_renderer;
 pub mod scene_script;
-mod script_op_decoder;
+mod scene_script_decoder;

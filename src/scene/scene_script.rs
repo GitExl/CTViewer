@@ -1,24 +1,5 @@
 use std::io::Cursor;
-use crate::scene::script_op_decoder::op_decode;
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum CallWaitMode {
-    NoWait,
-    WaitForCompletion,
-    WaitForReturn,
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum Op {
-    NOP,
-    Yield,
-    Call {
-        actor_index: usize,
-        priority: usize,
-        function_index: usize,
-        wait_mode: CallWaitMode,
-    }
-}
+use crate::scene::scene_script_decoder::{op_decode, Op};
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -59,10 +40,12 @@ impl SceneScript {
 
     pub fn run_until_yield(&mut self, state: &mut ActorScriptState) {
         self.data.set_position(state.address);
-        println!("{:X}", state.address);
+
+        println!("Run until yield from 0x{:X}", state.address);
 
         'decoder: loop {
             let op = op_decode(&mut self.data);
+            println!("  0x{:04X} {:?}", state.address, op);
             state.address = self.data.position();
             if op_execute(op) {
                 break 'decoder;
@@ -103,6 +86,9 @@ fn op_execute(op: Op) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield => true,
-        _ => true,
+        _ => {
+            println!("Cannot execute unimplemented op {:?}", op);
+            true
+        },
     }
 }
