@@ -24,10 +24,13 @@ pub struct Sprite {
 
 #[derive(Clone)]
 pub struct SpriteState {
+    pub map_sprite_index: usize,
+
     pub sprite_index: usize,
     pub sprite_frame: usize,
     pub palette_offset: usize,
     pub direction: usize,
+    pub priority: u32,
 
     pub anim_index: usize,
     pub anim_frame: usize,
@@ -35,12 +38,15 @@ pub struct SpriteState {
 }
 
 impl SpriteState {
-    pub fn new(sprite_index: usize, direction: usize) -> SpriteState {
+    pub fn new(map_sprite_index: usize) -> SpriteState {
         SpriteState {
-            sprite_index,
+            map_sprite_index,
+
+            sprite_index: 0,
             sprite_frame: 0,
             palette_offset: 0,
-            direction,
+            direction: 0,
+            priority: 0,
 
             anim_index: 0,
             anim_frame: 0,

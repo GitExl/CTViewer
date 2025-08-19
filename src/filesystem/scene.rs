@@ -1,4 +1,4 @@
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Read, Seek, SeekFrom};
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 use crate::destination::{Destination, Facing};
@@ -132,7 +132,7 @@ impl FileSystem {
             treasure,
             script,
             actors: Vec::new(),
-            render_sprites: Vec::new(),
+            map_sprites: Vec::new(),
         }
     }
 
@@ -140,17 +140,17 @@ impl FileSystem {
         let mut data = self.backend.get_scene_script_data(script_index);
 
         let mut actor_scripts: Vec<SceneActorScript> = Vec::new();
-        let actor_count = data.read_u8().unwrap() as usize;
+        let actor_count = data.read_u8().unwrap() as u64;
         let header_size = actor_count * 32;
         for _ in 0..actor_count {
             let mut ptrs = [0; 16];
             for ptr in ptrs.iter_mut() {
-                *ptr = data.read_u16::<LittleEndian>().unwrap() as usize - header_size;
+                *ptr = data.read_u16::<LittleEndian>().unwrap() as u64 - header_size;
             }
             actor_scripts.push(SceneActorScript::new(ptrs));
         }
 
-        let mut script_data = vec![0u8; data.get_ref().len() - header_size - 1];
+        let mut script_data = vec![0u8; data.get_ref().len() - header_size as usize - 1];
         data.read_exact(&mut script_data).unwrap();
 
         SceneScript::new(script_index, script_data, actor_scripts)

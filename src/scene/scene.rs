@@ -1,10 +1,10 @@
 use std::path::Path;
-use crate::actor::Actor;
+use crate::actor::{Actor, ActorFlags};
 use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::{IndexedType, L10n};
 use crate::map::Map;
-use crate::map_renderer::MapRendererSprite;
+use crate::map_renderer::MapSprite;
 use crate::palette_anim::PaletteAnimSet;
 use crate::scene::scene_map::SceneMap;
 use crate::scene::scene_script::SceneScript;
@@ -78,10 +78,28 @@ pub struct Scene {
     pub treasure: Vec<SceneTreasure>,
     pub script: SceneScript,
     pub actors: Vec<Actor>,
-    pub render_sprites: Vec<MapRendererSprite>,
+    pub map_sprites: Vec<MapSprite>,
 }
 
 impl Scene {
+    pub fn init(&mut self) {
+        for actor_script in self.script.actors.iter() {
+            let mut actor = Actor::spawn();
+            actor.script_state = Some(actor_script.get_initial_state());
+            self.actors.push(actor);
+        }
+
+        // Run first actor script until it yields (first return op).
+        for actor in self.actors.iter_mut() {
+            match actor.script_state {
+                Some(ref mut state) => {
+                    self.script.run_until_yield(state);
+                },
+                None => {},
+            }
+        }
+    }
+
     pub fn dump(&self, l10n: &L10n) {
         println!("Scene {} - {}", self.index, l10n.get_indexed(IndexedType::Scene, self.index));
         println!("  Music {}, map {}",
@@ -137,10 +155,18 @@ impl Scene {
     pub fn tick(&mut self, delta: f64, sprites: &SpriteManager) {
         self.map.tick(delta);
 
-        for (index, actor) in self.actors.iter_mut().enumerate() {
+        for actor in self.actors.iter_mut() {
+            if !actor.flags.contains(ActorFlags::ENABLED) {
+                continue;
+            }
+
             actor.tick(delta);
-            sprites.tick_sprite(delta, &mut actor.sprite_state);
-            update_render_sprite(&actor, &mut self.render_sprites[index]);
+            match actor.sprite_state {
+                Some(ref mut state) => {
+                    sprites.tick_sprite(delta, state);
+                },
+                None => {},
+            }
         }
 
         self.tileset_l12.tick(delta);
@@ -149,22 +175,27 @@ impl Scene {
 
     pub fn lerp(&mut self, lerp: f64) {
         self.map.lerp(lerp);
+
+        for actor in self.actors.iter_mut() {
+            if actor.flags.contains(ActorFlags::HIDDEN) {
+                continue;
+            }
+
+            actor.lerp(lerp);
+
+            match actor.sprite_state {
+                Some(ref state) => {
+                    actor.update_map_sprite(&mut self.map_sprites[state.map_sprite_index]);
+                },
+                None => {},
+            }
+        }
     }
 
-    pub fn add_actor(&mut self, actor: Actor) {
-        let mut render_sprite = MapRendererSprite::new();
-        update_render_sprite(&actor, &mut render_sprite);
-        self.render_sprites.push(render_sprite);
-        
-        self.actors.push(actor);
-    }
-}
+    // todo allocate sprite when needed
+    // let mut render_sprite = MapSprite::new();
+    // self.map_sprites.push(render_sprite);
 
-fn update_render_sprite(actor: &Actor, sprite: &mut MapRendererSprite) {
-    sprite.sprite_index = actor.sprite_state.sprite_index;
-    sprite.frame = actor.sprite_state.sprite_frame;
-    sprite.x = actor.x;
-    sprite.y = actor.y;
-    sprite.priority = actor.sprite_priority;
-    sprite.palette_offset = actor.sprite_state.palette_offset;
+    // todo set animation with
+    // sprites.set_animation(&mut actor.sprite_state, 23);
 }

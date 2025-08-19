@@ -1,13 +1,43 @@
 use std::io::Cursor;
+use crate::scene::script_op_decoder::op_decode;
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum CallWaitMode {
+    NoWait,
+    WaitForCompletion,
+    WaitForReturn,
+}
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum Op {
+    NOP,
+    Yield,
+    Call {
+        actor_index: usize,
+        priority: usize,
+        function_index: usize,
+        wait_mode: CallWaitMode,
+    }
+}
 
 pub struct SceneActorScript {
-    ptrs: [usize; 16],
+    ptrs: [u64; 16],
 }
 
 impl SceneActorScript {
-    pub fn new(ptrs: [usize; 16]) -> SceneActorScript {
+    pub fn new(ptrs: [u64; 16]) -> SceneActorScript {
         SceneActorScript {
             ptrs,
+        }
+    }
+
+    pub fn get_initial_state(&self) -> ActorScriptState {
+        ActorScriptState {
+            ptrs: self.ptrs,
+            address: self.ptrs[0],
+            ops_per_tick: 1,
+            priority_address: [0; 8],
+            stored_address: 0,
         }
     }
 }
@@ -15,7 +45,7 @@ impl SceneActorScript {
 pub struct SceneScript {
     index: usize,
     data: Cursor<Vec<u8>>,
-    actors: Vec<SceneActorScript>,
+    pub actors: Vec<SceneActorScript>,
 }
 
 impl SceneScript {
@@ -24,6 +54,19 @@ impl SceneScript {
             index,
             data: Cursor::new(data),
             actors,
+        }
+    }
+
+    pub fn run_until_yield(&mut self, state: &mut ActorScriptState) {
+        self.data.set_position(state.address);
+        println!("{:X}", state.address);
+
+        'decoder: loop {
+            let op = op_decode(&mut self.data);
+            state.address = self.data.position();
+            if op_execute(op) {
+                break 'decoder;
+            }
         }
     }
 
@@ -36,20 +79,30 @@ impl SceneScript {
     }
 }
 
-pub struct SceneActorScriptState {
+pub struct ActorScriptState {
     pub ops_per_tick: u32,
-    pub address: usize,
+    pub address: u64,
     pub stored_address: usize,
+    pub ptrs: [u64; 16],
     pub priority_address: [usize; 8],
 }
 
-impl SceneActorScriptState {
-    pub fn new() -> SceneActorScriptState {
-        SceneActorScriptState {
+impl ActorScriptState {
+    pub fn new() -> ActorScriptState {
+        ActorScriptState {
             ops_per_tick: 0,
             address: 0,
             stored_address: 0,
+            ptrs: [0; 16],
             priority_address: [0; 8],
         }
+    }
+}
+
+fn op_execute(op: Op) -> bool {
+    match op {
+        Op::NOP => false,
+        Op::Yield => true,
+        _ => true,
     }
 }

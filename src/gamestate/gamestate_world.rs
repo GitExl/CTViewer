@@ -51,22 +51,22 @@ impl GameStateWorld<'_> {
         sprites.load_world_player_sprites([0, 1, 2]);
 
 
-        // Test sprites.
-        let mut actor = Actor::spawn(64.0, 64.0, WORLD_SPRITE_INDEX, 0);
-        sprites.set_animation(&mut actor.sprite_state, 0);
-        world.add_actor(actor);
-
-        let mut actor = Actor::spawn(128.0, 96.0, WORLD_SPRITE_INDEX, 0);
-        sprites.set_animation(&mut actor.sprite_state, 1);
-        world.add_actor(actor);
-
-        let mut actor = Actor::spawn(64.0, 128.0, WORLD_SPRITE_INDEX, 0);
-        sprites.set_animation(&mut actor.sprite_state, 4);
-        world.add_actor(actor);
-
-        let mut actor = Actor::spawn(32.0, 192.0, WORLD_SPRITE_INDEX, 0);
-        sprites.set_animation(&mut actor.sprite_state, 6);
-        world.add_actor(actor);
+        // // Test sprites.
+        // let mut actor = Actor::spawn(64.0, 64.0, WORLD_SPRITE_INDEX, 0);
+        // sprites.set_animation(&mut actor.sprite_state, 0);
+        // world.add_actor(actor);
+        //
+        // let mut actor = Actor::spawn(128.0, 96.0, WORLD_SPRITE_INDEX, 0);
+        // sprites.set_animation(&mut actor.sprite_state, 1);
+        // world.add_actor(actor);
+        //
+        // let mut actor = Actor::spawn(64.0, 128.0, WORLD_SPRITE_INDEX, 0);
+        // sprites.set_animation(&mut actor.sprite_state, 4);
+        // world.add_actor(actor);
+        //
+        // let mut actor = Actor::spawn(32.0, 192.0, WORLD_SPRITE_INDEX, 0);
+        // sprites.set_animation(&mut actor.sprite_state, 6);
+        // world.add_actor(actor);
 
 
         let mut camera = Camera::new(

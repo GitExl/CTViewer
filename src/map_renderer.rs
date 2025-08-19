@@ -24,7 +24,7 @@ struct RenderData<'a> {
     tileset_l3: &'a TileSet,
     palette: &'a GamePalette,
     layer3_priority: bool,
-    map_sprites: &'a Vec<MapRendererSprite>,
+    map_sprites: &'a Vec<MapSprite>,
 }
 
 // Blend modes matching the SNES PPU modes.
@@ -49,7 +49,7 @@ bitflags! {
 }
 
 // Data for rendering a sprite in a map.
-pub struct MapRendererSprite {
+pub struct MapSprite {
     pub x: f64,
     pub y: f64,
     pub sprite_index: usize,
@@ -58,9 +58,9 @@ pub struct MapRendererSprite {
     pub palette_offset: usize,
 }
 
-impl MapRendererSprite {
-    pub fn new() -> MapRendererSprite {
-        MapRendererSprite {
+impl MapSprite {
+    pub fn new() -> MapSprite {
+        MapSprite {
             x: 0.0,
             y: 0.0,
             sprite_index: 0,
@@ -161,7 +161,7 @@ impl MapRenderer {
         }
     }
 
-    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, map_sprites: &Vec<MapRendererSprite>, sprites: &SpriteManager) {
+    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, map_sprites: &Vec<MapSprite>, sprites: &SpriteManager) {
         self.screen_sub.fill(self.layer_blend_color);
         self.pixels_main.clear();
         self.pixels_sub.clear();
@@ -346,7 +346,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
     }
 }
 
-fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, map_sprites: &Vec<MapRendererSprite>, priority: u32, camera: &Camera, sprites: &SpriteManager) {
+fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, map_sprites: &Vec<MapSprite>, priority: u32, camera: &Camera, sprites: &SpriteManager) {
     for map_sprite in map_sprites {
         if map_sprite.priority == priority {
             let x = (map_sprite.x - camera.lerp_x.floor()).floor() as i32;

@@ -5,7 +5,7 @@ use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::l10n::L10n;
 use crate::map::Map;
-use crate::map_renderer::MapRendererSprite;
+use crate::map_renderer::MapSprite;
 use crate::sprites::sprite_manager::SpriteManager;
 use crate::tileset::TileSet;
 use crate::world::world_map::WorldMap;
@@ -72,26 +72,26 @@ pub struct World {
 
     pub actors: Vec<Actor>,
     pub sprite_graphics: [usize; 4],
-    pub render_sprites: Vec<MapRendererSprite>,
+    pub render_sprites: Vec<MapSprite>,
 }
 
 impl World {
     pub fn tick(&mut self, delta: f64, sprites: &SpriteManager) {
         self.map.tick(delta);
 
-        for (index, actor) in self.actors.iter_mut().enumerate() {
-            actor.tick(delta);
-            sprites.tick_sprite(delta, &mut actor.sprite_state);
-
-            // todo better linkage
-            let sprite = &mut self.render_sprites[index];
-            sprite.sprite_index = actor.sprite_state.sprite_index;
-            sprite.frame = actor.sprite_state.sprite_frame;
-            sprite.x = actor.x;
-            sprite.y = actor.y;
-            sprite.priority = actor.sprite_priority;
-            sprite.palette_offset = actor.sprite_state.palette_offset;
-        }
+        // for (index, actor) in self.actors.iter_mut().enumerate() {
+        //     actor.tick(delta);
+        //     sprites.tick_sprite(delta, &mut actor.sprite_state);
+        //
+        //     // todo better linkage
+        //     let sprite = &mut self.render_sprites[index];
+        //     sprite.sprite_index = actor.sprite_state.sprite_index;
+        //     sprite.frame = actor.sprite_state.sprite_frame;
+        //     sprite.x = actor.x;
+        //     sprite.y = actor.y;
+        //     sprite.priority = actor.sprite_priority;
+        //     sprite.palette_offset = actor.sprite_state.palette_offset;
+        // }
 
         // todo clean up
         // todo move into palette anim for tileset?
@@ -118,17 +118,17 @@ impl World {
         self.map.lerp(lerp)
     }
 
-    pub fn add_actor(&mut self, actor: Actor) {
-        self.render_sprites.push(MapRendererSprite {
-            x: actor.x,
-            y: actor.y,
-            frame: actor.sprite_state.sprite_frame,
-            priority: actor.sprite_priority,
-            sprite_index: actor.sprite_state.sprite_index,
-            palette_offset: actor.sprite_state.palette_offset,
-        });
-        self.actors.push(actor);
-    }
+    // pub fn add_actor(&mut self, actor: Actor) {
+    //     self.render_sprites.push(MapSprite {
+    //         x: actor.x,
+    //         y: actor.y,
+    //         frame: actor.sprite_state.sprite_frame,
+    //         priority: actor.sprite_priority,
+    //         sprite_index: actor.sprite_state.sprite_index,
+    //         palette_offset: actor.sprite_state.palette_offset,
+    //     });
+    //     self.actors.push(actor);
+    // }
 
     pub fn dump(&self, l10n: &L10n) {
         println!("World {}", self.index);

@@ -1,7 +1,6 @@
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
-use crate::actor::Actor;
 use crate::camera::Camera;
 use crate::filesystem::filesystem::FileSystem;
 use crate::GameEvent;
@@ -47,58 +46,6 @@ impl GameStateScene<'_> {
         let mut sprites = SpriteManager::new(&fs);
         let mut scene = fs.read_scene(scene_index);
 
-        // Test sprites.
-        sprites.load(0);
-        let mut actor = Actor::spawn(70.0, 100.0, 0, 2);
-        sprites.set_animation(&mut actor.sprite_state, 23);
-        scene.add_actor(actor);
-
-        sprites.load(2);
-        let mut actor = Actor::spawn(50.0, 190.0, 2, 3);
-        sprites.set_animation(&mut actor.sprite_state, 1);
-        scene.add_actor(actor);
-
-        sprites.load(6);
-        let mut actor = Actor::spawn(170.0, 170.0, 6, 1);
-        sprites.set_animation(&mut actor.sprite_state, 6);
-        scene.add_actor(actor);
-
-        sprites.load(16);
-        let mut actor = Actor::spawn(230.0, 150.0, 16, 2);
-        sprites.set_animation(&mut actor.sprite_state, 1);
-        scene.add_actor(actor);
-
-        sprites.load(128);
-        let mut actor = Actor::spawn(96.0, 70.0, 128, 0);
-        sprites.set_animation(&mut actor.sprite_state, 0);
-        scene.add_actor(actor);
-
-        sprites.load(1);
-        let mut actor = Actor::spawn(120.0, 192.0, 1, 1);
-        sprites.set_animation(&mut actor.sprite_state, 10);
-        scene.add_actor(actor);
-
-        sprites.load(3);
-        let mut actor = Actor::spawn(120.0, 64.0, 3, 1);
-        sprites.set_animation(&mut actor.sprite_state, 3);
-        scene.add_actor(actor);
-
-        sprites.load(4);
-        let mut actor = Actor::spawn(172.0, 80.0, 4, 2);
-        sprites.set_animation(&mut actor.sprite_state, 26);
-        scene.add_actor(actor);
-
-        sprites.load(5);
-        let mut actor = Actor::spawn(88.0, 184.0, 5, 1);
-        sprites.set_animation(&mut actor.sprite_state, 26);
-        scene.add_actor(actor);
-
-        sprites.load(0x1B0);
-        let mut actor = Actor::spawn(128.0, 144.0, 0x1B0, 0);
-        sprites.set_animation(&mut actor.sprite_state, 0);
-        actor.sprite_priority = 3;
-        scene.add_actor(actor);
-
         let mut camera = Camera::new(
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
             renderer.target.width as f64, renderer.target.height as f64,
@@ -112,6 +59,8 @@ impl GameStateScene<'_> {
         map_renderer.setup_for_map(&mut scene.map);
 
         camera.center_to(x as f64, y as f64);
+
+        scene.init();
 
         GameStateScene {
             scene,
@@ -170,7 +119,7 @@ impl GameStateTrait for GameStateScene<'_> {
 
     fn render(&mut self, lerp: f64, renderer: &mut Renderer) {
         self.camera.lerp(lerp);
-        self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.render_sprites, &self.sprites);
+        self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.map_sprites, &self.sprites);
         self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut renderer.target);
 
         if self.debug_text.is_some() {
