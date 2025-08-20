@@ -91,11 +91,8 @@ impl Scene {
 
         // Run first actor script until it yields (first return op).
         for actor in self.actors.iter_mut() {
-            match actor.script_state {
-                Some(ref mut state) => {
-                    self.script.run_until_yield(state);
-                },
-                None => {},
+            if let Some(state) = &mut actor.script_state {
+            self.script.run_until_yield(state);
             }
         }
     }
@@ -156,16 +153,13 @@ impl Scene {
         self.map.tick(delta);
 
         for actor in self.actors.iter_mut() {
-            if !actor.flags.contains(ActorFlags::ENABLED) {
+            if actor.flags.contains(ActorFlags::DISABLED) {
                 continue;
             }
 
             actor.tick(delta);
-            match actor.sprite_state {
-                Some(ref mut state) => {
-                    sprites.tick_sprite(delta, state);
-                },
-                None => {},
+            if let Some(state) = &mut actor.sprite_state {
+                sprites.tick_sprite(delta, state);
             }
         }
 
@@ -177,17 +171,15 @@ impl Scene {
         self.map.lerp(lerp);
 
         for actor in self.actors.iter_mut() {
-            if actor.flags.contains(ActorFlags::HIDDEN) {
+            if !actor.flags.contains(ActorFlags::VISIBLE) {
                 continue;
             }
 
             actor.lerp(lerp);
 
-            match actor.sprite_state {
-                Some(ref state) => {
-                    actor.update_map_sprite(&mut self.map_sprites[state.map_sprite_index]);
-                },
-                None => {},
+            // Update map sprite properties from this actor's properties.
+            if let Some(state) = &actor.sprite_state {
+                actor.update_map_sprite(&mut self.map_sprites[state.map_sprite_index]);
             }
         }
     }

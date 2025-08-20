@@ -14,11 +14,17 @@ pub enum ActorClass {
 }
 
 bitflags! {
-    #[derive(Clone, Default)]
+    #[derive(Clone, Default, Copy, Debug, PartialEq)]
     pub struct ActorFlags: u32 {
-        const ENABLED = 0x0001;
-        const HIDDEN = 0x0002;
+        const DISABLED = 0x0001;
+        const VISIBLE = 0x0002;
         const SOLID = 0x0004;
+        const TOUCHABLE = 0x0008;
+        const COLLISION_TILE = 0x0010;
+        const COLLISION_PC = 0x0020;
+        const MOVE_ONTO_TILE = 0x0040;
+        const MOVE_ONTO_OBJECT = 0x0080;
+        const IN_BATTLE = 0x0100;
     }
 }
 
@@ -64,13 +70,10 @@ impl Actor {
         sprite.y = self.y;
         sprite.priority = self.sprite_priority;
 
-        match &self.sprite_state {
-            Some(state) => {
-                sprite.sprite_index = state.sprite_index;
-                sprite.frame = state.sprite_frame;
-                sprite.palette_offset = state.palette_offset;
-            },
-            None => {},
+        if let Some(state) = &self.sprite_state {
+            sprite.sprite_index = state.sprite_index;
+            sprite.frame = state.sprite_frame;
+            sprite.palette_offset = state.palette_offset;
         }
     }
 
