@@ -1,0 +1,187 @@
+use std::io::Cursor;
+use byteorder::ReadBytesExt;
+use crate::actor::ActorFlags;
+use crate::scene::ops::Op;
+use crate::scene::scene_script_decoder::{ActorRef, DataRef};
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum SpritePriority {
+    BelowAll,
+    BelowL1L2,
+    BelowL1AboveL2,
+    AboveBoth,
+}
+
+impl SpritePriority {
+    pub fn from_value(value: u8) -> SpritePriority {
+        match value {
+            0 => SpritePriority::BelowAll,
+            1 => SpritePriority::BelowL1L2,
+            2 => SpritePriority::BelowL1AboveL2,
+            3 => SpritePriority::AboveBoth,
+            _ => SpritePriority::BelowAll,
+        }
+    }
+}
+
+pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
+    match op {
+
+        // Enable/disable this actor being able to be touched.
+        0x08 => Op::ActorUpdateFlags {
+            actor: ActorRef::This,
+            set: ActorFlags::TOUCHABLE,
+            remove: ActorFlags::empty(),
+        },
+        0x09 => Op::ActorUpdateFlags {
+            actor: ActorRef::This,
+            set: ActorFlags::TOUCHABLE,
+            remove: ActorFlags::empty(),
+        },
+
+        // Disable and hide another actor.
+        0x0A => Op::ActorUpdateFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            set: ActorFlags::DISABLED,
+            remove: ActorFlags::RENDERED,
+        },
+
+        // Disable/enable script execution.
+        0x0B => Op::ActorUpdateFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            set: ActorFlags::DISABLED,
+            remove: ActorFlags::empty(),
+        },
+        0x0C => Op::ActorUpdateFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            set: ActorFlags::empty(),
+            remove: ActorFlags::DISABLED,
+        },
+
+        // Visibility/rendered.
+        // Rendered, and not hidden.
+        0x7C => Op::ActorUpdateFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            set: ActorFlags::RENDERED,
+            remove: ActorFlags::HIDDEN,
+        },
+        // Not rendered, and not hidden.
+        0x7D => Op::ActorUpdateFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            set: ActorFlags::empty(),
+            remove: ActorFlags::RENDERED | ActorFlags::HIDDEN,
+        },
+        // Rendered, and not hidden.
+        0x90 => Op::ActorUpdateFlags {
+            actor: ActorRef::This,
+            set: ActorFlags::RENDERED,
+            remove: ActorFlags::HIDDEN,
+        },
+        // Not rendered, and not hidden.
+        0x91 => Op::ActorUpdateFlags {
+            actor: ActorRef::This,
+            set: ActorFlags::empty(),
+            remove: ActorFlags::RENDERED | ActorFlags::HIDDEN,
+        },
+        // Hidden, but rendered.
+        0x7E => Op::ActorUpdateFlags {
+            actor: ActorRef::This,
+            set: ActorFlags::RENDERED | ActorFlags::HIDDEN,
+            remove: ActorFlags::empty(),
+        },
+
+        // Sprite priority.
+        0x8E => {
+            let bits = data.read_u8().unwrap();
+            let mode_set = bits & 0x80 > 0;
+            let bottom = bits & 0x3;
+            let top = bits & 0x30;
+            let unknown_bits = bits & 0x4C;
+
+            Op::ActorSetSpritePriority {
+                actor: ActorRef::This,
+                top: SpritePriority::from_value(top),
+                bottom: SpritePriority::from_value(bottom),
+                mode_set,
+                unknown_bits,
+            }
+        },
+
+        // Set actor solidity.
+        0x84 => {
+            let bits = data.read_u8().unwrap();
+            let mut flags_set = ActorFlags::empty();
+            if bits & 0x01 > 0 {
+                flags_set |= ActorFlags::SOLID;
+            }
+            if bits & 0x02 > 0 {
+                flags_set |= ActorFlags::PUSHABLE;
+            }
+
+            Op::ActorUpdateFlags {
+                actor: ActorRef::This,
+                set: flags_set,
+                remove: flags_set.complement(),
+            }
+        },
+
+        // Set actor collision properties.
+        0x0D => {
+            let flags = data.read_u8().unwrap();
+            let mut flags_set = ActorFlags::empty();
+            let mut flags_remove = ActorFlags::empty();
+
+            if flags & 0x01 > 0 {
+                flags_set.set(ActorFlags::COLLISION_TILE, true);
+            } else {
+                flags_remove.set(ActorFlags::COLLISION_TILE, true);
+            }
+            if flags & 0x02 > 0 {
+                flags_set.set(ActorFlags::COLLISION_PC, true);
+            } else {
+                flags_remove.set(ActorFlags::COLLISION_PC, true);
+            }
+
+            Op::ActorUpdateFlags {
+                actor: ActorRef::This,
+                set: flags_set,
+                remove: flags_remove,
+            }
+        },
+
+        // Set actor movement properties.
+        0x0E => {
+            let flags = data.read_u8().unwrap();
+            let mut flags_set = ActorFlags::empty();
+            let mut flags_remove = ActorFlags::empty();
+
+            if flags & 0x01 > 0 {
+                flags_set.set(ActorFlags::MOVE_ONTO_TILE, true);
+            } else {
+                flags_remove.set(ActorFlags::MOVE_ONTO_TILE, true);
+            }
+            if flags & 0x02 > 0 {
+                flags_set.set(ActorFlags::MOVE_ONTO_OBJECT, true);
+            } else {
+                flags_remove.set(ActorFlags::MOVE_ONTO_OBJECT, true);
+            }
+
+            Op::ActorUpdateFlags {
+                actor: ActorRef::This,
+                set: flags_set,
+                remove: flags_remove,
+            }
+        },
+
+        0x89 => Op::ActorSetSpeed {
+            actor: ActorRef::This,
+            speed: DataRef::Immediate(data.read_u8().unwrap() as u32),
+        },
+        0x8A => Op::ActorSetSpeed {
+            actor: ActorRef::This,
+            speed: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
+        },
+
+        _ => panic!("Unknown actor property op."),
+    }
+}
