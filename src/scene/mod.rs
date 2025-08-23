@@ -3,3 +3,6 @@ pub mod scene_map;
 pub mod scene_renderer;
 pub mod scene_script;
 mod scene_script_decoder;
+mod ops_copy;
+mod ops_math;
+mod ops_jump;

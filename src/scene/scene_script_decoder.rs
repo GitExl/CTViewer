@@ -1,6 +1,15 @@
 use std::io::{Cursor, Read};
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::ActorFlags;
+use crate::scene::ops_copy::op_decode_copy;
+use crate::scene::ops_jump::op_decode_jump;
+use crate::scene::ops_math::op_decode_math;
+
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum SubPalette {
+    This,
+    Index(usize),
+}
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BitMathOp {
@@ -18,10 +27,10 @@ pub enum ByteMathOp {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum ChararacterType {
+pub enum CharacterType {
     PC,
     NPC,
-    Monster,
+    Enemy,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -42,7 +51,7 @@ pub enum CallWaitMode {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum ActorRef {
     This,
-    Actor(usize),
+    ScriptActor(usize),
     PartyMember(usize),
 }
 
@@ -128,7 +137,10 @@ pub enum DataValue {
     RAM(usize),
 
     // Up to 32 bytes.
-    Bytes([u8; 32])
+    Bytes([u8; 32]),
+
+    // Value from random table.
+    Random,
 }
 
 /// Opcodes.
@@ -147,11 +159,11 @@ pub enum Op {
         flags_set: ActorFlags,
         flags_remove: ActorFlags,
     },
-    StoreDirection {
+    SetDirection {
         actor: ActorRef,
         direction: usize,
     },
-    JumpRelative {
+    Jump {
         jump_by: isize,
     },
     JumpConditional {
@@ -190,18 +202,21 @@ pub enum Op {
         intensity_end: f64,
         duration: f64,
     },
-    SetPaletteData {
-        sub_palette: usize,
+    PaletteSetImmediate {
+        sub_palette: SubPalette,
         color_index: usize,
         data: [u8; 32],
     },
-    LoadPalette {
+    PaletteSet {
         palette_index: usize,
     },
+    PaletteRestore,
     LoadCharacter {
-        character_type: ChararacterType,
+        character_type: CharacterType,
         character_index: usize,
-        is_in_party: bool,
+        must_be_in_party: bool,
+        is_static: bool,
+        battle_index: usize,
     },
     ByteMath {
         rhs: DataValue,
@@ -213,6 +228,15 @@ pub enum Op {
         rhs: DataValue,
         lhs: DataValue,
         operation: BitMathOp,
+    },
+    MovementJump {
+        actor: ActorRef,
+        x: i32,
+        y: i32,
+        height: u32,
+    },
+    SetScriptSpeed {
+        speed: u8,
     },
 }
 
@@ -239,7 +263,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             let actor_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
             Op::Call {
-                actor: ActorRef::Actor(actor_index),
+                actor: ActorRef::ScriptActor(actor_index),
                 function_index: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
                 wait_mode: CallWaitMode::NoWait,
@@ -250,7 +274,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             let actor_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
             Op::Call {
-                actor: ActorRef::Actor(actor_index),
+                actor: ActorRef::ScriptActor(actor_index),
                 function_index: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
                 wait_mode: CallWaitMode::WaitForCompletion,
@@ -262,7 +286,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             let actor_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
             Op::Call {
-                actor: ActorRef::Actor(actor_index),
+                actor: ActorRef::ScriptActor(actor_index),
                 function_index: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
                 wait_mode: CallWaitMode::WaitForReturn,
@@ -315,22 +339,54 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Disable and hide another actor.
         0x0A => Op::UpdateActorFlags {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             flags_set: ActorFlags::DISABLED,
-            flags_remove: ActorFlags::VISIBLE,
+            flags_remove: ActorFlags::RENDERED,
         },
 
         // Disable/enable script execution.
         0x0B => Op::UpdateActorFlags {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             flags_set: ActorFlags::DISABLED,
             flags_remove: ActorFlags::empty(),
         },
-        0x0C => {
+        0x0C => Op::UpdateActorFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            flags_set: ActorFlags::empty(),
+            flags_remove: ActorFlags::DISABLED,
+        },
+
+        0x7C => Op::UpdateActorFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            flags_set: ActorFlags::RENDERED,
+            flags_remove: ActorFlags::HIDDEN,
+        },
+        0x7D => Op::UpdateActorFlags {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            flags_set: ActorFlags::empty(),
+            flags_remove: ActorFlags::RENDERED | ActorFlags::HIDDEN,
+        },
+        0x7E => Op::UpdateActorFlags {
+            actor: ActorRef::This,
+            flags_set: ActorFlags::RENDERED | ActorFlags::HIDDEN,
+            flags_remove: ActorFlags::empty(),
+        },
+
+        // Set actor solidity.
+        0x84 => {
+            let bits = data.read_u8().unwrap();
+            let mut flags_set = ActorFlags::empty();
+            if bits & 0x01 > 0 {
+                flags_set |= ActorFlags::SOLID;
+            }
+            if bits & 0x02 > 0 {
+                flags_set |= ActorFlags::PUSHABLE;
+            }
+
             Op::UpdateActorFlags {
-                actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
-                flags_set: ActorFlags::empty(),
-                flags_remove: ActorFlags::DISABLED,
+                actor: ActorRef::This,
+                flags_set,
+                flags_remove: flags_set.complement(),
             }
         },
 
@@ -382,335 +438,101 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             }
         },
 
-        // Copy data around in memory.
-        // Set actor result from 0x7F0200.
-        0x19 => Op::Copy {
-            destination: DataValue::ActorResult(ActorRef::This),
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        // Set actor result from 0x7F0000.
-        0x1C => Op::Copy {
-            destination: DataValue::ActorResult(ActorRef::This),
-            source: DataValue::StoredLower(data.read_u8().unwrap() as usize),
-            byte_count: 1,
-        },
-        // Set what character the first party member is to 0x7F0200.
-        0x20 => Op::Copy {
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            source: DataValue::PartyCharacter(0),
-            byte_count: 1,
-        },
-        // From RAM to temporary memory.
-        0x48 => Op::Copy {
-            // todo validate that this is read correctly.
-            source: DataValue::RAM(
-                data.read_u8().unwrap() as usize |
-                data.read_u8().unwrap() as usize >> 8 |
-                data.read_u8().unwrap() as usize >> 16
-            ),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x49 => Op::Copy {
-            // todo validate that this is read correctly.
-            source: DataValue::RAM(
-                data.read_u8().unwrap() as usize |
-                data.read_u8().unwrap() as usize >> 8 |
-                data.read_u8().unwrap() as usize >> 16
-            ),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        // Write directly to RAM.
-        0x4A => Op::Copy {
-            // todo validate that this is read correctly.
-            destination: DataValue::RAM(
-                data.read_u8().unwrap() as usize |
-                data.read_u8().unwrap() as usize >> 8 |
-                data.read_u8().unwrap() as usize >> 16
-            ),
-            source: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            byte_count: 1,
-        },
-        0x4B => Op::Copy {
-            // todo validate that this is read correctly.
-            destination: DataValue::RAM(
-                data.read_u8().unwrap() as usize |
-                data.read_u8().unwrap() as usize >> 8 |
-                data.read_u8().unwrap() as usize >> 16
-            ),
-            source: DataValue::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
-            byte_count: 2,
-        },
-        // Write to RAM.
-        0x4C => Op::Copy {
-            // todo validate that this is read correctly.
-            destination: DataValue::RAM(
-                data.read_u8().unwrap() as usize |
-                data.read_u8().unwrap() as usize >> 8 |
-                data.read_u8().unwrap() as usize >> 16
-            ),
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x4D => Op::Copy {
-            // todo validate that this is read correctly.
-            destination: DataValue::RAM(
-                data.read_u8().unwrap() as usize |
-                data.read_u8().unwrap() as usize >> 8 |
-                data.read_u8().unwrap() as usize >> 16
-            ),
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x4E => {
-            // todo validate that this is read correctly.
-            let destination =
-                data.read_u8().unwrap() as usize |
-                data.read_u8().unwrap() as usize >> 8 |
-                data.read_u8().unwrap() as usize >> 16;
-
-            // todo this stores up to 32 bytes because we cannot copy a Vec.
-            let data_len = data.read_u16::<LittleEndian>().unwrap() as usize - 2;
-            if data_len > 32 {
-                panic!("0x4E copy data is larger than 32 bytes.");
-            }
-            let mut bytes_data = vec![0u8; data_len];
-            data.read_exact(&mut bytes_data).unwrap();
-
-            Op::Copy {
-                destination: DataValue::RAM(destination),
-                source: DataValue::Bytes(bytes_data.first_chunk::<32>().unwrap().clone()),
-                byte_count: data_len,
-            }
-        },
-        0x4F => Op::Copy {
-            source: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x50 => Op::Copy {
-            source: DataValue::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-        },
-        0x51 => Op::Copy {
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x52 => Op::Copy {
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-        },
-        0x53 => Op::Copy {
-            source: DataValue::Upper(data.read_u16::<LittleEndian>().unwrap() as usize),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x54 => Op::Copy {
-            source: DataValue::Upper(data.read_u16::<LittleEndian>().unwrap() as usize),
-            destination: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-        },
-        0x56 => Op::Copy {
-            source: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            destination: DataValue::StoredLower(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x58 => Op::Copy {
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            destination: DataValue::Upper(data.read_u16::<LittleEndian>().unwrap() as usize),
-            byte_count: 1,
-        },
-        0x59 => Op::Copy {
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            destination: DataValue::Upper(data.read_u16::<LittleEndian>().unwrap() as usize),
-            byte_count: 2,
-        },
-        0x75 => Op::Copy {
-            source: DataValue::Immediate(1),
-            destination: DataValue::StoredLower(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
-        0x76 => Op::Copy {
-            source: DataValue::Immediate(1),
-            destination: DataValue::StoredLower(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-        },
-        0x77 => Op::Copy {
-            source: DataValue::Immediate(0),
-            destination: DataValue::StoredLower(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-        },
+        // Copy.
+        0x19 | 0x1C | 0x20 | 0x48 | 0x49 | 0x4A | 0x4B | 0x4C | 0x4D | 0x4E | 0x4F | 0x50 | 0x51 |
+        0x52 | 0x53 | 0x54 | 0x55 | 0x56 | 0x58 | 0x59 | 0x5A | 0x75 | 0x76 | 0x77 | 0x7F => op_decode_copy(op_byte, data),
 
         // Byte math.
-        0x5B => Op::ByteMath {
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            operation: ByteMathOp::Add,
-        },
-        0x5D => Op::ByteMath {
-            rhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            operation: ByteMathOp::Add,
-        },
-        0x5E => Op::ByteMath {
-            rhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-            operation: ByteMathOp::Add,
-        },
-        0x5F => Op::ByteMath {
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            operation: ByteMathOp::Subtract,
-        },
-        0x60 => Op::ByteMath {
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-            operation: ByteMathOp::Subtract,
-        },
-        0x61 => Op::ByteMath {
-            rhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            operation: ByteMathOp::Subtract,
-        },
-        0x71 => Op::ByteMath {
-            rhs: DataValue::Immediate(1),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            operation: ByteMathOp::Add,
-        },
-        0x72 => Op::ByteMath {
-            rhs: DataValue::Immediate(1),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-            operation: ByteMathOp::Add,
-        },
-        0x73 => Op::ByteMath {
-            rhs: DataValue::Immediate(1),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            operation: ByteMathOp::Subtract,
-        },
-
-        // Bit math.
-        0x63 => Op::BitMath {
-            rhs: DataValue::Immediate(1 >> data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            operation: BitMathOp::Or,
-        },
-        0x64 => Op::BitMath {
-            rhs: DataValue::Immediate(1 >> data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            operation: BitMathOp::And,
-        },
-        0x65 => {
-            let bit = data.read_u8().unwrap();
-            let mut address = data.read_u8().unwrap() as usize;
-            if bit & 0x80 > 0 {
-                address += 0x100;
-            }
-            Op::BitMath {
-                rhs: DataValue::Immediate(1 >> (bit & 0x7F) as u32),
-                lhs: DataValue::Temp(address),
-                operation: BitMathOp::Or,
-            }
-        },
-        0x66 => {
-            let bit = data.read_u8().unwrap();
-            let mut address = data.read_u8().unwrap() as usize;
-            if bit & 0x80 > 0 {
-                address += 0x100;
-            }
-            Op::BitMath {
-                rhs: DataValue::Immediate(1 >> (bit & 0x7F) as u32),
-                lhs: DataValue::Temp(address),
-                operation: BitMathOp::And,
-            }
-        },
-        0x67 => Op::BitMath {
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            operation: BitMathOp::And,
-        },
-        0x69 => Op::BitMath {
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            operation: BitMathOp::Or,
-        },
-        0x6B => Op::BitMath {
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            operation: BitMathOp::Xor,
-        },
-        0x6F => Op::BitMath {
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            operation: BitMathOp::ShiftRight,
-        },
-
-        // Write to storyline counter.
-        0x55 => Op::Copy {
-            source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            destination: DataValue::StoredLower(0x00),
-            byte_count: 1,
-        },
-        0x5A => Op::Copy {
-            source: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            destination: DataValue::StoredLower(0x00),
-            byte_count: 1,
-        },
+        0x5B | 0x5D | 0x5E | 0x5F | 0x60 | 0x61 | 0x71 | 0x72 | 0x73 | 0x63 | 0x64 | 0x65 | 0x66 |
+        0x67 | 0x69 | 0x6B | 0x6F => op_decode_math(op_byte, data),
 
         // Character load.
         0x57 => Op::LoadCharacter {
-            character_type: ChararacterType::PC,
+            character_type: CharacterType::PC,
             character_index: 0,
-            is_in_party: true,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
         },
         0x5C => Op::LoadCharacter {
-            character_type: ChararacterType::PC,
+            character_type: CharacterType::PC,
             character_index: 1,
-            is_in_party: true,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
         },
         0x62 => Op::LoadCharacter {
-            character_type: ChararacterType::PC,
+            character_type: CharacterType::PC,
             character_index: 2,
-            is_in_party: true,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
         },
         0x68 => Op::LoadCharacter {
-            character_type: ChararacterType::PC,
+            character_type: CharacterType::PC,
             character_index: 3,
-            is_in_party: true,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
         },
         0x6A => Op::LoadCharacter {
-            character_type: ChararacterType::PC,
+            character_type: CharacterType::PC,
             character_index: 4,
-            is_in_party: true,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
         },
         0x6C => Op::LoadCharacter {
-            character_type: ChararacterType::PC,
+            character_type: CharacterType::PC,
             character_index: 5,
-            is_in_party: true,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
         },
         0x6D => Op::LoadCharacter {
-            character_type: ChararacterType::PC,
+            character_type: CharacterType::PC,
             character_index: 6,
-            is_in_party: true,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
+        },
+        0x80 => Op::LoadCharacter {
+            character_type: CharacterType::PC,
+            character_index: data.read_u8().unwrap() as usize,
+            must_be_in_party: true,
+            is_static: false,
+            battle_index: 0,
+        },
+        0x81 => Op::LoadCharacter {
+            character_type: CharacterType::NPC,
+            character_index: data.read_u8().unwrap() as usize,
+            must_be_in_party: false,
+            is_static: false,
+            battle_index: 0,
+        },
+        0x82 => Op::LoadCharacter {
+            character_type: CharacterType::NPC,
+            character_index: data.read_u8().unwrap() as usize,
+            must_be_in_party: false,
+            is_static: false,
+            battle_index: 0,
+        },
+        0x83 => {
+            let index = data.read_u8().unwrap() as usize;
+            let bits = data.read_u8().unwrap();
+            Op::LoadCharacter {
+                character_type: CharacterType::Enemy,
+                character_index: index,
+                must_be_in_party: false,
+                is_static: bits & 0x80 > 0,
+                battle_index: bits as usize & 0x7F,
+            }
         },
 
         // Actor coordinates.
         // From actor.
         0x21 => Op::LoadCoordinates {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             x_to: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
             y_to: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
         },
@@ -722,40 +544,40 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Direction.
-        0x0F => Op::StoreDirection {
+        0x0F => Op::SetDirection {
             actor: ActorRef::This,
             direction: 0,
         },
-        0x17 => Op::StoreDirection {
+        0x17 => Op::SetDirection {
             actor: ActorRef::This,
             direction: 1,
         },
-        0x1B => Op::StoreDirection {
+        0x1B => Op::SetDirection {
             actor: ActorRef::This,
             direction: 2,
         },
-        0x1D => Op::StoreDirection {
+        0x1D => Op::SetDirection {
             actor: ActorRef::This,
             direction: 3,
         },
-        0x1E => Op::StoreDirection {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+        0x1E => Op::SetDirection {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             direction: 0,
         },
-        0x1F => Op::StoreDirection {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+        0x1F => Op::SetDirection {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             direction: 1,
         },
-        0x25 => Op::StoreDirection {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+        0x25 => Op::SetDirection {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             direction: 2,
         },
-        0x26 => Op::StoreDirection {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+        0x26 => Op::SetDirection {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             direction: 3,
         },
         0x23 => Op::LoadDirection {
-            actor: ActorRef::Actor(data.read_u8().unwrap() as usize / 2),
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
         },
         0x24 => Op::LoadDirection {
@@ -763,95 +585,10 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             source: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
         },
 
-        // Relative code jump.
-        0x10 => Op::JumpRelative {
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x11 => Op::JumpRelative {
-            jump_by: -(data.read_u8().unwrap() as isize),
-        },
-
-        // Conditional code jumps.
-        // 1 byte direct compare with 0x7F0200.
-        0x12 => Op::JumpConditional {
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as usize as u32),
-            byte_width: 1,
-            conditional_op: ConditionalOp::from_value(data.read_u8().unwrap() as usize),
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // 2 byte direct compare with 0x7F0200.
-        0x13 => Op::JumpConditional {
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            rhs: DataValue::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
-            byte_width: 2,
-            conditional_op: ConditionalOp::from_value(data.read_u8().unwrap() as usize),
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // 1 byte from 0x7F0200 compare with 0x7F0200.
-        0x14 => Op::JumpConditional {
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            rhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_width: 1,
-            conditional_op: ConditionalOp::from_value(data.read_u8().unwrap() as usize),
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // 2 byte from 0x7F0200 compare with 0x7F0200.
-        0x15 => Op::JumpConditional {
-            lhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            rhs: DataValue::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_width: 2,
-            conditional_op: ConditionalOp::from_value(data.read_u8().unwrap() as usize),
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // 1 byte direct compare with 0x7F0000 or 0x7F0100.
-        0x16 => {
-            let mut lhs = data.read_u8().unwrap() as usize;
-            let value = data.read_u8().unwrap();
-            let op_value = data.read_u8().unwrap();
-            if op_value & 0x80 > 0 {
-                lhs += 0x100;
-            }
-            Op::JumpConditional {
-                lhs: DataValue::StoredLower(lhs),
-                rhs: DataValue::Immediate((value & 0x7F) as u32),
-                byte_width: 1,
-                conditional_op: ConditionalOp::from_value(op_value as usize & 0x7F),
-                jump_by: data.read_u8().unwrap() as isize,
-            }
-        },
-        // Less than with storyline counter.
-        0x18 => Op::JumpConditional {
-            lhs: DataValue::StoredLower(0x000),
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Lt,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // Equal with actor result.
-        0x1A => Op::JumpConditional {
-            lhs: DataValue::ActorResult(ActorRef::This),
-            rhs: DataValue::Immediate(data.read_u8().unwrap() as u32),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Eq,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // If actor is hidden.
-        0x27 => Op::JumpConditional {
-            lhs: DataValue::ActorFlag(ActorRef::Actor(data.read_u8().unwrap() as usize * 2), ActorFlags::VISIBLE),
-            rhs: DataValue::Immediate(0),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Eq,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // If actor is in battle.
-        0x28 => Op::JumpConditional {
-            lhs: DataValue::ActorFlag(ActorRef::Actor(data.read_u8().unwrap() as usize * 2), ActorFlags::IN_BATTLE),
-            rhs: DataValue::Immediate(1),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Eq,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
+        // Jumps.
+        0x10 | 0x11 | 0x12 | 0x13 | 0x14 | 0x15 | 0x16 | 0x18 | 0x1A | 0x27 | 0x28 | 0x2D | 0x30 |
+        0x31 | 0x34 | 0x35 | 0x36 | 0x37 | 0x38 | 0x39 | 0x3B | 0x3C | 0x3F | 0x40 | 0x41 | 0x42 |
+        0x43 | 0x44 => op_decode_jump(op_byte, data),
 
         // Palette.
         0x2E => {
@@ -884,148 +621,66 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
                 let color_index = bits & 0xF;
                 let sub_palette = (bits & 0xF0) >> 4;
 
-                // todo this stores up to 32 bytes 16 colors because we cannot copy a Vec.
-                let data_len = data.read_u16::<LittleEndian>().unwrap() as usize - 2;
-                if data_len > 32 {
-                    panic!("SetPaletteData color data is too large.");
-                }
-                let mut color_data = vec![0u8; data_len];
-                data.read_exact(&mut color_data).unwrap();
-
-                Op::SetPaletteData {
-                    sub_palette,
+                Op::PaletteSetImmediate {
+                    sub_palette: SubPalette::Index(sub_palette),
                     color_index,
-                    data: color_data.first_chunk::<32>().unwrap().clone(),
+                    data: read_script_blob(data),
                 }
             } else {
                 println!("Mode for op 0x2E is unknown.");
                 Op::NOP
             }
         },
-        0x33 => Op::LoadPalette {
+        0x33 => Op::PaletteSet {
             palette_index: data.read_u8().unwrap() as usize,
         },
 
-        // Input tests.
-        0x2D => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Immediate(0),
-            byte_width: 1,
-            conditional_op: ConditionalOp::NotEq,
-            jump_by: data.read_u8().unwrap() as isize,
+        // 0x88 sub ops.
+        0x88 => {
+            let cmd = data.read_u8().unwrap();
+            if cmd == 0 {
+                Op::PaletteRestore
+            } else if cmd == 0x20 {
+                Op::Unimplemented {
+                    code: 0x88,
+                    data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), 0],
+                }
+            } else if cmd == 0x30 {
+                Op::Unimplemented {
+                    code: 0x88,
+                    data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), 0],
+                }
+            } else if cmd > 0x40 && cmd < 0x60 {
+                Op::Unimplemented {
+                    code: 0x88,
+                    data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap()],
+                }
+            } else if cmd > 0x80 && cmd < 0x90 {
+                Op::PaletteSetImmediate {
+                    color_index: cmd as usize & 0xF,
+                    sub_palette: SubPalette::This,
+                    data: read_script_blob(data),
+                }
+            } else {
+                panic!("Unknown 0x88 command {}.", cmd);
+            }
         },
-        0x30 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::Dash),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
+
+        // Script speed.
+        0x87 => Op::SetScriptSpeed {
+            speed: data.read_u8().unwrap(),
         },
-        0x31 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::Confirm),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
+
+        // Physical movement related.
+        0x7A => Op::MovementJump {
+            actor: ActorRef::This,
+            x: data.read_i8().unwrap() as i32,
+            y: data.read_i8().unwrap() as i32,
+            height: data.read_u8().unwrap() as u32,
         },
-        0x34 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::A),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x35 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::B),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x36 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::X),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x37 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::Y),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x38 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::L),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x39 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(false),
-            rhs: DataValue::Input(InputBinding::R),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        // Input tests, changed since last test.
-        0x3B => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::Dash),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x3C => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::Confirm),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x3F => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::A),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x40 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::B),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x41 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::X),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x42 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::Y),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x43 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::L),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
-        },
-        0x44 => Op::JumpConditional {
-            lhs: DataValue::CurrentInput(true),
-            rhs: DataValue::Input(InputBinding::R),
-            byte_width: 1,
-            conditional_op: ConditionalOp::Or,
-            jump_by: data.read_u8().unwrap() as isize,
+        0x7B => Op::Unimplemented {
+            code: 0x7B,
+            data: [data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap()],
         },
 
         // Ascii text related (???)
@@ -1065,4 +720,16 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             Op::NOP
         },
     }
+}
+
+pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> [u8; 32] {
+    let data_len = data.read_u16::<LittleEndian>().unwrap() as usize - 2;
+    if data_len > 32 {
+        panic!("Blob data is larger than 32 bytes.");
+    }
+
+    let mut blob = vec![0u8; data_len];
+    data.read_exact(&mut blob).unwrap();
+
+    blob.first_chunk::<32>().unwrap().clone()
 }

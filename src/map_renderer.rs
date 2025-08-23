@@ -56,6 +56,7 @@ pub struct MapSprite {
     pub frame: usize,
     pub priority: u32,
     pub palette_offset: usize,
+    pub visible: bool,
 }
 
 impl MapSprite {
@@ -67,6 +68,7 @@ impl MapSprite {
             frame: 0,
             priority: 0,
             palette_offset: 0,
+            visible: false,
         }
     }
 }
@@ -348,6 +350,9 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
 fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, map_sprites: &Vec<MapSprite>, priority: u32, camera: &Camera, sprites: &SpriteManager) {
     for map_sprite in map_sprites {
+        if !map_sprite.visible {
+            continue;
+        }
         if map_sprite.priority == priority {
             let x = (map_sprite.x - camera.lerp_x.floor()).floor() as i32;
             let y = (map_sprite.y - camera.lerp_y.floor()).floor() as i32;

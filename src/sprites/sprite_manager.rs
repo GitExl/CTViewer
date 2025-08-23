@@ -31,6 +31,7 @@ pub struct SpriteState {
     pub palette_offset: usize,
     pub direction: usize,
     pub priority: u32,
+    pub enabled: bool,
 
     pub anim_index: usize,
     pub anim_frame: usize,
@@ -47,6 +48,7 @@ impl SpriteState {
             palette_offset: 0,
             direction: 0,
             priority: 0,
+            enabled: false,
 
             anim_index: 0,
             anim_frame: 0,

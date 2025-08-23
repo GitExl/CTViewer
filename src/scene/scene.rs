@@ -171,7 +171,7 @@ impl Scene {
         self.map.lerp(lerp);
 
         for actor in self.actors.iter_mut() {
-            if !actor.flags.contains(ActorFlags::VISIBLE) {
+            if !actor.flags.contains(ActorFlags::RENDERED) {
                 continue;
             }
 
