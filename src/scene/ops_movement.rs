@@ -12,6 +12,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_direction: false,
             animated: false,
             distant: true,
+            forever: false,
         },
         0x92 => Op::ActorMoveAtAngle {
             actor: ActorRef::This,
@@ -27,6 +28,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_direction: true,
             animated: false,
             distant: false,
+            forever: false,
         },
         0x95 => Op::ActorMoveToActor {
             actor: ActorRef::This,
@@ -35,6 +37,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_direction: true,
             animated: false,
             distant: false,
+            forever: false,
         },
         0x96 => Op::ActorMoveTo {
             actor: ActorRef::This,
@@ -59,6 +62,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_direction: true,
             animated: false,
             distant: false,
+            forever: false,
         },
         0x99 => Op::ActorMoveToActor {
             actor: ActorRef::This,
@@ -67,6 +71,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_direction: true,
             animated: false,
             distant: false,
+            forever: false,
         },
         0x9A => Op::ActorMoveTo {
             actor: ActorRef::This,
@@ -100,6 +105,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_direction: false,
             animated: false,
             distant: false,
+            forever: false,
         },
         // Same as 0x9E, but different in some unknown way?
         0x9F => Op::ActorMoveToActor {
@@ -109,6 +115,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_direction: false,
             animated: false,
             distant: false,
+            forever: false,
         },
         0xA0 => Op::ActorMoveTo {
             actor: ActorRef::This,
@@ -125,6 +132,32 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             distance: DataRef::Immediate(0),
             update_direction: false,
             animated: false,
+        },
+        0xB5 => Op::ActorMoveToActor {
+            actor: ActorRef::This,
+            to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            distance: DataRef::Immediate(0),
+            update_direction: true,
+            animated: false,
+            distant: false,
+            forever: true,
+        },
+        0xB6 => Op::ActorMoveToActor {
+            actor: ActorRef::This,
+            to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            distance: DataRef::Immediate(0),
+            update_direction: true,
+            animated: false,
+            distant: false,
+            forever: true,
+        },
+        0xD9 => Op::MovePartyTo {
+            pc0_x: data.read_u8().unwrap() as i32,
+            pc0_y: data.read_u8().unwrap() as i32,
+            pc1_x: data.read_u8().unwrap() as i32,
+            pc1_y: data.read_u8().unwrap() as i32,
+            pc2_x: data.read_u8().unwrap() as i32,
+            pc2_y: data.read_u8().unwrap() as i32,
         },
 
         // Physical movement related.

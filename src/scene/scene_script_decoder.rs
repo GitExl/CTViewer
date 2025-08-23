@@ -1,26 +1,36 @@
 use std::io::{Cursor, Read};
+use bitflags::bitflags;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::ActorFlags;
+use crate::scene::op_inventory::op_decode_inventory;
 use crate::scene::ops::Op;
 use crate::scene::ops_actor_props::op_decode_actor_props;
+use crate::scene::ops_animation::op_decode_animation;
 use crate::scene::ops_call::op_decode_call;
 use crate::scene::ops_char_load::op_decode_char_load;
 use crate::scene::ops_copy::op_decode_copy;
+use crate::scene::ops_dialogue::{op_decode_dialogue};
 use crate::scene::ops_direction::op_decode_direction;
 use crate::scene::ops_jump::op_decode_jump;
+use crate::scene::ops_location::op_decode_location;
 use crate::scene::ops_math::op_decode_math;
 use crate::scene::ops_movement::ops_decode_movement;
+use crate::scene::ops_palette::op_decode_palette;
+use crate::scene::ops_party::op_decode_party;
 
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum SubPalette {
-    This,
-    Index(usize),
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum ColorMathMode {
-    Additive,
-    Subtractive,
+bitflags! {
+    #[derive(Clone, Default, Copy, Debug, PartialEq)]
+    pub struct BattleFlags: u32 {
+        const AUTO_REGROUP = 0x8000;
+        const KEEP_MUSIC = 0x4000;
+        const NO_GAME_OVER = 0x2000;
+        const CANNOT_RUN = 0x0080;
+        const ATTRACT_MODE = 0x0020;
+        const STATIC_ENEMIES = 0x0010;
+        const SMALL_PC_SOL = 0x0004;
+        const BOTTOM_UI = 0x0002;
+        const NO_WIN_POSE = 0x0001;
+    }
 }
 
 /// Type of reference to an actor.
@@ -86,6 +96,16 @@ pub enum DataRef {
 
     // Next value from random value table.
     Random,
+
+    // Number of items in inventory.
+    ItemCount(usize),
+
+    // Amount of gold in inventory.
+    GoldCount,
+
+    // Player character is recruited/active.
+    PCIsRecruited,
+    PCIsActive,
 }
 
 /// Opcodes.
@@ -94,20 +114,16 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
 
     match op_byte {
 
-        // Yield to the function with the next higher priority number.
-        // If there is none, simply yield.
-        0x00 => Op::Yield,
-
         // Function calls.
         0x02 | 0x03 | 0x04 | 0x05 | 0x06 | 0x07 => op_decode_call(op_byte, data),
 
         // Actor properties.
         0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x7C | 0x7D | 0x90 | 0x91 | 0x7E | 0x8E | 0x84 | 0x0D |
-        0x0E | 0x89 | 0x8A => op_decode_actor_props(op_byte, data),
+        0x0E | 0x89 | 0x8A | 0x21 | 0x22 | 0x8B | 0x8C | 0x8D => op_decode_actor_props(op_byte, data),
 
         // Actor movement.
         0x8F | 0x92 | 0x94 | 0x95 | 0x96 | 0x97 | 0x98 | 0x99 | 0x9A | 0x9C | 0x9D |
-        0x9E | 0x9F | 0xA0 | 0xA1 | 0x7A | 0x7B => ops_decode_movement(op_byte, data),
+        0x9E | 0x9F | 0xA0 | 0xA1 | 0x7A | 0x7B | 0xB5 | 0xD9 => ops_decode_movement(op_byte, data),
 
         // Data copy.
         0x19 | 0x1C | 0x20 | 0x48 | 0x49 | 0x4A | 0x4B | 0x4C | 0x4D | 0x4E | 0x4F | 0x50 | 0x51 |
@@ -127,119 +143,70 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
         // Code jumps.
         0x10 | 0x11 | 0x12 | 0x13 | 0x14 | 0x15 | 0x16 | 0x18 | 0x1A | 0x27 | 0x28 | 0x2D | 0x30 |
         0x31 | 0x34 | 0x35 | 0x36 | 0x37 | 0x38 | 0x39 | 0x3B | 0x3C | 0x3F | 0x40 | 0x41 | 0x42 |
-        0x43 | 0x44 => op_decode_jump(op_byte, data),
+        0x43 | 0x44 | 0xC9 | 0xCC | 0xCF | 0xD2 => op_decode_jump(op_byte, data),
 
-        // Actor coordinates.
-        // From actor.
-        0x21 => Op::ActorCoordinatesGet {
-            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            x: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            y: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
+        // Dialogue.
+        0xB8 | 0xBB | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xC8 => op_decode_dialogue(op_byte, data),
+
+        // Animation.
+        0xAA | 0xAB | 0xAC | 0xAE | 0xB3 | 0xB4 | 0xB7 => op_decode_animation(op_byte, data),
+
+        // Party management.
+        0xD0 | 0xD1 | 0xD3 | 0xD4 | 0xD6 | 0xD5 | 0xDA | 0xE3 => op_decode_party(op_byte, data),
+
+        // Palettes.
+        0x2E | 0x33 | 0x88 => op_decode_palette(op_byte, data),
+
+        // Move to another location.
+        0xDC | 0xDD | 0xDE | 0xDF | 0xE0 | 0xE1 | 0xE2 => op_decode_location(op_byte, data),
+
+        // Inventory.
+        0xC7 | 0xCA | 0xCB | 0xCD | 0xCE | 0xD7 => op_decode_inventory(op_byte, data),
+
+        // Yield to the function with the next higher priority number.
+        // If there is none, simply yield.
+        0x00 => Op::Return,
+        0xB1 => Op::Yield {
+            forever: false,
         },
-        // From party member actor.
-        0x22 => Op::ActorCoordinatesGet {
-            actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            x: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            y: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
+        0xB2 => Op::Yield {
+            forever: true,
         },
-        0x8B => Op::ActorCoordinatesSet {
-            actor: ActorRef::This,
-            x: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            y: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            precise: false,
+        // Wait durations are 1/16th of a second for NPCs, 1/64th for PCs.
+        0xAD => Op::Wait {
+            duration: data.read_u8().unwrap() as usize,
         },
-        0x8C => Op::ActorCoordinatesSet {
-            actor: ActorRef::This,
-            x: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            y: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            precise: false,
+        0xB9 => Op::Wait {
+            duration: 4,
         },
-        0x8D => Op::ActorCoordinatesSet {
-            actor: ActorRef::This,
-            x: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
-            y: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
-            precise: true,
+        0xBA => Op::Wait {
+            duration: 8,
         },
-
-        // Palette.
-        0x2E => {
-            let mode = data.read_u8().unwrap();
-            if mode & 0x40 > 0 {
-                let b = ((mode & 0x4) >> 2) > 0;
-                let g = ((mode & 0x2) >> 1) > 0;
-                let r = ((mode & 0x1) >> 0) > 0;
-
-                let color_start = data.read_u8().unwrap();
-                let color_count = data.read_u8().unwrap();
-
-                let intensity_bits = data.read_u8().unwrap();
-                let intensity_end: f64 = (intensity_bits & 0xF) as f64 * (1.0 / 15.0);
-                let intensity_start: f64 = ((intensity_bits & 0xF0) >> 4) as f64 * (1.0 / 15.0);
-
-                // todo what unit is this in? Assuming 60 Hz frames for now.
-                let duration = data.read_u8().unwrap() as f64 * (1.0 / 60.0);
-
-                Op::ColorMath {
-                    mode: if mode & 0x50 > 0 { ColorMathMode::Additive } else { ColorMathMode::Subtractive },
-                    r, g, b,
-                    color_start, color_count,
-                    intensity_start, intensity_end,
-                    duration,
-                }
-
-            } else if mode & 0x80 > 0 {
-                let bits = data.read_u8().unwrap() as usize;
-                let color_index = bits & 0xF;
-                let sub_palette = (bits & 0xF0) >> 4;
-
-                Op::PaletteSetImmediate {
-                    sub_palette: SubPalette::Index(sub_palette),
-                    color_index,
-                    data: read_script_blob(data),
-                }
-            } else {
-                println!("Mode for op 0x2E is unknown.");
-                Op::NOP
-            }
+        0xBC => Op::Wait {
+            duration: 16,
         },
-        0x33 => Op::PaletteSet {
-            palette: data.read_u8().unwrap() as usize,
+        0xBD => Op::Wait {
+            duration: 32,
         },
 
-        // 0x88 sub ops.
-        0x88 => {
-            let cmd = data.read_u8().unwrap();
-            if cmd == 0 {
-                Op::PaletteRestore
-            } else if cmd == 0x20 {
-                Op::Unknown {
-                    code: 0x88,
-                    data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), 0],
-                }
-            } else if cmd == 0x30 {
-                Op::Unknown {
-                    code: 0x88,
-                    data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), 0],
-                }
-            } else if cmd > 0x40 && cmd < 0x60 {
-                Op::Unknown {
-                    code: 0x88,
-                    data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap()],
-                }
-            } else if cmd > 0x80 && cmd < 0x90 {
-                Op::PaletteSetImmediate {
-                    color_index: cmd as usize & 0xF,
-                    sub_palette: SubPalette::This,
-                    data: read_script_blob(data),
-                }
-            } else {
-                panic!("Unknown 0x88 command {}.", cmd);
-            }
-        },
-
-        // Script speed.
+        // Script execution speed (ops per frame?).
         0x87 => Op::SetScriptSpeed {
-            speed: data.read_u8().unwrap(),
+            speed: data.read_u8().unwrap() as u32,
+        },
+
+        // Handle player character controls.
+        // PC1 will respond to input. Other player characters will imitate the previous member
+        // with a delay.
+        0xAF => Op::Control {
+            forever: false,
+        },
+        0xB0 => Op::Control {
+            forever: true,
+        },
+
+        // Start battle.
+        0xD8 => Op::Battle {
+            flags: BattleFlags::from_bits_truncate(data.read_u16::<LittleEndian>().unwrap() as u32),
         },
 
         // Ascii text related (???)
@@ -291,4 +258,10 @@ pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> [u8; 32] {
     data.read_exact(&mut blob).unwrap();
 
     blob.first_chunk::<32>().unwrap().clone()
+}
+
+pub fn read_24_bit_address(data: &mut Cursor<Vec<u8>>) -> usize {
+    data.read_u8().unwrap() as usize |
+        (data.read_u8().unwrap() as usize) << 8 |
+        (data.read_u8().unwrap() as usize) << 16
 }

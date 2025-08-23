@@ -2,18 +2,34 @@ use crate::actor::ActorFlags;
 use crate::scene::ops_actor_props::SpritePriority;
 use crate::scene::ops_call::WaitMode;
 use crate::scene::ops_char_load::CharacterType;
+use crate::scene::ops_dialogue::{DialogueInput, DialoguePosition, DialogueSpecialType};
 use crate::scene::ops_jump::CompareOp;
 use crate::scene::ops_math::{BitMathOp, ByteMathOp};
-use crate::scene::scene_script_decoder::{ActorRef, ColorMathMode, DataRef, SubPalette};
+use crate::scene::ops_palette::{ColorMathMode, SubPalette};
+use crate::scene::scene_script_decoder::{ActorRef, BattleFlags, DataRef};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Op {
     NOP,
 
     // Script execution.
-    Yield,
+    Return,
+    Yield {
+        forever: bool,
+    },
     SetScriptSpeed {
-        speed: u8,
+        speed: u32,
+    },
+    Wait {
+        duration: usize,
+    },
+    Control {
+        forever: bool,
+    },
+
+    // Dialogue.
+    DialogueSetTable {
+        address: DataRef,
     },
 
     // Function calls.
@@ -79,6 +95,7 @@ pub enum Op {
         update_direction: bool,
         animated: bool,
         distant: bool,
+        forever: bool,
     },
     ActorMoveAtAngle {
         actor: ActorRef,
@@ -86,6 +103,14 @@ pub enum Op {
         distance: DataRef,
         update_direction: bool,
         animated: bool,
+    },
+    MovePartyTo {
+        pc0_x: i32,
+        pc0_y: i32,
+        pc1_x: i32,
+        pc1_y: i32,
+        pc2_x: i32,
+        pc2_y: i32,
     },
 
     // Actor direction.
@@ -96,6 +121,17 @@ pub enum Op {
     ActorSetDirectionTowards {
         actor: ActorRef,
         to: ActorRef,
+    },
+
+    // Animation.
+    // 0 loops means do not loop, only play once.
+    // 0xFFFFFFFF loops means loop forever.
+    Animate {
+        actor: ActorRef,
+        animation: DataRef,
+        wait: bool,
+        run: bool,
+        loops: DataRef,
     },
 
     // Code jumps.
@@ -161,6 +197,76 @@ pub enum Op {
         rhs: DataRef,
         lhs: DataRef,
         op: BitMathOp,
+    },
+
+    // Dialogue.
+    DialogueShow {
+        index: usize,
+        position: DialoguePosition,
+        input: DialogueInput,
+    },
+    DialogueSpecial {
+        dialogue_type: DialogueSpecialType,
+    },
+
+    // Inventory.
+    ItemGive {
+        actor: ActorRef,
+        item: DataRef,
+    },
+    ItemTake {
+        actor: ActorRef,
+        item: DataRef,
+    },
+    GoldGive {
+        actor: ActorRef,
+        amount: DataRef,
+    },
+    GoldTake {
+        actor: ActorRef,
+        amount: DataRef,
+    },
+    ItemGetAmount {
+        item: usize,
+        dest: DataRef,
+    },
+
+    // Party management.
+    PartyMemberMakeActive {
+        pc: usize,
+    },
+    PartyMemberAddToReserve {
+        pc: usize,
+    },
+    PartyMemberRemove {
+        pc: usize,
+    },
+    PartyMemberRemoveFromActive {
+        pc: usize,
+    },
+    PartyMemberToReserve {
+        pc: usize,
+    },
+    PartyMemberEquip {
+        pc: usize,
+        item: usize,
+    },
+    PartyFollow,
+    PartyExploreMode {
+        value: u8,
+    },
+
+    // Change location.
+    ChangeLocation {
+        index_direction: DataRef,
+        x: DataRef,
+        y: DataRef,
+        variant: u8,
+    },
+
+    // Start a battle.
+    Battle {
+        flags: BattleFlags,
     },
 
     // Unknown.

@@ -252,6 +252,39 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             offset: data.read_u8().unwrap() as isize,
         },
 
+        // Inventory-based jumps
+        0xC9 => Op::JumpConditional {
+            lhs: DataRef::ItemCount(data.read_u8().unwrap() as usize),
+            rhs: DataRef::Immediate(1),
+            width: 1,
+            cmp: CompareOp::GtEq,
+            offset: data.read_u8().unwrap() as isize,
+        },
+        0xCC => Op::JumpConditional {
+            lhs: DataRef::GoldCount,
+            rhs: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            width: 2,
+            cmp: CompareOp::GtEq,
+            offset: data.read_u8().unwrap() as isize,
+        },
+
+        // Party member has been recruited.
+        0xCF => Op::JumpConditional {
+            lhs: DataRef::PCIsRecruited,
+            rhs: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            width: 2,
+            cmp: CompareOp::GtEq,
+            offset: data.read_u8().unwrap() as isize,
+        },
+        // Party member is in active party.
+        0xD2 => Op::JumpConditional {
+            lhs: DataRef::PCIsActive,
+            rhs: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            width: 2,
+            cmp: CompareOp::GtEq,
+            offset: data.read_u8().unwrap() as isize,
+        },
+
         _ => panic!("Unknown jump op."),
     }
 }

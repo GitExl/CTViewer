@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::scene::ops::Op;
-use crate::scene::scene_script_decoder::{read_script_blob, ActorRef, DataRef};
+use crate::scene::scene_script_decoder::{read_24_bit_address, read_script_blob, ActorRef, DataRef};
 
 pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
@@ -29,75 +29,45 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         // From RAM to temporary memory.
         0x48 => Op::Copy {
-            // todo validate that this is read correctly.
-            source: DataRef::RAM(
-                data.read_u8().unwrap() as usize |
-                    data.read_u8().unwrap() as usize >> 8 |
-                    data.read_u8().unwrap() as usize >> 16
-            ),
+            source: DataRef::RAM(read_24_bit_address(data)),
             dest: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
             width: 1,
         },
         0x49 => Op::Copy {
-            // todo validate that this is read correctly.
-            source: DataRef::RAM(
-                data.read_u8().unwrap() as usize |
-                    data.read_u8().unwrap() as usize >> 8 |
-                    data.read_u8().unwrap() as usize >> 16
-            ),
+            source: DataRef::RAM(read_24_bit_address(data)),
             dest: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
             width: 1,
         },
 
         // Write directly to RAM.
         0x4A => Op::Copy {
-            // todo validate that this is read correctly.
             dest: DataRef::RAM(
                 data.read_u8().unwrap() as usize |
-                    data.read_u8().unwrap() as usize >> 8 |
-                    data.read_u8().unwrap() as usize >> 16
+                data.read_u8().unwrap() as usize >> 8 |
+                data.read_u8().unwrap() as usize >> 16
             ),
             source: DataRef::Immediate(data.read_u8().unwrap() as u32),
             width: 1,
         },
         0x4B => Op::Copy {
-            // todo validate that this is read correctly.
-            dest: DataRef::RAM(
-                data.read_u8().unwrap() as usize |
-                    data.read_u8().unwrap() as usize >> 8 |
-                    data.read_u8().unwrap() as usize >> 16
-            ),
+            dest: DataRef::RAM(read_24_bit_address(data)),
             source: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
             width: 2,
         },
 
         // Write to RAM.
         0x4C => Op::Copy {
-            // todo validate that this is read correctly.
-            dest: DataRef::RAM(
-                data.read_u8().unwrap() as usize |
-                    data.read_u8().unwrap() as usize >> 8 |
-                    data.read_u8().unwrap() as usize >> 16
-            ),
+            dest: DataRef::RAM(read_24_bit_address(data)),
             source: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
             width: 1,
         },
         0x4D => Op::Copy {
-            // todo validate that this is read correctly.
-            dest: DataRef::RAM(
-                data.read_u8().unwrap() as usize |
-                    data.read_u8().unwrap() as usize >> 8 |
-                    data.read_u8().unwrap() as usize >> 16
-            ),
+            dest: DataRef::RAM(read_24_bit_address(data)),
             source: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
             width: 1,
         },
         0x4E => {
-            // todo validate that this is read correctly.
-            let destination =
-                data.read_u8().unwrap() as usize |
-                    data.read_u8().unwrap() as usize >> 8 |
-                    data.read_u8().unwrap() as usize >> 16;
+            let destination = read_24_bit_address(data);
             let blob = read_script_blob(data);
 
             Op::Copy {

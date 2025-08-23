@@ -86,7 +86,8 @@ impl ActorScriptState {
 fn op_execute(op: Op) -> bool {
     match op {
         Op::NOP => false,
-        Op::Yield => true,
+        Op::Yield { forever: _ } => true,
+        Op::Return => true,
         _ => {
             println!("Cannot execute unimplemented op {:?}", op);
             true
