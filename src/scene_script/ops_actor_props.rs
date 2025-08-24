@@ -71,17 +71,17 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             set: ActorFlags::empty(),
             remove: ActorFlags::RENDERED | ActorFlags::HIDDEN,
         },
-        // Rendered, and not hidden.
+        // Visible.
         0x90 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::RENDERED,
+            set: ActorFlags::empty(),
             remove: ActorFlags::HIDDEN,
         },
-        // Not rendered, and not hidden.
+        // Hidden.
         0x91 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::empty(),
-            remove: ActorFlags::RENDERED | ActorFlags::HIDDEN,
+            set: ActorFlags::HIDDEN,
+            remove: ActorFlags::empty(),
         },
         // Hidden, but rendered.
         0x7E => Op::ActorUpdateFlags {

@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::io::Cursor;
+use std::iter::Map;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::op_decode;
 
@@ -41,12 +43,8 @@ impl SceneScript {
 
     pub fn run_until_yield(&mut self, state: &mut ActorScriptState) {
         self.data.set_position(state.address);
-
-        println!("Run until yield from 0x{:X}", state.address);
-
         'decoder: loop {
             let op = op_decode(&mut self.data);
-            println!("  0x{:04X} {:?}", state.address, op);
             state.address = self.data.position();
             if op_execute(op) {
                 break 'decoder;
@@ -54,11 +52,48 @@ impl SceneScript {
         }
     }
 
+    pub fn decode(&self) {
+        let mut labels: HashMap<u64, String> = HashMap::new();
+
+        for (actor_index, actor_script) in self.actors.iter().enumerate() {
+            for (ptr_index, ptr) in actor_script.ptrs.iter().enumerate() {
+                if labels.contains_key(ptr) {
+                    continue;
+                }
+                
+                if ptr_index == 0 {
+                    labels.insert(*ptr, format!("actor_{:02}_init", actor_index));
+                } else if ptr_index == 1 {
+                    labels.insert(*ptr, format!("actor_{:02}_activate", actor_index));
+                } else if ptr_index == 2 {
+                    labels.insert(*ptr, format!("actor_{:02}_touch", actor_index));
+                } else {
+                    labels.insert(*ptr, format!("actor_{:02}_func{:02}", actor_index, ptr_index));
+                }
+            }
+        }
+
+        let mut data = self.data.clone();
+        data.set_position(0);
+        let data_len = data.get_ref().len() as u64;
+
+        let mut address = 0;
+        while address < data_len {
+            if labels.contains_key(&address) {
+                println!();
+                println!("  {}:", labels[&address]);
+            }
+
+            let op = op_decode(&mut data);
+            println!("    0x{:04X} {:?}", address, op);
+
+            address = data.position();
+        }
+    }
+
     pub fn dump(&self) {
         println!("Scene script {}", self.index);
-        for (index, _) in self.actors.iter().enumerate() {
-            println!("  Actor script {}", index);
-        }
+        self.decode();
         println!();
     }
 }

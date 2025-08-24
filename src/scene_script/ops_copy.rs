@@ -108,7 +108,7 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x56 => Op::Copy {
             source: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            dest: DataRef::StoredLower(data.read_u8().unwrap() as usize * 2),
+            dest: DataRef::Upper(data.read_u16::<LittleEndian>().unwrap() as usize),
             width: 1,
         },
         0x58 => Op::Copy {

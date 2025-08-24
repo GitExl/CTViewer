@@ -271,7 +271,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Party member has been recruited.
         0xCF => Op::JumpConditional {
             lhs: DataRef::PCIsRecruited,
-            rhs: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
             width: 2,
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as isize,
@@ -279,7 +279,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Party member is in active party.
         0xD2 => Op::JumpConditional {
             lhs: DataRef::PCIsActive,
-            rhs: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
             width: 2,
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as isize,

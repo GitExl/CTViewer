@@ -161,7 +161,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Actor movement.
         0x8F | 0x92 | 0x94 | 0x95 | 0x96 | 0x97 | 0x98 | 0x99 | 0x9A | 0x9C | 0x9D |
-        0x9E | 0x9F | 0xA0 | 0xA1 | 0x7A | 0x7B | 0xB5 | 0xD9 => ops_decode_movement(op_byte, data),
+        0x9E | 0x9F | 0xA0 | 0xA1 | 0x7A | 0x7B | 0xB5 | 0xD9 | 0xB6 => ops_decode_movement(op_byte, data),
 
         // Data copy.
         0x19 | 0x1C | 0x20 | 0x48 | 0x49 | 0x4A | 0x4B | 0x4C | 0x4D | 0x4E | 0x4F | 0x50 | 0x51 |
@@ -169,7 +169,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Byte math.
         0x5B | 0x5D | 0x5E | 0x5F | 0x60 | 0x61 | 0x71 | 0x72 | 0x73 | 0x63 | 0x64 | 0x65 | 0x66 |
-        0x67 | 0x69 | 0x6B | 0x6F => op_decode_math(op_byte, data),
+        0x67 | 0x69 | 0x6B | 0x6F | 0x2A | 0x2B | 0x32 => op_decode_math(op_byte, data),
 
         // Load character.
         0x57 | 0x5C | 0x62 | 0x68 | 0x6A | 0x6C | 0x6D | 0x80 | 0x81 | 0x82 | 0x83 => op_decode_char_load(op_byte, data),
@@ -407,18 +407,6 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             code: 0x29,
             data: [data.read_u8().unwrap(), 0, 0, 0],
         },
-        0x2A => Op::Unknown {
-            code: 0x2A,
-            data: [0, 0, 0, 0],
-        },
-        0x2B => Op::Unknown {
-            code: 0x2B,
-            data: [0, 0, 0, 0],
-        },
-        0x32 => Op::Unknown {
-            code: 0x32,
-            data: [0, 0, 0, 0],
-        },
 
         // Unknown.
         0x2C => Op::Unknown {
@@ -436,13 +424,17 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
 pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> [u8; 32] {
     let data_len = data.read_u16::<LittleEndian>().unwrap() as usize - 2;
     if data_len > 32 {
-        panic!("Blob data is larger than 32 bytes.");
+        panic!("Blob data larger than 32 bytes is not supported.");
     }
 
     let mut blob = vec![0u8; data_len];
     data.read_exact(&mut blob).unwrap();
 
-    blob.first_chunk::<32>().unwrap().clone()
+    let mut blob_out = [0u8; 32];
+    for i in 0..data_len {
+        blob_out[i] = blob[i];
+    }
+    blob_out
 }
 
 pub fn read_24_bit_address(data: &mut Cursor<Vec<u8>>) -> usize {

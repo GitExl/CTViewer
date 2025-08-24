@@ -78,6 +78,21 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Bit math.
+        0x2A => Op::BitMath {
+            rhs: DataRef::Temp(0x7E0154),
+            lhs: DataRef::Immediate(0x04),
+            op: BitMathOp::Or,
+        },
+        0x2B => Op::BitMath {
+            rhs: DataRef::Temp(0x7E0154),
+            lhs: DataRef::Immediate(0x08),
+            op: BitMathOp::Or,
+        },
+        0x32 => Op::BitMath {
+            rhs: DataRef::Temp(0x7E0154),
+            lhs: DataRef::Immediate(0x10),
+            op: BitMathOp::Or,
+        },
         0x63 => Op::BitMath {
             rhs: DataRef::Immediate(1 >> data.read_u8().unwrap() as u32),
             lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
