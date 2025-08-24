@@ -1,8 +1,8 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::ActorFlags;
-use crate::scene::ops::Op;
-use crate::scene::scene_script_decoder::{ActorRef, DataRef};
+use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_decoder::{ActorRef, DataRef};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SpritePriority {
@@ -214,6 +214,22 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             x: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
             y: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
             precise: true,
+        },
+
+        0xF8 => Op::ActorHeal {
+            actor: ActorRef::This,
+            hp: true,
+            mp: true,
+        },
+        0xF9 => Op::ActorHeal {
+            actor: ActorRef::This,
+            hp: true,
+            mp: false,
+        },
+        0xFA => Op::ActorHeal {
+            actor: ActorRef::This,
+            hp: false,
+            mp: true,
         },
 
         _ => panic!("Unknown actor property op."),

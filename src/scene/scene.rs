@@ -7,7 +7,7 @@ use crate::map::Map;
 use crate::map_renderer::MapSprite;
 use crate::palette_anim::PaletteAnimSet;
 use crate::scene::scene_map::SceneMap;
-use crate::scene::scene_script::SceneScript;
+use crate::scene_script::scene_script::SceneScript;
 use crate::sprites::sprite_manager::SpriteManager;
 use crate::tileset::TileSet;
 

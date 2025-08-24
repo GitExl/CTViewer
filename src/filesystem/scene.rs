@@ -4,7 +4,7 @@ use byteorder::ReadBytesExt;
 use crate::destination::{Destination, Facing};
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
-use crate::scene::scene_script::{SceneActorScript, SceneScript};
+use crate::scene_script::scene_script::{SceneActorScript, SceneScript};
 
 struct SceneHeader {
 

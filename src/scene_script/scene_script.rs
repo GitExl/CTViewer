@@ -1,6 +1,6 @@
 use std::io::Cursor;
-use crate::scene::ops::Op;
-use crate::scene::scene_script_decoder::op_decode;
+use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_decoder::op_decode;
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],

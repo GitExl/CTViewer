@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
-use crate::scene::ops::Op;
+use crate::scene_script::ops::Op;
 
 pub fn op_decode_party(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {

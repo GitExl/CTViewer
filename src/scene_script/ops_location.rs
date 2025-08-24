@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::scene::ops::Op;
-use crate::scene::scene_script_decoder::DataRef;
+use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_decoder::DataRef;
 
 pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {

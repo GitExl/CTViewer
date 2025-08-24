@@ -1,0 +1,18 @@
+pub mod scene_script;
+mod scene_script_decoder;
+mod ops_copy;
+mod ops_math;
+mod ops_jump;
+mod ops_direction;
+mod ops_movement;
+mod ops;
+mod ops_call;
+mod ops_actor_props;
+mod ops_char_load;
+mod ops_dialogue;
+mod ops_animation;
+mod ops_party;
+mod ops_palette;
+mod ops_location;
+mod ops_inventory;
+mod ops_audio;

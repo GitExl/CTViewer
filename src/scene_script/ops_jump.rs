@@ -1,8 +1,8 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::ActorFlags;
-use crate::scene::ops::Op;
-use crate::scene::scene_script_decoder::{ActorRef, DataRef, InputBinding};
+use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_decoder::{ActorRef, DataRef, InputBinding};
 
 /// Conditionals for comparisons.
 #[derive(Copy, Clone, PartialEq, Debug)]

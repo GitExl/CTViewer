@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use crate::map_renderer::MapSprite;
-use crate::scene::scene_script::ActorScriptState;
+use crate::scene_script::scene_script::ActorScriptState;
 use crate::sprites::sprite_manager::SpriteState;
 
 pub enum ActorClass {

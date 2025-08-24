@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
-use crate::scene::ops::Op;
+use crate::scene_script::ops::Op;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum CharacterType {
