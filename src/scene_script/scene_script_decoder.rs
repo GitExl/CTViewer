@@ -80,6 +80,17 @@ pub enum ActorRef {
     PartyMember(usize),
 }
 
+impl ActorRef {
+    pub fn deref(self, this: usize) -> usize {
+        match self {
+            ActorRef::This => this,
+            ActorRef::ScriptActor(index) => index,
+            ActorRef::PartyMember(_index) => 0,  // todo
+            ActorRef::ScriptActorStoredUpper(_address) => 0,  //todo
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum InputBinding {
     Dash,
@@ -144,6 +155,15 @@ pub enum DataRef {
     // Player character is recruited/active.
     PCIsRecruited,
     PCIsActive,
+}
+
+impl DataRef {
+    pub fn deref(self) -> u32 {
+        match self {
+            DataRef::Immediate(index) => index,
+            _ => 0,     // todo
+        }
+    }
 }
 
 /// Opcodes.

@@ -65,7 +65,6 @@ pub struct Scene {
     pub index: usize,
 
     pub music_index: usize,
-    pub script_index: usize,
 
     pub scene_map: SceneMap,
     pub map: Map,
@@ -82,19 +81,15 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn init(&mut self) {
-        for actor_script in self.script.actors.iter() {
+    pub fn init(&mut self, sprites: &mut SpriteManager) {
+        for actor_script_index in 0..self.script.actor_scripts.len() {
             let mut actor = Actor::spawn();
-            actor.script_state = Some(actor_script.get_initial_state());
+            actor.script_state_index = Some(self.script.create_state(actor_script_index));
             self.actors.push(actor);
         }
 
         // Run first actor script until it yields (first return op).
-        for actor in self.actors.iter_mut() {
-            if let Some(state) = &mut actor.script_state {
-            self.script.run_until_yield(state);
-            }
-        }
+        self.script.run_until_yield(&mut self.actors, sprites, &mut self.map_sprites);
     }
 
     pub fn dump(&self, l10n: &L10n) {
@@ -102,9 +97,6 @@ impl Scene {
         println!("  Music {}, map {}",
             self.music_index,
             self.map.index,
-        );
-        println!("  Script {}",
-            self.script_index
         );
         println!("  Palette {}",
             self.palette.index,

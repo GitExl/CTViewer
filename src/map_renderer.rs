@@ -68,7 +68,7 @@ impl MapSprite {
             frame: 0,
             priority: 0,
             palette_offset: 0,
-            visible: false,
+            visible: true,
         }
     }
 }

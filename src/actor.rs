@@ -1,6 +1,5 @@
 use bitflags::bitflags;
 use crate::map_renderer::MapSprite;
-use crate::scene_script::scene_script::ActorScriptState;
 use crate::sprites::sprite_manager::SpriteState;
 
 pub enum ActorClass {
@@ -42,7 +41,7 @@ pub struct Actor {
     pub flags: ActorFlags,
 
     pub sprite_state: Option<SpriteState>,
-    pub script_state: Option<ActorScriptState>,
+    pub script_state_index: Option<usize>,
 }
 
 impl Actor {
@@ -57,7 +56,7 @@ impl Actor {
             move_speed: 1.0,
             flags: ActorFlags::empty(),
             sprite_state: None,
-            script_state: None,
+            script_state_index: None,
         }
     }
 

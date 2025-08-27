@@ -119,7 +119,6 @@ impl FileSystem {
             index: scene_index,
 
             music_index: header.music_index,
-            script_index: header.script_index,
 
             map,
             scene_map,
