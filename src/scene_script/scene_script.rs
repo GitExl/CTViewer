@@ -72,13 +72,13 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_until_yield(&mut self, actors: &mut Vec<Actor>, ctx: &mut Context, map_sprites: &mut Vec<MapSprite>) {
+    pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map_sprites: &mut Vec<MapSprite>) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
             self.data.set_position(state.address);
             'decoder: loop {
                 let op = op_decode(&mut self.data);
                 state.address = self.data.position();
-                if op_execute(op, state_index, ctx, map_sprites, actors) {
+                if op_execute(ctx, op, state_index, map_sprites, actors) {
                     break 'decoder;
                 }
             }
@@ -131,7 +131,7 @@ impl SceneScript {
     }
 }
 
-fn op_execute(op: Op, this_actor: usize, ctx: &mut Context, _map_sprites: &mut Vec<MapSprite>, actors: &mut Vec<Actor>) -> bool {
+fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, _map_sprites: &mut Vec<MapSprite>, actors: &mut Vec<Actor>) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield { forever: _ } => true,

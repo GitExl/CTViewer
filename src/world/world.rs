@@ -6,7 +6,6 @@ use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::map::Map;
 use crate::map_renderer::MapSprite;
-use crate::sprites::sprite_list::SpriteList;
 use crate::tileset::TileSet;
 use crate::world::world_map::WorldMap;
 
@@ -76,7 +75,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn tick(&mut self, delta: f64, _sprites: &SpriteList) {
+    pub fn tick(&mut self, _ctx: &Context, delta: f64) {
         self.map.tick(delta);
 
         // for (index, actor) in self.actors.iter_mut().enumerate() {

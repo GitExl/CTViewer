@@ -119,7 +119,7 @@ impl GameStateTrait for GameStateWorld {
         }
         self.camera.wrap();
 
-        self.world.tick(delta, &ctx.sprites);
+        self.world.tick(ctx, delta);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
@@ -132,8 +132,24 @@ impl GameStateTrait for GameStateWorld {
 
     fn render(&mut self, ctx: &mut Context, lerp: f64) {
         self.camera.lerp(lerp);
-        self.map_renderer.render(lerp, &self.camera, &mut ctx.render.target, &self.world.map, &self.world.tileset_l12, &self.world.tileset_l3, &self.world.palette, &self.world.render_sprites, &ctx.sprites);
-        self.world_renderer.render(lerp, &self.camera, &mut self.world, &mut ctx.render.target);
+
+        self.map_renderer.render(
+            lerp,
+            &self.camera,
+            &mut ctx.render.target,
+            &self.world.map,
+            &self.world.tileset_l12,
+            &self.world.tileset_l3,
+            &self.world.palette,
+            &self.world.render_sprites,
+            &ctx.sprites,
+        );
+        self.world_renderer.render(
+            lerp,
+            &self.camera,
+            &mut self.world,
+            &mut ctx.render.target,
+        );
 
         if self.debug_text.is_some() {
             ctx.render.render_text(

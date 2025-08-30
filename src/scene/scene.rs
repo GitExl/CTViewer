@@ -9,7 +9,6 @@ use crate::map_renderer::MapSprite;
 use crate::palette_anim::PaletteAnimSet;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::SceneScript;
-use crate::sprites::sprite_list::SpriteList;
 use crate::tileset::TileSet;
 
 pub struct ScrollMask {
@@ -94,7 +93,7 @@ impl Scene {
         }
 
         // Run first actor script until it yields (first return op).
-        self.script.run_until_yield(&mut self.actors, ctx, &mut self.map_sprites);
+        self.script.run_until_yield(ctx, &mut self.actors, &mut self.map_sprites);
     }
 
     pub fn dump(&self, ctx: &Context) {
@@ -146,7 +145,7 @@ impl Scene {
         self.tileset_l3.render_tiles_to_surface(&self.palette.palette).write_to_bmp(Path::new("debug_output/scene_tiles_l3.bmp"));
     }
 
-    pub fn tick(&mut self, delta: f64, sprites: &mut SpriteList) {
+    pub fn tick(&mut self, ctx: &mut Context, delta: f64) {
         self.map.tick(delta);
 
         for (index, actor) in self.actors.iter_mut().enumerate() {
@@ -155,14 +154,14 @@ impl Scene {
             }
 
             actor.tick(delta);
-            sprites.tick_state(delta, index);
+            ctx.sprites.tick_state(delta, index);
         }
 
         self.tileset_l12.tick(delta);
         self.palette_anims.tick(delta, &mut self.palette.palette);
     }
 
-    pub fn lerp(&mut self, lerp: f64, sprites: &SpriteList) {
+    pub fn lerp(&mut self, ctx: &Context, lerp: f64) {
         self.map.lerp(lerp);
 
         for (actor_index, actor) in self.actors.iter_mut().enumerate() {
@@ -172,7 +171,7 @@ impl Scene {
 
             actor.lerp(lerp);
 
-            let state = sprites.get_state(actor_index);
+            let state = ctx.sprites.get_state(actor_index);
             actor.update_map_sprite(&state, &mut self.map_sprites[actor_index]);
         }
     }
