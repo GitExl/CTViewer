@@ -6,7 +6,7 @@ use crate::software_renderer::blit::blit_bitmap_to_surface;
 use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
-use super::sprite_anim::SpriteAnimSet;
+use super::sprite_anim::{SpriteAnimFrame, SpriteAnimSet};
 use super::sprite_assembly::SpriteAssembly;
 
 // Keys for world sprite data.
@@ -36,12 +36,13 @@ pub struct SpriteState {
     pub anim_index: usize,
     pub anim_frame: usize,
     pub anim_timer: f64,
+    pub animating: bool,
 }
 
 impl SpriteState {
-    pub fn new(map_sprite_index: usize) -> SpriteState {
+    pub fn new() -> SpriteState {
         SpriteState {
-            map_sprite_index,
+            map_sprite_index: 0,
 
             sprite_index: 0,
             sprite_frame: 0,
@@ -53,52 +54,104 @@ impl SpriteState {
             anim_index: 0,
             anim_frame: 0,
             anim_timer: 0.0,
+            animating: false,
         }
     }
 }
 
-pub struct SpriteManager<'a> {
+pub struct SpriteList<'a> {
     fs: &'a FileSystem,
-    pub sprites: HashMap<usize, Sprite>,
-    pub anim_sets: HashMap<usize, SpriteAnimSet>,
+    sprites: HashMap<usize, Sprite>,
+    anim_sets: HashMap<usize, SpriteAnimSet>,
+    sprite_states: Vec<SpriteState>,
 }
 
-impl SpriteManager<'_> {
-    pub fn new(fs: &'_ FileSystem) -> SpriteManager<'_> {
-        let manager = SpriteManager {
+impl SpriteList<'_> {
+    pub fn new(fs: &'_ FileSystem) -> SpriteList<'_> {
+        let manager = SpriteList {
             fs,
             sprites: HashMap::new(),
             anim_sets: fs.read_sprite_animations(),
+            sprite_states: Vec::new(),
         };
 
         manager
     }
 
-    pub fn get(&self, index: usize) -> &Sprite {
-        self.sprites.get(&index).unwrap()
+    pub fn add_sprite_state(&mut self) -> &mut SpriteState {
+        self.sprite_states.push(SpriteState::new());
+        let index = self.sprite_states.len() - 1;
+        self.sprite_states.get_mut(index).unwrap()
     }
 
-    // Set a new animation on a sprite state.
-    pub fn set_animation(&self, state: &mut SpriteState, anim_index: usize) {
+    pub fn get_sprite(&self, sprite_index: usize) -> &Sprite {
+        self.sprites.get(&sprite_index).unwrap()
+    }
+
+    pub fn get_state(&self, actor_index: usize) -> &SpriteState {
+        self.sprite_states.get(actor_index).unwrap()
+    }
+
+    pub fn get_state_mut(&mut self, actor_index: usize) -> &mut SpriteState {
+        self.sprite_states.get_mut(actor_index).unwrap()
+    }
+
+    pub fn set_animation(&mut self, actor_index: usize, anim_index: usize) {
+        let state = &self.sprite_states[actor_index];
+        let frame = self.get_frame_for_animation(state.sprite_index, anim_index, 0);
+        let sprite_frame = frame.sprite_frames[state.direction];
+
+        let state = &mut self.sprite_states[actor_index];
         state.anim_index = anim_index;
         state.anim_frame = 0;
-
-        let sprite = self.sprites.get(&state.sprite_index).unwrap();
-        let anim_set = self.anim_sets.get(&sprite.anim_set_index).unwrap();
-        let frame = if anim_set.anims[state.anim_index].frames.len() == 0 {
-            println!("Warning: sprite {} animation {} has no frames. Using animation 0.", sprite.index, anim_index);
-            state.anim_index = 0;
-            &anim_set.anims[0].frames[0]
-        } else {
-            &anim_set.anims[state.anim_index].frames[0]
-        };
-
-        state.sprite_frame = frame.sprite_frames[state.direction];
+        state.animating = true;
+        state.sprite_frame = sprite_frame;
         state.anim_timer = 0.0;
     }
 
+    pub fn set_direction(&mut self, actor_index: usize, direction: usize) {
+        let state = &self.sprite_states[actor_index];
+        let frame = self.get_frame_for_animation(state.sprite_index, state.anim_index, state.anim_frame);
+        let sprite_frame = frame.sprite_frames[direction];
+
+        let state = &mut self.sprite_states[actor_index];
+        state.direction = direction;
+        state.sprite_frame = sprite_frame;
+    }
+
+    pub fn set_frame(&mut self, actor_index: usize, frame_index: usize) {
+        let state = &mut self.sprite_states[actor_index];
+        state.anim_frame = 0;
+        state.animating = false;
+        state.sprite_frame = frame_index;
+        state.anim_timer = 0.0;
+    }
+
+    fn get_frame_for_animation(&self, sprite_index: usize, anim_index: usize, frame_index: usize) -> &SpriteAnimFrame {
+        let sprite = self.sprites.get(&sprite_index).unwrap();
+        let anim_set = self.anim_sets.get(&sprite.anim_set_index).unwrap();
+
+        let anim = if anim_set.anims.len() <= anim_index {
+            println!("Warning: sprite {} does not have animation {}. Using animation 0.", sprite_index, anim_index);
+            &anim_set.anims[0]
+        } else {
+            &anim_set.anims[anim_index]
+        };
+
+        if anim.frames.len() == 0 {
+            println!("Warning: sprite {} animation {} does not have frame {}. Using frame 0.", sprite_index, anim_index, frame_index);
+            &anim.frames[0]
+        } else {
+            &anim.frames[frame_index]
+        }
+    }
+
     // Updates sprite state.
-    pub fn tick_sprite(&self, delta: f64, state: &mut SpriteState) {
+    pub fn tick_state(&mut self, delta: f64, actor_index: usize) {
+        let state = self.sprite_states.get_mut(actor_index).unwrap();
+        if !state.animating {
+            return;
+        }
 
         // Get the current visible animation frame through the sprite's animation set.
         let sprite = self.sprites.get(&state.sprite_index).unwrap();
@@ -127,24 +180,24 @@ impl SpriteManager<'_> {
     }
 
     // Load a sprite for future use.
-    pub fn load(&mut self, index: usize) {
-        if self.sprites.contains_key(&index) {
+    pub fn load_sprite(&mut self, sprite_index: usize) {
+        if self.sprites.contains_key(&sprite_index) {
             return;
         }
 
-        let info = self.fs.read_sprite_header(index);
+        let info = self.fs.read_sprite_header(sprite_index);
         let assembly = self.fs.read_sprite_assembly(info.assembly_index, &info);
         let palette = self.fs.read_sprite_palette(info.palette_index).unwrap();
         let tiles = self.fs.read_sprite_tiles(info.bitmap_index, assembly.chip_max);
 
         let sprite = Sprite {
-            index,
+            index: sprite_index,
             tiles,
             assembly,
             palette,
             anim_set_index: info.anim_index,
         };
-        self.sprites.insert(index, sprite);
+        self.sprites.insert(sprite_index, sprite);
     }
 
     // Loads the generic world sprite used by world maps.

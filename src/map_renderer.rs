@@ -12,7 +12,7 @@ use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
-use crate::sprites::sprite_manager::SpriteManager;
+use crate::sprites::sprite_list::SpriteList;
 use crate::sprites::sprite_renderer::render_sprite;
 use crate::tileset::TileSet;
 
@@ -163,7 +163,7 @@ impl MapRenderer {
         }
     }
 
-    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, map_sprites: &Vec<MapSprite>, sprites: &SpriteManager) {
+    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, map_sprites: &Vec<MapSprite>, sprites: &SpriteList) {
         self.screen_sub.fill(self.layer_blend_color);
         self.pixels_main.clear();
         self.pixels_sub.clear();
@@ -294,7 +294,7 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
     }
 }
 
-fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprites: &SpriteManager, layers: LayerFlags) {
+fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprites: &SpriteList, layers: LayerFlags) {
 
     // Layer 3, priority 0.
     if layers.contains(LayerFlags::Layer3) && render_data.map.layers[2].chips.len() > 0 {
@@ -348,7 +348,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
     }
 }
 
-fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, map_sprites: &Vec<MapSprite>, priority: u32, camera: &Camera, sprites: &SpriteManager) {
+fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, map_sprites: &Vec<MapSprite>, priority: u32, camera: &Camera, sprites: &SpriteList) {
     for map_sprite in map_sprites {
         if !map_sprite.visible {
             continue;
@@ -356,7 +356,7 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, map_sprites: 
         if map_sprite.priority == priority {
             let x = (map_sprite.x - camera.lerp_x.floor()).floor() as i32;
             let y = (map_sprite.y - camera.lerp_y.floor()).floor() as i32;
-            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), &sprites.get(map_sprite.sprite_index), map_sprite.frame, x, y, map_sprite.palette_offset);
+            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), &sprites.get_sprite(map_sprite.sprite_index), map_sprite.frame, x, y, map_sprite.palette_offset);
         }
     }
 }

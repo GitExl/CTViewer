@@ -19,13 +19,6 @@ pub fn op_decode_animation(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             run: true,
             loops: DataRef::Immediate(0),
         },
-        0xAC => Op::Animate {
-            actor: ActorRef::This,
-            animation: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            wait: false,
-            run: false,
-            loops: DataRef::Immediate(0),
-        },
         // "Also writes 0 to object address 0x1780 instead of 1".
         0xAE => Op::Animate {
             actor: ActorRef::This,

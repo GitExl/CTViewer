@@ -4,7 +4,7 @@ use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::surface::Surface;
 
 use super::sprite_assembly::SpriteAssemblyChipFlags;
-use super::sprite_manager::Sprite;
+use super::sprite_list::Sprite;
 
 pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, sprite: &Sprite, frame: usize, x: i32, y: i32, palette_offset: usize) {
     let frame = &sprite.assembly.frames[frame];

@@ -14,11 +14,11 @@ use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
-use crate::sprites::sprite_manager::SpriteManager;
+use crate::sprites::sprite_list::SpriteList;
 
 pub struct GameStateScene<'a> {
     pub scene: Scene,
-    pub sprites: SpriteManager<'a>,
+    pub sprites: SpriteList<'a>,
     l10n: &'a L10n,
 
     pub camera: Camera,
@@ -43,7 +43,7 @@ pub struct GameStateScene<'a> {
 
 impl GameStateScene<'_> {
     pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, scene_index: usize, x: i32, y: i32) -> GameStateScene<'a> {
-        let mut sprites = SpriteManager::new(&fs);
+        let mut sprites = SpriteList::new(&fs);
         let mut scene = fs.read_scene(scene_index);
 
         let mut camera = Camera::new(
@@ -105,7 +105,7 @@ impl GameStateTrait for GameStateScene<'_> {
         }
         self.camera.clamp();
 
-        self.scene.tick(delta, &self.sprites);
+        self.scene.tick(delta, &mut self.sprites);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
@@ -117,6 +117,7 @@ impl GameStateTrait for GameStateScene<'_> {
     }
 
     fn render(&mut self, lerp: f64, renderer: &mut Renderer) {
+        self.scene.lerp(lerp, &self.sprites);
         self.camera.lerp(lerp);
         self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.map_sprites, &self.sprites);
         self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut renderer.target);

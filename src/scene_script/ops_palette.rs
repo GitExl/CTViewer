@@ -78,12 +78,12 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                     code: 0x88,
                     data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), 0],
                 }
-            } else if cmd > 0x40 && cmd < 0x60 {
+            } else if cmd >= 0x40 && cmd < 0x60 {
                 Op::Unknown {
                     code: 0x88,
                     data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap()],
                 }
-            } else if cmd > 0x80 && cmd < 0x90 {
+            } else if cmd >= 0x80 && cmd < 0x90 {
                 Op::PaletteSetImmediate {
                     color_index: cmd as usize & 0xF,
                     sub_palette: SubPalette::This,

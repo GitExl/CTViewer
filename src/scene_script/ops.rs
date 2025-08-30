@@ -123,6 +123,12 @@ pub enum Op {
         to: ActorRef,
     },
 
+    // Sprite.
+    ActorSetSpriteFrame {
+        actor: ActorRef,
+        frame: DataRef,
+    },
+
     // Animation.
     // 0 loops means do not loop, only play once.
     // 0xFFFFFFFF loops means loop forever.

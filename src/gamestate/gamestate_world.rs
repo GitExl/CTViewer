@@ -13,14 +13,14 @@ use crate::renderer::{Renderer, TextFlags, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
-use crate::sprites::sprite_manager::SpriteManager;
-use crate::sprites::sprite_manager::WORLD_SPRITE_INDEX;
+use crate::sprites::sprite_list::SpriteList;
+use crate::sprites::sprite_list::WORLD_SPRITE_INDEX;
 use crate::world::world::World;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 
 pub struct GameStateWorld<'a> {
     pub world: World,
-    pub sprites: SpriteManager<'a>,
+    pub sprites: SpriteList<'a>,
     l10n: &'a L10n,
 
     pub camera: Camera,
@@ -45,7 +45,7 @@ pub struct GameStateWorld<'a> {
 
 impl GameStateWorld<'_> {
     pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, world_index: usize, x: i32, y: i32) -> GameStateWorld<'a> {
-        let mut sprites = SpriteManager::new(&fs);
+        let mut sprites = SpriteList::new(&fs);
         let mut world = fs.read_world(world_index);
         sprites.load_world_sprite(world_index, world.sprite_graphics, &world.palette.palette);
         sprites.load_world_player_sprites([0, 1, 2]);

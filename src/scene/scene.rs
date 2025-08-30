@@ -8,7 +8,7 @@ use crate::map_renderer::MapSprite;
 use crate::palette_anim::PaletteAnimSet;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::SceneScript;
-use crate::sprites::sprite_manager::SpriteManager;
+use crate::sprites::sprite_list::SpriteList;
 use crate::tileset::TileSet;
 
 pub struct ScrollMask {
@@ -76,15 +76,19 @@ pub struct Scene {
     pub exits: Vec<SceneExit>,
     pub treasure: Vec<SceneTreasure>,
     pub script: SceneScript,
+
     pub actors: Vec<Actor>,
     pub map_sprites: Vec<MapSprite>,
 }
 
 impl Scene {
-    pub fn init(&mut self, sprites: &mut SpriteManager) {
+    pub fn init(&mut self, sprites: &mut SpriteList) {
         for actor_script_index in 0..self.script.actor_scripts.len() {
-            let mut actor = Actor::spawn();
-            actor.script_state_index = Some(self.script.create_state(actor_script_index));
+            let actor = Actor::spawn();
+            self.script.add_initial_state(actor_script_index);
+            let state = sprites.add_sprite_state();
+            state.direction = actor.direction;
+            self.map_sprites.push(MapSprite::new());
             self.actors.push(actor);
         }
 
@@ -141,45 +145,34 @@ impl Scene {
         self.tileset_l3.render_tiles_to_surface(&self.palette.palette).write_to_bmp(Path::new("debug_output/scene_tiles_l3.bmp"));
     }
 
-    pub fn tick(&mut self, delta: f64, sprites: &SpriteManager) {
+    pub fn tick(&mut self, delta: f64, sprites: &mut SpriteList) {
         self.map.tick(delta);
 
-        for actor in self.actors.iter_mut() {
+        for (index, actor) in self.actors.iter_mut().enumerate() {
             if actor.flags.contains(ActorFlags::DISABLED) {
                 continue;
             }
 
             actor.tick(delta);
-            if let Some(state) = &mut actor.sprite_state {
-                sprites.tick_sprite(delta, state);
-            }
+            sprites.tick_state(delta, index);
         }
 
         self.tileset_l12.tick(delta);
         self.palette_anims.tick(delta, &mut self.palette.palette);
     }
 
-    pub fn lerp(&mut self, lerp: f64) {
+    pub fn lerp(&mut self, lerp: f64, sprites: &SpriteList) {
         self.map.lerp(lerp);
 
-        for actor in self.actors.iter_mut() {
+        for (actor_index, actor) in self.actors.iter_mut().enumerate() {
             if !actor.flags.contains(ActorFlags::RENDERED) {
                 continue;
             }
 
             actor.lerp(lerp);
 
-            // Update map sprite properties from this actor's properties.
-            if let Some(state) = &actor.sprite_state {
-                actor.update_map_sprite(&mut self.map_sprites[state.map_sprite_index]);
-            }
+            let state = sprites.get_state(actor_index);
+            actor.update_map_sprite(&state, &mut self.map_sprites[actor_index]);
         }
     }
-
-    // todo allocate sprite when needed
-    // let mut render_sprite = MapSprite::new();
-    // self.map_sprites.push(render_sprite);
-
-    // todo set animation with
-    // sprites.set_animation(&mut actor.sprite_state, 23);
 }

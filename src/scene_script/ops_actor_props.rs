@@ -211,9 +211,15 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x8D => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
-            x: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
-            y: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            x: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 >> 4),
+            y: DataRef::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 >> 4),
             precise: true,
+        },
+
+        // Actor sprite.
+        0xAC => Op::ActorSetSpriteFrame {
+            actor: ActorRef::This,
+            frame: DataRef::Immediate(data.read_u8().unwrap() as u32),
         },
 
         0xF8 => Op::ActorHeal {

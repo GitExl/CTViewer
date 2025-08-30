@@ -5,7 +5,7 @@ use crate::map_renderer::MapSprite;
 use crate::scene_script::ops::Op;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::scene_script_decoder::op_decode;
-use crate::sprites::sprite_manager::{SpriteManager, SpriteState};
+use crate::sprites::sprite_list::{SpriteList, SpriteState};
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -66,13 +66,13 @@ impl SceneScript {
         }
     }
 
-    pub fn create_state(&mut self, index: usize) -> usize {
-        let state = self.actor_scripts[index].get_initial_state();
+    pub fn add_initial_state(&mut self, actor_index: usize) -> &ActorScriptState {
+        let state = self.actor_scripts[actor_index].get_initial_state();
         self.script_states.push(state);
-        self.script_states.len() - 1
+        self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_until_yield(&mut self, actors: &mut Vec<Actor>, sprites: &mut SpriteManager, map_sprites: &mut Vec<MapSprite>) {
+    pub fn run_until_yield(&mut self, actors: &mut Vec<Actor>, sprites: &mut SpriteList, map_sprites: &mut Vec<MapSprite>) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
             self.data.set_position(state.address);
             'decoder: loop {
@@ -131,38 +131,37 @@ impl SceneScript {
     }
 }
 
-fn op_execute(op: Op, actor_index: usize, sprites: &mut SpriteManager, map_sprites: &mut Vec<MapSprite>, actors: &mut Vec<Actor>) -> bool {
+fn op_execute(op: Op, this_actor: usize, sprites: &mut SpriteList, map_sprites: &mut Vec<MapSprite>, actors: &mut Vec<Actor>) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield { forever: _ } => true,
         Op::Return => true,
 
         Op::LoadCharacter { char_type, index, .. } => {
-            sprites.load(index);
+            let real_index = match char_type {
+                CharacterType::PC => index,
+                CharacterType::PCAsNPC => index,
+                CharacterType::NPC => index + 7,
+                CharacterType::Enemy => index + 256,
+            };
 
-            map_sprites.push(MapSprite::new());
+            sprites.load_sprite(real_index);
 
-            let mut state = SpriteState::new(map_sprites.len() - 1);
+            actors[this_actor].x = 0.0;
+            actors[this_actor].y = 0.0;
+            actors[this_actor].sprite_priority = 3;
+            actors[this_actor].flags |= ActorFlags::RENDERED;
+
+            let state = &mut sprites.get_state_mut(this_actor);
             state.enabled = true;
-            state.priority = 3;
-            state.sprite_index = index;
-            actors[actor_index].sprite_state = Some(state);
-            actors[actor_index].x = 0.0;
-            actors[actor_index].y = 0.0;
-            actors[actor_index].flags |= ActorFlags::RENDERED;
-
-            match char_type {
-                CharacterType::PC => {}
-                CharacterType::PCAsNPC => {}
-                CharacterType::NPC => {}
-                CharacterType::Enemy => {}
-            }
+            state.sprite_index = real_index;
+            sprites.set_animation(this_actor, 0);
 
             false
         },
 
         Op::ActorCoordinatesSet { actor, x, y, precise } => {
-            let actor_index = actor.deref(actor_index);
+            let actor_index = actor.deref(this_actor);
             let x = x.deref() as f64;
             let y = y.deref() as f64;
 
@@ -170,9 +169,34 @@ fn op_execute(op: Op, actor_index: usize, sprites: &mut SpriteManager, map_sprit
                 actors[actor_index].x = x;
                 actors[actor_index].y = y;
             } else {
-                actors[actor_index].x = x * 16.0;
-                actors[actor_index].y = y * 16.0;
+                actors[actor_index].x = x * 16.0 + 8.0;
+                actors[actor_index].y = y * 16.0 + 16.0;
             }
+
+            false
+        },
+
+        Op::ActorSetDirection { actor, direction } => {
+            let actor_index = actor.deref(this_actor);
+            let direction = direction.deref() as usize;
+            actors[actor_index].direction = direction;
+            sprites.set_direction(actor_index, direction);
+
+            false
+        },
+
+        Op::ActorSetSpriteFrame { actor, frame } => {
+            let actor_index = actor.deref(this_actor);
+            let frame_index = frame.deref() as usize;
+            sprites.set_frame(actor_index, frame_index);
+
+            false
+        },
+
+        Op::Animate { actor, animation, .. } => {
+            let actor_index = actor.deref(this_actor);
+            let anim_index = animation.deref() as usize;
+            sprites.set_animation(actor_index, anim_index);
 
             false
         },

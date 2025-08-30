@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use crate::map_renderer::MapSprite;
-use crate::sprites::sprite_manager::SpriteState;
+use crate::sprites::sprite_list::SpriteState;
 
 pub enum ActorClass {
     PC1,
@@ -39,9 +39,6 @@ pub struct Actor {
     pub direction: usize,
     pub move_speed: f64,
     pub flags: ActorFlags,
-
-    pub sprite_state: Option<SpriteState>,
-    pub script_state_index: Option<usize>,
 }
 
 impl Actor {
@@ -52,11 +49,9 @@ impl Actor {
             sprite_priority: 0,
             class: ActorClass::NPC,
             player_index: 0,
-            direction: 0,
+            direction: 1,
             move_speed: 1.0,
             flags: ActorFlags::empty(),
-            sprite_state: None,
-            script_state_index: None,
         }
     }
 
@@ -66,17 +61,15 @@ impl Actor {
     pub fn lerp(&mut self, _lerp: f64) {
     }
 
-    pub fn update_map_sprite(&self, sprite: &mut MapSprite) {
-        sprite.x = self.x;
-        sprite.y = self.y;
-        sprite.priority = self.sprite_priority;
-        sprite.visible = !self.flags.contains(ActorFlags::HIDDEN);
+    pub fn update_map_sprite(&self, sprite_state: &SpriteState, map_sprite: &mut MapSprite) {
+        map_sprite.x = self.x;
+        map_sprite.y = self.y;
+        map_sprite.priority = self.sprite_priority;
+        map_sprite.visible = !self.flags.contains(ActorFlags::HIDDEN);
 
-        if let Some(state) = &self.sprite_state {
-            sprite.sprite_index = state.sprite_index;
-            sprite.frame = state.sprite_frame;
-            sprite.palette_offset = state.palette_offset;
-        }
+        map_sprite.sprite_index = sprite_state.sprite_index;
+        map_sprite.frame = sprite_state.sprite_frame;
+        map_sprite.palette_offset = sprite_state.palette_offset;
     }
 
 }

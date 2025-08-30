@@ -16,8 +16,8 @@ use crate::sprites::sprite_assembly::SpriteAssemblyFrame;
 use crate::sprites::sprite_assembly::SpriteAssemblyChip;
 use crate::sprites::sprite_assembly::SpriteAssemblyChipFlags;
 use crate::sprites::sprite_header::SpriteHeader;
-use crate::sprites::sprite_manager::WORLD_ANIM_SET_INDEX;
-use crate::sprites::sprite_manager::WORLD_ASSEMBLY_SET_INDEX;
+use crate::sprites::sprite_list::WORLD_ANIM_SET_INDEX;
+use crate::sprites::sprite_list::WORLD_ASSEMBLY_SET_INDEX;
 
 impl FileSystem {
 
