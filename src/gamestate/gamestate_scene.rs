@@ -2,24 +2,20 @@ use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
-use crate::filesystem::filesystem::FileSystem;
-use crate::GameEvent;
+use crate::{Context, GameEvent};
 use crate::gamestate::gamestate::GameStateTrait;
-use crate::l10n::{IndexedType, L10n};
+use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::{Renderer, TextFlags, TextRenderable};
+use crate::renderer::{TextFlags, TextRenderable};
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
-use crate::sprites::sprite_list::SpriteList;
 
-pub struct GameStateScene<'a> {
+pub struct GameStateScene {
     pub scene: Scene,
-    pub sprites: SpriteList<'a>,
-    l10n: &'a L10n,
 
     pub camera: Camera,
     map_renderer: MapRenderer,
@@ -41,30 +37,29 @@ pub struct GameStateScene<'a> {
     next_game_event: Option<GameEvent>,
 }
 
-impl GameStateScene<'_> {
-    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, scene_index: usize, x: i32, y: i32) -> GameStateScene<'a> {
-        let mut sprites = SpriteList::new(&fs);
-        let mut scene = fs.read_scene(scene_index);
+impl GameStateScene {
+    pub fn new(ctx: &mut Context, scene_index: usize, x: i32, y: i32) -> GameStateScene {
+        let mut scene = ctx.fs.read_scene(scene_index);
 
         let mut camera = Camera::new(
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
-            renderer.target.width as f64, renderer.target.height as f64,
+            ctx.render.target.width as f64, ctx.render.target.height as f64,
             scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
             scene.scroll_mask.right as f64, scene.scroll_mask.bottom as f64,
         );
 
         let scene_renderer = SceneRenderer::new();
-        let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);
+        let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut scene.map);
 
         camera.center_to(x as f64, y as f64);
 
-        scene.init(&mut sprites);
+        scene.init(ctx);
+
+        println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
         GameStateScene {
             scene,
-            sprites,
-            l10n,
 
             camera,
             scene_renderer,
@@ -88,8 +83,8 @@ impl GameStateScene<'_> {
     }
 }
 
-impl GameStateTrait for GameStateScene<'_> {
-    fn tick(&mut self, delta: f64) -> Option<GameEvent> {
+impl GameStateTrait for GameStateScene {
+    fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.camera.tick(delta);
         if self.key_up {
             self.camera.y -= 300.0 * delta;
@@ -105,7 +100,7 @@ impl GameStateTrait for GameStateScene<'_> {
         }
         self.camera.clamp();
 
-        self.scene.tick(delta, &mut self.sprites);
+        self.scene.tick(delta, &mut ctx.sprites);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
@@ -116,21 +111,21 @@ impl GameStateTrait for GameStateScene<'_> {
         None
     }
 
-    fn render(&mut self, lerp: f64, renderer: &mut Renderer) {
-        self.scene.lerp(lerp, &self.sprites);
+    fn render(&mut self, ctx: &mut Context, lerp: f64) {
+        self.scene.lerp(lerp, &ctx.sprites);
         self.camera.lerp(lerp);
-        self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.map_sprites, &self.sprites);
-        self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut renderer.target);
+        self.map_renderer.render(lerp, &self.camera, &mut ctx.render.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.map_sprites, &ctx.sprites);
+        self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut ctx.render.target);
 
         if self.debug_text.is_some() {
-            renderer.render_text(
+            ctx.render.render_text(
                 &mut self.debug_text.as_mut().unwrap(),
                 self.debug_text_x - self.camera.lerp_x as i32, self.debug_text_y - self.camera.lerp_y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
         if self.debug_box.is_some() {
-            renderer.render_box(
+            ctx.render.render_box(
                 self.debug_box.as_mut().unwrap().moved_by(-self.camera.lerp_x as i32, -self.camera.lerp_y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
@@ -138,11 +133,11 @@ impl GameStateTrait for GameStateScene<'_> {
         }
     }
 
-    fn get_title(&self, l10n: &L10n) -> String {
-        format!("{} - {}", self.scene.index, l10n.get_indexed(IndexedType::Scene, self.scene.index))
+    fn get_title(&self, ctx: &Context) -> String {
+        format!("{} - {}", self.scene.index, ctx.l10n.get_indexed(IndexedType::Scene, self.scene.index))
     }
 
-    fn event(&mut self, event: &Event) {
+    fn event(&mut self, _ctx: &mut Context, event: &Event) {
         match event {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
@@ -240,7 +235,7 @@ impl GameStateTrait for GameStateScene<'_> {
         }
     }
 
-    fn mouse_motion(&mut self, x: i32, y: i32) {
+    fn mouse_motion(&mut self, ctx: &Context, x: i32, y: i32) {
 
         // Keep world coordinate mouse position.
         self.mouse_x = (x as f64 + self.camera.x) as i32;
@@ -249,7 +244,7 @@ impl GameStateTrait for GameStateScene<'_> {
         let mut index = self.get_exit_at(self.mouse_x, self.mouse_y);
         if index.is_some() {
             let exit = &self.scene.exits[index.unwrap()];
-            let text = exit.destination.info(&self.l10n);
+            let text = exit.destination.info(&ctx);
 
             self.debug_text = Some(TextRenderable::new(
                 text,
@@ -272,7 +267,7 @@ impl GameStateTrait for GameStateScene<'_> {
                 let text = if treasure.gold > 0 {
                     format!("{} gold", treasure.gold)
                 } else if treasure.item > 0 {
-                    format!("Item {} {}", treasure.item, self.l10n.get_indexed(IndexedType::Item, treasure.item))
+                    format!("Item {} {}", treasure.item, ctx.l10n.get_indexed(IndexedType::Item, treasure.item))
                 } else {
                     "Empty".to_string()
                 };
@@ -299,8 +294,8 @@ impl GameStateTrait for GameStateScene<'_> {
         }
     }
 
-    fn dump(&mut self) {
-        self.scene.dump(self.l10n);
+    fn dump(&mut self, ctx: &Context) {
+        self.scene.dump(ctx);
 
         // for (_, set) in sprites.anim_sets.iter() {
         //     set.dump();
@@ -308,7 +303,7 @@ impl GameStateTrait for GameStateScene<'_> {
     }
 }
 
-impl GameStateScene<'_> {
+impl GameStateScene {
 
     fn get_exit_at(&self, x: i32, y: i32) -> Option<usize> {
         for (index, exit) in self.scene.exits.iter().enumerate() {

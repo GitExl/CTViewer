@@ -42,7 +42,7 @@ impl SceneRenderer {
         }
     }
 
-    pub fn render(&mut self, lerp: f64, camera: &Camera, scene: &mut Scene, surface: &mut Surface) {
+    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene: &mut Scene, surface: &mut Surface) {
         if self.debug_layer != SceneDebugLayer::Disabled {
             self.render_debug_layer(&scene.scene_map, &camera, surface);
         }

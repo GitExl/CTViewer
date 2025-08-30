@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 use crate::actor::{Actor, ActorFlags};
+use crate::Context;
 use crate::map_renderer::MapSprite;
 use crate::scene_script::ops::Op;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::scene_script_decoder::op_decode;
-use crate::sprites::sprite_list::{SpriteList, SpriteState};
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -72,13 +72,13 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_until_yield(&mut self, actors: &mut Vec<Actor>, sprites: &mut SpriteList, map_sprites: &mut Vec<MapSprite>) {
+    pub fn run_until_yield(&mut self, actors: &mut Vec<Actor>, ctx: &mut Context, map_sprites: &mut Vec<MapSprite>) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
             self.data.set_position(state.address);
             'decoder: loop {
                 let op = op_decode(&mut self.data);
                 state.address = self.data.position();
-                if op_execute(op, state_index, sprites, map_sprites, actors) {
+                if op_execute(op, state_index, ctx, map_sprites, actors) {
                     break 'decoder;
                 }
             }
@@ -131,7 +131,7 @@ impl SceneScript {
     }
 }
 
-fn op_execute(op: Op, this_actor: usize, sprites: &mut SpriteList, map_sprites: &mut Vec<MapSprite>, actors: &mut Vec<Actor>) -> bool {
+fn op_execute(op: Op, this_actor: usize, ctx: &mut Context, _map_sprites: &mut Vec<MapSprite>, actors: &mut Vec<Actor>) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield { forever: _ } => true,
@@ -145,17 +145,18 @@ fn op_execute(op: Op, this_actor: usize, sprites: &mut SpriteList, map_sprites: 
                 CharacterType::Enemy => index + 256,
             };
 
-            sprites.load_sprite(real_index);
+            ctx.sprites.load_sprite(&ctx.fs, real_index);
 
             actors[this_actor].x = 0.0;
             actors[this_actor].y = 0.0;
             actors[this_actor].sprite_priority = 3;
             actors[this_actor].flags |= ActorFlags::RENDERED;
 
-            let state = &mut sprites.get_state_mut(this_actor);
+            let state = &mut ctx.sprites.get_state_mut(this_actor);
             state.enabled = true;
             state.sprite_index = real_index;
-            sprites.set_animation(this_actor, 0);
+
+            ctx.sprites.set_animation(this_actor, 0);
 
             false
         },
@@ -180,7 +181,7 @@ fn op_execute(op: Op, this_actor: usize, sprites: &mut SpriteList, map_sprites: 
             let actor_index = actor.deref(this_actor);
             let direction = direction.deref() as usize;
             actors[actor_index].direction = direction;
-            sprites.set_direction(actor_index, direction);
+            ctx.sprites.set_direction(actor_index, direction);
 
             false
         },
@@ -188,7 +189,7 @@ fn op_execute(op: Op, this_actor: usize, sprites: &mut SpriteList, map_sprites: 
         Op::ActorSetSpriteFrame { actor, frame } => {
             let actor_index = actor.deref(this_actor);
             let frame_index = frame.deref() as usize;
-            sprites.set_frame(actor_index, frame_index);
+            ctx.sprites.set_sprite_frame(actor_index, frame_index);
 
             false
         },
@@ -196,7 +197,7 @@ fn op_execute(op: Op, this_actor: usize, sprites: &mut SpriteList, map_sprites: 
         Op::Animate { actor, animation, .. } => {
             let actor_index = actor.deref(this_actor);
             let anim_index = animation.deref() as usize;
-            sprites.set_animation(actor_index, anim_index);
+            ctx.sprites.set_animation(actor_index, anim_index);
 
             false
         },

@@ -391,6 +391,7 @@ impl FileSystem {
 fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, interval_data: &Vec<u8>, start_interval_offset: usize, anim_index: usize, anim_count: usize) -> Vec<SpriteAnimFrame> {
     let mut frame_index = 0;
     let mut frames: Vec<SpriteAnimFrame> = Vec::new();
+
     loop {
         // Calculate offsets for each direction.
         let offsets = [

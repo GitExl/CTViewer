@@ -15,6 +15,7 @@ use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use crate::destination::Destination;
 use crate::renderer::Renderer;
+use crate::sprites::sprite_list::SpriteList;
 
 mod actor;
 mod camera;
@@ -78,6 +79,13 @@ struct Args {
     no_vsync: bool,
 }
 
+pub struct Context<'a> {
+    fs: FileSystem,
+    l10n: L10n,
+    sprites: SpriteList,
+    render: Renderer<'a>,
+}
+
 fn main() -> Result<(), String> {
     println!("SDL3: {}", sdl3::version::version());
     println!("SDL3 TTF: {}", sdl3::ttf::get_linked_version());
@@ -86,20 +94,28 @@ fn main() -> Result<(), String> {
     let fs = create_filesystem(args.path);
     let l10n = L10n::new("en", &fs);
     let sdl = sdl3::init().unwrap();
-    let mut renderer = Renderer::new(&sdl, args.scale, args.scale_linear, args.aspect_ratio, !args.no_vsync);
+    let render = Renderer::new(&sdl, args.scale, args.scale_linear, args.aspect_ratio, !args.no_vsync);
+    let sprites = SpriteList::new(&fs);
+
+    let mut ctx = Context {
+        fs,
+        l10n,
+        sprites,
+        render,
+    };
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {
-        gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, args.scene as usize, 0, 0));
+        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, 0, 0));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, args.world as usize, 768, 512));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, 768, 512));
     } else {
         println!("No scene or world specified, loading scene 0x1.");
-        gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, 1, 0, 0));
+        gamestate = Box::new(GameStateScene::new(&mut ctx, 1, 0, 0));
     }
 
-    let title = format!("Chrono Trigger - {}", gamestate.get_title(&l10n));
-    renderer.set_title(title.as_str());
+    let title = format!("Chrono Trigger - {}", gamestate.get_title(&ctx));
+    ctx.render.set_title(title.as_str());
 
     let mut timer_loop = Timer::new();
     let mut timer_render = Timer::new();
@@ -119,16 +135,16 @@ fn main() -> Result<(), String> {
         for event in event_pump.poll_iter() {
             match event {
                 Event::MouseMotion { x, y, .. } => {
-                    let (x, y) = renderer.window_to_target_coordinates(x, y);
-                    gamestate.mouse_motion(x, y);
+                    let (x, y) = ctx.render.window_to_target_coordinates(x, y);
+                    gamestate.mouse_motion(&ctx, x, y);
                 },
                 Event::Quit {..} => break 'running,
                 Event::KeyDown { keycode, .. } => {
                     match keycode {
                         Some(Keycode::Escape) => break 'running,
-                        Some(Keycode::Backspace) => gamestate.dump(),
+                        Some(Keycode::Backspace) => gamestate.dump(&ctx),
                         Some(Keycode::Backslash) => {
-                            renderer.target.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
+                            ctx.render.target.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
                             println!("Saved render target to debug_output/screenshot.bmp");
                         },
                         _ => {},
@@ -138,7 +154,7 @@ fn main() -> Result<(), String> {
             }
 
             // Pass event on to gamestate.
-            gamestate.event(&event);
+            gamestate.event(&mut ctx, &event);
         }
 
         // Update state.
@@ -151,21 +167,21 @@ fn main() -> Result<(), String> {
         while accumulator > UPDATE_INTERVAL {
             timer_update.start();
 
-            let game_event = gamestate.tick(UPDATE_INTERVAL);
+            let game_event = gamestate.tick(&mut ctx, UPDATE_INTERVAL);
             if game_event.is_some() {
                 match game_event.unwrap() {
                     GameEvent::GotoDestination { destination } => {
                         match destination {
                             Destination::Scene { index, x, y, .. } => {
-                                gamestate = Box::new(GameStateScene::new(&fs, &l10n, &mut renderer, index, x, y));
+                                gamestate = Box::new(GameStateScene::new(&mut ctx, index, x, y));
                             },
                             Destination::World { index, x, y } => {
-                                gamestate = Box::new(GameStateWorld::new(&fs, &l10n, &mut renderer, index, x, y));
+                                gamestate = Box::new(GameStateWorld::new(&mut ctx, index, x, y));
                             },
                         };
 
-                        let title = format!("Chrono Trigger - {}", gamestate.get_title(&l10n));
-                        renderer.set_title(title.as_str());
+                        let title = format!("Chrono Trigger - {}", gamestate.get_title(&ctx));
+                        ctx.render.set_title(title.as_str());
                     },
                 }
             }
@@ -180,14 +196,14 @@ fn main() -> Result<(), String> {
         // Render a frame.
         timer_render.start();
 
-        renderer.clear();
-        gamestate.render(lerp, &mut renderer);
-        renderer.copy_to_canvas();
+        ctx.render.clear();
+        gamestate.render(&mut ctx, lerp);
+        ctx.render.copy_to_canvas();
 
         stat_render_time += timer_render.stop();
         stat_render_count += 1;
 
-        renderer.present();
+        ctx.render.present();
 
         // Output stats.
         if timer_stats.elapsed() >= 1.0 {

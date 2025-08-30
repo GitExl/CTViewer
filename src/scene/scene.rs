@@ -1,8 +1,9 @@
 use std::path::Path;
 use crate::actor::{Actor, ActorFlags};
+use crate::Context;
 use crate::destination::Destination;
 use crate::game_palette::GamePalette;
-use crate::l10n::{IndexedType, L10n};
+use crate::l10n::IndexedType;
 use crate::map::Map;
 use crate::map_renderer::MapSprite;
 use crate::palette_anim::PaletteAnimSet;
@@ -30,10 +31,10 @@ pub struct SceneExit {
 }
 
 impl SceneExit {
-    pub fn dump(&self, l10n: &L10n) {
+    pub fn dump(&self, ctx: &Context) {
         println!("Scene exit {}", self.index);
         println!("  At {} x {}, {} by {}", self.x, self.y, self.width, self.height);
-        self.destination.dump(&l10n);
+        self.destination.dump(ctx);
 
         println!();
     }
@@ -48,14 +49,14 @@ pub struct SceneTreasure {
 }
 
 impl SceneTreasure {
-    pub fn dump(&self, l10n: &L10n) {
+    pub fn dump(&self, ctx: &Context) {
         println!("Treasure '{}'", self.id);
         println!("  At {} x {}", self.tile_x, self.tile_y);
         if self.gold > 0 {
             println!("  Contains {} gold", self.gold);
         }
         if self.item > 0 {
-            println!("  Contains '{}'", l10n.get_indexed(IndexedType::Item, self.item));
+            println!("  Contains '{}'", ctx.l10n.get_indexed(IndexedType::Item, self.item));
         }
         println!();
     }
@@ -82,22 +83,22 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn init(&mut self, sprites: &mut SpriteList) {
+    pub fn init(&mut self, ctx: &mut Context) {
         for actor_script_index in 0..self.script.actor_scripts.len() {
             let actor = Actor::spawn();
             self.script.add_initial_state(actor_script_index);
-            let state = sprites.add_sprite_state();
+            let state = ctx.sprites.add_sprite_state();
             state.direction = actor.direction;
             self.map_sprites.push(MapSprite::new());
             self.actors.push(actor);
         }
 
         // Run first actor script until it yields (first return op).
-        self.script.run_until_yield(&mut self.actors, sprites, &mut self.map_sprites);
+        self.script.run_until_yield(&mut self.actors, ctx, &mut self.map_sprites);
     }
 
-    pub fn dump(&self, l10n: &L10n) {
-        println!("Scene {} - {}", self.index, l10n.get_indexed(IndexedType::Scene, self.index));
+    pub fn dump(&self, ctx: &Context) {
+        println!("Scene {} - {}", self.index, ctx.l10n.get_indexed(IndexedType::Scene, self.index));
         println!("  Music {}, map {}",
             self.music_index,
             self.map.index,
@@ -130,11 +131,11 @@ impl Scene {
         self.script.dump();
 
         for exit in &self.exits {
-            exit.dump(l10n);
+            exit.dump(ctx);
         }
 
         for treasure in &self.treasure {
-            treasure.dump(l10n);
+            treasure.dump(ctx);
         }
 
         self.tileset_l12.render_chips_to_surface(&self.tileset_l12.chip_bitmaps).write_to_bmp(Path::new("debug_output/scene_chips_l12.bmp"));

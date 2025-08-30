@@ -59,17 +59,15 @@ impl SpriteState {
     }
 }
 
-pub struct SpriteList<'a> {
-    fs: &'a FileSystem,
+pub struct SpriteList {
     sprites: HashMap<usize, Sprite>,
     anim_sets: HashMap<usize, SpriteAnimSet>,
     sprite_states: Vec<SpriteState>,
 }
 
-impl SpriteList<'_> {
-    pub fn new(fs: &'_ FileSystem) -> SpriteList<'_> {
+impl SpriteList {
+    pub fn new(fs: &FileSystem) -> SpriteList {
         let manager = SpriteList {
-            fs,
             sprites: HashMap::new(),
             anim_sets: fs.read_sprite_animations(),
             sprite_states: Vec::new(),
@@ -98,20 +96,21 @@ impl SpriteList<'_> {
 
     pub fn set_animation(&mut self, actor_index: usize, anim_index: usize) {
         let state = &self.sprite_states[actor_index];
-        let frame = self.get_frame_for_animation(state.sprite_index, anim_index, 0);
+        let (frame, anim_index, frame_index) = self.get_frame_for_animation(state.sprite_index, anim_index, 0);
         let sprite_frame = frame.sprite_frames[state.direction];
 
         let state = &mut self.sprite_states[actor_index];
-        state.anim_index = anim_index;
-        state.anim_frame = 0;
-        state.animating = true;
         state.sprite_frame = sprite_frame;
+        state.anim_index = anim_index;
+        state.anim_frame = frame_index;
         state.anim_timer = 0.0;
+        state.animating = true;
+
     }
 
     pub fn set_direction(&mut self, actor_index: usize, direction: usize) {
         let state = &self.sprite_states[actor_index];
-        let frame = self.get_frame_for_animation(state.sprite_index, state.anim_index, state.anim_frame);
+        let (frame, _, _) = self.get_frame_for_animation(state.sprite_index, state.anim_index, state.anim_frame);
         let sprite_frame = frame.sprite_frames[direction];
 
         let state = &mut self.sprite_states[actor_index];
@@ -119,31 +118,32 @@ impl SpriteList<'_> {
         state.sprite_frame = sprite_frame;
     }
 
-    pub fn set_frame(&mut self, actor_index: usize, frame_index: usize) {
+    pub fn set_sprite_frame(&mut self, actor_index: usize, frame_index: usize) {
         let state = &mut self.sprite_states[actor_index];
-        state.anim_frame = 0;
-        state.animating = false;
         state.sprite_frame = frame_index;
-        state.anim_timer = 0.0;
+        state.animating = false;
     }
 
-    fn get_frame_for_animation(&self, sprite_index: usize, anim_index: usize, frame_index: usize) -> &SpriteAnimFrame {
+    fn get_frame_for_animation(&self, sprite_index: usize, anim_index: usize, frame_index: usize) -> (&SpriteAnimFrame, usize, usize) {
         let sprite = self.sprites.get(&sprite_index).unwrap();
         let anim_set = self.anim_sets.get(&sprite.anim_set_index).unwrap();
 
-        let anim = if anim_set.anims.len() <= anim_index {
+        let real_anim_index = if anim_set.anims.len() <= anim_index {
             println!("Warning: sprite {} does not have animation {}. Using animation 0.", sprite_index, anim_index);
-            &anim_set.anims[0]
+            0
         } else {
-            &anim_set.anims[anim_index]
+            anim_index
         };
 
-        if anim.frames.len() == 0 {
+        let anim = &anim_set.anims[real_anim_index];
+        let real_frame_index = if anim.frames.len() == 0 {
             println!("Warning: sprite {} animation {} does not have frame {}. Using frame 0.", sprite_index, anim_index, frame_index);
-            &anim.frames[0]
+            0
         } else {
-            &anim.frames[frame_index]
-        }
+            frame_index
+        };
+
+        (&anim.frames[real_frame_index], real_anim_index, real_frame_index)
     }
 
     // Updates sprite state.
@@ -180,15 +180,15 @@ impl SpriteList<'_> {
     }
 
     // Load a sprite for future use.
-    pub fn load_sprite(&mut self, sprite_index: usize) {
+    pub fn load_sprite(&mut self, fs: &FileSystem, sprite_index: usize) {
         if self.sprites.contains_key(&sprite_index) {
             return;
         }
 
-        let info = self.fs.read_sprite_header(sprite_index);
-        let assembly = self.fs.read_sprite_assembly(info.assembly_index, &info);
-        let palette = self.fs.read_sprite_palette(info.palette_index).unwrap();
-        let tiles = self.fs.read_sprite_tiles(info.bitmap_index, assembly.chip_max);
+        let info = fs.read_sprite_header(sprite_index);
+        let assembly = fs.read_sprite_assembly(info.assembly_index, &info);
+        let palette = fs.read_sprite_palette(info.palette_index).unwrap();
+        let tiles = fs.read_sprite_tiles(info.bitmap_index, assembly.chip_max);
 
         let sprite = Sprite {
             index: sprite_index,
@@ -201,15 +201,15 @@ impl SpriteList<'_> {
     }
 
     // Loads the generic world sprite used by world maps.
-    pub fn load_world_sprite(&mut self, world_index: usize, sprite_graphics: [usize; 4], palette: &Palette) {
+    pub fn load_world_sprite(&mut self, fs: &FileSystem, world_index: usize, sprite_graphics: [usize; 4], palette: &Palette) {
         if self.sprites.contains_key(&WORLD_SPRITE_INDEX) {
             return;
         }
 
         // Read animation, assembly and graphics data.
-        let (assembly, anim_set) = self.fs.read_world_sprites();
+        let (assembly, anim_set) = fs.read_world_sprites();
         self.anim_sets.insert(WORLD_ANIM_SET_INDEX, anim_set);
-        let tiles = self.fs.read_world_sprite_tiles_all(world_index, sprite_graphics);
+        let tiles = fs.read_world_sprite_tiles_all(world_index, sprite_graphics);
 
         self.sprites.insert(WORLD_SPRITE_INDEX, Sprite {
             index: WORLD_SPRITE_INDEX,
@@ -221,15 +221,15 @@ impl SpriteList<'_> {
     }
 
     // Replace part of the world sprite tile graphics with new data.
-    pub fn replace_world_sprite_tiles(&mut self, world_index: usize, tiles_index: usize, offset: usize) {
+    pub fn replace_world_sprite_tiles(&mut self, fs: &FileSystem, world_index: usize, tiles_index: usize, offset: usize) {
         let sprite = self.sprites.get_mut(&WORLD_SPRITE_INDEX).unwrap();
-        self.fs.read_world_sprite_tiles(world_index, tiles_index, offset, &mut sprite.tiles.data);
+        fs.read_world_sprite_tiles(world_index, tiles_index, offset, &mut sprite.tiles.data);
     }
 
     // Read player character sprites.
-    pub fn load_world_player_sprites(&mut self, characters: [usize; 3]) {
+    pub fn load_world_player_sprites(&mut self, fs: &FileSystem, characters: [usize; 3]) {
         let sprite = self.sprites.get_mut(&WORLD_SPRITE_INDEX).unwrap();
-        let src_pixels = self.fs.read_world_player_sprite_tiles();
+        let src_pixels = fs.read_world_player_sprite_tiles();
         let dest_pixels = &mut sprite.tiles.data;
 
         // Copy player world sprites from external bitmap data into sprite bitmap data.
@@ -252,9 +252,9 @@ impl SpriteList<'_> {
     }
 
     // Read epoch sprites.
-    pub fn load_world_epoch_sprites(&mut self, mode: usize) {
+    pub fn load_world_epoch_sprites(&mut self, fs: &FileSystem, mode: usize) {
         let sprite = self.sprites.get_mut(&WORLD_SPRITE_INDEX).unwrap();
-        let src_pixels = self.fs.read_world_epoch_sprite_tiles();
+        let src_pixels = fs.read_world_epoch_sprite_tiles();
         let dest_pixels = &mut sprite.tiles.data;
 
         // Copy walking sprites to 8192 + start of player character.
@@ -264,8 +264,8 @@ impl SpriteList<'_> {
     }
 
     // Dump world sprite tiles to disk.
-    pub fn dump_world_sprite_graphics(&mut self) {
-        let sprite = self.sprites.get_mut(&WORLD_SPRITE_INDEX).unwrap();
+    pub fn dump_world_sprite_graphics(&self) {
+        let sprite = self.sprites.get(&WORLD_SPRITE_INDEX).unwrap();
         let mut surface = Surface::new(128, 256);
         blit_bitmap_to_surface(&sprite.tiles, &mut surface, 0, 0, 128, 256, 0, 0, &sprite.palette, 0, BitmapBlitFlags::default());
         surface.write_to_bmp(Path::new("debug_output/world_sprite_graphics.bmp"));

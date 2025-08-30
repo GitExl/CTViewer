@@ -1,27 +1,21 @@
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
-use crate::actor::Actor;
 use crate::camera::Camera;
-use crate::filesystem::filesystem::FileSystem;
-use crate::GameEvent;
+use crate::{Context, GameEvent};
 use crate::gamestate::gamestate::GameStateTrait;
-use crate::l10n::{IndexedType, L10n};
+use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::{Renderer, TextFlags, TextRenderable};
+use crate::renderer::{TextFlags, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
-use crate::sprites::sprite_list::SpriteList;
-use crate::sprites::sprite_list::WORLD_SPRITE_INDEX;
 use crate::world::world::World;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 
-pub struct GameStateWorld<'a> {
+pub struct GameStateWorld {
     pub world: World,
-    pub sprites: SpriteList<'a>,
-    l10n: &'a L10n,
 
     pub camera: Camera,
     map_renderer: MapRenderer,
@@ -43,12 +37,11 @@ pub struct GameStateWorld<'a> {
     next_game_event: Option<GameEvent>,
 }
 
-impl GameStateWorld<'_> {
-    pub fn new<'a>(fs: &'a FileSystem, l10n: &'a L10n, renderer: &mut Renderer, world_index: usize, x: i32, y: i32) -> GameStateWorld<'a> {
-        let mut sprites = SpriteList::new(&fs);
-        let mut world = fs.read_world(world_index);
-        sprites.load_world_sprite(world_index, world.sprite_graphics, &world.palette.palette);
-        sprites.load_world_player_sprites([0, 1, 2]);
+impl GameStateWorld {
+    pub fn new(ctx: &mut Context, world_index: usize, x: i32, y: i32) -> GameStateWorld {
+        let mut world = ctx.fs.read_world(world_index);
+        ctx.sprites.load_world_sprite(&ctx.fs, world_index, world.sprite_graphics, &world.palette.palette);
+        ctx.sprites.load_world_player_sprites(&ctx.fs, [0, 1, 2]);
 
 
         // // Test sprites.
@@ -71,22 +64,21 @@ impl GameStateWorld<'_> {
 
         let mut camera = Camera::new(
             0.0, 0.0,
-            renderer.target.width as f64, renderer.target.height as f64,
+            ctx.render.target.width as f64, ctx.render.target.height as f64,
             0.0, 0.0,
             (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
         );
 
         let world_renderer = WorldRenderer::new();
-        let mut map_renderer = MapRenderer::new(renderer.target.width, renderer.target.height);
-        // map_renderer.layer_enabled.remove(LayerFlags::Sprites);
+        let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut world.map);
 
         camera.center_to(x as f64, y as f64);
 
+        println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));
+
         GameStateWorld {
             world,
-            sprites,
-            l10n,
 
             camera,
             world_renderer,
@@ -110,8 +102,8 @@ impl GameStateWorld<'_> {
     }
 }
 
-impl GameStateTrait for GameStateWorld<'_> {
-    fn tick(&mut self, delta: f64) -> Option<GameEvent> {
+impl GameStateTrait for GameStateWorld {
+    fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.camera.tick(delta);
         if self.key_up {
             self.camera.y -= 300.0 * delta;
@@ -127,7 +119,7 @@ impl GameStateTrait for GameStateWorld<'_> {
         }
         self.camera.wrap();
 
-        self.world.tick(delta, &self.sprites);
+        self.world.tick(delta, &ctx.sprites);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
@@ -138,20 +130,20 @@ impl GameStateTrait for GameStateWorld<'_> {
         None
     }
 
-    fn render(&mut self, lerp: f64, renderer: &mut Renderer) {
+    fn render(&mut self, ctx: &mut Context, lerp: f64) {
         self.camera.lerp(lerp);
-        self.map_renderer.render(lerp, &self.camera, &mut renderer.target, &self.world.map, &self.world.tileset_l12, &self.world.tileset_l3, &self.world.palette, &self.world.render_sprites, &self.sprites);
-        self.world_renderer.render(lerp, &self.camera, &mut self.world, &mut renderer.target);
+        self.map_renderer.render(lerp, &self.camera, &mut ctx.render.target, &self.world.map, &self.world.tileset_l12, &self.world.tileset_l3, &self.world.palette, &self.world.render_sprites, &ctx.sprites);
+        self.world_renderer.render(lerp, &self.camera, &mut self.world, &mut ctx.render.target);
 
         if self.debug_text.is_some() {
-            renderer.render_text(
+            ctx.render.render_text(
                 &mut self.debug_text.as_mut().unwrap(),
                 self.debug_text_x - self.camera.lerp_x as i32, self.debug_text_y - self.camera.lerp_y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
         if self.debug_box.is_some() {
-            renderer.render_box(
+            ctx.render.render_box(
                 self.debug_box.as_mut().unwrap().moved_by(-self.camera.lerp_x as i32, -self.camera.lerp_y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
@@ -159,11 +151,11 @@ impl GameStateTrait for GameStateWorld<'_> {
         }
     }
 
-    fn get_title(&self, l10n: &L10n) -> String {
-        format!("{} - {}", self.world.index, l10n.get_indexed(IndexedType::World, self.world.index))
+    fn get_title(&self, ctx: &Context) -> String {
+        format!("{} - {}", self.world.index, ctx.l10n.get_indexed(IndexedType::World, self.world.index))
     }
 
-    fn event(&mut self, event: &Event) {
+    fn event(&mut self, _ctx: &mut Context, event: &Event) {
         match event {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
@@ -239,7 +231,7 @@ impl GameStateTrait for GameStateWorld<'_> {
         }
     }
 
-    fn mouse_motion(&mut self, x: i32, y: i32) {
+    fn mouse_motion(&mut self, ctx: &Context, x: i32, y: i32) {
         self.mouse_x = (x as f64 + self.camera.x) as i32;
         self.mouse_y = (y as f64 + self.camera.y) as i32;
 
@@ -247,7 +239,7 @@ impl GameStateTrait for GameStateWorld<'_> {
         let index = self.get_exit_at(self.mouse_x, self.mouse_y);
         if index.is_some() {
             let exit = &self.world.exits[index.unwrap()];
-            let text = exit.destination.info(&self.l10n);
+            let text = exit.destination.info(&ctx);
 
             self.debug_text = Some(TextRenderable::new(
                 text,
@@ -271,10 +263,10 @@ impl GameStateTrait for GameStateWorld<'_> {
         }
     }
 
-    fn dump(&mut self) {
-        self.world.dump(self.l10n);
+    fn dump(&mut self, ctx: &Context) {
+        self.world.dump(ctx);
 
-        self.sprites.dump_world_sprite_graphics();
+        ctx.sprites.dump_world_sprite_graphics();
 
         // for set in self.sprites.anim_sets.iter() {
         //     set.dump();
@@ -282,7 +274,7 @@ impl GameStateTrait for GameStateWorld<'_> {
     }
 }
 
-impl GameStateWorld<'_> {
+impl GameStateWorld {
     fn get_exit_at(&self, x: i32, y: i32) -> Option<usize> {
         for (index, exit) in self.world.exits.iter().enumerate() {
             if x < exit.x || x >= exit.x + 16 || y < exit.y || y >= exit.y + 16 {

@@ -1,9 +1,9 @@
 use std::path::Path;
 use crate::actor::Actor;
+use crate::Context;
 use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
-use crate::l10n::L10n;
 use crate::map::Map;
 use crate::map_renderer::MapSprite;
 use crate::sprites::sprite_list::SpriteList;
@@ -23,11 +23,11 @@ pub struct WorldExit {
 }
 
 impl WorldExit {
-    pub fn dump(&self, l10n: &L10n) {
-        println!("World exit {} - {}", self.index, l10n.get_indexed(IndexedType::WorldExit, self.name_index));
+    pub fn dump(&self, ctx: &Context) {
+        println!("World exit {} - {}", self.index, ctx.l10n.get_indexed(IndexedType::WorldExit, self.name_index));
         println!("  Position: {} x {}", self.x, self.y);
         println!("  Available: {}", self.is_available);
-        self.destination.dump(&l10n);
+        self.destination.dump(ctx);
 
         println!("  Unknown: {}", self.unknown);
         println!();
@@ -76,7 +76,7 @@ pub struct World {
 }
 
 impl World {
-    pub fn tick(&mut self, delta: f64, sprites: &SpriteList) {
+    pub fn tick(&mut self, delta: f64, _sprites: &SpriteList) {
         self.map.tick(delta);
 
         // for (index, actor) in self.actors.iter_mut().enumerate() {
@@ -130,7 +130,7 @@ impl World {
     //     self.actors.push(actor);
     // }
 
-    pub fn dump(&self, l10n: &L10n) {
+    pub fn dump(&self, ctx: &Context) {
         println!("World {}", self.index);
         println!("  Tileset layer 1/2: {}", self.tileset_l12.index);
         println!("  Tileset 3: {}", self.tileset_l3.index);
@@ -146,7 +146,7 @@ impl World {
         self.palette.dump();
 
         for exit in &self.exits {
-            exit.dump(&l10n);
+            exit.dump(ctx);
         }
 
         for scripted_exit in &self.scripted_exits {
