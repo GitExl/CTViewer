@@ -142,7 +142,10 @@ fn main() -> Result<(), String> {
                 Event::KeyDown { keycode, .. } => {
                     match keycode {
                         Some(Keycode::Escape) => break 'running,
-                        Some(Keycode::Backspace) => gamestate.dump(&ctx),
+                        Some(Keycode::Backspace) => {
+                            ctx.sprites.dump();
+                            gamestate.dump(&ctx)
+                        },
                         Some(Keycode::Backslash) => {
                             ctx.render.target.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
                             println!("Saved render target to debug_output/screenshot.bmp");

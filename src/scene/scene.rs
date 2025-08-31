@@ -83,6 +83,8 @@ pub struct Scene {
 
 impl Scene {
     pub fn init(&mut self, ctx: &mut Context) {
+
+        // Create actors and related state.
         for actor_script_index in 0..self.script.actor_scripts.len() {
             let actor = Actor::spawn();
             self.script.add_initial_state(actor_script_index);

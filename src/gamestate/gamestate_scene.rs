@@ -39,6 +39,8 @@ pub struct GameStateScene {
 
 impl GameStateScene {
     pub fn new(ctx: &mut Context, scene_index: usize, x: i32, y: i32) -> GameStateScene {
+        ctx.sprites.clear_states();
+
         let mut scene = ctx.fs.read_scene(scene_index);
 
         let mut camera = Camera::new(

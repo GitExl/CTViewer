@@ -39,6 +39,8 @@ pub struct GameStateWorld {
 
 impl GameStateWorld {
     pub fn new(ctx: &mut Context, world_index: usize, x: i32, y: i32) -> GameStateWorld {
+        ctx.sprites.clear_states();
+
         let mut world = ctx.fs.read_world(world_index);
         ctx.sprites.load_world_sprite(&ctx.fs, world_index, world.sprite_graphics, &world.palette.palette);
         ctx.sprites.load_world_player_sprites(&ctx.fs, [0, 1, 2]);

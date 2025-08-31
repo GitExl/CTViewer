@@ -127,7 +127,8 @@ impl FileSystem {
 
             // Read each animation from 4 byte starts.
             let anim_data_len = slot_ptrs[set_index + 1] - slot_ptrs[set_index];
-            let anim_count = (anim_data_len / 4) / DIRECTION_COUNT;
+            let anim_count = ((anim_data_len / 4) as f64 / DIRECTION_COUNT as f64).ceil() as usize;
+            let data_per_direction = anim_data_len / 4;
             for anim_index in 0..anim_count {
                 set.anims.push(SpriteAnim {
                     frames: parse_sprite_animation_frames(
@@ -136,13 +137,13 @@ impl FileSystem {
                         &interval_data,
                         interval_ptrs[set_index],
                         anim_index,
-                        anim_count,
+                        data_per_direction,
                     ),
                 });
             }
 
             anim_sets.insert(set_index, set);
-        }
+       }
 
         anim_sets
     }
@@ -165,15 +166,15 @@ impl FileSystem {
     }
 
     // Read a sprite's graphics tiles.
-    pub fn read_sprite_tiles(&self, sprite_index: usize, chip_count: usize) -> Bitmap {
+    pub fn read_sprite_tiles(&self, sprite_tiles_index: usize, chip_count: usize) -> Bitmap {
         match self.parse_mode {
             ParseMode::Pc => {
-                let data = self.backend.get_sprite_graphics(sprite_index, chip_count, false);
+                let data = self.backend.get_sprite_graphics(sprite_tiles_index, chip_count, false);
                 let bitmap_height = (data.len() as f64 / 256.0).ceil() as u32;
                 Bitmap::from_raw_data(256, bitmap_height, data)
             },
             ParseMode::Snes => {
-                let data = self.backend.get_sprite_graphics(sprite_index, chip_count, sprite_index > 7);
+                let data = self.backend.get_sprite_graphics(sprite_tiles_index, chip_count, sprite_tiles_index > 6);
                 let bitmap_height = (data.len() as f64 / 128.0).ceil() as u32;
                 Bitmap::from_raw_data(128, bitmap_height, data)
             },
@@ -388,17 +389,17 @@ impl FileSystem {
 }
 
 // Read an animation's frames directly from slot and interval data.
-fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, interval_data: &Vec<u8>, start_interval_offset: usize, anim_index: usize, anim_count: usize) -> Vec<SpriteAnimFrame> {
+fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, interval_data: &Vec<u8>, start_interval_offset: usize, anim_index: usize, data_per_direction: usize) -> Vec<SpriteAnimFrame> {
     let mut frame_index = 0;
     let mut frames: Vec<SpriteAnimFrame> = Vec::new();
 
     loop {
         // Calculate offsets for each direction.
         let offsets = [
-            start_slot_offset + ((anim_count * 0) * 4) + anim_index * 4 + frame_index,
-            start_slot_offset + ((anim_count * 1) * 4) + anim_index * 4 + frame_index,
-            start_slot_offset + ((anim_count * 2) * 4) + anim_index * 4 + frame_index,
-            start_slot_offset + ((anim_count * 3) * 4) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_direction * 0) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_direction * 1) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_direction * 2) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_direction * 3) + anim_index * 4 + frame_index,
         ];
 
         // Build a sprite frame from data for all 4 directions.

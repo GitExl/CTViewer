@@ -67,13 +67,15 @@ pub struct SpriteList {
 
 impl SpriteList {
     pub fn new(fs: &FileSystem) -> SpriteList {
-        let manager = SpriteList {
+        SpriteList {
             sprites: HashMap::new(),
             anim_sets: fs.read_sprite_animations(),
             sprite_states: Vec::new(),
-        };
+        }
+    }
 
-        manager
+    pub fn clear_states(&mut self) {
+        self.sprite_states.clear();
     }
 
     pub fn add_sprite_state(&mut self) -> &mut SpriteState {
@@ -269,5 +271,13 @@ impl SpriteList {
         let mut surface = Surface::new(128, 256);
         blit_bitmap_to_surface(&sprite.tiles, &mut surface, 0, 0, 128, 256, 0, 0, &sprite.palette, 0, BitmapBlitFlags::default());
         surface.write_to_bmp(Path::new("debug_output/world_sprite_graphics.bmp"));
+    }
+
+    pub fn dump(&self) {
+        for (index, sprite) in self.sprites.iter() {
+            let mut surface = Surface::new(sprite.tiles.width, sprite.tiles.height);
+            blit_bitmap_to_surface(&sprite.tiles, &mut surface, 0, 0, sprite.tiles.width as i32, sprite.tiles.height as i32, 0, 0, &sprite.palette, 0, BitmapBlitFlags::default());
+            surface.write_to_bmp(Path::new(&format!("debug_output/sprite_{:03}.bmp", index)));
+        }
     }
 }
