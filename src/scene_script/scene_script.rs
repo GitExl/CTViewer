@@ -2,10 +2,11 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use crate::actor::{Actor, ActorFlags};
 use crate::Context;
+use crate::map::Map;
+use crate::scene::scene_map::SceneMap;
 use crate::scene_script::ops::Op;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::scene_script_decoder::op_decode;
-use crate::sprites::sprite_renderer::SpritePriority;
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -72,13 +73,13 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>) {
+    pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
             self.data.set_position(state.address);
             'decoder: loop {
                 let op = op_decode(&mut self.data);
                 state.address = self.data.position();
-                if op_execute(ctx, op, state_index, actors) {
+                if op_execute(ctx, op, state_index, actors, map, scene_map) {
                     break 'decoder;
                 }
             }
@@ -131,7 +132,7 @@ impl SceneScript {
     }
 }
 
-fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Actor>) -> bool {
+fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Actor>, _map: &mut Map, scene_map: &mut SceneMap) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield { forever: _ } => true,
@@ -149,7 +150,6 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
 
             actors[this_actor].x = 0.0;
             actors[this_actor].y = 0.0;
-            actors[this_actor].sprite_priority = SpritePriority::AboveAll;
             actors[this_actor].flags |= ActorFlags::RENDERED;
 
             let state = &mut ctx.sprites_states.get_state_mut(this_actor);
@@ -172,6 +172,13 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
             } else {
                 actors[actor_index].x = x * 16.0 + 8.0;
                 actors[actor_index].y = y * 16.0 + 16.0;
+            }
+
+            let tile_x = (actors[actor_index].x / 16.0) as u32;
+            let tile_y = (actors[actor_index].y / 16.0) as u32;
+            let index = (tile_y * scene_map.props.width + tile_x) as usize;
+            if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
+                actors[actor_index].sprite_priority = sprite_priority;
             }
 
             false

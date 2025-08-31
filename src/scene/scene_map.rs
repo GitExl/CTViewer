@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use crate::sprites::sprite_renderer::SpritePriority;
 
 bitflags! {
     #[derive(Clone, Default)]
@@ -8,8 +9,6 @@ bitflags! {
         const DOOR_TRIGGER = 0x004;
         const UNKNOWN_1 = 0x008;
         const UNKNOWN_2 = 0x010;
-        const SPRITE_OVER_L1 = 0x020;
-        const SPRITE_OVER_L2 = 0x040;
         const NPC_COLLISION_BATTLE = 0x080;
         const NPC_COLLISION = 0x100;
         const COLLISION_IGNORE_Z = 0x200;
@@ -80,6 +79,7 @@ pub enum SceneMoveDirection {
 pub struct SceneTileProps {
     pub flags: SceneTileFlags,
     pub collision: SceneTileCollision,
+    pub sprite_priority: Option<SpritePriority>,
     pub z_plane: u32,           // transition (solid), 1, 2, transition (walkable)
     pub move_direction: SceneMoveDirection,
     pub move_speed: u32,

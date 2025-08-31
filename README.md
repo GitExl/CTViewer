@@ -63,8 +63,8 @@ When viewing scenes, the following keys are available:
 - `,` render exits
 - `.` render treasures
 
-Information about exits and treasure items is displayed when the mouse is over them. You can move to another scene
-or world by clicking on exits.
+Information about exits, treasure and actors is displayed when the mouse is over them. You can move to another scene
+or world by clicking on exits. Clicking on an actor will dump debug information about them to `stdout`.
 
 ## Examples
 

@@ -1,7 +1,9 @@
 use bitflags::bitflags;
+use crate::Context;
 use crate::sprites::sprite_state_list::SpriteState;
 use crate::sprites::sprite_renderer::SpritePriority;
 
+#[derive(Debug)]
 pub enum ActorClass {
     PC1,
     PC2,
@@ -31,24 +33,26 @@ bitflags! {
 
 
 pub struct Actor {
+    pub index: usize,
     pub x: f64,
     pub y: f64,
     pub sprite_priority: SpritePriority,
     pub class: ActorClass,
-    pub player_index: usize,
+    pub player_index: Option<usize>,
     pub direction: usize,
     pub move_speed: f64,
     pub flags: ActorFlags,
 }
 
 impl Actor {
-    pub fn new() -> Self {
+    pub fn new(index: usize) -> Self {
         Actor {
+            index,
             x: 0.0,
             y: 0.0,
-            sprite_priority: SpritePriority::AboveAll,
+            sprite_priority: SpritePriority::default(),
             class: ActorClass::NPC,
-            player_index: 0,
+            player_index: None,
             direction: 1,
             move_speed: 1.0,
             flags: ActorFlags::empty(),
@@ -67,6 +71,21 @@ impl Actor {
         sprite_state.direction = self.direction;
         sprite_state.priority = self.sprite_priority;
         sprite_state.enabled = !self.flags.contains(ActorFlags::HIDDEN);
+    }
+
+    pub fn dump(&self, ctx: &Context) {
+        println!("Actor {} ({:?}", self.index, self.class);
+        if let Some(player_index) =  self.player_index {
+            println!("  Player {}", player_index);
+        }
+        println!("  At {} x {}", self.x, self.y);
+        println!("  Direction: {}", self.direction);
+        println!("  Speed: {}", self.move_speed);
+        println!("  Sprite priority: {:?}", self.sprite_priority);
+        println!("  Flags: {:?}", self.flags);
+        println!();
+
+        ctx.sprites_states.get_state(self.index).dump();
     }
 
 }

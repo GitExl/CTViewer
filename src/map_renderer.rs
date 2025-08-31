@@ -325,7 +325,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 }
 
 fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, camera: &Camera, sprite_assets: &SpriteAssets) {
-    for sprite_state in sprite_states.get_all() {
+    for sprite_state in sprite_states.get_all().iter().rev() {
         if !sprite_state.enabled {
             continue;
         }

@@ -13,6 +13,7 @@ use crate::software_renderer::clip::Rect;
 use crate::software_renderer::draw::draw_box;
 use crate::software_renderer::palette::render_palette;
 use crate::software_renderer::surface::Surface;
+use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(PartialEq, Eq)]
 pub enum SceneDebugLayer {
@@ -105,15 +106,13 @@ impl SceneRenderer {
                 let src_x;
                 let src_y;
                 if self.debug_layer == SceneDebugLayer::SpritePriority {
-                    if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L1) && tile.flags.contains(SceneTileFlags::SPRITE_OVER_L2) {
-                        (src_x, src_y) = (7, 10);
-                    } else if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L1) {
-                        (src_x, src_y) = (5, 10);
-                    } else if tile.flags.contains(SceneTileFlags::SPRITE_OVER_L2) {
-                        (src_x, src_y) = (6, 10);
-                    } else {
-                        continue;
-                    }
+                    (src_x, src_y) = match tile.sprite_priority {
+                        Some(SpritePriority::BelowAll) => (4, 10),
+                        Some(SpritePriority::BelowL1L2) => (5, 10),
+                        Some(SpritePriority::BelowL1AboveL2) => (6, 10),
+                        Some(SpritePriority::AboveAll) => (7, 10),
+                        None => continue,
+                    };
                 } else if self.debug_layer == SceneDebugLayer::ZPlane {
                     (src_x, src_y) = match tile.z_plane {
                         0 => (1, 5),

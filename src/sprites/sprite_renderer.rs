@@ -5,10 +5,11 @@ use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_assets::SpriteAsset;
 use super::sprite_assembly::SpriteAssemblyChipFlags;
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum SpritePriority {
     BelowAll,
     BelowL1L2,
+    #[default]
     BelowL1AboveL2,
     AboveAll,
 }
@@ -20,7 +21,7 @@ impl SpritePriority {
             1 => SpritePriority::BelowL1L2,
             2 => SpritePriority::BelowL1AboveL2,
             3 => SpritePriority::AboveAll,
-            _ => SpritePriority::AboveAll,
+            _ => SpritePriority::default(),
         }
     }
 }

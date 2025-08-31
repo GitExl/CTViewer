@@ -30,7 +30,7 @@ impl SpriteState {
             sprite_frame: 0,
             palette_offset: 0,
             direction: 0,
-            priority: SpritePriority::AboveAll,
+            priority: SpritePriority::default(),
             enabled: false,
 
             anim_index: 0,
@@ -38,6 +38,17 @@ impl SpriteState {
             anim_timer: 0.0,
             animating: false,
         }
+    }
+
+    pub fn dump(&self) {
+        println!("Sprite state - {}", if self.enabled { "enabled" } else { "disabled" });
+        println!("  Sprite {} frame {}", self.sprite_index, self.sprite_frame);
+        println!("  At {} x {}", self.x, self.y);
+        println!("  Direction: {}", self.direction);
+        println!("  Sprite priority: {:?}", self.priority);
+        println!("  Palette offset {}", self.palette_offset);
+        println!("  Animation {}, frame {}, {}", self.anim_index, self.anim_frame, if self.animating { "enabled" } else { "disabled" });
+        println!();
     }
 }
 
@@ -85,7 +96,6 @@ impl SpriteStateList {
         state.anim_frame = frame_index;
         state.anim_timer = 0.0;
         state.animating = true;
-
     }
 
     pub fn set_direction(&mut self, assets: &SpriteAssets, actor_index: usize, direction: usize) {
