@@ -2,7 +2,7 @@
 
 A utility to display Chrono Trigger scene and world maps complete with debug information. It supports the North American
 SNES version and the Steam version. It can display relevant tile and palette animations for the maps, as well as display
-some animated test sprites.
+actor sprites and animation from script data.
 
 ## Usage
 

@@ -15,7 +15,8 @@ use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use crate::destination::Destination;
 use crate::renderer::Renderer;
-use crate::sprites::sprite_list::SpriteList;
+use crate::sprites::sprite_assets::SpriteAssets;
+use crate::sprites::sprite_state_list::SpriteStateList;
 
 mod actor;
 mod camera;
@@ -38,7 +39,6 @@ mod scene_script;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
-
 
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -82,7 +82,8 @@ struct Args {
 pub struct Context<'a> {
     fs: FileSystem,
     l10n: L10n,
-    sprites: SpriteList,
+    sprites_states: SpriteStateList,
+    sprite_assets: SpriteAssets,
     render: Renderer<'a>,
 }
 
@@ -95,12 +96,14 @@ fn main() -> Result<(), String> {
     let l10n = L10n::new("en", &fs);
     let sdl = sdl3::init().unwrap();
     let render = Renderer::new(&sdl, args.scale, args.scale_linear, args.aspect_ratio, !args.no_vsync);
-    let sprites = SpriteList::new(&fs);
+    let sprite_assets = SpriteAssets::new(&fs);
+    let sprites = SpriteStateList::new();
 
     let mut ctx = Context {
         fs,
         l10n,
-        sprites,
+        sprites_states: sprites,
+        sprite_assets,
         render,
     };
 
@@ -143,7 +146,7 @@ fn main() -> Result<(), String> {
                     match keycode {
                         Some(Keycode::Escape) => break 'running,
                         Some(Keycode::Backspace) => {
-                            ctx.sprites.dump();
+                            ctx.sprite_assets.dump();
                             gamestate.dump(&ctx)
                         },
                         Some(Keycode::Backslash) => {

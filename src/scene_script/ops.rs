@@ -1,5 +1,4 @@
 use crate::actor::ActorFlags;
-use crate::scene_script::ops_actor_props::SpritePriority;
 use crate::scene_script::ops_call::WaitMode;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::ops_dialogue::{DialogueInput, DialoguePosition, DialogueSpecialType};
@@ -7,6 +6,7 @@ use crate::scene_script::ops_jump::CompareOp;
 use crate::scene_script::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::ops_palette::{ColorMathMode, SubPalette};
 use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, DataRef, ScrollLayerFlags, SpecialEffect};
+use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Op {

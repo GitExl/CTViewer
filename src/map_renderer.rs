@@ -12,8 +12,9 @@ use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
-use crate::sprites::sprite_list::SpriteList;
-use crate::sprites::sprite_renderer::render_sprite;
+use crate::sprites::sprite_assets::SpriteAssets;
+use crate::sprites::sprite_renderer::{render_sprite, SpritePriority};
+use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::tileset::TileSet;
 
 // Data used in a main or subscreen render pass.
@@ -24,7 +25,7 @@ struct RenderData<'a> {
     tileset_l3: &'a TileSet,
     palette: &'a GamePalette,
     layer3_priority: bool,
-    map_sprites: &'a Vec<MapSprite>,
+    sprite_states: &'a SpriteStateList,
 }
 
 // Blend modes matching the SNES PPU modes.
@@ -45,31 +46,6 @@ bitflags! {
         const Layer3 = 0x04;
         const Sprites = 0x08;
         const Background = 0x10;
-    }
-}
-
-// Data for rendering a sprite in a map.
-pub struct MapSprite {
-    pub x: f64,
-    pub y: f64,
-    pub sprite_index: usize,
-    pub frame: usize,
-    pub priority: u32,
-    pub palette_offset: usize,
-    pub visible: bool,
-}
-
-impl MapSprite {
-    pub fn new() -> MapSprite {
-        MapSprite {
-            x: 0.0,
-            y: 0.0,
-            sprite_index: 0,
-            frame: 0,
-            priority: 0,
-            palette_offset: 0,
-            visible: true,
-        }
     }
 }
 
@@ -163,7 +139,7 @@ impl MapRenderer {
         }
     }
 
-    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, map_sprites: &Vec<MapSprite>, sprites: &SpriteList) {
+    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, sprite_states: &SpriteStateList, sprite_assets: &SpriteAssets) {
         self.screen_sub.fill(self.layer_blend_color);
         self.pixels_main.clear();
         self.pixels_sub.clear();
@@ -174,11 +150,11 @@ impl MapRenderer {
             tileset_l12,
             tileset_l3,
             palette,
-            map_sprites,
+            sprite_states,
             layer3_priority: self.layer3_priority,
         };
-        render_to_target(surface, &mut self.pixels_main, &mut render_data, sprites, self.layer_enabled & self.layer_target_main);
-        render_to_target(&mut self.screen_sub, &mut self.pixels_sub, &mut render_data, sprites, self.layer_enabled & self.layer_target_sub);
+        render_to_target(surface, &mut self.pixels_main, &mut render_data, sprite_assets, self.layer_enabled & self.layer_target_main);
+        render_to_target(&mut self.screen_sub, &mut self.pixels_sub, &mut render_data, sprite_assets, self.layer_enabled & self.layer_target_sub);
 
         self.blend_surfaces(surface);
     }
@@ -294,7 +270,7 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
     }
 }
 
-fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprites: &SpriteList, layers: LayerFlags) {
+fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprite_assets: &SpriteAssets, layers: LayerFlags) {
 
     // Layer 3, priority 0.
     if layers.contains(LayerFlags::Layer3) && render_data.map.layers[2].chips.len() > 0 {
@@ -303,7 +279,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 0.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.map_sprites, 0, &render_data.camera, &sprites);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowAll, &render_data.camera, &sprite_assets);
     }
 
     // Layer 3, priority 1, if layer 3 does not have priority.
@@ -313,7 +289,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 1.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.map_sprites, 1, &render_data.camera, &sprites);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL1L2, &render_data.camera, &sprite_assets);
     }
 
     // Layer 2 and layer 1, priority 0.
@@ -326,7 +302,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 2.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.map_sprites, 2, &render_data.camera, &sprites);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL1AboveL2, &render_data.camera, &sprite_assets);
     }
 
     // Layer 2 and layer 1, priority 1.
@@ -339,7 +315,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 3.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.map_sprites, 3, &render_data.camera, &sprites);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::AboveAll, &render_data.camera, &sprite_assets);
     }
 
     // Layer 3, priority 1, if layer 3 has priority.
@@ -348,15 +324,15 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
     }
 }
 
-fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, map_sprites: &Vec<MapSprite>, priority: u32, camera: &Camera, sprites: &SpriteList) {
-    for map_sprite in map_sprites {
-        if !map_sprite.visible {
+fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, camera: &Camera, sprite_assets: &SpriteAssets) {
+    for sprite_state in sprite_states.get_all() {
+        if !sprite_state.enabled {
             continue;
         }
-        if map_sprite.priority == priority {
-            let x = (map_sprite.x - camera.lerp_x.floor()).floor() as i32;
-            let y = (map_sprite.y - camera.lerp_y.floor()).floor() as i32;
-            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), &sprites.get_sprite(map_sprite.sprite_index), map_sprite.frame, x, y, map_sprite.palette_offset);
+        if sprite_state.priority == priority {
+            let x = (sprite_state.x - camera.lerp_x.floor()).floor() as i32;
+            let y = (sprite_state.y - camera.lerp_y.floor()).floor() as i32;
+            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), &sprite_assets.get(sprite_state.sprite_index), sprite_state.sprite_frame, x, y, sprite_state.palette_offset);
         }
     }
 }

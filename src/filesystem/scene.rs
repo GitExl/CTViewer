@@ -131,7 +131,6 @@ impl FileSystem {
             treasure,
             script,
             actors: Vec::new(),
-            map_sprites: Vec::new(),
         }
     }
 

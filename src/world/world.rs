@@ -5,7 +5,6 @@ use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::map::Map;
-use crate::map_renderer::MapSprite;
 use crate::tileset::TileSet;
 use crate::world::world_map::WorldMap;
 
@@ -71,7 +70,6 @@ pub struct World {
 
     pub actors: Vec<Actor>,
     pub sprite_graphics: [usize; 4],
-    pub render_sprites: Vec<MapSprite>,
 }
 
 impl World {

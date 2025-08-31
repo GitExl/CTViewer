@@ -39,7 +39,7 @@ pub struct GameStateScene {
 
 impl GameStateScene {
     pub fn new(ctx: &mut Context, scene_index: usize, x: i32, y: i32) -> GameStateScene {
-        ctx.sprites.clear_states();
+        ctx.sprites_states.clear();
 
         let mut scene = ctx.fs.read_scene(scene_index);
 
@@ -114,10 +114,26 @@ impl GameStateTrait for GameStateScene {
     }
 
     fn render(&mut self, ctx: &mut Context, lerp: f64) {
-        self.scene.lerp(&ctx, lerp);
+        self.scene.lerp(ctx, lerp);
         self.camera.lerp(lerp);
-        self.map_renderer.render(lerp, &self.camera, &mut ctx.render.target, &self.scene.map, &self.scene.tileset_l12, &self.scene.tileset_l3, &self.scene.palette, &self.scene.map_sprites, &ctx.sprites);
-        self.scene_renderer.render(lerp, &self.camera, &mut self.scene, &mut ctx.render.target);
+
+        self.map_renderer.render(
+            lerp,
+            &self.camera,
+            &mut ctx.render.target,
+            &self.scene.map,
+            &self.scene.tileset_l12,
+            &self.scene.tileset_l3,
+            &self.scene.palette,
+            &ctx.sprites_states,
+            &ctx.sprite_assets,
+        );
+        self.scene_renderer.render(
+            lerp,
+            &self.camera,
+            &mut self.scene,
+            &mut ctx.render.target,
+        );
 
         if self.debug_text.is_some() {
             ctx.render.render_text(

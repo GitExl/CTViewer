@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use crate::actor::{Actor, ActorFlags};
 use crate::Context;
-use crate::map_renderer::MapSprite;
 use crate::scene_script::ops::Op;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::scene_script_decoder::op_decode;
+use crate::sprites::sprite_renderer::SpritePriority;
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -72,13 +72,13 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map_sprites: &mut Vec<MapSprite>) {
+    pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
             self.data.set_position(state.address);
             'decoder: loop {
                 let op = op_decode(&mut self.data);
                 state.address = self.data.position();
-                if op_execute(ctx, op, state_index, map_sprites, actors) {
+                if op_execute(ctx, op, state_index, actors) {
                     break 'decoder;
                 }
             }
@@ -131,7 +131,7 @@ impl SceneScript {
     }
 }
 
-fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, _map_sprites: &mut Vec<MapSprite>, actors: &mut Vec<Actor>) -> bool {
+fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Actor>) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield { forever: _ } => true,
@@ -145,18 +145,18 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, _map_sprites: &mut V
                 CharacterType::Enemy => index + 256,
             };
 
-            ctx.sprites.load_sprite(&ctx.fs, real_index);
+            ctx.sprite_assets.load(&ctx.fs, real_index);
 
             actors[this_actor].x = 0.0;
             actors[this_actor].y = 0.0;
-            actors[this_actor].sprite_priority = 3;
+            actors[this_actor].sprite_priority = SpritePriority::AboveAll;
             actors[this_actor].flags |= ActorFlags::RENDERED;
 
-            let state = &mut ctx.sprites.get_state_mut(this_actor);
+            let state = &mut ctx.sprites_states.get_state_mut(this_actor);
             state.enabled = true;
             state.sprite_index = real_index;
 
-            ctx.sprites.set_animation(this_actor, 0);
+            ctx.sprites_states.set_animation(&ctx.sprite_assets, this_actor, 0);
 
             false
         },
@@ -181,7 +181,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, _map_sprites: &mut V
             let actor_index = actor.deref(this_actor);
             let direction = direction.deref() as usize;
             actors[actor_index].direction = direction;
-            ctx.sprites.set_direction(actor_index, direction);
+            ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
 
             false
         },
@@ -189,7 +189,14 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, _map_sprites: &mut V
         Op::ActorSetSpriteFrame { actor, frame } => {
             let actor_index = actor.deref(this_actor);
             let frame_index = frame.deref() as usize;
-            ctx.sprites.set_sprite_frame(actor_index, frame_index);
+            ctx.sprites_states.set_sprite_frame(actor_index, frame_index);
+
+            false
+        },
+
+        Op::ActorSetSpritePriority { actor, top, .. } => {
+            let actor_index = actor.deref(this_actor);
+            actors[actor_index].sprite_priority = top;
 
             false
         },
@@ -197,7 +204,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, _map_sprites: &mut V
         Op::Animate { actor, animation, .. } => {
             let actor_index = actor.deref(this_actor);
             let anim_index = animation.deref() as usize;
-            ctx.sprites.set_animation(actor_index, anim_index);
+            ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index);
 
             false
         },

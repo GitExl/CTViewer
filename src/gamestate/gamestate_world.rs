@@ -39,11 +39,11 @@ pub struct GameStateWorld {
 
 impl GameStateWorld {
     pub fn new(ctx: &mut Context, world_index: usize, x: i32, y: i32) -> GameStateWorld {
-        ctx.sprites.clear_states();
+        ctx.sprites_states.clear();
 
         let mut world = ctx.fs.read_world(world_index);
-        ctx.sprites.load_world_sprite(&ctx.fs, world_index, world.sprite_graphics, &world.palette.palette);
-        ctx.sprites.load_world_player_sprites(&ctx.fs, [0, 1, 2]);
+        ctx.sprite_assets.load_world_sprite_asset(&ctx.fs, world_index, world.sprite_graphics, &world.palette.palette);
+        ctx.sprite_assets.load_world_player_sprites_asset(&ctx.fs, [0, 1, 2]);
 
 
         // // Test sprites.
@@ -143,8 +143,8 @@ impl GameStateTrait for GameStateWorld {
             &self.world.tileset_l12,
             &self.world.tileset_l3,
             &self.world.palette,
-            &self.world.render_sprites,
-            &ctx.sprites,
+            &ctx.sprites_states,
+            &ctx.sprite_assets,
         );
         self.world_renderer.render(
             lerp,
@@ -284,7 +284,7 @@ impl GameStateTrait for GameStateWorld {
     fn dump(&mut self, ctx: &Context) {
         self.world.dump(ctx);
 
-        ctx.sprites.dump_world_sprite_graphics();
+        ctx.sprite_assets.dump_world_sprite_graphics();
 
         // for set in self.sprites.anim_sets.iter() {
         //     set.dump();

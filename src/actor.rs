@@ -1,6 +1,6 @@
 use bitflags::bitflags;
-use crate::map_renderer::MapSprite;
-use crate::sprites::sprite_list::SpriteState;
+use crate::sprites::sprite_state_list::SpriteState;
+use crate::sprites::sprite_renderer::SpritePriority;
 
 pub enum ActorClass {
     PC1,
@@ -33,7 +33,7 @@ bitflags! {
 pub struct Actor {
     pub x: f64,
     pub y: f64,
-    pub sprite_priority: u32,
+    pub sprite_priority: SpritePriority,
     pub class: ActorClass,
     pub player_index: usize,
     pub direction: usize,
@@ -42,11 +42,11 @@ pub struct Actor {
 }
 
 impl Actor {
-    pub fn spawn() -> Self {
+    pub fn new() -> Self {
         Actor {
             x: 0.0,
             y: 0.0,
-            sprite_priority: 0,
+            sprite_priority: SpritePriority::AboveAll,
             class: ActorClass::NPC,
             player_index: 0,
             direction: 1,
@@ -61,15 +61,12 @@ impl Actor {
     pub fn lerp(&mut self, _lerp: f64) {
     }
 
-    pub fn update_map_sprite(&self, sprite_state: &SpriteState, map_sprite: &mut MapSprite) {
-        map_sprite.x = self.x;
-        map_sprite.y = self.y;
-        map_sprite.priority = self.sprite_priority;
-        map_sprite.visible = !self.flags.contains(ActorFlags::HIDDEN);
-
-        map_sprite.sprite_index = sprite_state.sprite_index;
-        map_sprite.frame = sprite_state.sprite_frame;
-        map_sprite.palette_offset = sprite_state.palette_offset;
+    pub fn update_sprite_state(&self, sprite_state: &mut SpriteState) {
+        sprite_state.x = self.x;
+        sprite_state.y = self.y;
+        sprite_state.direction = self.direction;
+        sprite_state.priority = self.sprite_priority;
+        sprite_state.enabled = !self.flags.contains(ActorFlags::HIDDEN);
     }
 
 }

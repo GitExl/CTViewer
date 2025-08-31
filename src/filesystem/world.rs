@@ -120,7 +120,6 @@ impl FileSystem {
             scripted_exits,
             script_offsets,
 
-            render_sprites: Vec::new(),
             actors: Vec::new(),
         }
     }

@@ -3,26 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::ActorFlags;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, DataRef};
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum SpritePriority {
-    BelowAll,
-    BelowL1L2,
-    BelowL1AboveL2,
-    AboveBoth,
-}
-
-impl SpritePriority {
-    pub fn from_value(value: u8) -> SpritePriority {
-        match value {
-            0 => SpritePriority::BelowAll,
-            1 => SpritePriority::BelowL1L2,
-            2 => SpritePriority::BelowL1AboveL2,
-            3 => SpritePriority::AboveBoth,
-            _ => SpritePriority::BelowAll,
-        }
-    }
-}
+use crate::sprites::sprite_renderer::SpritePriority;
 
 pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
@@ -95,7 +76,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let bits = data.read_u8().unwrap();
             let mode_set = bits & 0x80 > 0;
             let bottom = bits & 0x3;
-            let top = bits & 0x30;
+            let top = (bits & 0x30) >> 4;
             let unknown_bits = bits & 0x4C;
 
             Op::ActorSetSpritePriority {

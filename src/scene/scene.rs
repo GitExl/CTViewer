@@ -5,7 +5,6 @@ use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::map::Map;
-use crate::map_renderer::MapSprite;
 use crate::palette_anim::PaletteAnimSet;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::SceneScript;
@@ -78,7 +77,6 @@ pub struct Scene {
     pub script: SceneScript,
 
     pub actors: Vec<Actor>,
-    pub map_sprites: Vec<MapSprite>,
 }
 
 impl Scene {
@@ -86,16 +84,15 @@ impl Scene {
 
         // Create actors and related state.
         for actor_script_index in 0..self.script.actor_scripts.len() {
-            let actor = Actor::spawn();
+            let actor = Actor::new();
             self.script.add_initial_state(actor_script_index);
-            let state = ctx.sprites.add_sprite_state();
-            state.direction = actor.direction;
-            self.map_sprites.push(MapSprite::new());
+            let state = ctx.sprites_states.add_state();
+            actor.update_sprite_state(state);
             self.actors.push(actor);
         }
 
         // Run first actor script until it yields (first return op).
-        self.script.run_until_yield(ctx, &mut self.actors, &mut self.map_sprites);
+        self.script.run_until_yield(ctx, &mut self.actors);
     }
 
     pub fn dump(&self, ctx: &Context) {
@@ -156,14 +153,14 @@ impl Scene {
             }
 
             actor.tick(delta);
-            ctx.sprites.tick_state(delta, index);
+            ctx.sprites_states.tick(&ctx.sprite_assets, delta, index);
         }
 
         self.tileset_l12.tick(delta);
         self.palette_anims.tick(delta, &mut self.palette.palette);
     }
 
-    pub fn lerp(&mut self, ctx: &Context, lerp: f64) {
+    pub fn lerp(&mut self, ctx: &mut Context, lerp: f64) {
         self.map.lerp(lerp);
 
         for (actor_index, actor) in self.actors.iter_mut().enumerate() {
@@ -173,8 +170,8 @@ impl Scene {
 
             actor.lerp(lerp);
 
-            let state = ctx.sprites.get_state(actor_index);
-            actor.update_map_sprite(&state, &mut self.map_sprites[actor_index]);
+            let state = ctx.sprites_states.get_state_mut(actor_index);
+            actor.update_sprite_state(state);
         }
     }
 }

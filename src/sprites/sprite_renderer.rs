@@ -2,11 +2,30 @@ use crate::software_renderer::bitmap::Bitmap;
 use crate::software_renderer::blit::blit_bitmap_to_surface_and_source;
 use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::surface::Surface;
-
+use crate::sprites::sprite_assets::SpriteAsset;
 use super::sprite_assembly::SpriteAssemblyChipFlags;
-use super::sprite_list::Sprite;
 
-pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, sprite: &Sprite, frame: usize, x: i32, y: i32, palette_offset: usize) {
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum SpritePriority {
+    BelowAll,
+    BelowL1L2,
+    BelowL1AboveL2,
+    AboveAll,
+}
+
+impl SpritePriority {
+    pub fn from_value(value: u8) -> SpritePriority {
+        match value {
+            0 => SpritePriority::BelowAll,
+            1 => SpritePriority::BelowL1L2,
+            2 => SpritePriority::BelowL1AboveL2,
+            3 => SpritePriority::AboveAll,
+            _ => SpritePriority::AboveAll,
+        }
+    }
+}
+
+pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, sprite: &SpriteAsset, frame: usize, x: i32, y: i32, palette_offset: usize) {
     let frame = &sprite.assembly.frames[frame];
 
     for tile in frame.chips.iter().rev() {

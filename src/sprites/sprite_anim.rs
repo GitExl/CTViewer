@@ -2,6 +2,7 @@ pub const DIRECTION_COUNT: usize = 4;
 
 // A sprite animation frame.
 // Each frame references sprite frames for each direction.
+#[derive(Copy, Clone)]
 pub struct SpriteAnimFrame {
     pub sprite_frames: [usize; DIRECTION_COUNT],
     pub duration: f64,
