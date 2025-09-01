@@ -431,7 +431,7 @@ fn parse_scene_tile_props(data: [u8; 3]) -> SceneTileProps {
         flags |= SceneTileFlags::UNKNOWN_1;
     }
     if data[1] & 0x40 != 0 {
-        sprite_priority_value |= 0x1;
+        sprite_priority_value |= 0x2;
     }
     if data[1] & 0x80 != 0 {
         flags |= SceneTileFlags::NPC_COLLISION_BATTLE;
@@ -450,7 +450,7 @@ fn parse_scene_tile_props(data: [u8; 3]) -> SceneTileProps {
         flags |= SceneTileFlags::Z_NEUTRAL;
     }
     if data[2] & 0x40 != 0 {
-        sprite_priority_value |= 0x2;
+        sprite_priority_value |= 0x3;
     }
     if data[2] & 0x80 != 0 {
         flags |= SceneTileFlags::NPC_COLLISION;
