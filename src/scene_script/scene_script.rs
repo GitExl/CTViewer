@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Cursor;
-use crate::actor::{Actor, ActorFlags};
+use crate::actor::{Actor, ActorFlags, Direction};
 use crate::Context;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
@@ -177,8 +177,10 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
             let tile_x = (actors[actor_index].x / 16.0) as u32;
             let tile_y = (actors[actor_index].y / 16.0) as u32;
             let index = (tile_y * scene_map.props.width + tile_x) as usize;
-            if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
-                actors[actor_index].sprite_priority = sprite_priority;
+            if index < scene_map.props.props.len() {
+                if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
+                    actors[actor_index].sprite_priority = sprite_priority;
+                }
             }
 
             false
@@ -186,7 +188,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
 
         Op::ActorSetDirection { actor, direction } => {
             let actor_index = actor.deref(this_actor);
-            let direction = direction.deref() as usize;
+            let direction = Direction::from_index(direction.deref() as usize);
             actors[actor_index].direction = direction;
             ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
 

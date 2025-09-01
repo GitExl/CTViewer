@@ -3,7 +3,7 @@ use crate::Context;
 use crate::sprites::sprite_state_list::SpriteState;
 use crate::sprites::sprite_renderer::SpritePriority;
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ActorClass {
     PC1,
     PC2,
@@ -12,6 +12,36 @@ pub enum ActorClass {
     NPC,
     Monster,
     MonsterPeaceful,
+}
+
+#[derive(Clone, Copy, Default, Debug, PartialEq)]
+pub enum Direction {
+    Up,
+    #[default]
+    Down,
+    Left,
+    Right,
+}
+
+impl Direction {
+    pub fn to_index(&self) -> usize {
+        match self {
+            Direction::Up => 0,
+            Direction::Down => 1,
+            Direction::Left => 2,
+            Direction::Right => 3,
+        }
+    }
+
+    pub fn from_index(index: usize) -> Direction {
+        match index {
+            0 => Direction::Up,
+            1 => Direction::Down,
+            2 => Direction::Left,
+            3 => Direction::Right,
+            _ => Direction::default(),
+        }
+    }
 }
 
 bitflags! {
@@ -37,9 +67,9 @@ pub struct Actor {
     pub x: f64,
     pub y: f64,
     pub sprite_priority: SpritePriority,
-    pub class: ActorClass,
+    pub class: Option<ActorClass>,
     pub player_index: Option<usize>,
-    pub direction: usize,
+    pub direction: Direction,
     pub move_speed: f64,
     pub flags: ActorFlags,
 }
@@ -51,9 +81,9 @@ impl Actor {
             x: 0.0,
             y: 0.0,
             sprite_priority: SpritePriority::default(),
-            class: ActorClass::NPC,
+            class: None,
             player_index: None,
-            direction: 1,
+            direction: Direction::default(),
             move_speed: 1.0,
             flags: ActorFlags::empty(),
         }
@@ -74,12 +104,15 @@ impl Actor {
     }
 
     pub fn dump(&self, ctx: &Context) {
-        println!("Actor {} ({:?}", self.index, self.class);
-        if let Some(player_index) =  self.player_index {
+        println!("Actor {}", self.index);
+        if let Some(class) = self.class {
+            println!("  Class {:?}", class);
+        }
+        if let Some(player_index) = self.player_index {
             println!("  Player {}", player_index);
         }
         println!("  At {} x {}", self.x, self.y);
-        println!("  Direction: {}", self.direction);
+        println!("  Direction: {:?}", self.direction);
         println!("  Speed: {}", self.move_speed);
         println!("  Sprite priority: {:?}", self.sprite_priority);
         println!("  Flags: {:?}", self.flags);

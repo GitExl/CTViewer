@@ -6,7 +6,7 @@ use crate::software_renderer::blit::blit_bitmap_to_surface;
 use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
-use super::sprite_anim::SpriteAnimSet;
+use super::sprite_anim::{SpriteAnimFrame, SpriteAnimSet};
 use super::sprite_assembly::SpriteAssembly;
 
 // Keys for world sprite data.
@@ -41,6 +41,28 @@ impl SpriteAssets {
 
     pub fn get_anim_set(&self, anim_set_index: usize) -> &SpriteAnimSet {
         self.anim_sets.get(&anim_set_index).unwrap()
+    }
+
+    pub fn get_frame_for_animation(&self, sprite_index: usize, anim_index: usize, frame_index: usize) -> (SpriteAnimFrame, usize, usize) {
+        let sprite = self.assets.get(&sprite_index).unwrap();
+        let anim_set = self.anim_sets.get(&sprite.anim_set_index).unwrap();
+
+        let real_anim_index = if anim_set.anims.len() <= anim_index {
+            println!("Warning: sprite {} does not have animation {}. Using animation 0.", sprite_index, anim_index);
+            0
+        } else {
+            anim_index
+        };
+
+        let anim = &anim_set.anims[real_anim_index];
+        let real_frame_index = if anim.frames.len() == 0 {
+            println!("Warning: sprite {} animation {} does not have frame {}. Using frame 0.", sprite_index, anim_index, frame_index);
+            0
+        } else {
+            frame_index
+        };
+
+        (anim.frames[real_frame_index], real_anim_index, real_frame_index)
     }
 
     // Load a sprite for future use.

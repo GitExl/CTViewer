@@ -21,7 +21,7 @@ impl SpritePriority {
             1 => SpritePriority::BelowL1L2,
             2 => SpritePriority::BelowL1AboveL2,
             3 => SpritePriority::AboveAll,
-            _ => SpritePriority::default(),
+            _ => SpritePriority::AboveAll,
         }
     }
 }
