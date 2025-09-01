@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::DataRef;
+use crate::scene_script::scene_script_decoder::{DataDest, DataSource};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BitMathOp {
@@ -22,130 +22,207 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
 
         // Byte math.
-        0x5B => Op::ByteMath {
-            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            op: ByteMathOp::Add,
+        0x5B => {
+            let rhs = data.read_u8().unwrap() as u32;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Add,
+                rhs: DataSource::Immediate(rhs),
+                byte_count: 1,
+            }
         },
-        0x5D => Op::ByteMath {
-            rhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            op: ByteMathOp::Add,
+        0x5D => {
+            let rhs = data.read_u8().unwrap() as usize * 2;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Add,
+                rhs: DataSource::LocalVar(rhs),
+                byte_count: 1,
+            }
         },
-        0x5E => Op::ByteMath {
-            rhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-            op: ByteMathOp::Add,
+        0x5E => {
+            let rhs = data.read_u8().unwrap() as usize * 2;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Add,
+                rhs: DataSource::LocalVar(rhs),
+                byte_count: 2,
+            }
         },
-        0x5F => Op::ByteMath {
-            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            op: ByteMathOp::Subtract,
+        0x5F => {
+            let rhs = data.read_u8().unwrap() as usize * 2;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Subtract,
+                rhs: DataSource::LocalVar(rhs),
+                byte_count: 1,
+            }
         },
-        0x60 => Op::ByteMath {
-            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-            op: ByteMathOp::Subtract,
+        0x60 => {
+            let rhs = data.read_u8().unwrap() as usize * 2;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Subtract,
+                rhs: DataSource::LocalVar(rhs),
+                byte_count: 2,
+            }
         },
-        0x61 => Op::ByteMath {
-            rhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            op: ByteMathOp::Subtract,
+        0x61 => {
+            let rhs = data.read_u8().unwrap() as usize * 2;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Subtract,
+                rhs: DataSource::LocalVar(rhs),
+                byte_count: 1,
+            }
         },
-        0x71 => Op::ByteMath {
-            rhs: DataRef::Immediate(1),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            op: ByteMathOp::Add,
+        0x71 => {
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Add,
+                rhs: DataSource::Immediate(1),
+                byte_count: 1,
+            }
         },
-        0x72 => Op::ByteMath {
-            rhs: DataRef::Immediate(1),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 2,
-            op: ByteMathOp::Add,
+        0x72 => {
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Add,
+                rhs: DataSource::Immediate(1),
+                byte_count: 2,
+            }
         },
-        0x73 => Op::ByteMath {
-            rhs: DataRef::Immediate(1),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            byte_count: 1,
-            op: ByteMathOp::Subtract,
+        0x73 => {
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::ByteMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: ByteMathOp::Subtract,
+                rhs: DataSource::Immediate(1),
+                byte_count: 1,
+            }
         },
 
         // Bit math.
         0x2A => Op::BitMath {
-            rhs: DataRef::Temp(0x7E0154),
-            lhs: DataRef::Immediate(0x04),
+            dest: DataDest::Temp(0x7E0154),
+            lhs: DataSource::Temp(0x7E0154),
             op: BitMathOp::Or,
+            rhs: DataSource::Immediate(0x04),
         },
         0x2B => Op::BitMath {
-            rhs: DataRef::Temp(0x7E0154),
-            lhs: DataRef::Immediate(0x08),
+            dest: DataDest::Temp(0x7E0154),
+            lhs: DataSource::Temp(0x7E0154),
             op: BitMathOp::Or,
+            rhs: DataSource::Immediate(0x08),
         },
         0x32 => Op::BitMath {
-            rhs: DataRef::Temp(0x7E0154),
-            lhs: DataRef::Immediate(0x10),
+            dest: DataDest::Temp(0x7E0154),
+            lhs: DataSource::Temp(0x7E0154),
             op: BitMathOp::Or,
+            rhs: DataSource::Immediate(0x10),
         },
-        0x63 => Op::BitMath {
-            rhs: DataRef::Immediate(1 >> data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            op: BitMathOp::Or,
+        0x63 => {
+            let rhs = 1 >> data.read_u8().unwrap() as u32;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::BitMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: BitMathOp::Or,
+                rhs: DataSource::Immediate(rhs),
+            }
         },
-        0x64 => Op::BitMath {
-            rhs: DataRef::Immediate(1 >> data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            op: BitMathOp::And,
+        0x64 => {
+            let rhs = 1 >> data.read_u8().unwrap() as u32;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::BitMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: BitMathOp::And,
+                rhs: DataSource::Immediate(rhs),
+            }
         },
         0x65 => {
             let bit = data.read_u8().unwrap();
-            let mut address = data.read_u8().unwrap() as usize;
+            let mut lhs = data.read_u8().unwrap() as usize;
             if bit & 0x80 > 0 {
-                address += 0x100;
+                lhs += 0x100;
             }
             Op::BitMath {
-                rhs: DataRef::Immediate(1 >> (bit & 0x7F) as u32),
-                lhs: DataRef::Temp(address),
+                dest: DataDest::Temp(lhs),
+                rhs: DataSource::Immediate(1 >> (bit & 0x7F) as u32),
+                lhs: DataSource::Temp(lhs),
                 op: BitMathOp::Or,
             }
         },
         0x66 => {
             let bit = data.read_u8().unwrap();
-            let mut address = data.read_u8().unwrap() as usize;
+            let mut lhs = data.read_u8().unwrap() as usize;
             if bit & 0x80 > 0 {
-                address += 0x100;
+                lhs += 0x100;
             }
             Op::BitMath {
-                rhs: DataRef::Immediate(1 >> (bit & 0x7F) as u32),
-                lhs: DataRef::Temp(address),
+                dest: DataDest::Temp(lhs),
+                rhs: DataSource::Immediate(1 >> (bit & 0x7F) as u32),
+                lhs: DataSource::Temp(lhs),
                 op: BitMathOp::And,
             }
         },
-        0x67 => Op::BitMath {
-            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            op: BitMathOp::And,
+        0x67 => {
+            let rhs = data.read_u8().unwrap() as u32;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::BitMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: BitMathOp::And,
+                rhs: DataSource::Immediate(rhs),
+            }
         },
-        0x69 => Op::BitMath {
-            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            op: BitMathOp::Or,
+        0x69 => {
+            let rhs = data.read_u8().unwrap() as u32;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::BitMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: BitMathOp::Or,
+                rhs: DataSource::Immediate(rhs),
+            }
         },
-        0x6B => Op::BitMath {
-            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            op: BitMathOp::Xor,
+        0x6B => {
+            let rhs = data.read_u8().unwrap() as u32;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::BitMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: BitMathOp::Xor,
+                rhs: DataSource::Immediate(rhs),
+            }
         },
-        0x6F => Op::BitMath {
-            rhs: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            lhs: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            op: BitMathOp::ShiftRight,
+        0x6F => {
+            let rhs = data.read_u8().unwrap() as u32;
+            let lhs = data.read_u8().unwrap() as usize * 2;
+            Op::BitMath {
+                dest: DataDest::LocalVar(lhs),
+                lhs: DataSource::LocalVar(lhs),
+                op: BitMathOp::ShiftRight,
+                rhs: DataSource::Immediate(rhs),
+            }
         },
         
         _ => panic!("Unknown math op."),

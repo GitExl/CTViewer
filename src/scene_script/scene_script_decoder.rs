@@ -103,9 +103,9 @@ pub enum InputBinding {
     R,
 }
 
-/// Source or destination values for data operations.
+/// Source values for data operations.
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum DataRef {
+pub enum DataSource {
     // Immediate value.
     Immediate(u32),
 
@@ -113,10 +113,10 @@ pub enum DataRef {
     Temp(usize),
 
     // Persistently stored space from 0x7F0000 to 0x7F0200.
-    StoredLower(usize),
+    GlobalVar(usize),
 
     // Persistently stored space from 0x7F0200 to 0x7F400.
-    StoredUpper(usize),
+    LocalVar(usize),
 
     // Entire upper space from 0x7F0000 to 0x7FFFFF.
     Upper(usize),
@@ -146,7 +146,7 @@ pub enum DataRef {
     // Next value from random value table.
     Random,
 
-    // Number of items in inventory.
+    // Number of items of type in inventory.
     ItemCount(usize),
 
     // Amount of gold in inventory.
@@ -157,13 +157,44 @@ pub enum DataRef {
     PCIsActive,
 }
 
-impl DataRef {
+impl DataSource {
     pub fn deref(self) -> u32 {
         match self {
-            DataRef::Immediate(index) => index,
+            DataSource::Immediate(value) => value,
             _ => 0,     // todo
         }
     }
+}
+
+/// Destination values for data operations.
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum DataDest {
+    // Temporary memory from 0x7E0000 to 0x7E0100.
+    Temp(usize),
+
+    // Persistently stored space from 0x7F0000 to 0x7F0200.
+    GlobalVar(usize),
+
+    // Persistently stored space from 0x7F0200 to 0x7F400.
+    LocalVar(usize),
+
+    // Entire upper space from 0x7F0000 to 0x7FFFFF.
+    Upper(usize),
+
+    // The result value of an actor.
+    ActorResult(ActorRef),
+
+    // A flag of an actor.
+    ActorFlag(ActorRef, ActorFlags),
+
+    // All of SNES RAM.
+    RAM(usize),
+
+    // Number of items of type in inventory.
+    ItemCount(usize),
+
+    // Amount of gold in inventory.
+    GoldCount,
 }
 
 /// Opcodes.

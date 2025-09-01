@@ -1,14 +1,14 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{ActorRef, DataRef};
+use crate::scene_script::scene_script_decoder::{ActorRef, DataSource};
 
 pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
         0x8F => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            distance: DataRef::Immediate(0),
+            distance: DataSource::Immediate(0),
             update_direction: false,
             animated: false,
             distant: true,
@@ -16,15 +16,15 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x92 => Op::ActorMoveAtAngle {
             actor: ActorRef::This,
-            angle: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            distance: DataRef::Immediate(data.read_u8().unwrap() as u32),
+            angle: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            distance: DataSource::Immediate(data.read_u8().unwrap() as u32),
             update_direction: true,
             animated: false,
         },
         0x94 => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            distance: DataRef::Immediate(0),
+            distance: DataSource::Immediate(0),
             update_direction: true,
             animated: false,
             distant: false,
@@ -33,7 +33,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x95 => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            distance: DataRef::Immediate(0),
+            distance: DataSource::Immediate(0),
             update_direction: true,
             animated: false,
             distant: false,
@@ -41,24 +41,24 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x96 => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            y: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            distance: DataRef::Immediate(0),
+            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            distance: DataSource::Immediate(0),
             update_direction: true,
             animated: false,
         },
         0x97 => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            y: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            distance: DataRef::Immediate(0),
+            x: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            y: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            distance: DataSource::Immediate(0),
             update_direction: true,
             animated: false,
         },
         0x98 => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            distance: DataRef::Immediate(data.read_u8().unwrap() as u32),
+            distance: DataSource::Immediate(data.read_u8().unwrap() as u32),
             update_direction: true,
             animated: false,
             distant: false,
@@ -67,7 +67,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x99 => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            distance: DataRef::Immediate(data.read_u8().unwrap() as u32),
+            distance: DataSource::Immediate(data.read_u8().unwrap() as u32),
             update_direction: true,
             animated: false,
             distant: false,
@@ -75,25 +75,25 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x9A => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            y: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            distance: DataRef::Immediate(data.read_u8().unwrap() as u32),
+            x: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            y: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            distance: DataSource::Immediate(data.read_u8().unwrap() as u32),
             update_direction: true,
             animated: false,
         },
         // Same as 0x92, but different in some unknown way?
         0x9C => Op::ActorMoveAtAngle {
             actor: ActorRef::This,
-            angle: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            distance: DataRef::Immediate(data.read_u8().unwrap() as u32),
+            angle: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            distance: DataSource::Immediate(data.read_u8().unwrap() as u32),
             update_direction: false,
             animated: false,
         },
         // Same as 0x9C, but different in some unknown way?
         0x9D => Op::ActorMoveAtAngle {
             actor: ActorRef::This,
-            angle: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
-            distance: DataRef::StoredUpper(data.read_u8().unwrap() as usize * 2),
+            angle: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            distance: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
             update_direction: false,
             animated: false,
         },
@@ -101,7 +101,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x9E => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            distance: DataRef::Immediate(0),
+            distance: DataSource::Immediate(0),
             update_direction: false,
             animated: false,
             distant: false,
@@ -111,7 +111,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x9F => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            distance: DataRef::Immediate(0),
+            distance: DataSource::Immediate(0),
             update_direction: false,
             animated: false,
             distant: false,
@@ -119,24 +119,24 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xA0 => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            y: DataRef::Immediate(data.read_u8().unwrap() as u32),
-            distance: DataRef::Immediate(0),
+            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            distance: DataSource::Immediate(0),
             update_direction: false,
             animated: false,
         },
         0xA1 => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataRef::StoredUpper(data.read_u8().unwrap() as usize),
-            y: DataRef::StoredUpper(data.read_u8().unwrap() as usize),
-            distance: DataRef::Immediate(0),
+            x: DataSource::LocalVar(data.read_u8().unwrap() as usize),
+            y: DataSource::LocalVar(data.read_u8().unwrap() as usize),
+            distance: DataSource::Immediate(0),
             update_direction: false,
             animated: false,
         },
         0xB5 => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            distance: DataRef::Immediate(0),
+            distance: DataSource::Immediate(0),
             update_direction: true,
             animated: false,
             distant: false,
@@ -145,7 +145,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0xB6 => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            distance: DataRef::Immediate(0),
+            distance: DataSource::Immediate(0),
             update_direction: true,
             animated: false,
             distant: false,

@@ -5,7 +5,7 @@ use crate::scene_script::ops_dialogue::{DialogueInput, DialoguePosition, Dialogu
 use crate::scene_script::ops_jump::CompareOp;
 use crate::scene_script::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::ops_palette::{ColorMathMode, SubPalette};
-use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, DataRef, ScrollLayerFlags, SpecialEffect};
+use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, DataDest, DataSource, ScrollLayerFlags, SpecialEffect};
 use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -43,22 +43,22 @@ pub enum Op {
     },
     ActorSetSpeed {
         actor: ActorRef,
-        speed: DataRef,
+        speed: DataSource,
     },
     ActorCoordinatesGet {
         actor: ActorRef,
-        x: DataRef,
-        y: DataRef,
+        x: DataSource,
+        y: DataSource,
     },
     ActorCoordinatesSet {
         actor: ActorRef,
-        x: DataRef,
-        y: DataRef,
+        x: DataSource,
+        y: DataSource,
         precise: bool,
     },
     ActorDirectionGet {
         actor: ActorRef,
-        source: DataRef,
+        source: DataSource,
     },
     ActorMoveJump {
         actor: ActorRef,
@@ -77,16 +77,16 @@ pub enum Op {
     // Actor movement.
     ActorMoveTo {
         actor: ActorRef,
-        x: DataRef,
-        y: DataRef,
-        distance: DataRef,
+        x: DataSource,
+        y: DataSource,
+        distance: DataSource,
         update_direction: bool,
         animated: bool,
     },
     ActorMoveToActor {
         actor: ActorRef,
         to_actor: ActorRef,
-        distance: DataRef,
+        distance: DataSource,
         update_direction: bool,
         animated: bool,
         distant: bool,
@@ -94,8 +94,8 @@ pub enum Op {
     },
     ActorMoveAtAngle {
         actor: ActorRef,
-        angle: DataRef,
-        distance: DataRef,
+        angle: DataSource,
+        distance: DataSource,
         update_direction: bool,
         animated: bool,
     },
@@ -116,7 +116,7 @@ pub enum Op {
     // Actor direction.
     ActorSetDirection {
         actor: ActorRef,
-        direction: DataRef,
+        direction: DataSource,
     },
     ActorSetDirectionTowards {
         actor: ActorRef,
@@ -126,7 +126,7 @@ pub enum Op {
     // Sprite.
     ActorSetSpriteFrame {
         actor: ActorRef,
-        frame: DataRef,
+        frame: DataSource,
     },
 
     // Animation.
@@ -134,10 +134,10 @@ pub enum Op {
     // 0xFFFFFFFF loops means loop forever.
     Animate {
         actor: ActorRef,
-        animation: DataRef,
+        animation: DataSource,
         wait: bool,
         run: bool,
-        loops: DataRef,
+        loops: DataSource,
     },
     AnimationLimit {
         limit: u8,
@@ -148,17 +148,17 @@ pub enum Op {
         offset: isize,
     },
     JumpConditional {
-        lhs: DataRef,
-        rhs: DataRef,
-        width: usize,
+        lhs: DataSource,
         cmp: CompareOp,
+        width: usize,
+        rhs: DataSource,
         offset: isize,
     },
 
     // Data copy.
     Copy {
-        dest: DataRef,
-        source: DataRef,
+        dest: DataDest,
+        source: DataSource,
         width: usize,
     },
 
@@ -197,20 +197,22 @@ pub enum Op {
 
     // Math.
     ByteMath {
-        rhs: DataRef,
-        lhs: DataRef,
-        byte_count: usize,
+        dest: DataDest,
+        lhs: DataSource,
         op: ByteMathOp,
+        rhs: DataSource,
+        byte_count: usize,
     },
     BitMath {
-        rhs: DataRef,
-        lhs: DataRef,
+        dest: DataDest,
+        lhs: DataSource,
         op: BitMathOp,
+        rhs: DataSource,
     },
 
     // Dialogue.
     DialogueSetTable {
-        address: DataRef,
+        address: DataSource,
     },
     DialogueShow {
         index: usize,
@@ -224,23 +226,23 @@ pub enum Op {
     // Inventory.
     ItemGive {
         actor: ActorRef,
-        item: DataRef,
+        item: DataSource,
     },
     ItemTake {
         actor: ActorRef,
-        item: DataRef,
+        item: DataSource,
     },
     GoldGive {
         actor: ActorRef,
-        amount: DataRef,
+        amount: DataSource,
     },
     GoldTake {
         actor: ActorRef,
-        amount: DataRef,
+        amount: DataSource,
     },
     ItemGetAmount {
         item: usize,
-        dest: DataRef,
+        dest: DataSource,
     },
 
     // Party management.
@@ -270,9 +272,9 @@ pub enum Op {
 
     // Change location.
     ChangeLocation {
-        index_direction: DataRef,
-        x: DataRef,
-        y: DataRef,
+        index_direction: DataSource,
+        x: DataSource,
+        y: DataSource,
         variant: u8,
     },
 

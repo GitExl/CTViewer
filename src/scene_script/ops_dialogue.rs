@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{read_24_bit_address, DataRef};
+use crate::scene_script::scene_script_decoder::{read_24_bit_address, DataSource};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DialoguePosition {
@@ -48,7 +48,7 @@ pub fn op_decode_dialogue(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Set string table address.
         0xB8 => Op::DialogueSetTable {
-            address: DataRef::RAM(read_24_bit_address(data)),
+            address: DataSource::RAM(read_24_bit_address(data)),
         },
 
         // Dialogue boxes.
