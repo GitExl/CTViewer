@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{DataDest, DataSource};
+use crate::scene_script::scene_script_memory::{DataDest, DataSource};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BitMathOp {
@@ -26,8 +26,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::Immediate(rhs),
                 byte_count: 1,
@@ -37,10 +37,10 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
-                rhs: DataSource::LocalVar(rhs),
+                rhs: DataSource::for_local_memory(rhs),
                 byte_count: 1,
             }
         },
@@ -48,10 +48,10 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
-                rhs: DataSource::LocalVar(rhs),
+                rhs: DataSource::for_local_memory(rhs),
                 byte_count: 2,
             }
         },
@@ -59,10 +59,10 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
-                rhs: DataSource::LocalVar(rhs),
+                rhs: DataSource::for_local_memory(rhs),
                 byte_count: 1,
             }
         },
@@ -70,10 +70,10 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
-                rhs: DataSource::LocalVar(rhs),
+                rhs: DataSource::for_local_memory(rhs),
                 byte_count: 2,
             }
         },
@@ -81,18 +81,18 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
-                rhs: DataSource::LocalVar(rhs),
+                rhs: DataSource::for_local_memory(rhs),
                 byte_count: 1,
             }
         },
         0x71 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::Immediate(1),
                 byte_count: 1,
@@ -101,8 +101,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x72 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::Immediate(1),
                 byte_count: 2,
@@ -111,8 +111,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x73 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
                 rhs: DataSource::Immediate(1),
                 byte_count: 1,
@@ -121,20 +121,20 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Bit math.
         0x2A => Op::BitMath {
-            dest: DataDest::Temp(0x7E0154),
-            lhs: DataSource::Temp(0x7E0154),
+            dest: DataDest::for_temp_memory(0x7E0154),
+            lhs: DataSource::for_temp_memory(0x7E0154),
             op: BitMathOp::Or,
             rhs: DataSource::Immediate(0x04),
         },
         0x2B => Op::BitMath {
-            dest: DataDest::Temp(0x7E0154),
-            lhs: DataSource::Temp(0x7E0154),
+            dest: DataDest::for_temp_memory(0x7E0154),
+            lhs: DataSource::for_temp_memory(0x7E0154),
             op: BitMathOp::Or,
             rhs: DataSource::Immediate(0x08),
         },
         0x32 => Op::BitMath {
-            dest: DataDest::Temp(0x7E0154),
-            lhs: DataSource::Temp(0x7E0154),
+            dest: DataDest::for_temp_memory(0x7E0154),
+            lhs: DataSource::for_temp_memory(0x7E0154),
             op: BitMathOp::Or,
             rhs: DataSource::Immediate(0x10),
         },
@@ -142,8 +142,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = 1 >> data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::BitMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: BitMathOp::Or,
                 rhs: DataSource::Immediate(rhs),
             }
@@ -152,8 +152,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = 1 >> data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::BitMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: BitMathOp::And,
                 rhs: DataSource::Immediate(rhs),
             }
@@ -165,9 +165,9 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 lhs += 0x100;
             }
             Op::BitMath {
-                dest: DataDest::Temp(lhs),
+                dest: DataDest::for_temp_memory(lhs),
                 rhs: DataSource::Immediate(1 >> (bit & 0x7F) as u32),
-                lhs: DataSource::Temp(lhs),
+                lhs: DataSource::for_temp_memory(lhs),
                 op: BitMathOp::Or,
             }
         },
@@ -178,9 +178,9 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 lhs += 0x100;
             }
             Op::BitMath {
-                dest: DataDest::Temp(lhs),
+                dest: DataDest::for_temp_memory(lhs),
                 rhs: DataSource::Immediate(1 >> (bit & 0x7F) as u32),
-                lhs: DataSource::Temp(lhs),
+                lhs: DataSource::for_temp_memory(lhs),
                 op: BitMathOp::And,
             }
         },
@@ -188,8 +188,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::BitMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: BitMathOp::And,
                 rhs: DataSource::Immediate(rhs),
             }
@@ -198,8 +198,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::BitMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: BitMathOp::Or,
                 rhs: DataSource::Immediate(rhs),
             }
@@ -208,8 +208,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::BitMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: BitMathOp::Xor,
                 rhs: DataSource::Immediate(rhs),
             }
@@ -218,8 +218,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let rhs = data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::BitMath {
-                dest: DataDest::LocalVar(lhs),
-                lhs: DataSource::LocalVar(lhs),
+                dest: DataDest::for_local_memory(lhs),
+                lhs: DataSource::for_local_memory(lhs),
                 op: BitMathOp::ShiftRight,
                 rhs: DataSource::Immediate(rhs),
             }

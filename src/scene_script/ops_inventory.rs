@@ -1,14 +1,15 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{ActorRef, DataSource};
+use crate::scene_script::scene_script_decoder::ActorRef;
+use crate::scene_script::scene_script_memory::DataSource;
 
 pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
         // Inventory.
         0xC7 => Op::ItemGive {
             actor: ActorRef::This,
-            item: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            item: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0xCA => Op::ItemGive {
             actor: ActorRef::This,
@@ -28,7 +29,7 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xD7 => Op::ItemGetAmount {
             item: data.read_u8().unwrap() as usize,
-            dest: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            dest: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         _ => panic!("Unknown inventory op."),

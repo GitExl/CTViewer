@@ -1,7 +1,8 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{ActorRef, DataSource};
+use crate::scene_script::scene_script_decoder::ActorRef;
+use crate::scene_script::scene_script_memory::DataSource;
 
 pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
@@ -49,8 +50,8 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x97 => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             distance: DataSource::Immediate(0),
             update_direction: true,
             animated: false,
@@ -75,8 +76,8 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x9A => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             distance: DataSource::Immediate(data.read_u8().unwrap() as u32),
             update_direction: true,
             animated: false,
@@ -92,8 +93,8 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Same as 0x9C, but different in some unknown way?
         0x9D => Op::ActorMoveAtAngle {
             actor: ActorRef::This,
-            angle: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            distance: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            angle: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            distance: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             update_direction: false,
             animated: false,
         },
@@ -127,8 +128,8 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xA1 => Op::ActorMoveTo {
             actor: ActorRef::This,
-            x: DataSource::LocalVar(data.read_u8().unwrap() as usize),
-            y: DataSource::LocalVar(data.read_u8().unwrap() as usize),
+            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize),
+            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize),
             distance: DataSource::Immediate(0),
             update_direction: false,
             animated: false,

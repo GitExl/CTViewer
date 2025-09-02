@@ -239,20 +239,21 @@ impl GameStateTrait for GameStateScene {
 
             Event::MouseButtonDown { mouse_btn, .. } => {
                 if *mouse_btn == MouseButton::Left {
-                    let index = self.get_exit_at(self.mouse_x, self.mouse_y);
+                    let index = self.get_actor_at(self.mouse_x, self.mouse_y);
                     if let Some(index) = index {
-                        let exit = &self.scene.exits[index];
-                        self.next_game_event = Some(GameEvent::GotoDestination {
-                            destination: exit.destination,
-                        });
+                        let actor = &self.scene.actors[index];
+                        actor.dump(ctx);
                     }
 
                     if index.is_none() {
-                        let index = self.get_actor_at(self.mouse_x, self.mouse_y);
+                        let index = self.get_exit_at(self.mouse_x, self.mouse_y);
                         if let Some(index) = index {
-                            let actor = &self.scene.actors[index];
-                            actor.dump(ctx);
+                            let exit = &self.scene.exits[index];
+                            self.next_game_event = Some(GameEvent::GotoDestination {
+                                destination: exit.destination,
+                            });
                         }
+
                     }
                 }
             },
@@ -267,23 +268,43 @@ impl GameStateTrait for GameStateScene {
         self.mouse_x = (x as f64 + self.camera.x) as i32;
         self.mouse_y = (y as f64 + self.camera.y) as i32;
 
-        let mut index = self.get_exit_at(self.mouse_x, self.mouse_y);
+        let mut index = self.get_actor_at(self.mouse_x, self.mouse_y);
         if let Some(index) = index {
-            let exit = &self.scene.exits[index];
-            let text = exit.destination.info(&ctx);
-
+            let actor = &self.scene.actors[index];
+            let text = format!("Actor {}", index);
             self.debug_text = Some(TextRenderable::new(
                 text,
                 [223, 223, 223, 255],
                 TextDrawFlags::SHADOW,
                 0,
             ));
-            self.debug_text_x = exit.x + exit.width / 2;
-            self.debug_text_y = exit.y;
+            self.debug_text_x = actor.x as i32;
+            self.debug_text_y = actor.y as i32 + 16;
             self.debug_box = Some(Rect::new(
-                exit.x, exit.y,
-                exit.x + exit.width, exit.y + exit.height,
+                actor.x as i32 - 8, actor.y as i32 - 16,
+                actor.x as i32 + 8, actor.y as i32,
             ));
+        }
+
+        if index.is_none() {
+            index = self.get_exit_at(self.mouse_x, self.mouse_y);
+            if let Some(index) = index {
+                let exit = &self.scene.exits[index];
+                let text = exit.destination.info(&ctx);
+
+                self.debug_text = Some(TextRenderable::new(
+                    text,
+                    [223, 223, 223, 255],
+                    TextDrawFlags::SHADOW,
+                    0,
+                ));
+                self.debug_text_x = exit.x + exit.width / 2;
+                self.debug_text_y = exit.y;
+                self.debug_box = Some(Rect::new(
+                    exit.x, exit.y,
+                    exit.x + exit.width, exit.y + exit.height,
+                ));
+            }
         }
 
         if index.is_none() {
@@ -308,26 +329,6 @@ impl GameStateTrait for GameStateScene {
                 self.debug_box = Some(Rect::new(
                     treasure.tile_x * 16, treasure.tile_y * 16,
                     treasure.tile_x * 16 + 16, treasure.tile_y * 16 + 16,
-                ));
-            }
-        }
-
-        if index.is_none() {
-            index = self.get_actor_at(self.mouse_x, self.mouse_y);
-            if let Some(index) = index {
-                let actor = &self.scene.actors[index];
-                let text = format!("Actor {}", index);
-                self.debug_text = Some(TextRenderable::new(
-                    text,
-                    [223, 223, 223, 255],
-                    TextDrawFlags::SHADOW,
-                    0,
-                ));
-                self.debug_text_x = actor.x as i32;
-                self.debug_text_y = actor.y as i32 + 16;
-                self.debug_box = Some(Rect::new(
-                    actor.x as i32 - 8, actor.y as i32 - 16,
-                    actor.x as i32 + 8, actor.y as i32,
                 ));
             }
         }

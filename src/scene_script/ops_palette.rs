@@ -48,11 +48,13 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 let bits = data.read_u8().unwrap() as usize;
                 let color_index = bits & 0xF;
                 let sub_palette = (bits & 0xF0) >> 4;
+                let (blob, length) = read_script_blob(data);
 
                 Op::PaletteSetImmediate {
                     sub_palette: SubPalette::Index(sub_palette),
                     color_index,
-                    data: read_script_blob(data),
+                    data: blob,
+                    length,
                 }
             } else {
                 println!("Mode for op 0x2E is unknown.");
@@ -84,10 +86,12 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                     data: [cmd, data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap()],
                 }
             } else if cmd >= 0x80 && cmd < 0x90 {
+                let (blob, length) = read_script_blob(data);
                 Op::PaletteSetImmediate {
                     color_index: cmd as usize & 0xF,
                     sub_palette: SubPalette::This,
-                    data: read_script_blob(data),
+                    data: blob,
+                    length,
                 }
             } else {
                 panic!("Unknown 0x88 command {}.", cmd);

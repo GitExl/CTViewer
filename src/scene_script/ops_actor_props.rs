@@ -2,7 +2,8 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::ActorFlags;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{ActorRef, DataSource};
+use crate::scene_script::scene_script_decoder::ActorRef;
+use crate::scene_script::scene_script_memory::DataSource;
 use crate::sprites::sprite_renderer::SpritePriority;
 
 pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
@@ -18,6 +19,17 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             actor: ActorRef::This,
             set: ActorFlags::TOUCHABLE,
             remove: ActorFlags::empty(),
+        },
+
+        // Set actor result from 0x7F0200.
+        0x19 => Op::ActorSetResult {
+            actor: ActorRef::This,
+            result: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+        },
+        // Set actor result from 0x7F0000.
+        0x1C => Op::ActorSetResult {
+            actor: ActorRef::This,
+            result: DataSource::for_global_memory(data.read_u8().unwrap() as usize),
         },
 
         // Disable and hide another actor.
@@ -160,21 +172,21 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x8A => Op::ActorSetSpeed {
             actor: ActorRef::This,
-            speed: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            speed: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Coordinates from actor.
         0x21 => Op::ActorCoordinatesGet {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            x: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Coordinates from party member actor.
         0x22 => Op::ActorCoordinatesGet {
             actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            x: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Set coordinates.
@@ -182,19 +194,16 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             actor: ActorRef::This,
             x: DataSource::Immediate(data.read_u8().unwrap() as u32),
             y: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            precise: false,
         },
         0x8C => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
-            x: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            precise: false,
+            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
-        0x8D => Op::ActorCoordinatesSet {
+        0x8D => Op::ActorCoordinatesSetPrecise {
             actor: ActorRef::This,
             x: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 >> 4),
             y: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 >> 4),
-            precise: true,
         },
 
         // Actor sprite.

@@ -5,7 +5,8 @@ use crate::scene_script::ops_dialogue::{DialogueInput, DialoguePosition, Dialogu
 use crate::scene_script::ops_jump::CompareOp;
 use crate::scene_script::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::ops_palette::{ColorMathMode, SubPalette};
-use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, DataDest, DataSource, ScrollLayerFlags, SpecialEffect};
+use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, ScrollLayerFlags, SpecialEffect};
+use crate::scene_script::scene_script_memory::{DataDest, DataSource};
 use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -54,7 +55,11 @@ pub enum Op {
         actor: ActorRef,
         x: DataSource,
         y: DataSource,
-        precise: bool,
+    },
+    ActorCoordinatesSetPrecise {
+        actor: ActorRef,
+        x: DataSource,
+        y: DataSource,
     },
     ActorDirectionGet {
         actor: ActorRef,
@@ -72,6 +77,10 @@ pub enum Op {
         bottom: SpritePriority,
         mode_set: bool,
         unknown_bits: u8,
+    },
+    ActorSetResult {
+        actor: ActorRef,
+        result: DataSource,
     },
 
     // Actor movement.
@@ -156,10 +165,18 @@ pub enum Op {
     },
 
     // Data copy.
-    Copy {
+    Copy8 {
         dest: DataDest,
         source: DataSource,
-        width: usize,
+    },
+    Copy16 {
+        dest: DataDest,
+        source: DataSource,
+    },
+    CopyBytes {
+        dest: DataDest,
+        bytes: [u8; 32],
+        length: usize,
     },
 
     // Color math.
@@ -180,11 +197,17 @@ pub enum Op {
         sub_palette: SubPalette,
         color_index: usize,
         data: [u8; 32],
+        length: usize,
     },
     PaletteSet {
         palette: usize,
     },
     PaletteRestore,
+
+    // Random value.
+    Random {
+        dest: DataDest,
+    },
 
     // Character loading.
     LoadCharacter {
@@ -212,7 +235,7 @@ pub enum Op {
 
     // Dialogue.
     DialogueSetTable {
-        address: DataSource,
+        address: usize,
     },
     DialogueShow {
         index: usize,

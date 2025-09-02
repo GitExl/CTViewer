@@ -2,7 +2,8 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::ActorFlags;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{ActorRef, DataSource, InputBinding};
+use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
+use crate::scene_script::scene_script_memory::DataSource;
 
 /// Conditionals for comparisons.
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -50,7 +51,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Conditional jumps.
         // 1 byte direct compare with 0x7F0200.
         0x12 => Op::JumpConditional {
-            lhs: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as usize as u32),
             width: 1,
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
@@ -58,7 +59,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // 2 byte direct compare with 0x7F0200.
         0x13 => Op::JumpConditional {
-            lhs: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             rhs: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
             width: 2,
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
@@ -66,16 +67,16 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // 1 byte from 0x7F0200 compare with 0x7F0200.
         0x14 => Op::JumpConditional {
-            lhs: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            rhs: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            rhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             width: 1,
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
             offset: data.read_u8().unwrap() as isize,
         },
         // 2 byte from 0x7F0200 compare with 0x7F0200.
         0x15 => Op::JumpConditional {
-            lhs: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
-            rhs: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            rhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             width: 2,
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
             offset: data.read_u8().unwrap() as isize,
@@ -89,7 +90,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 lhs += 0x100;
             }
             Op::JumpConditional {
-                lhs: DataSource::GlobalVar(lhs),
+                lhs: DataSource::for_global_memory(lhs),
                 rhs: DataSource::Immediate((value & 0x7F) as u32),
                 width: 1,
                 cmp: CompareOp::from_value(op_value as usize & 0x7F),
@@ -98,7 +99,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // Less than with storyline counter.
         0x18 => Op::JumpConditional {
-            lhs: DataSource::GlobalVar(0x000),
+            lhs: DataSource::for_global_memory(0x000),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
             width: 1,
             cmp: CompareOp::Lt,
@@ -272,7 +273,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0xCF => Op::JumpConditional {
             lhs: DataSource::PCIsRecruited,
             rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            width: 2,
+            width: 1,
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as isize,
         },
@@ -280,7 +281,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0xD2 => Op::JumpConditional {
             lhs: DataSource::PCIsActive,
             rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            width: 2,
+            width: 1,
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as isize,
         },

@@ -1,7 +1,8 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{ActorRef, DataSource};
+use crate::scene_script::scene_script_decoder::ActorRef;
+use crate::scene_script::scene_script_memory::DataSource;
 
 pub fn op_decode_direction(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
@@ -39,11 +40,11 @@ pub fn op_decode_direction(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x23 => Op::ActorDirectionGet {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            source: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x24 => Op::ActorDirectionGet {
             actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            source: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0xA6 => Op::ActorSetDirection {
             actor: ActorRef::This,
@@ -51,7 +52,7 @@ pub fn op_decode_direction(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xA7 => Op::ActorSetDirection {
             actor: ActorRef::This,
-            direction: DataSource::LocalVar(data.read_u8().unwrap() as usize * 2),
+            direction: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0xA8 => Op::ActorSetDirectionTowards {
             actor: ActorRef::This,

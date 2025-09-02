@@ -1,7 +1,6 @@
 use std::io::{Cursor, Read};
 use bitflags::bitflags;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::actor::ActorFlags;
 use crate::scene_script::ops_inventory::op_decode_inventory;
 use crate::scene_script::ops::Op;
 use crate::scene_script::ops_actor_props::op_decode_actor_props;
@@ -18,7 +17,7 @@ use crate::scene_script::ops_math::op_decode_math;
 use crate::scene_script::ops_movement::ops_decode_movement;
 use crate::scene_script::ops_palette::{op_decode_palette, ColorMathMode};
 use crate::scene_script::ops_party::op_decode_party;
-use crate::scene_script::scene_script::ScriptMemory;
+use crate::scene_script::scene_script_memory::DataDest;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SpecialEffect {
@@ -104,138 +103,6 @@ pub enum InputBinding {
     R,
 }
 
-/// Source values for data operations.
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum DataSource {
-    // Immediate value.
-    Immediate(u32),
-
-    // Temporary memory from 0x7E0000 to 0x7E0100.
-    Temp(usize),
-
-    // Persistently stored space from 0x7F0000 to 0x7F0200.
-    GlobalVar(usize),
-
-    // Persistently stored space from 0x7F0200 to 0x7F400.
-    LocalVar(usize),
-
-    // Entire upper space from 0x7F0000 to 0x7FFFFF.
-    Upper(usize),
-
-    // The result value of an actor.
-    ActorResult(ActorRef),
-
-    // The current character at the party index.
-    PartyCharacter(usize),
-
-    // A flag of an actor.
-    ActorFlag(ActorRef, ActorFlags),
-
-    // Button state.
-    // Since last check?
-    CurrentInput(bool),
-
-    // A specific input.
-    Input(InputBinding),
-
-    // All of SNES RAM.
-    RAM(usize),
-
-    // Up to 32 bytes.
-    Bytes([u8; 32]),
-
-    // Next value from random value table.
-    Random,
-
-    // Number of items of type in inventory.
-    ItemCount(usize),
-
-    // Amount of gold in inventory.
-    GoldCount,
-
-    // Player character is recruited/active.
-    PCIsRecruited,
-    PCIsActive,
-}
-
-impl DataSource {
-    pub fn get(self, memory: &ScriptMemory, width: usize) -> u32 {
-        match self {
-            DataSource::Immediate(value) => value,
-            DataSource::GlobalVar(address) => {
-                if width == 2 {
-                    memory.global[address + 1] as u32 | (memory.global[address] as u32) << 8u8
-                } else {
-                    memory.global[address] as u32
-                }
-            },
-            DataSource::LocalVar(address) => {
-                if width == 2 {
-                    memory.local[address + 1] as u32 | (memory.local[address] as u32) << 8u8
-                } else {
-                    memory.local[address] as u32
-                }
-            },
-            _ => 0,     // todo
-        }
-    }
-}
-
-/// Destination values for data operations.
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum DataDest {
-    // Temporary memory from 0x7E0000 to 0x7E0100.
-    Temp(usize),
-
-    // Persistently stored space from 0x7F0000 to 0x7F0200.
-    GlobalVar(usize),
-
-    // Persistently stored space from 0x7F0200 to 0x7F400.
-    LocalVar(usize),
-
-    // Entire upper space from 0x7F0000 to 0x7FFFFF.
-    Upper(usize),
-
-    // The result value of an actor.
-    ActorResult(ActorRef),
-
-    // A flag of an actor.
-    ActorFlag(ActorRef, ActorFlags),
-
-    // All of SNES RAM.
-    RAM(usize),
-
-    // Number of items of type in inventory.
-    ItemCount(usize),
-
-    // Amount of gold in inventory.
-    GoldCount,
-}
-
-impl DataDest {
-    pub fn put(&self, memory: &mut ScriptMemory, value: u32, width: usize) {
-        match self {
-            DataDest::GlobalVar(address) => {
-                if width == 2 {
-                    memory.global[*address + 1] = (value & 0xFF) as u8;
-                    memory.global[*address] = ((value & 0xFF00) >> 8u8) as u8;
-                } else {
-                    memory.global[*address] = value as u8;
-                }
-            },
-            DataDest::LocalVar(address) => {
-                if width == 2 {
-                    memory.local[*address + 1] = (value & 0xFF) as u8;
-                    memory.local[*address] = ((value & 0xFF00) >> 8u8) as u8;
-                } else {
-                    memory.local[*address] = value as u8;
-                }
-            },
-            _ => {}
-        }
-    }
-}
-
 /// Opcodes.
 pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
     let op_byte = data.read_u8().unwrap();
@@ -246,16 +113,17 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
         0x02 | 0x03 | 0x04 | 0x05 | 0x06 | 0x07 => op_decode_call(op_byte, data),
 
         // Actor properties.
-        0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x7C | 0x7D | 0x90 | 0x91 | 0x7E | 0x8E | 0x84 | 0x0D |
-        0x0E | 0x89 | 0x8A | 0x21 | 0x22 | 0x8B | 0x8C | 0x8D | 0xAC | 0xF8 | 0xF9 | 0xFA => op_decode_actor_props(op_byte, data),
+        0x08 | 0x09 | 0x0A | 0x0B | 0x0C | 0x19 | 0x1C | 0x7C | 0x7D | 0x90 | 0x91 | 0x7E | 0x8E |
+        0x84 | 0x0D | 0x0E | 0x89 | 0x8A | 0x21 | 0x22 | 0x8B | 0x8C | 0x8D | 0xAC | 0xF8 | 0xF9 |
+        0xFA => op_decode_actor_props(op_byte, data),
 
         // Actor movement.
         0x8F | 0x92 | 0x94 | 0x95 | 0x96 | 0x97 | 0x98 | 0x99 | 0x9A | 0x9C | 0x9D |
         0x9E | 0x9F | 0xA0 | 0xA1 | 0x7A | 0x7B | 0xB5 | 0xD9 | 0xB6 => ops_decode_movement(op_byte, data),
 
         // Data copy.
-        0x19 | 0x1C | 0x20 | 0x48 | 0x49 | 0x4A | 0x4B | 0x4C | 0x4D | 0x4E | 0x4F | 0x50 | 0x51 |
-        0x52 | 0x53 | 0x54 | 0x55 | 0x56 | 0x58 | 0x59 | 0x5A | 0x75 | 0x76 | 0x77 | 0x7F => op_decode_copy(op_byte, data),
+        0x20 | 0x48 | 0x49 | 0x4A | 0x4B | 0x4C | 0x4D | 0x4E | 0x4F | 0x50 | 0x51 |
+        0x52 | 0x53 | 0x54 | 0x55 | 0x56 | 0x58 | 0x59 | 0x5A | 0x75 | 0x76 | 0x77 => op_decode_copy(op_byte, data),
 
         // Byte math.
         0x5B | 0x5D | 0x5E | 0x5F | 0x60 | 0x61 | 0x71 | 0x72 | 0x73 | 0x63 | 0x64 | 0x65 | 0x66 |
@@ -354,6 +222,10 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
             x4_dest: data.read_u8().unwrap(),
             y4_src: data.read_u8().unwrap(),
             y4_dest: data.read_u8().unwrap(),
+        },
+
+        0x7F => Op::Random {
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Special effects or scenes.
@@ -511,7 +383,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
     }
 }
 
-pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> [u8; 32] {
+pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> ([u8; 32], usize) {
     let data_len = data.read_u16::<LittleEndian>().unwrap() as usize - 2;
     if data_len > 32 {
         panic!("Blob data larger than 32 bytes is not supported.");
@@ -524,7 +396,7 @@ pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> [u8; 32] {
     for i in 0..data_len {
         blob_out[i] = blob[i];
     }
-    blob_out
+    (blob_out, data_len)
 }
 
 pub fn read_24_bit_address(data: &mut Cursor<Vec<u8>>) -> usize {

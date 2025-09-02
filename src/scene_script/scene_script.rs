@@ -7,6 +7,7 @@ use crate::scene::scene_map::SceneMap;
 use crate::scene_script::ops::Op;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::scene_script_decoder::op_decode;
+use crate::scene_script::scene_script_memory::SceneScriptMemory;
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -50,25 +51,10 @@ impl ActorScriptState {
     }
 }
 
-pub struct ScriptMemory {
-    pub global: [u8; 512],
-    pub local: [u8; 512],
-}
-
-impl ScriptMemory {
-    fn new() -> ScriptMemory {
-        ScriptMemory {
-            global: [0; 512],
-            local: [0; 512],
-        }
-    }
-}
-
-
 pub struct SceneScript {
     index: usize,
     data: Cursor<Vec<u8>>,
-    memory: ScriptMemory,
+    memory: SceneScriptMemory,
     pub actor_scripts: Vec<SceneActorScript>,
     pub script_states: Vec<ActorScriptState>,
 }
@@ -78,7 +64,7 @@ impl SceneScript {
         SceneScript {
             index,
             data: Cursor::new(data),
-            memory: ScriptMemory::new(),
+            memory: SceneScriptMemory::new(),
             actor_scripts,
             script_states: Vec::new(),
         }
@@ -148,19 +134,26 @@ impl SceneScript {
         println!();
         println!("  Global: {:02X?}", self.memory.global);
         println!("  Local: {:02X?}", self.memory.local);
+        println!("  Temp: {:02X?}", self.memory.temp);
     }
 }
 
-fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Actor>, _map: &mut Map, scene_map: &mut SceneMap, memory: &mut ScriptMemory) -> bool {
+fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Actor>, _map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield { forever: _ } => true,
         Op::Return => true,
 
-        Op::Copy { source, dest, width } => {
-            let value = source.get(memory, width);
-            dest.put(memory, value, width);
-
+        Op::Copy8 { source, dest } => {
+            dest.put_u8(memory, source.get_u8(memory));
+            false
+        },
+        Op::Copy16 { source, dest } => {
+            dest.put_u16(memory, source.get_u16(memory));
+            false
+        },
+        Op::CopyBytes { dest, bytes, length } => {
+            dest.put_bytes(memory, bytes, length);
             false
         },
 
@@ -196,22 +189,39 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
             false
         },
 
-        Op::ActorCoordinatesSet { actor, x, y, precise } => {
+        Op::ActorCoordinatesSet { actor, x, y } => {
             let actor_index = actor.deref(this_actor);
-            let x = x.get(memory, 1) as f64;
-            let y = y.get(memory, 1) as f64;
+            let x = x.get_u8(memory) as f64;
+            let y = y.get_u8(memory) as f64;
 
-            if precise {
-                actors[actor_index].x = x;
-                actors[actor_index].y = y + 1.0;
-            } else {
-                actors[actor_index].x = x * 16.0 + 8.0;
-                actors[actor_index].y = y * 16.0 + 16.0;
-            }
+            actors[actor_index].x = x * 16.0 + 8.0;
+            actors[actor_index].y = y * 16.0 + 16.0;
 
             // Set sprite priority from scene map properties.
             let tile_x = (actors[actor_index].x / 16.0) as u32;
-            let tile_y = (actors[actor_index].y / 16.0 - 1.0) as u32;
+            let tile_y = (actors[actor_index].y / 16.0 - 4.0) as u32;
+            let index = (tile_y * scene_map.props.width + tile_x) as usize;
+            if index < scene_map.props.props.len() {
+                if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
+                    actors[actor_index].sprite_priority_top = sprite_priority;
+                    actors[actor_index].sprite_priority_bottom = sprite_priority;
+                }
+            }
+
+            false
+        },
+
+        Op::ActorCoordinatesSetPrecise { actor, x, y } => {
+            let actor_index = actor.deref(this_actor);
+            let x = x.get_u16(memory) as f64;
+            let y = y.get_u16(memory) as f64;
+
+            actors[actor_index].x = x;
+            actors[actor_index].y = y + 1.0;
+
+            // Set sprite priority from scene map properties.
+            let tile_x = (actors[actor_index].x / 16.0) as u32;
+            let tile_y = (actors[actor_index].y / 16.0 - 4.0) as u32;
             let index = (tile_y * scene_map.props.width + tile_x) as usize;
             if index < scene_map.props.props.len() {
                 if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
@@ -225,7 +235,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
 
         Op::ActorSetDirection { actor, direction } => {
             let actor_index = actor.deref(this_actor);
-            let direction = Direction::from_index(direction.get(memory, 1) as usize);
+            let direction = Direction::from_index(direction.get_u8(memory) as usize);
             actors[actor_index].direction = direction;
             ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
 
@@ -234,7 +244,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
 
         Op::ActorSetSpriteFrame { actor, frame } => {
             let actor_index = actor.deref(this_actor);
-            let frame_index = frame.get(memory, 1) as usize;
+            let frame_index = frame.get_u8(memory) as usize;
             ctx.sprites_states.set_sprite_frame(actor_index, frame_index);
 
             false
@@ -252,7 +262,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
         // todo loops, wait
         Op::Animate { actor, animation, run, .. } => {
             let actor_index = actor.deref(this_actor);
-            let anim_index = animation.get(memory, 1) as usize;
+            let anim_index = animation.get_u8(memory) as usize;
             ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run);
 
             false

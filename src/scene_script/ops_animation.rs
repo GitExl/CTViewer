@@ -1,7 +1,8 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{ActorRef, DataSource};
+use crate::scene_script::scene_script_decoder::ActorRef;
+use crate::scene_script::scene_script_memory::DataSource;
 
 pub fn op_decode_animation(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
