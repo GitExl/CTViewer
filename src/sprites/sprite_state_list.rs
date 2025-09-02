@@ -11,7 +11,8 @@ pub struct SpriteState {
     pub sprite_frame: usize,
     pub palette_offset: usize,
     pub direction: Direction,
-    pub priority: SpritePriority,
+    pub priority_top: SpritePriority,
+    pub priority_bottom: SpritePriority,
     pub enabled: bool,
 
     pub anim_index: usize,
@@ -30,7 +31,8 @@ impl SpriteState {
             sprite_frame: 0,
             palette_offset: 0,
             direction: Direction::default(),
-            priority: SpritePriority::default(),
+            priority_top: SpritePriority::default(),
+            priority_bottom: SpritePriority::default(),
             enabled: false,
 
             anim_index: 0,
@@ -45,7 +47,8 @@ impl SpriteState {
         println!("  Sprite {} frame {}", self.sprite_index, self.sprite_frame);
         println!("  At {} x {}", self.x, self.y);
         println!("  Direction: {:?}", self.direction);
-        println!("  Sprite priority: {:?}", self.priority);
+        println!("  Priority top {:?}", self.priority_top);
+        println!("  Priority bottom {:?}", self.priority_bottom);
         println!("  Palette offset {}", self.palette_offset);
         println!("  Animation {}, frame {}, {}", self.anim_index, self.anim_frame, if self.animating { "enabled" } else { "disabled" });
         println!();
@@ -85,7 +88,7 @@ impl SpriteStateList {
         &self.states
     }
 
-    pub fn set_animation(&mut self, assets: &SpriteAssets, actor_index: usize, anim_index: usize) {
+    pub fn set_animation(&mut self, assets: &SpriteAssets, actor_index: usize, anim_index: usize, animate: bool) {
         let state = &self.states[actor_index];
         let (frame, anim_index, frame_index) = assets.get_frame_for_animation(state.sprite_index, anim_index, 0);
         let sprite_frame = frame.sprite_frames[state.direction.to_index()];
@@ -95,7 +98,7 @@ impl SpriteStateList {
         state.anim_index = anim_index;
         state.anim_frame = frame_index;
         state.anim_timer = 0.0;
-        state.animating = true;
+        state.animating = animate;
     }
 
     pub fn set_direction(&mut self, assets: &SpriteAssets, actor_index: usize, direction: Direction) {

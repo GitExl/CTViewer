@@ -10,7 +10,7 @@ pub enum SpritePriority {
     BelowAll,
     BelowL1L2,
     #[default]
-    BelowL1AboveL2,
+    BelowL2AboveL1,
     AboveAll,
 }
 
@@ -19,18 +19,24 @@ impl SpritePriority {
         match value {
             0 => SpritePriority::BelowAll,
             1 => SpritePriority::BelowL1L2,
-            2 => SpritePriority::BelowL1AboveL2,
+            2 => SpritePriority::BelowL2AboveL1,
             3 => SpritePriority::AboveAll,
             _ => SpritePriority::AboveAll,
         }
     }
 }
 
-pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, sprite: &SpriteAsset, frame: usize, x: i32, y: i32, palette_offset: usize) {
+pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, render_top: bool, render_bottom: bool, sprite: &SpriteAsset, frame: usize, x: i32, y: i32, palette_offset: usize) {
     let frame = &sprite.assembly.frames[frame];
 
     for tile in frame.chips.iter().rev() {
         if tile.flags.contains(SpriteAssemblyChipFlags::UNUSED) {
+            continue;
+        }
+        if tile.flags.contains(SpriteAssemblyChipFlags::IS_TOP) && !render_top {
+            continue;
+        }
+        if tile.flags.contains(SpriteAssemblyChipFlags::IS_BOTTOM) && !render_bottom {
             continue;
         }
         if tile.src_x >= sprite.tiles.width as i32 || tile.src_y >= sprite.tiles.height as i32 {

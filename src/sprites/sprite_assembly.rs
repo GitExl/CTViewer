@@ -1,12 +1,14 @@
 use bitflags::bitflags;
 
 bitflags! {
-    #[derive(Clone, Default)]
+    #[derive(Copy, Clone, Default)]
     pub struct SpriteAssemblyChipFlags: u32 {
         const FLIP_X = 0x01;
         const FLIP_Y = 0x02;
         const UNUSED = 0x04;
         const UNKNOWN = 0x08;
+        const IS_TOP = 0x10;
+        const IS_BOTTOM = 0x20;
     }
 }
 

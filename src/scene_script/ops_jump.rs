@@ -114,10 +114,10 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // If actor is hidden.
         0x27 => Op::JumpConditional {
-            lhs: DataSource::ActorFlag(ActorRef::ScriptActor(data.read_u8().unwrap() as usize * 2), ActorFlags::HIDDEN),
+            lhs: DataSource::ActorFlag(ActorRef::ScriptActor(data.read_u8().unwrap() as usize * 2), ActorFlags::VISIBLE),
             rhs: DataSource::Immediate(1),
             width: 1,
-            cmp: CompareOp::Eq,
+            cmp: CompareOp::NotEq,
             offset: data.read_u8().unwrap() as isize,
         },
         // If actor is in battle.

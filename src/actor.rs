@@ -48,7 +48,7 @@ bitflags! {
     #[derive(Clone, Default, Copy, Debug, PartialEq)]
     pub struct ActorFlags: u32 {
         const DISABLED = 0x0001;
-        const HIDDEN = 0x0002;
+        const VISIBLE = 0x0002;
         const RENDERED = 0x0004;
         const SOLID = 0x0008;
         const TOUCHABLE = 0x0010;
@@ -58,6 +58,7 @@ bitflags! {
         const MOVE_ONTO_OBJECT = 0x0100;
         const IN_BATTLE = 0x0200;
         const PUSHABLE = 0x0400;
+        const BATTLE_STATIC = 0x0800;
     }
 }
 
@@ -66,12 +67,14 @@ pub struct Actor {
     pub index: usize,
     pub x: f64,
     pub y: f64,
-    pub sprite_priority: SpritePriority,
+    pub sprite_priority_top: SpritePriority,
+    pub sprite_priority_bottom: SpritePriority,
     pub class: Option<ActorClass>,
     pub player_index: Option<usize>,
     pub direction: Direction,
     pub move_speed: f64,
     pub flags: ActorFlags,
+    pub battle_index: usize,
 }
 
 impl Actor {
@@ -80,12 +83,14 @@ impl Actor {
             index,
             x: 0.0,
             y: 0.0,
-            sprite_priority: SpritePriority::default(),
+            sprite_priority_top: SpritePriority::default(),
+            sprite_priority_bottom: SpritePriority::default(),
             class: None,
             player_index: None,
             direction: Direction::default(),
             move_speed: 1.0,
             flags: ActorFlags::empty(),
+            battle_index: 0,
         }
     }
 
@@ -99,8 +104,9 @@ impl Actor {
         sprite_state.x = self.x;
         sprite_state.y = self.y;
         sprite_state.direction = self.direction;
-        sprite_state.priority = self.sprite_priority;
-        sprite_state.enabled = !self.flags.contains(ActorFlags::HIDDEN);
+        sprite_state.priority_top = self.sprite_priority_top;
+        sprite_state.priority_bottom = self.sprite_priority_bottom;
+        sprite_state.enabled = self.flags.contains(ActorFlags::VISIBLE);
     }
 
     pub fn dump(&self, ctx: &Context) {
@@ -114,7 +120,8 @@ impl Actor {
         println!("  At {} x {}", self.x, self.y);
         println!("  Direction: {:?}", self.direction);
         println!("  Speed: {}", self.move_speed);
-        println!("  Sprite priority: {:?}", self.sprite_priority);
+        println!("  Sprite priority top {:?}", self.sprite_priority_top);
+        println!("  Sprite priority bottom {:?}", self.sprite_priority_bottom);
         println!("  Flags: {:?}", self.flags);
         println!();
 

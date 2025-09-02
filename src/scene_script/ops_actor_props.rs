@@ -40,43 +40,43 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Visibility/rendered.
-        // Rendered, and not hidden.
+        // Rendered, and visible.
         0x7C => Op::ActorUpdateFlags {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::RENDERED,
-            remove: ActorFlags::HIDDEN,
+            set: ActorFlags::RENDERED | ActorFlags::VISIBLE,
+            remove: ActorFlags::empty(),
         },
-        // Not rendered, and not hidden.
+        // Not rendered, but visible (?).
         0x7D => Op::ActorUpdateFlags {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::empty(),
-            remove: ActorFlags::RENDERED | ActorFlags::HIDDEN,
+            set: ActorFlags::VISIBLE,
+            remove: ActorFlags::RENDERED,
         },
         // Visible.
         0x90 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::empty(),
-            remove: ActorFlags::HIDDEN,
+            set: ActorFlags::VISIBLE,
+            remove: ActorFlags::empty(),
         },
         // Hidden.
         0x91 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::HIDDEN,
-            remove: ActorFlags::empty(),
+            set: ActorFlags::empty(),
+            remove: ActorFlags::VISIBLE,
         },
         // Hidden, but rendered.
         0x7E => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::RENDERED | ActorFlags::HIDDEN,
-            remove: ActorFlags::empty(),
+            set: ActorFlags::RENDERED,
+            remove: ActorFlags::VISIBLE,
         },
 
         // Sprite priority.
         0x8E => {
             let bits = data.read_u8().unwrap();
             let mode_set = bits & 0x80 > 0;
-            let bottom = bits & 0x3;
-            let top = (bits & 0x30) >> 4;
+            let top = bits & 0x3;
+            let bottom = (bits & 0x30) >> 4;
             let unknown_bits = bits & 0x4C;
 
             Op::ActorSetSpritePriority {

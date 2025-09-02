@@ -18,6 +18,7 @@ use crate::scene_script::ops_math::op_decode_math;
 use crate::scene_script::ops_movement::ops_decode_movement;
 use crate::scene_script::ops_palette::{op_decode_palette, ColorMathMode};
 use crate::scene_script::ops_party::op_decode_party;
+use crate::scene_script::scene_script::ScriptMemory;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SpecialEffect {
@@ -158,9 +159,23 @@ pub enum DataSource {
 }
 
 impl DataSource {
-    pub fn deref(self) -> u32 {
+    pub fn get(self, memory: &ScriptMemory, width: usize) -> u32 {
         match self {
             DataSource::Immediate(value) => value,
+            DataSource::GlobalVar(address) => {
+                if width == 2 {
+                    memory.global[address + 1] as u32 | (memory.global[address] as u32) << 8u8
+                } else {
+                    memory.global[address] as u32
+                }
+            },
+            DataSource::LocalVar(address) => {
+                if width == 2 {
+                    memory.local[address + 1] as u32 | (memory.local[address] as u32) << 8u8
+                } else {
+                    memory.local[address] as u32
+                }
+            },
             _ => 0,     // todo
         }
     }
@@ -195,6 +210,30 @@ pub enum DataDest {
 
     // Amount of gold in inventory.
     GoldCount,
+}
+
+impl DataDest {
+    pub fn put(&self, memory: &mut ScriptMemory, value: u32, width: usize) {
+        match self {
+            DataDest::GlobalVar(address) => {
+                if width == 2 {
+                    memory.global[*address + 1] = (value & 0xFF) as u8;
+                    memory.global[*address] = ((value & 0xFF00) >> 8u8) as u8;
+                } else {
+                    memory.global[*address] = value as u8;
+                }
+            },
+            DataDest::LocalVar(address) => {
+                if width == 2 {
+                    memory.local[*address + 1] = (value & 0xFF) as u8;
+                    memory.local[*address] = ((value & 0xFF00) >> 8u8) as u8;
+                } else {
+                    memory.local[*address] = value as u8;
+                }
+            },
+            _ => {}
+        }
+    }
 }
 
 /// Opcodes.

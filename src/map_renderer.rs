@@ -302,7 +302,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 2.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL1AboveL2, &render_data.camera, &sprite_assets);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL2AboveL1, &render_data.camera, &sprite_assets);
     }
 
     // Layer 2 and layer 1, priority 1.
@@ -329,10 +329,12 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
         if !sprite_state.enabled {
             continue;
         }
-        if sprite_state.priority == priority {
+        let render_top = sprite_state.priority_top == priority;
+        let render_bottom = sprite_state.priority_bottom == priority;
+        if render_top || render_bottom {
             let x = (sprite_state.x - camera.lerp_x.floor()).floor() as i32;
             let y = (sprite_state.y - camera.lerp_y.floor()).floor() as i32;
-            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), &sprite_assets.get(sprite_state.sprite_index), sprite_state.sprite_frame, x, y, sprite_state.palette_offset);
+            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, &sprite_assets.get(sprite_state.sprite_index), sprite_state.sprite_frame, x, y, sprite_state.palette_offset);
         }
     }
 }

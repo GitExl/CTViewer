@@ -109,7 +109,7 @@ impl SceneRenderer {
                     (src_x, src_y) = match tile.sprite_priority {
                         Some(SpritePriority::BelowAll) => (4, 10),
                         Some(SpritePriority::BelowL1L2) => (5, 10),
-                        Some(SpritePriority::BelowL1AboveL2) => (6, 10),
+                        Some(SpritePriority::BelowL2AboveL1) => (6, 10),
                         Some(SpritePriority::AboveAll) => (7, 10),
                         None => continue,
                     };
