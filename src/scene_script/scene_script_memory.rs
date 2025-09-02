@@ -114,19 +114,19 @@ pub enum DataSource {
 
 impl DataSource {
     pub fn for_temp_memory(address: usize) -> DataSource {
-        DataSource::Memory((address & 0x0001FF) + 0x7E0000)
+        DataSource::Memory(address + 0x7E0000)
     }
 
     pub fn for_global_memory(address: usize) -> DataSource {
-        DataSource::Memory((address & 0x0003FF) + 0x7F0000)
+        DataSource::Memory(address + 0x7F0000)
     }
 
     pub fn for_local_memory(address: usize) -> DataSource {
-        DataSource::Memory((address & 0x0003FF) + 0x7F0200)
+        DataSource::Memory(address + 0x7F0200)
     }
 
     pub fn for_upper_memory(address: usize) -> DataSource {
-        DataSource::Memory((address & 0x00FFFF) + 0x7F0000)
+        DataSource::Memory(address + 0x7F0000)
     }
 
     pub fn get_u8(self, memory: &SceneScriptMemory) -> u8 {
@@ -171,19 +171,19 @@ pub enum DataDest {
 
 impl DataDest {
     pub fn for_temp_memory(address: usize) -> DataDest {
-        DataDest::Memory((address & 0x0001FF) + 0x7E0000)
+        DataDest::Memory(address + 0x7E0000)
     }
 
     pub fn for_global_memory(address: usize) -> DataDest {
-        DataDest::Memory((address & 0x0003FF) + 0x7F0000)
+        DataDest::Memory(address + 0x7F0000)
     }
 
     pub fn for_local_memory(address: usize) -> DataDest {
-        DataDest::Memory((address & 0x0003FF) + 0x7F0200)
+        DataDest::Memory(address + 0x7F0200)
     }
 
     pub fn for_upper_memory(address: usize) -> DataDest {
-        DataDest::Memory((address & 0x00FFFF) + 0x7F0000)
+        DataDest::Memory(address + 0x7F0000)
     }
 
     pub fn put_u8(&self, memory: &mut SceneScriptMemory, value: u8) {

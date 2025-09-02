@@ -25,97 +25,88 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x5B => {
             let rhs = data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath8 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::Immediate(rhs),
-                byte_count: 1,
             }
         },
         0x5D => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath8 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::for_local_memory(rhs),
-                byte_count: 1,
             }
         },
         0x5E => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath16 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::for_local_memory(rhs),
-                byte_count: 2,
             }
         },
         0x5F => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath8 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
                 rhs: DataSource::for_local_memory(rhs),
-                byte_count: 1,
             }
         },
         0x60 => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath16 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
                 rhs: DataSource::for_local_memory(rhs),
-                byte_count: 2,
             }
         },
         0x61 => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath8 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
                 rhs: DataSource::for_local_memory(rhs),
-                byte_count: 1,
             }
         },
         0x71 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath8 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::Immediate(1),
-                byte_count: 1,
             }
         },
         0x72 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath16 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Add,
                 rhs: DataSource::Immediate(1),
-                byte_count: 2,
             }
         },
         0x73 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
-            Op::ByteMath {
+            Op::ByteMath8 {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: ByteMathOp::Subtract,
                 rhs: DataSource::Immediate(1),
-                byte_count: 1,
             }
         },
 

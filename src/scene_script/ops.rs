@@ -154,14 +154,19 @@ pub enum Op {
 
     // Code jumps.
     Jump {
-        offset: isize,
+        offset: i64,
     },
-    JumpConditional {
+    JumpConditional8 {
         lhs: DataSource,
         cmp: CompareOp,
-        width: usize,
         rhs: DataSource,
-        offset: isize,
+        offset: i64,
+    },
+    JumpConditional16 {
+        lhs: DataSource,
+        cmp: CompareOp,
+        rhs: DataSource,
+        offset: i64,
     },
 
     // Data copy.
@@ -219,12 +224,17 @@ pub enum Op {
     },
 
     // Math.
-    ByteMath {
+    ByteMath8 {
         dest: DataDest,
         lhs: DataSource,
         op: ByteMathOp,
         rhs: DataSource,
-        byte_count: usize,
+    },
+    ByteMath16 {
+        dest: DataDest,
+        lhs: DataSource,
+        op: ByteMathOp,
+        rhs: DataSource,
     },
     BitMath {
         dest: DataDest,

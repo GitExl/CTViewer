@@ -6,6 +6,8 @@ use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::ops::Op;
 use crate::scene_script::ops_char_load::CharacterType;
+use crate::scene_script::ops_jump::CompareOp;
+use crate::scene_script::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::scene_script_decoder::op_decode;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
 
@@ -78,11 +80,12 @@ impl SceneScript {
 
     pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
-            self.data.set_position(state.address);
             'decoder: loop {
+                self.data.set_position(state.address);
                 let op = op_decode(&mut self.data);
                 state.address = self.data.position();
-                if op_execute(ctx, op, state_index, actors, map, scene_map, &mut self.memory) {
+                let do_yield = op_execute(ctx, op, state, state_index, actors, map, scene_map, &mut self.memory);
+                if do_yield {
                     break 'decoder;
                 }
             }
@@ -138,12 +141,13 @@ impl SceneScript {
     }
 }
 
-fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Actor>, _map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> bool {
+fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_actor: usize, actors: &mut Vec<Actor>, _map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> bool {
     match op {
         Op::NOP => false,
         Op::Yield { forever: _ } => true,
         Op::Return => true,
 
+        // Copy.
         Op::Copy8 { source, dest } => {
             dest.put_u8(memory, source.get_u8(memory));
             false
@@ -154,6 +158,72 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
         },
         Op::CopyBytes { dest, bytes, length } => {
             dest.put_bytes(memory, bytes, length);
+            false
+        },
+
+        // Jump.
+        Op::Jump { offset } => {
+            state.address = (state.address as i64 + offset - 1) as u64;
+            false
+        },
+        Op::JumpConditional8 { lhs, cmp, rhs, offset } => {
+            let lhs_value = lhs.get_u8(memory);
+            let rhs_value = rhs.get_u8(memory);
+            let result = match cmp {
+                CompareOp::Eq => lhs_value == rhs_value,
+                CompareOp::NotEq => lhs_value != rhs_value,
+                CompareOp::Gt => lhs_value > rhs_value,
+                CompareOp::GtEq => lhs_value >= rhs_value,
+                CompareOp::Lt => lhs_value < rhs_value,
+                CompareOp::LtEq => lhs_value <= rhs_value,
+                CompareOp::And => lhs_value & rhs_value > 0,
+                CompareOp::Or => lhs_value | rhs_value > 0,
+            };
+            if !result {
+                state.address = (state.address as i64 + offset - 1) as u64;
+            }
+
+            false
+        },
+
+        // Math.
+        Op::ByteMath8 { dest, lhs, op, rhs } => {
+            let lhs_value = lhs.get_u8(memory);
+            let rhs_value = rhs.get_u8(memory);
+
+            let result = match op {
+                ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
+                ByteMathOp::Subtract => lhs_value.overflowing_sub(rhs_value).0,
+            };
+            dest.put_u8(memory, result);
+
+            false
+        },
+        Op::ByteMath16 { dest, lhs, op, rhs } => {
+            let lhs_value = lhs.get_u16(memory);
+            let rhs_value = rhs.get_u16(memory);
+
+            let result = match op {
+                ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
+                ByteMathOp::Subtract => lhs_value.overflowing_sub(rhs_value).0,
+            };
+            dest.put_u16(memory, result);
+
+            false
+        },
+        Op::BitMath { dest, lhs, op, rhs } => {
+            let lhs_value = lhs.get_u8(memory);
+            let rhs_value = rhs.get_u8(memory);
+
+            let result = match op {
+                BitMathOp::And => lhs_value & rhs_value,
+                BitMathOp::Or => lhs_value | rhs_value,
+                BitMathOp::Xor => lhs_value ^ rhs_value,
+                BitMathOp::ShiftLeft => lhs_value << rhs_value,
+                BitMathOp::ShiftRight => lhs_value >> rhs_value,
+            };
+            dest.put_u8(memory, result);
+
             false
         },
 
@@ -199,7 +269,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
 
             // Set sprite priority from scene map properties.
             let tile_x = (actors[actor_index].x / 16.0) as u32;
-            let tile_y = (actors[actor_index].y / 16.0 - 4.0) as u32;
+            let tile_y = (actors[actor_index].y / 16.0 - 1.0) as u32;
             let index = (tile_y * scene_map.props.width + tile_x) as usize;
             if index < scene_map.props.props.len() {
                 if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
@@ -207,6 +277,14 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
                     actors[actor_index].sprite_priority_bottom = sprite_priority;
                 }
             }
+
+            false
+        },
+
+        Op::ActorUpdateFlags { actor, set, remove } => {
+            let actor_index = actor.deref(this_actor);
+            actors[actor_index].flags |= set;
+            actors[actor_index].flags.remove(remove);
 
             false
         },
@@ -221,7 +299,7 @@ fn op_execute(ctx: &mut Context, op: Op, this_actor: usize, actors: &mut Vec<Act
 
             // Set sprite priority from scene map properties.
             let tile_x = (actors[actor_index].x / 16.0) as u32;
-            let tile_y = (actors[actor_index].y / 16.0 - 4.0) as u32;
+            let tile_y = (actors[actor_index].y / 16.0 - 1.0) as u32;
             let index = (tile_y * scene_map.props.width + tile_x) as usize;
             if index < scene_map.props.props.len() {
                 if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
