@@ -279,22 +279,22 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Copy tiles from somewhere else in the map.
         0xE4 => Op::CopyTiles {
-            left: data.read_u8().unwrap(),
-            top: data.read_u8().unwrap(),
-            right: data.read_u8().unwrap(),
-            bottom: data.read_u8().unwrap(),
-            x: data.read_u8().unwrap(),
-            y: data.read_u8().unwrap(),
+            left: data.read_u8().unwrap() as u32 * 2,
+            top: data.read_u8().unwrap() as u32 * 2,
+            right: data.read_u8().unwrap() as u32 * 2 + 2,
+            bottom: data.read_u8().unwrap() as u32 * 2 + 2,
+            dest_x: data.read_u8().unwrap() as u32 * 2,
+            dest_y: data.read_u8().unwrap() as u32 * 2,
             flags: CopyTilesFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
         },
         // What is different in this version?
         0xE5 => Op::CopyTiles {
-            left: data.read_u8().unwrap(),
-            top: data.read_u8().unwrap(),
-            right: data.read_u8().unwrap(),
-            bottom: data.read_u8().unwrap(),
-            x: data.read_u8().unwrap(),
-            y: data.read_u8().unwrap(),
+            left: data.read_u8().unwrap() as u32 * 2,
+            top: data.read_u8().unwrap() as u32 * 2,
+            right: data.read_u8().unwrap() as u32 * 2 + 2,
+            bottom: data.read_u8().unwrap() as u32 * 2 + 2,
+            dest_x: data.read_u8().unwrap() as u32 * 2,
+            dest_y: data.read_u8().unwrap() as u32 * 2,
             flags: CopyTilesFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
         },
 

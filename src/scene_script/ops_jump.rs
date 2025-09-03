@@ -86,7 +86,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 lhs += 0x100;
             }
             Op::JumpConditional8 {
-                lhs: DataSource::for_temp_memory(lhs),
+                lhs: DataSource::for_global_memory(lhs),
                 rhs: DataSource::Immediate((value & 0x7F) as u32),
                 cmp: CompareOp::from_value(op_value as usize & 0x7F),
                 offset: data.read_u8().unwrap() as i64,

@@ -318,12 +318,12 @@ pub enum Op {
 
     // Copy tiles from somewhere on the map.
     CopyTiles {
-        left: u8,
-        top: u8,
-        right: u8,
-        bottom: u8,
-        x: u8,
-        y: u8,
+        left: u32,
+        top: u32,
+        right: u32,
+        bottom: u32,
+        dest_x: u32,
+        dest_y: u32,
         flags: CopyTilesFlags,
     },
 

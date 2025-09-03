@@ -8,8 +8,11 @@ use crate::scene_script::ops::Op;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::ops_jump::CompareOp;
 use crate::scene_script::ops_math::{BitMathOp, ByteMathOp};
-use crate::scene_script::scene_script_decoder::op_decode;
+use crate::scene_script::scene_script_decoder::{op_decode, CopyTilesFlags};
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
+
+/// Yield, Completed
+pub type OpResult = (bool, bool);
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -26,9 +29,12 @@ impl SceneActorScript {
         ActorScriptState {
             ptrs: self.ptrs,
             address: self.ptrs[0],
-            ops_per_tick: 1,
-            priority_address: [0; 8],
-            stored_address: 0,
+            ops_per_tick: 4,
+            priority_ptrs: [0; 8],
+            current_priority: 0,
+            current_op: None,
+            op_yielded: false,
+            op_completed: true,
         }
     }
 }
@@ -36,21 +42,12 @@ impl SceneActorScript {
 pub struct ActorScriptState {
     pub ops_per_tick: u32,
     pub address: u64,
-    pub stored_address: usize,
     pub ptrs: [u64; 16],
-    pub priority_address: [usize; 8],
-}
-
-impl ActorScriptState {
-    pub fn new() -> ActorScriptState {
-        ActorScriptState {
-            ops_per_tick: 0,
-            address: 0,
-            stored_address: 0,
-            ptrs: [0; 16],
-            priority_address: [0; 8],
-        }
-    }
+    pub priority_ptrs: [usize; 8],
+    pub current_priority: usize,
+    pub current_op: Option<Op>,
+    pub op_yielded: bool,
+    pub op_completed: bool,
 }
 
 pub struct SceneScript {
@@ -63,10 +60,19 @@ pub struct SceneScript {
 
 impl SceneScript {
     pub fn new(index: usize, data: Vec<u8>, actor_scripts: Vec<SceneActorScript>) -> SceneScript {
+        let mut memory = SceneScriptMemory::new();
+
+        // Cats!
+        memory.write_u8(0x7F0053, 0xFF);
+        memory.write_u8(0x7F005F, 0xFF);
+
+        // Storyline.
+        memory.write_u8(0x7F0000, 0x00);
+
         SceneScript {
             index,
             data: Cursor::new(data),
-            memory: SceneScriptMemory::new(),
+            memory,
             actor_scripts,
             script_states: Vec::new(),
         }
@@ -82,10 +88,39 @@ impl SceneScript {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
             'decoder: loop {
                 self.data.set_position(state.address);
-                let op = op_decode(&mut self.data);
+
+                if state.op_completed {
+                    state.current_op = Some(op_decode(&mut self.data));
+                    state.address = self.data.position();
+                }
+
+                (state.op_yielded, state.op_completed) = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
                 state.address = self.data.position();
-                let do_yield = op_execute(ctx, op, state, state_index, actors, map, scene_map, &mut self.memory);
-                if do_yield {
+
+                if state.op_yielded {
+                    state.op_completed = true;
+                    break 'decoder
+                }
+            }
+        }
+    }
+
+    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
+        for (state_index, state) in self.script_states.iter_mut().enumerate() {
+            let mut op_count = 0;
+            'decoder: loop {
+                self.data.set_position(state.address);
+
+                if state.op_completed {
+                    state.current_op = Some(op_decode(&mut self.data));
+                    state.address = self.data.position();
+                }
+
+                (state.op_yielded, state.op_completed) = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
+                state.address = self.data.position();
+
+                op_count += 1;
+                if op_count >= state.ops_per_tick || state.op_yielded {
                     break 'decoder;
                 }
             }
@@ -141,30 +176,39 @@ impl SceneScript {
     }
 }
 
-fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_actor: usize, actors: &mut Vec<Actor>, _map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> bool {
+fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: usize, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> OpResult {
+    let op = match state.current_op {
+        Some(op) => op,
+        None => return (true, true),
+    };
+
     match op {
-        Op::NOP => false,
-        Op::Yield { forever: _ } => true,
-        Op::Return => true,
+        Op::NOP => (false, true),
+        Op::Yield { forever } => {
+            (true, !forever)
+        },
+
+        // todo return never completes for now, but should move execution elsewhere.
+        Op::Return => (true, false),
 
         // Copy.
         Op::Copy8 { source, dest } => {
             dest.put_u8(memory, source.get_u8(memory));
-            false
+            (false, true)
         },
         Op::Copy16 { source, dest } => {
             dest.put_u16(memory, source.get_u16(memory));
-            false
+            (false, true)
         },
         Op::CopyBytes { dest, bytes, length } => {
             dest.put_bytes(memory, bytes, length);
-            false
+            (false, true)
         },
 
         // Jump.
         Op::Jump { offset } => {
             state.address = (state.address as i64 + offset - 1) as u64;
-            false
+            (false, true)
         },
         Op::JumpConditional8 { lhs, cmp, rhs, offset } => {
             let lhs_value = lhs.get_u8(memory);
@@ -183,7 +227,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
                 state.address = (state.address as i64 + offset - 1) as u64;
             }
 
-            false
+            (false, true)
         },
 
         // Math.
@@ -197,7 +241,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             };
             dest.put_u8(memory, result);
 
-            false
+            (false, true)
         },
         Op::ByteMath16 { dest, lhs, op, rhs } => {
             let lhs_value = lhs.get_u16(memory);
@@ -209,7 +253,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             };
             dest.put_u16(memory, result);
 
-            false
+            (false, true)
         },
         Op::BitMath { dest, lhs, op, rhs } => {
             let lhs_value = lhs.get_u8(memory);
@@ -224,7 +268,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             };
             dest.put_u8(memory, result);
 
-            false
+            (false, true)
         },
 
         // todo must_be_in_party
@@ -238,10 +282,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
 
             ctx.sprite_assets.load(&ctx.fs, real_index);
 
-            actors[this_actor].x = 0.0;
-            actors[this_actor].y = 0.0;
             actors[this_actor].battle_index = battle_index;
-
             actors[this_actor].flags |= ActorFlags::RENDERED | ActorFlags::VISIBLE;
             if is_static {
                 actors[this_actor].flags |= ActorFlags::BATTLE_STATIC;
@@ -256,7 +297,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             state.sprite_index = real_index;
             ctx.sprites_states.set_animation(&ctx.sprite_assets, this_actor, 0, true);
 
-            false
+            (false, true)
         },
 
         Op::ActorCoordinatesSet { actor, x, y } => {
@@ -278,7 +319,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
                 }
             }
 
-            false
+            (false, true)
         },
 
         Op::ActorUpdateFlags { actor, set, remove } => {
@@ -286,7 +327,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             actors[actor_index].flags |= set;
             actors[actor_index].flags.remove(remove);
 
-            false
+            (false, true)
         },
 
         Op::ActorCoordinatesSetPrecise { actor, x, y } => {
@@ -308,7 +349,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
                 }
             }
 
-            false
+            (false, true)
         },
 
         Op::ActorSetDirection { actor, direction } => {
@@ -317,7 +358,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             actors[actor_index].direction = direction;
             ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
 
-            false
+            (false, true)
         },
 
         Op::ActorSetSpriteFrame { actor, frame } => {
@@ -325,7 +366,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             let frame_index = frame.get_u8(memory) as usize;
             ctx.sprites_states.set_sprite_frame(actor_index, frame_index);
 
-            false
+            (false, true)
         },
 
         // todo mode, unknowns
@@ -334,7 +375,7 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             actors[actor_index].sprite_priority_top = top;
             actors[actor_index].sprite_priority_bottom = bottom;
 
-            false
+            (false, true)
         },
 
         // todo loops, wait
@@ -343,9 +384,50 @@ fn op_execute(ctx: &mut Context, op: Op, state: &mut ActorScriptState, this_acto
             let anim_index = animation.get_u8(memory) as usize;
             ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run);
 
-            false
+            (false, true)
         },
 
-        _ => false,
+        // Copy tiles around on the map.
+        Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags } => {
+            println!("CopyTiles: from {}x{} {}x{} to {}x{} with {:?}", left, top, right, bottom, dest_x, dest_y, flags);
+
+            for (layer_index, layer) in map.layers.iter_mut().enumerate() {
+                if layer_index == 0 && !flags.contains(CopyTilesFlags::COPY_L1) {
+                    continue;
+                }
+                if layer_index == 1 && !flags.contains(CopyTilesFlags::COPY_L2) {
+                    continue;
+                }
+                if layer_index == 2 && !flags.contains(CopyTilesFlags::COPY_L3) {
+                    continue;
+                }
+
+                for chip_y in 0..bottom - top {
+                    for chip_x in 0..right - left {
+
+                        let src_chip_x =  chip_x + left;
+                        let src_chip_y =  chip_y + top;
+                        let src_chip_index = (src_chip_x + src_chip_y * layer.chip_width) as usize;
+
+                        let dest_chip_x =  chip_x + dest_x;
+                        let dest_chip_y =  chip_y + dest_y;
+                        let dest_chip_index = (dest_chip_x + dest_chip_y * layer.chip_width) as usize;
+
+                        layer.chips[dest_chip_index] = layer.chips[src_chip_index];
+
+                        // todo copy flagged props
+                    }
+                }
+            }
+
+            (false, true)
+        },
+
+        Op::SetScriptSpeed { speed } => {
+            state.ops_per_tick = speed;
+            (false, true)
+        },
+
+        _ => (false, true),
     }
 }

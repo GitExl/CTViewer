@@ -44,7 +44,7 @@ bitflags! {
 }
 
 bitflags! {
-    #[derive(Clone, Default)]
+    #[derive(Clone, Copy, Default)]
     pub struct MapChipFlags: u32 {
         const PRIORITY = 0x01;
         const FLIP_X = 0x02;
@@ -52,7 +52,7 @@ bitflags! {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Copy, Clone)]
 pub struct MapChip {
     pub chip: usize,
     pub flags: MapChipFlags,
