@@ -55,7 +55,7 @@ bitflags! {
         const COLLISION_TILE = 0x0020;
         const COLLISION_PC = 0x0040;
         const MOVE_ONTO_TILE = 0x0080;
-        const MOVE_ONTO_OBJECT = 0x0100;
+        const MOVE_ONTO_ACTOR = 0x0100;
         const IN_BATTLE = 0x0200;
         const PUSHABLE = 0x0400;
         const BATTLE_STATIC = 0x0800;
@@ -65,8 +65,14 @@ bitflags! {
 
 pub struct Actor {
     pub index: usize,
+
     pub x: f64,
     pub y: f64,
+    last_x: f64,
+    last_y: f64,
+    lerp_x: f64,
+    lerp_y: f64,
+
     pub sprite_priority_top: SpritePriority,
     pub sprite_priority_bottom: SpritePriority,
     pub class: Option<ActorClass>,
@@ -81,8 +87,14 @@ impl Actor {
     pub fn new(index: usize) -> Self {
         Actor {
             index,
+
             x: 0.0,
             y: 0.0,
+            lerp_x: 0.0,
+            lerp_y: 0.0,
+            last_x: 0.0,
+            last_y: 0.0,
+
             sprite_priority_top: SpritePriority::default(),
             sprite_priority_bottom: SpritePriority::default(),
             class: None,
@@ -95,9 +107,13 @@ impl Actor {
     }
 
     pub fn tick(&mut self, _delta: f64) {
+        self.last_x = self.x;
+        self.last_y = self.y;
     }
 
-    pub fn lerp(&mut self, _lerp: f64) {
+    pub fn lerp(&mut self, lerp: f64) {
+        self.lerp_x = self.last_x + (self.x - self.last_x) * lerp;
+        self.lerp_y = self.last_y + (self.y - self.last_y) * lerp;
     }
 
     pub fn update_sprite_state(&self, sprite_state: &mut SpriteState) {

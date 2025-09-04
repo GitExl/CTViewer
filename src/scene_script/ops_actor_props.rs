@@ -154,9 +154,9 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 flags_remove.set(ActorFlags::MOVE_ONTO_TILE, true);
             }
             if flags & 0x02 > 0 {
-                flags_set.set(ActorFlags::MOVE_ONTO_OBJECT, true);
+                flags_set.set(ActorFlags::MOVE_ONTO_ACTOR, true);
             } else {
-                flags_remove.set(ActorFlags::MOVE_ONTO_OBJECT, true);
+                flags_remove.set(ActorFlags::MOVE_ONTO_ACTOR, true);
             }
 
             Op::ActorUpdateFlags {

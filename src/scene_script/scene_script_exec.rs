@@ -1,3 +1,4 @@
+use std::f64::consts::PI;
 use crate::actor::{Actor, ActorFlags, Direction};
 use crate::Context;
 use crate::map::Map;
@@ -212,6 +213,13 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             (false, true)
         },
 
+        Op::ActorSetSpeed { actor, speed } => {
+            let actor_index = actor.deref(this_actor);
+            actors[actor_index].move_speed = speed.get_u8(memory) as f64 / 16.0;
+
+            (false, true)
+        },
+
         // todo loops, wait
         Op::Animate { actor, animation, run, .. } => {
             let actor_index = actor.deref(this_actor);
@@ -219,6 +227,46 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run);
 
             (false, true)
+        },
+
+        Op::ActorMoveTo { actor, x, y, animated, distance, update_direction } => {
+            let actor_index = actor.deref(this_actor);
+            let actor = actors.get_mut(actor_index).unwrap();
+            let distance = distance.get_u8(memory) as f64;
+
+            let mut dest_x = x.get_u8(memory) as f64 * 16.0 + 8.0;
+            let mut dest_y = y.get_u8(memory) as f64 * 16.0 + 16.0;
+
+            if actor.flags.contains(ActorFlags::MOVE_ONTO_TILE) {
+                // todo move onto tile does what exactly?
+            }
+            if actor.flags.contains(ActorFlags::MOVE_ONTO_ACTOR) {
+                // todo move onto actor does what exactly?
+            }
+
+            // Test distance and end move if close enough.
+            let diff_x = dest_x - actor.x;
+            let diff_y = dest_y - actor.y;
+            if diff_x.abs() <= actor.move_speed && diff_y.abs() <= actor.move_speed {
+                actor.x = dest_x;
+                actor.y = dest_y;
+                return (false, true);
+            }
+
+            // todo set angle
+            // todo keep distance
+            // todo animated does what?
+
+            // Calculate steps needed based on the longest side and move one step.
+            let step_count = if diff_x.abs() > diff_y.abs() {
+                (diff_x / actor.move_speed).abs()
+            } else {
+                (diff_y / actor.move_speed).abs()
+            };
+            actor.x += diff_x / step_count;
+            actor.y += diff_y / step_count;
+
+            (true, false)
         },
 
         // Copy tiles around on the map.
@@ -264,8 +312,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
         Op::Wait { ticks } => {
             // Convert from 1/16th intervals to 1/60th ticks.
-            state.delay_counter = (ticks as f64 * (1.0 / 3.75)).ceil() as u32;
-            println!("Delay: {} == {} ticks?", ticks, state.delay_counter);
+            state.delay_counter = (ticks as f64 * 3.75).ceil() as u32;
             (true, true)
         },
 
