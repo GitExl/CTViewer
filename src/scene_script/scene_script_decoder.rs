@@ -17,6 +17,7 @@ use crate::scene_script::ops_math::op_decode_math;
 use crate::scene_script::ops_movement::ops_decode_movement;
 use crate::scene_script::ops_palette::{op_decode_palette, ColorMathMode};
 use crate::scene_script::ops_party::op_decode_party;
+use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_memory::DataDest;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -104,7 +105,7 @@ pub enum InputBinding {
 }
 
 /// Opcodes.
-pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
+pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     let op_byte = data.read_u8().unwrap();
 
     match op_byte {
@@ -130,7 +131,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
         0x67 | 0x69 | 0x6B | 0x6F | 0x2A | 0x2B | 0x32 => op_decode_math(op_byte, data),
 
         // Load character.
-        0x57 | 0x5C | 0x62 | 0x68 | 0x6A | 0x6C | 0x6D | 0x80 | 0x81 | 0x82 | 0x83 => op_decode_char_load(op_byte, data),
+        0x57 | 0x5C | 0x62 | 0x68 | 0x6A | 0x6C | 0x6D | 0x80 | 0x81 | 0x82 | 0x83 => op_decode_char_load(op_byte, data, mode),
 
         // Actor direction.
         0x0F | 0x17 | 0x1B | 0x1D | 0x1E | 0x1F | 0x25 | 0x26 | 0x23 | 0x24 | 0xA6 | 0xA7 | 0xA8 |
@@ -142,7 +143,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
         0x43 | 0x44 | 0xC9 | 0xCC | 0xCF | 0xD2 => op_decode_jump(op_byte, data),
 
         // Dialogue.
-        0xB8 | 0xBB | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xC8 => op_decode_dialogue(op_byte, data),
+        0xB8 | 0xBB | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xC8 => op_decode_dialogue(op_byte, data, mode),
 
         // Animation.
         0xAA | 0xAB | 0xAE | 0xB3 | 0xB4 | 0xB7 | 0x47 => op_decode_animation(op_byte, data),
@@ -154,7 +155,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
         0x2E | 0x33 | 0x88 => op_decode_palette(op_byte, data),
 
         // Move to another location.
-        0xDC | 0xDD | 0xDE | 0xDF | 0xE0 | 0xE1 | 0xE2 => op_decode_location(op_byte, data),
+        0xDC | 0xDD | 0xDE | 0xDF | 0xE0 | 0xE1 | 0xE2 => op_decode_location(op_byte, data, mode),
 
         // Inventory.
         0xC7 | 0xCA | 0xCB | 0xCD | 0xCE | 0xD7 => op_decode_inventory(op_byte, data),
@@ -327,26 +328,26 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>) -> Op {
         0xB2 => Op::Yield {
             forever: true,
         },
-        // Wait durations are 1/16th of a second for NPCs, 1/64th for PCs.
+        // Wait durations are 1/16th of a second for NPCs, 1/64th for PCs?
         0xAD => Op::Wait {
-            duration: data.read_u8().unwrap() as usize,
+            ticks: data.read_u8().unwrap() as u32,
         },
         0xB9 => Op::Wait {
-            duration: 4,
+            ticks: 4,
         },
         0xBA => Op::Wait {
-            duration: 8,
+            ticks: 8,
         },
         0xBC => Op::Wait {
-            duration: 16,
+            ticks: 16,
         },
         0xBD => Op::Wait {
-            duration: 32,
+            ticks: 32,
         },
 
-        // Script execution speed (ops per frame?).
-        0x87 => Op::SetScriptSpeed {
-            speed: data.read_u8().unwrap() as u32,
+        // Script execution delay in ticks.
+        0x87 => Op::SetScriptDelay {
+            delay: data.read_u8().unwrap() as u32,
         },
 
         // Handle player character controls.

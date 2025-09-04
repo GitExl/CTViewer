@@ -1,6 +1,7 @@
 use std::io::Cursor;
-use byteorder::ReadBytesExt;
+use byteorder::{LittleEndian, ReadBytesExt};
 use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::read_24_bit_address;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -43,42 +44,73 @@ impl DialogueSpecialType {
     }
 }
 
-pub fn op_decode_dialogue(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
+pub fn op_decode_dialogue(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
 
         // Set string table address.
-        0xB8 => Op::DialogueSetTable {
-            address: read_24_bit_address(data),
+        0xB8 => {
+            match mode {
+                SceneScriptMode::Snes => Op::DialogueSetTable {
+                    address: read_24_bit_address(data),
+                },
+                SceneScriptMode::Pc => Op::DialogueSetTable {
+                  address: data.read_u8().unwrap() as usize,
+                },
+            }
         },
 
         // Dialogue boxes.
         0xBB => Op::DialogueShow {
-            index: data.read_u8().unwrap() as usize,
+            index: if matches!(mode, SceneScriptMode::Snes) {
+                data.read_u8().unwrap() as usize
+            } else {
+                data.read_u16::<LittleEndian>().unwrap() as usize
+            },
             position: DialoguePosition::Auto,
             input: DialogueInput::None,
         },
         0xC0 => Op::DialogueShow {
-            index: data.read_u8().unwrap() as usize,
+            index: if matches!(mode, SceneScriptMode::Snes) {
+                data.read_u8().unwrap() as usize
+            } else {
+                data.read_u16::<LittleEndian>().unwrap() as usize
+            },
             position: DialoguePosition::Auto,
             input: DialogueInput::Line(data.read_u8().unwrap() as usize),
         },
         0xC1 => Op::DialogueShow {
-            index: data.read_u8().unwrap() as usize,
+            index: if matches!(mode, SceneScriptMode::Snes) {
+                data.read_u8().unwrap() as usize
+            } else {
+                data.read_u16::<LittleEndian>().unwrap() as usize
+            },
             position: DialoguePosition::Top,
             input: DialogueInput::None,
         },
         0xC2 => Op::DialogueShow {
-            index: data.read_u8().unwrap() as usize,
+            index: if matches!(mode, SceneScriptMode::Snes) {
+                data.read_u8().unwrap() as usize
+            } else {
+                data.read_u16::<LittleEndian>().unwrap() as usize
+            },
             position: DialoguePosition::Bottom,
             input: DialogueInput::None,
         },
         0xC3 => Op::DialogueShow {
-            index: data.read_u8().unwrap() as usize,
+            index: if matches!(mode, SceneScriptMode::Snes) {
+                data.read_u8().unwrap() as usize
+            } else {
+                data.read_u16::<LittleEndian>().unwrap() as usize
+            },
             position: DialoguePosition::Top,
             input: DialogueInput::Line(data.read_u8().unwrap() as usize),
         },
         0xC4 => Op::DialogueShow {
-            index: data.read_u8().unwrap() as usize,
+            index: if matches!(mode, SceneScriptMode::Snes) {
+                data.read_u8().unwrap() as usize
+            } else {
+                data.read_u16::<LittleEndian>().unwrap() as usize
+            },
             position: DialoguePosition::Bottom,
             input: DialogueInput::Line(data.read_u8().unwrap() as usize),
         },

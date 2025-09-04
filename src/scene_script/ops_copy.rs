@@ -7,6 +7,8 @@ use crate::scene_script::scene_script_memory::{DataDest, DataSource};
 pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
 
+        // todo PC version uses different indexing for 24-bit op addresses
+
         // Set what character the first party member is to 0x7F0200.
         0x20 => Op::Copy8 {
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),

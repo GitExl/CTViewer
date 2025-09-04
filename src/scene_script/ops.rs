@@ -18,11 +18,12 @@ pub enum Op {
     Yield {
         forever: bool,
     },
-    SetScriptSpeed {
-        speed: u32,
+    SetScriptDelay {
+        /// Delay in ticks between script processing.
+        delay: u32,
     },
     Wait {
-        duration: usize,
+        ticks: u32,
     },
     Control {
         forever: bool,

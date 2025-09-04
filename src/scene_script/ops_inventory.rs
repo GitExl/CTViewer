@@ -1,5 +1,5 @@
 use std::io::Cursor;
-use byteorder::ReadBytesExt;
+use byteorder::{LittleEndian, ReadBytesExt};
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::scene_script::scene_script_memory::DataSource;
@@ -21,11 +21,11 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xCD => Op::GoldGive {
             actor: ActorRef::This,
-            amount: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
         },
         0xCE => Op::GoldTake {
             actor: ActorRef::This,
-            amount: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
         },
         0xD7 => Op::ItemGetAmount {
             item: data.read_u8().unwrap() as usize,

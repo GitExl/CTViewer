@@ -29,29 +29,53 @@ impl SceneActorScript {
         ActorScriptState {
             ptrs: self.ptrs,
             address: self.ptrs[0],
-            ops_per_tick: 4,
+            delay: 4,
+            delay_counter: 4,
             priority_ptrs: [0; 8],
             current_priority: 0,
             current_op: None,
             op_yielded: false,
-            op_completed: true,
+            op_completed: false,
         }
     }
 }
 
 pub struct ActorScriptState {
-    pub ops_per_tick: u32,
+
+    /// Delay is how many ticks need to pass before this script state is processed again.
+    /// The delay counter tracks how many such ticks are left.
+    pub delay: u32,
+    pub delay_counter: u32,
+
+    /// The current address of execution.
     pub address: u64,
+
+    /// Pointers to each script function.
     pub ptrs: [u64; 16],
+
+    /// Pointers to script function at prioritry levels.
     pub priority_ptrs: [usize; 8],
     pub current_priority: usize,
+
+    /// Current decoded op.
     pub current_op: Option<Op>,
+
+    /// True if the current op yielded processing.
     pub op_yielded: bool,
+
+    /// True if the current op completed processing and we should advance to the next op.
     pub op_completed: bool,
+}
+
+#[derive(Copy, Clone, PartialEq)]
+pub enum SceneScriptMode {
+    Pc,
+    Snes,
 }
 
 pub struct SceneScript {
     index: usize,
+    mode: SceneScriptMode,
     data: Cursor<Vec<u8>>,
     memory: SceneScriptMemory,
     pub actor_scripts: Vec<SceneActorScript>,
@@ -59,7 +83,7 @@ pub struct SceneScript {
 }
 
 impl SceneScript {
-    pub fn new(index: usize, data: Vec<u8>, actor_scripts: Vec<SceneActorScript>) -> SceneScript {
+    pub fn new(index: usize, data: Vec<u8>, actor_scripts: Vec<SceneActorScript>, mode: SceneScriptMode) -> SceneScript {
         let mut memory = SceneScriptMemory::new();
 
         // Cats!
@@ -71,6 +95,7 @@ impl SceneScript {
 
         SceneScript {
             index,
+            mode,
             data: Cursor::new(data),
             memory,
             actor_scripts,
@@ -86,11 +111,11 @@ impl SceneScript {
 
     pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
-            'decoder: loop {
+            loop {
                 self.data.set_position(state.address);
 
-                if state.op_completed {
-                    state.current_op = Some(op_decode(&mut self.data));
+                if state.current_op.is_none() || state.op_completed {
+                    state.current_op = Some(op_decode(&mut self.data, self.mode));
                     state.address = self.data.position();
                 }
 
@@ -99,7 +124,7 @@ impl SceneScript {
 
                 if state.op_yielded {
                     state.op_completed = true;
-                    break 'decoder
+                    break;
                 }
             }
         }
@@ -107,21 +132,29 @@ impl SceneScript {
 
     pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
-            let mut op_count = 0;
-            'decoder: loop {
+
+            // Countdown until next time this actor's script needs to be processed.
+            if state.delay_counter > 0 {
+                state.delay_counter -= 1;
+                continue;
+            }
+            state.delay_counter = state.delay;
+
+            // Execute up to 5 instructions, unless one yields.
+            for _ in 0..5 {
                 self.data.set_position(state.address);
 
-                if state.op_completed {
-                    state.current_op = Some(op_decode(&mut self.data));
+                // Advance to the next op.
+                if state.current_op.is_none() || state.op_completed {
+                    state.current_op = Some(op_decode(&mut self.data, self.mode));
                     state.address = self.data.position();
                 }
 
                 (state.op_yielded, state.op_completed) = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
                 state.address = self.data.position();
 
-                op_count += 1;
-                if op_count >= state.ops_per_tick || state.op_yielded {
-                    break 'decoder;
+                if state.op_yielded {
+                    break;
                 }
             }
         }
@@ -159,7 +192,7 @@ impl SceneScript {
                 println!("  {}:", labels[&address]);
             }
 
-            let op = op_decode(&mut data);
+            let op = op_decode(&mut data, self.mode);
             println!("    0x{:04X} {:?}", address, op);
 
             address = data.position();
@@ -277,7 +310,7 @@ fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: usize
                 CharacterType::PC => index,
                 CharacterType::PCAsNPC => index,
                 CharacterType::NPC => index + 7,
-                CharacterType::Enemy => index + 256,
+                CharacterType::Enemy => index + 256, // todo another +7 for PC version, does it store more NPC sprites?
             };
 
             ctx.sprite_assets.load(&ctx.fs, real_index);
@@ -423,9 +456,14 @@ fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: usize
             (false, true)
         },
 
-        Op::SetScriptSpeed { speed } => {
-            state.ops_per_tick = speed;
+        Op::SetScriptDelay { delay } => {
+            state.delay = delay;
             (false, true)
+        },
+
+        Op::Wait { ticks } => {
+            state.delay_counter = ticks;
+            (true, true)
         },
 
         _ => (false, true),

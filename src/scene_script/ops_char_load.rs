@@ -1,6 +1,7 @@
 use std::io::Cursor;
-use byteorder::ReadBytesExt;
+use byteorder::{LittleEndian, ReadBytesExt};
 use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script::SceneScriptMode;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum CharacterType {
@@ -10,7 +11,7 @@ pub enum CharacterType {
     Enemy,
 }
 
-pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
+pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
         0x57 => Op::LoadCharacter {
             char_type: CharacterType::PC,
@@ -84,7 +85,11 @@ pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             battle_index: 0,
         },
         0x83 => {
-            let index = data.read_u8().unwrap() as usize;
+            let index = match mode {
+                SceneScriptMode::Snes => data.read_u8().unwrap() as usize,
+                SceneScriptMode::Pc => data.read_u16::<LittleEndian>().unwrap() as usize,
+            };
+            println!("{}", index);
             let bits = data.read_u8().unwrap();
             Op::LoadCharacter {
                 char_type: CharacterType::Enemy,

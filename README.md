@@ -39,7 +39,7 @@ When viewing scenes or worlds, the following keys are available:
 - `1` toggle rendering of layer 1
 - `2` toggle rendering of layer 2
 - `3` toggle rendering of layer 3
-- `4` toggle rendering of sprites (disabled by default, only displays some test sprites)
+- `4` toggle rendering of sprites
 - `5` toggle rendering of the map palette
 - `backspace` to dump information and debug data to `stdout` and `/debug_output`
 - `\` to write a screenshot of the internal render buffer to `debug_output/screenshot.bmp`

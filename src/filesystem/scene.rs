@@ -4,7 +4,7 @@ use byteorder::ReadBytesExt;
 use crate::destination::{Destination, Facing};
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
-use crate::scene_script::scene_script::{SceneActorScript, SceneScript};
+use crate::scene_script::scene_script::{SceneActorScript, SceneScript, SceneScriptMode};
 
 struct SceneHeader {
 
@@ -79,14 +79,19 @@ impl FileSystem {
             },
         };
 
-        if matches!(self.parse_mode, ParseMode::Snes) {
-            header.palette_anims_index = header.palette_index;
-            header.chip_anims_index = header.tileset_l12_index;
-            header.tileset_l12_assembly_index = header.tileset_l12_index;
-            header.tileset_l3_assembly_index = header.tileset_l3_index;
-        }
-        if matches!(self.parse_mode, ParseMode::Pc) {
-            header.tileset_l3_assembly_index = scene_index;
+        let script_mode;
+        match self.parse_mode {
+            ParseMode::Snes => {
+                header.palette_anims_index = header.palette_index;
+                header.chip_anims_index = header.tileset_l12_index;
+                header.tileset_l12_assembly_index = header.tileset_l12_index;
+                header.tileset_l3_assembly_index = header.tileset_l3_index;
+                script_mode = SceneScriptMode::Snes;
+            },
+            ParseMode::Pc => {
+                header.tileset_l3_assembly_index = scene_index;
+                script_mode = SceneScriptMode::Pc;
+            }
         }
 
         let tileset_l12 = self.read_scene_tileset_layer12(header.tileset_l12_index, header.tileset_l12_assembly_index, header.chip_anims_index);
@@ -96,7 +101,7 @@ impl FileSystem {
         let palette_anims = self.read_palette_anim_set(header.palette_anims_index);
         let exits = self.read_scene_exits(scene_index);
         let treasure = self.read_scene_treasure(scene_index);
-        let script = self.read_scene_script(header.script_index);
+        let script = self.read_scene_script(header.script_index, script_mode);
 
         // A disabled scroll mask must cover the entire map.
         if header.scroll_mask.left == 0x80 {
@@ -134,7 +139,7 @@ impl FileSystem {
         }
     }
 
-    pub fn read_scene_script(&self, script_index: usize) -> SceneScript {
+    pub fn read_scene_script(&self, script_index: usize, mode: SceneScriptMode) -> SceneScript {
         let mut data = self.backend.get_scene_script_data(script_index);
 
         let mut actor_scripts: Vec<SceneActorScript> = Vec::new();
@@ -151,7 +156,7 @@ impl FileSystem {
         let mut script_data = vec![0u8; data.get_ref().len() - header_size as usize - 1];
         data.read_exact(&mut script_data).unwrap();
 
-        SceneScript::new(script_index, script_data, actor_scripts)
+        SceneScript::new(script_index, script_data, actor_scripts, mode)
     }
 
     // Read exits from scenes.
