@@ -105,10 +105,16 @@ pub enum InputBinding {
 }
 
 /// Opcodes.
-pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
-    let op_byte = data.read_u8().unwrap();
+pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op> {
+    let op_byte = match data.read_u8() {
+        Ok(op_byte) => op_byte,
+        Err(_) => {
+            println!("Script execution past end of data at 0x{:04X}.", data.position());
+            return None;
+        }
+    };
 
-    match op_byte {
+    let op = match op_byte {
 
         // Function calls.
         0x02 | 0x03 | 0x04 | 0x05 | 0x06 | 0x07 => op_decode_call(op_byte, data),
@@ -170,14 +176,14 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
         0xF1 => {
             let bits = data.read_u8().unwrap();
             if bits == 0 {
-                return Op::ScreenColorMath {
+                Op::ScreenColorMath {
                     r: 0,
                     g: 0,
                     b: 0,
                     intensity: 0.0,
                     duration: 0.0,
                     mode: ColorMathMode::Additive,
-                }
+                };
             }
 
             let b = if bits & 0x80 > 0 { 255 } else { 0 };
@@ -381,7 +387,9 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
             println!("Decoding unimplemented opcode 0x{:02X} as NOP", op_byte);
             Op::NOP
         },
-    }
+    };
+
+    Some(op)
 }
 
 pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> ([u8; 32], usize) {

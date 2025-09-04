@@ -100,3 +100,7 @@ look wrong.
 2. SDL3 libraries are required to be in the path to be able to build and run it. Get the `SDL3.lib`, `SDL3.dll`, `SDL3_ttf.lib` and `SDL3_ttf.dll` development libraries for your platform from https://github.com/libsdl-org/SDL/releases
 3. Build and run a debug build using Cargo with `cargo run -- [parameters]`.
 4. Build and run an optimized release build with `cargo run -r -- [parameters]`.
+
+## Thanks to...
+
+- Mauron for help with scene script specifics.

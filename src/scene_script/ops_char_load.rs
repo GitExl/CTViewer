@@ -89,7 +89,6 @@ pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
                 SceneScriptMode::Snes => data.read_u8().unwrap() as usize,
                 SceneScriptMode::Pc => data.read_u16::<LittleEndian>().unwrap() as usize,
             };
-            println!("{}", index);
             let bits = data.read_u8().unwrap();
             Op::LoadCharacter {
                 char_type: CharacterType::Enemy,
