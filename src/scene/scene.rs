@@ -147,8 +147,6 @@ impl Scene {
     pub fn tick(&mut self, ctx: &mut Context, delta: f64) {
         self.map.tick(delta);
 
-        self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
-
         for (index, actor) in self.actors.iter_mut().enumerate() {
             if actor.flags.contains(ActorFlags::DISABLED) {
                 continue;
@@ -157,6 +155,8 @@ impl Scene {
             actor.tick(delta);
             ctx.sprites_states.tick(&ctx.sprite_assets, delta, index);
         }
+
+        self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
 
         self.tileset_l12.tick(delta);
         self.palette_anims.tick(delta, &mut self.palette.palette);

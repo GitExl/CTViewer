@@ -2,7 +2,7 @@ use bitflags::bitflags;
 use crate::sprites::sprite_renderer::SpritePriority;
 
 bitflags! {
-    #[derive(Clone, Default)]
+    #[derive(Clone, Copy, Default)]
     pub struct SceneTileFlags: u32 {
         const L1_TILE_ADD = 0x001;
         const L2_TILE_ADD = 0x002;
@@ -18,7 +18,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum SceneTileCollision {
     #[default]
     None,
@@ -66,7 +66,7 @@ pub enum SceneTileCollision {
     Invalid,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 pub enum SceneMoveDirection {
     #[default]
     North,
@@ -75,7 +75,7 @@ pub enum SceneMoveDirection {
     East,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 pub struct SceneTileProps {
     pub flags: SceneTileFlags,
     pub collision: SceneTileCollision,
@@ -97,6 +97,17 @@ pub struct SceneMap {
 }
 
 impl SceneMap {
+    pub fn get_props_at_coordinates(&self, x: f64, y: f64) -> Option<SceneTileProps> {
+        let tile_x = (x / 16.0).floor() as u32;
+        let tile_y = (y / 16.0).floor() as u32;
+        let index = (tile_y * self.props.width + tile_x) as usize;
+        if index < self.props.props.len() {
+            return Some(self.props.props[index])
+        }
+
+        None
+    }
+
     pub fn dump(&self) {
         println!("Scene map {}", self.index);
         println!("  {} x {} tiles", self.props.width, self.props.height);

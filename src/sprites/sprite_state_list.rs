@@ -18,7 +18,8 @@ pub struct SpriteState {
     pub anim_index: usize,
     pub anim_frame: usize,
     pub anim_timer: f64,
-    pub animating: bool,
+    pub anim_enabled: bool,
+    pub anim_loop_count: u32,
 }
 
 impl SpriteState {
@@ -38,7 +39,8 @@ impl SpriteState {
             anim_index: 0,
             anim_frame: 0,
             anim_timer: 0.0,
-            animating: false,
+            anim_enabled: false,
+            anim_loop_count: 0,
         }
     }
 
@@ -50,7 +52,7 @@ impl SpriteState {
         println!("  Priority top {:?}", self.priority_top);
         println!("  Priority bottom {:?}", self.priority_bottom);
         println!("  Palette offset {}", self.palette_offset);
-        println!("  Animation {}, frame {}, {}", self.anim_index, self.anim_frame, if self.animating { "enabled" } else { "disabled" });
+        println!("  Animation {}, frame {}, {}, {} loops", self.anim_index, self.anim_frame, if self.anim_enabled { "enabled" } else { "disabled" }, self.anim_loop_count);
         println!();
     }
 }
@@ -98,7 +100,8 @@ impl SpriteStateList {
         state.anim_index = anim_index;
         state.anim_frame = frame_index;
         state.anim_timer = 0.0;
-        state.animating = animate;
+        state.anim_enabled = animate;
+        state.anim_loop_count = 0;
     }
 
     pub fn set_direction(&mut self, assets: &SpriteAssets, actor_index: usize, direction: Direction) {
@@ -114,13 +117,13 @@ impl SpriteStateList {
     pub fn set_sprite_frame(&mut self, actor_index: usize, frame_index: usize) {
         let state = &mut self.states[actor_index];
         state.sprite_frame = frame_index;
-        state.animating = false;
+        state.anim_enabled = false;
     }
 
     // Updates sprite state.
     pub fn tick(&mut self, assets: &SpriteAssets, delta: f64, actor_index: usize) {
         let state = self.states.get_mut(actor_index).unwrap();
-        if !state.animating {
+        if !state.anim_enabled {
             return;
         }
 
@@ -145,6 +148,7 @@ impl SpriteStateList {
         state.anim_timer -= frame.duration;
         state.anim_frame += 1;
         if state.anim_frame >= anim.frames.len() {
+            state.anim_loop_count += 1;
             state.anim_frame = 0;
         }
         state.sprite_frame = anim.frames[state.anim_frame].sprite_frames[state.direction.to_index()];

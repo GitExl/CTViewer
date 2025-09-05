@@ -18,7 +18,7 @@ pub fn op_decode_animation(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             animation: DataSource::Immediate(data.read_u8().unwrap() as u32),
             wait: true,
             run: true,
-            loops: DataSource::Immediate(0),
+            loops: DataSource::Immediate(1),
         },
         // "Also writes 0 to object address 0x1780 instead of 1".
         0xAE => Op::Animate {

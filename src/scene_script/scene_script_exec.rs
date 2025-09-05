@@ -140,8 +140,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let x = x.get_u8(memory) as f64;
             let y = y.get_u8(memory) as f64;
 
-            actors[actor_index].x = x * 16.0 + 8.0;
-            actors[actor_index].y = y * 16.0 + 16.0;
+            actors[actor_index].move_to(x * 16.0 + 8.0, y * 16.0 + 16.0, true);
 
             // Set sprite priority from scene map properties.
             let tile_x = (actors[actor_index].x / 16.0) as u32;
@@ -169,16 +168,12 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let actor_index = actor.deref(this_actor);
             let x = x.get_u16(memory) as f64;
             let y = y.get_u16(memory) as f64;
-
-            actors[actor_index].x = x;
-            actors[actor_index].y = y + 1.0;
+            actors[actor_index].move_to(x, y + 1.0, true);
 
             // Set sprite priority from scene map properties.
-            let tile_x = (actors[actor_index].x / 16.0) as u32;
-            let tile_y = (actors[actor_index].y / 16.0 - 1.0) as u32;
-            let index = (tile_y * scene_map.props.width + tile_x) as usize;
-            if index < scene_map.props.props.len() {
-                if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
+            let props = scene_map.get_props_at_coordinates(actors[actor_index].x, actors[actor_index].y - 1.0);
+            if let Some(props) = props {
+                if let Some(sprite_priority) = props.sprite_priority {
                     actors[actor_index].sprite_priority_top = sprite_priority;
                     actors[actor_index].sprite_priority_bottom = sprite_priority;
                 }
@@ -215,16 +210,22 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
         Op::ActorSetSpeed { actor, speed } => {
             let actor_index = actor.deref(this_actor);
-            actors[actor_index].move_speed = speed.get_u8(memory) as f64 / 16.0;
+            actors[actor_index].move_speed = speed.get_u8(memory) as f64 / 32.0;
 
             (false, true)
         },
 
-        // todo loops, wait
-        Op::Animate { actor, animation, run, .. } => {
+        Op::Animate { actor, animation, run, loops, wait } => {
             let actor_index = actor.deref(this_actor);
             let anim_index = animation.get_u8(memory) as usize;
-            ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run);
+            let loops = loops.get_u8(memory) as u32;
+
+            let state = ctx.sprites_states.get_state(actor_index);
+            if state.anim_index != anim_index {
+                ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run);
+            } else if wait && loops < 0xFFFFFFFF && state.anim_loop_count <= loops {
+                return (false, true);
+            }
 
             (false, true)
         },
@@ -234,8 +235,8 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let actor = actors.get_mut(actor_index).unwrap();
             let distance = distance.get_u8(memory) as f64;
 
-            let mut dest_x = x.get_u8(memory) as f64 * 16.0 + 8.0;
-            let mut dest_y = y.get_u8(memory) as f64 * 16.0 + 16.0;
+            let dest_x = x.get_u8(memory) as f64 * 16.0 + 8.0;
+            let dest_y = y.get_u8(memory) as f64 * 16.0 + 16.0;
 
             if actor.flags.contains(ActorFlags::MOVE_ONTO_TILE) {
                 // todo move onto tile does what exactly?
@@ -244,27 +245,64 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 // todo move onto actor does what exactly?
             }
 
-            // Test distance and end move if close enough.
             let diff_x = dest_x - actor.x;
             let diff_y = dest_y - actor.y;
-            if diff_x.abs() <= actor.move_speed && diff_y.abs() <= actor.move_speed {
-                actor.x = dest_x;
-                actor.y = dest_y;
-                return (false, true);
+
+            // Set walking animation (assumed to be animation 1).
+            let state = ctx.sprites_states.get_state(actor_index);
+            if state.anim_index != 1 {
+                ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, 1, true);
             }
 
-            // todo set angle
+            // Actor must face the direction of movement.
+            if update_direction {
+                let mut angle = (diff_y.atan2(diff_x) * 180.0 / PI) - 45.0;
+                if angle < 0.0 {
+                    angle += 360.0;
+                }
+                let direction = match (angle / 90.0).floor() as u32 {
+                    0 => Direction::Down,
+                    1 => Direction::Left,
+                    2 => Direction::Up,
+                    3 => Direction::Right,
+                    _ => Direction::Up,
+                };
+                actor.direction = direction;
+                ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
+            }
+
             // todo keep distance
             // todo animated does what?
 
-            // Calculate steps needed based on the longest side and move one step.
-            let step_count = if diff_x.abs() > diff_y.abs() {
+            // Calculate steps needed based on the longest side.
+            let mut step_count = if diff_x.abs() > diff_y.abs() {
                 (diff_x / actor.move_speed).abs()
             } else {
                 (diff_y / actor.move_speed).abs()
             };
-            actor.x += diff_x / step_count;
-            actor.y += diff_y / step_count;
+
+            // Almost there, end the movement.
+            if step_count <= 2.0 {
+                actor.x = dest_x;
+                actor.y = dest_y;
+                actor.set_velocity(0.0, 0.0);
+                return (false, true);
+            }
+
+            // Slow down at the end of fast movements.
+            if actor.move_speed > 1.0 && step_count < 8.0 {
+                step_count += 4.0;
+            }
+            actor.set_velocity(diff_x / step_count, diff_y / step_count);
+
+            // Set sprite priority from scene map properties.
+            let props = scene_map.get_props_at_coordinates(actor.x, actor.y - 1.0);
+            if let Some(props) = props {
+                if let Some(sprite_priority) = props.sprite_priority {
+                    actor.sprite_priority_top = sprite_priority;
+                    actor.sprite_priority_bottom = sprite_priority;
+                }
+            }
 
             (true, false)
         },
@@ -287,12 +325,12 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 for chip_y in 0..bottom - top {
                     for chip_x in 0..right - left {
 
-                        let src_chip_x =  chip_x + left;
-                        let src_chip_y =  chip_y + top;
+                        let src_chip_x = chip_x + left;
+                        let src_chip_y = chip_y + top;
                         let src_chip_index = (src_chip_x + src_chip_y * layer.chip_width) as usize;
 
-                        let dest_chip_x =  chip_x + dest_x;
-                        let dest_chip_y =  chip_y + dest_y;
+                        let dest_chip_x = chip_x + dest_x;
+                        let dest_chip_y = chip_y + dest_y;
                         let dest_chip_index = (dest_chip_x + dest_chip_y * layer.chip_width) as usize;
 
                         layer.chips[dest_chip_index] = layer.chips[src_chip_index];

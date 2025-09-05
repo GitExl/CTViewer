@@ -73,6 +73,9 @@ pub struct Actor {
     lerp_x: f64,
     lerp_y: f64,
 
+    vel_x: f64,
+    vel_y: f64,
+
     pub sprite_priority_top: SpritePriority,
     pub sprite_priority_bottom: SpritePriority,
     pub class: Option<ActorClass>,
@@ -95,12 +98,15 @@ impl Actor {
             last_x: 0.0,
             last_y: 0.0,
 
+            vel_x: 0.0,
+            vel_y: 0.0,
+
             sprite_priority_top: SpritePriority::default(),
             sprite_priority_bottom: SpritePriority::default(),
             class: None,
             player_index: None,
             direction: Direction::default(),
-            move_speed: 1.0,
+            move_speed: 0.5,
             flags: ActorFlags::empty(),
             battle_index: 0,
         }
@@ -109,6 +115,9 @@ impl Actor {
     pub fn tick(&mut self, _delta: f64) {
         self.last_x = self.x;
         self.last_y = self.y;
+
+        self.x += self.vel_x;
+        self.y += self.vel_y;
     }
 
     pub fn lerp(&mut self, lerp: f64) {
@@ -117,12 +126,32 @@ impl Actor {
     }
 
     pub fn update_sprite_state(&self, sprite_state: &mut SpriteState) {
-        sprite_state.x = self.x;
-        sprite_state.y = self.y;
+        sprite_state.x = self.lerp_x;
+        sprite_state.y = self.lerp_y;
         sprite_state.direction = self.direction;
         sprite_state.priority_top = self.sprite_priority_top;
         sprite_state.priority_bottom = self.sprite_priority_bottom;
         sprite_state.enabled = self.flags.contains(ActorFlags::VISIBLE);
+    }
+
+    pub fn move_to(&mut self, x: f64, y: f64, warp: bool) {
+        self.x = x;
+        self.y = y;
+
+        if warp {
+            self.last_x = x;
+            self.last_y = y;
+        }
+    }
+
+    pub fn move_by(&mut self, x: f64, y: f64) {
+        self.x += x;
+        self.y += y;
+    }
+
+    pub fn set_velocity(&mut self, vel_x: f64, vel_y: f64) {
+        self.vel_x = vel_x;
+        self.vel_y = vel_y;
     }
 
     pub fn dump(&self, ctx: &Context) {
