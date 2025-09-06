@@ -32,23 +32,23 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             result: DataSource::for_global_memory(data.read_u8().unwrap() as usize),
         },
 
-        // Disable and hide another actor.
+        // Disable script processing and hide another actor.
         0x0A => Op::ActorUpdateFlags {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::DISABLED,
+            set: ActorFlags::SCRIPT_DISABLED,
             remove: ActorFlags::RENDERED,
         },
 
-        // Disable/enable script execution.
+        // Disable/enable script processing.
         0x0B => Op::ActorUpdateFlags {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::DISABLED,
+            set: ActorFlags::SCRIPT_DISABLED,
             remove: ActorFlags::empty(),
         },
         0x0C => Op::ActorUpdateFlags {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             set: ActorFlags::empty(),
-            remove: ActorFlags::DISABLED,
+            remove: ActorFlags::SCRIPT_DISABLED,
         },
 
         // Visibility/rendered.
@@ -104,17 +104,22 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x84 => {
             let bits = data.read_u8().unwrap();
             let mut flags_set = ActorFlags::empty();
+            let mut flags_remove = ActorFlags::empty();
             if bits & 0x01 > 0 {
                 flags_set |= ActorFlags::SOLID;
+            } else {
+                flags_remove |= ActorFlags::SOLID;
             }
             if bits & 0x02 > 0 {
                 flags_set |= ActorFlags::PUSHABLE;
+            } else {
+                flags_remove |= ActorFlags::PUSHABLE;
             }
 
             Op::ActorUpdateFlags {
                 actor: ActorRef::This,
                 set: flags_set,
-                remove: flags_set.complement(),
+                remove: flags_remove,
             }
         },
 

@@ -118,7 +118,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             ctx.sprite_assets.load(&ctx.fs, real_index);
 
             actors[this_actor].battle_index = battle_index;
-            actors[this_actor].flags |= ActorFlags::RENDERED | ActorFlags::VISIBLE;
+            actors[this_actor].flags |= ActorFlags::RENDERED | ActorFlags::VISIBLE | ActorFlags::SOLID;
             if is_static {
                 actors[this_actor].flags |= ActorFlags::BATTLE_STATIC;
             }
@@ -188,7 +188,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             actors[actor_index].direction = direction;
             ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
 
-            (false, true)
+            (true, true)
         },
 
         Op::ActorSetSpriteFrame { actor, frame } => {
@@ -248,6 +248,11 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let diff_x = dest_x - actor.x;
             let diff_y = dest_y - actor.y;
 
+            // We're there, end the movement.
+            if  diff_x.abs() < actor.move_speed && diff_y.abs() < actor.move_speed && actor.stop_at.is_none() {
+                return (false, true);
+            }
+
             // Set walking animation (assumed to be animation 1).
             let state = ctx.sprites_states.get_state(actor_index);
             if state.anim_index != 1 {
@@ -281,21 +286,15 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 (diff_y / actor.move_speed).abs()
             };
 
-            // Almost there, end the movement.
-            if step_count <= 2.0 {
-                actor.x = dest_x;
-                actor.y = dest_y;
-                actor.set_velocity(0.0, 0.0);
-                return (false, true);
-            }
-
             // Slow down at the end of fast movements.
             if actor.move_speed > 1.0 && step_count < 8.0 {
                 step_count += 4.0;
             }
             actor.set_velocity(diff_x / step_count, diff_y / step_count);
+            actor.stop_at = Some((dest_x, dest_y));
 
             // Set sprite priority from scene map properties.
+            // todo move to actor tick & set pos
             let props = scene_map.get_props_at_coordinates(actor.x, actor.y - 1.0);
             if let Some(props) = props {
                 if let Some(sprite_priority) = props.sprite_priority {

@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use crate::Context;
+use crate::scene_script::scene_script::{ActorScriptState, SceneActorScript};
 use crate::sprites::sprite_state_list::SpriteState;
 use crate::sprites::sprite_renderer::SpritePriority;
 
@@ -47,7 +48,7 @@ impl Direction {
 bitflags! {
     #[derive(Clone, Default, Copy, Debug, PartialEq)]
     pub struct ActorFlags: u32 {
-        const DISABLED = 0x0001;
+        const SCRIPT_DISABLED = 0x0001;
         const VISIBLE = 0x0002;
         const RENDERED = 0x0004;
         const SOLID = 0x0008;
@@ -76,6 +77,8 @@ pub struct Actor {
     vel_x: f64,
     vel_y: f64,
 
+    pub stop_at: Option<(f64, f64)>,
+
     pub sprite_priority_top: SpritePriority,
     pub sprite_priority_bottom: SpritePriority,
     pub class: Option<ActorClass>,
@@ -101,6 +104,8 @@ impl Actor {
             vel_x: 0.0,
             vel_y: 0.0,
 
+            stop_at: None,
+
             sprite_priority_top: SpritePriority::default(),
             sprite_priority_bottom: SpritePriority::default(),
             class: None,
@@ -118,6 +123,16 @@ impl Actor {
 
         self.x += self.vel_x;
         self.y += self.vel_y;
+
+        if let Some(stop_at) = self.stop_at {
+            let diff_x = (self.x - stop_at.0).abs();
+            let diff_y = (self.y - stop_at.1).abs();
+            if diff_x < self.move_speed && diff_y < self.move_speed {
+                self.move_to(stop_at.0, stop_at.1, false);
+                self.set_velocity(0.0, 0.0);
+                self.stop_at = None;
+            }
+        }
     }
 
     pub fn lerp(&mut self, lerp: f64) {
@@ -154,7 +169,7 @@ impl Actor {
         self.vel_y = vel_y;
     }
 
-    pub fn dump(&self, ctx: &Context) {
+    pub fn dump(&self, ctx: &Context, script_state: &ActorScriptState) {
         println!("Actor {}", self.index);
         if let Some(class) = self.class {
             println!("  Class {:?}", class);
@@ -171,6 +186,7 @@ impl Actor {
         println!();
 
         ctx.sprites_states.get_state(self.index).dump();
+        script_state.dump();
     }
 
 }

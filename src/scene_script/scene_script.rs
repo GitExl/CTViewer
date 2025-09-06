@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io::Cursor;
-use crate::actor::Actor;
+use crate::actor::{Actor, ActorFlags};
 use crate::Context;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
@@ -121,8 +121,12 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_until_yield(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
+    pub fn run_until_return(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
+            if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                continue;
+            }
+
             loop {
                 self.data.set_position(state.address);
 
@@ -134,9 +138,11 @@ impl SceneScript {
                 (state.op_yielded, state.op_completed) = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
                 self.data.set_position(state.address);
 
-                if state.op_yielded {
-                    state.op_completed = true;
-                    break;
+                if let Some(op) = state.current_op {
+                    if op == Op::Return {
+                        state.op_completed = true;
+                        break;
+                    }
                 }
             }
         }
@@ -144,6 +150,9 @@ impl SceneScript {
 
     pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for (state_index, state) in self.script_states.iter_mut().enumerate() {
+            if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                continue;
+            }
 
             // Countdown until next time this actor's script needs to be processed.
             if state.delay_counter > 0 {

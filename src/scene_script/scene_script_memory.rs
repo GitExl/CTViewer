@@ -1,6 +1,11 @@
 use crate::actor::ActorFlags;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 
+// 7E010F == toggles black bar for extra SNES vblank
+// 7E2980	1	FF	PC1
+// 7E2981	1	FF	PC2
+// 7E2982	1	FF	PC3
+
 pub struct SceneScriptMemory {
     pub temp: [u8; 0x200],
     pub global: [u8; 0x200],
@@ -35,6 +40,16 @@ impl SceneScriptMemory {
             return self.global[address - 0x7F0000];
         } else if address >= 0x7F0200 && address < 0x7F0400 {
             return self.local[address - 0x7F0200];
+
+        // PC1
+        } else if address == 0x7E2980 {
+            return 1;
+        // PC2
+        } else if address == 0x7E2981 {
+            return 0;
+        // PC2
+        } else if address == 0x7E2982 {
+            return 0;
         }
 
         println!("Unhandled scene script u8 memory read at 0x{:06X}.", address);

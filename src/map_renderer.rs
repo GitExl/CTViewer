@@ -14,7 +14,7 @@ use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_renderer::{render_sprite, SpritePriority};
-use crate::sprites::sprite_state_list::SpriteStateList;
+use crate::sprites::sprite_state_list::{SpriteState, SpriteStateList};
 use crate::tileset::TileSet;
 
 // Data used in a main or subscreen render pass.
@@ -325,10 +325,18 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 }
 
 fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, camera: &Camera, sprite_assets: &SpriteAssets) {
-    for sprite_state in sprite_states.get_all().iter().rev() {
+
+    // Sort sprites by Y coordinate.
+    let mut sorted: Vec<&SpriteState> = Vec::new();
+    for sprite_state in sprite_states.get_all().iter() {
         if !sprite_state.enabled {
             continue;
         }
+        sorted.push(&sprite_state);
+    }
+    sorted.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+
+    for sprite_state in sorted.iter() {
         let render_top = sprite_state.priority_top == priority;
         let render_bottom = sprite_state.priority_bottom == priority;
         if render_top || render_bottom {

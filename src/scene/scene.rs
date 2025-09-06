@@ -92,7 +92,7 @@ impl Scene {
         }
 
         // Run first actor script until it yields (first return op).
-        self.script.run_until_yield(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
+        self.script.run_until_return(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
     }
 
     pub fn dump(&self, ctx: &Context) {
@@ -147,16 +147,12 @@ impl Scene {
     pub fn tick(&mut self, ctx: &mut Context, delta: f64) {
         self.map.tick(delta);
 
-        for (index, actor) in self.actors.iter_mut().enumerate() {
-            if actor.flags.contains(ActorFlags::DISABLED) {
-                continue;
-            }
+        self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
 
+        for (index, actor) in self.actors.iter_mut().enumerate() {
             actor.tick(delta);
             ctx.sprites_states.tick(&ctx.sprite_assets, delta, index);
         }
-
-        self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
 
         self.tileset_l12.tick(delta);
         self.palette_anims.tick(delta, &mut self.palette.palette);

@@ -242,7 +242,7 @@ impl GameStateTrait for GameStateScene {
                     let index = self.get_actor_at(self.mouse_x, self.mouse_y);
                     if let Some(index) = index {
                         let actor = &self.scene.actors[index];
-                        actor.dump(ctx);
+                        actor.dump(ctx, &self.scene.script.script_states[index]);
                     }
 
                     if index.is_none() {
