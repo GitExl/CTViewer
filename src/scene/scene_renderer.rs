@@ -1,5 +1,5 @@
 use std::path::Path;
-
+use crate::actor::Actor;
 use crate::camera::Camera;
 use crate::scene::scene::{Scene, SceneTreasure};
 use crate::scene::scene::SceneExit;
@@ -10,7 +10,7 @@ use crate::scene::scene_map::SceneTileFlags;
 use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
-use crate::software_renderer::draw::draw_box;
+use crate::software_renderer::draw::{draw_box, draw_line};
 use crate::software_renderer::palette::render_palette;
 use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_renderer::SpritePriority;
@@ -26,6 +26,7 @@ pub enum SceneDebugLayer {
     ZPlane,
     Exits,
     Treasure,
+    Actors,
 }
 
 pub struct SceneRenderer {
@@ -52,6 +53,8 @@ impl SceneRenderer {
             self.render_debug_exits(&scene.exits, &camera, surface);
         } else if self.debug_layer == SceneDebugLayer::Treasure {
             self.render_debug_treasure(&scene.treasure, &camera, surface);
+        } else if self.debug_layer == SceneDebugLayer::Actors {
+            self.render_debug_actors(&scene.actors, &camera, surface);
         }
 
         if self.debug_palette {
@@ -72,6 +75,15 @@ impl SceneRenderer {
             let x = item.tile_x * 16 - camera.lerp_x.floor() as i32;
             let y = item.tile_y * 16 - camera.lerp_y.floor() as i32;
             draw_box(surface, Rect::new(x, y, x + 16, y + 16), [0, 255, 0, 127], SurfaceBlendOps::Blend);
+        }
+    }
+
+    fn render_debug_actors(&mut self, actors: &Vec<Actor>, camera: &Camera, surface: &mut Surface) {
+        for actor in actors {
+            let x = (actor.x - camera.lerp_x).floor() as i32;
+            let y = (actor.y - camera.lerp_y).floor() as i32;
+            draw_box(surface, Rect::new(x - 8, y - 16, x + 8, y), [0, 255, 255, 127], SurfaceBlendOps::Blend);
+            draw_line(surface, x, y, x + (actor.vel_x * 8.0) as i32, y + (actor.vel_y * 8.0) as i32, [255, 0, 0, 255], SurfaceBlendOps::Copy);
         }
     }
 

@@ -1,6 +1,8 @@
 use crate::actor::ActorFlags;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 
+// 110 = 1=disable menu
+// 111 = 1=disable pause
 // 7E010F == toggles black bar for extra SNES vblank
 // 7E2980	1	FF	PC1
 // 7E2981	1	FF	PC2
@@ -28,6 +30,10 @@ impl SceneScriptMemory {
             self.global[address - 0x7F0000] = value;
         } else if address >= 0x7F0200 && address < 0x7F0400 {
             self.local[address - 0x7F0200] = value;
+        } else if address == 0x110 {
+            println!("Menu {}.", if value == 0 { "enabled" } else { "disabled" });
+        } else if address == 0x111 {
+            println!("Pause {}.", if value == 0 { "enabled" } else { "disabled" });
         } else {
             println!("Unhandled scene script u8 memory write of 0x{:02X} to 0x{:06X}.", value, address)
         }

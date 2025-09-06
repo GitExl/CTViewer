@@ -1,6 +1,6 @@
 use bitflags::bitflags;
 use crate::Context;
-use crate::scene_script::scene_script::{ActorScriptState, SceneActorScript};
+use crate::scene_script::scene_script::ActorScriptState;
 use crate::sprites::sprite_state_list::SpriteState;
 use crate::sprites::sprite_renderer::SpritePriority;
 
@@ -74,8 +74,8 @@ pub struct Actor {
     lerp_x: f64,
     lerp_y: f64,
 
-    vel_x: f64,
-    vel_y: f64,
+    pub vel_x: f64,
+    pub vel_y: f64,
 
     pub stop_at: Option<(f64, f64)>,
 

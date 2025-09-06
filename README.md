@@ -62,6 +62,7 @@ When viewing scenes, the following keys are available:
 - `m` render sprite priority data
 - `,` render exits
 - `.` render treasures
+- `/` render actors
 
 Information about exits, treasure and actors is displayed when the mouse is over them. You can move to another scene
 or world by clicking on exits. Clicking on an actor will dump debug information about them to `stdout`.

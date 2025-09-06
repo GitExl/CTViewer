@@ -144,7 +144,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
             // Set sprite priority from scene map properties.
             let tile_x = (actors[actor_index].x / 16.0) as u32;
-            let tile_y = (actors[actor_index].y / 16.0 - 1.0) as u32;
+            let tile_y = (actors[actor_index].y / 16.0) as u32;
             let index = (tile_y * scene_map.props.width + tile_x) as usize;
             if index < scene_map.props.props.len() {
                 if let Some(sprite_priority) = scene_map.props.props[index].sprite_priority {
@@ -168,10 +168,10 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let actor_index = actor.deref(this_actor);
             let x = x.get_u16(memory) as f64;
             let y = y.get_u16(memory) as f64;
-            actors[actor_index].move_to(x, y + 1.0, true);
+            actors[actor_index].move_to(x, y, true);
 
             // Set sprite priority from scene map properties.
-            let props = scene_map.get_props_at_coordinates(actors[actor_index].x, actors[actor_index].y - 1.0);
+            let props = scene_map.get_props_at_coordinates(actors[actor_index].x, actors[actor_index].y);
             if let Some(props) = props {
                 if let Some(sprite_priority) = props.sprite_priority {
                     actors[actor_index].sprite_priority_top = sprite_priority;
@@ -230,10 +230,10 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             (false, true)
         },
 
-        Op::ActorMoveTo { actor, x, y, animated, distance, update_direction } => {
+        Op::ActorMoveTo { actor, x, y, distance: _, update_direction, animated: _ } => {
             let actor_index = actor.deref(this_actor);
             let actor = actors.get_mut(actor_index).unwrap();
-            let distance = distance.get_u8(memory) as f64;
+            // let distance = distance.get_u8(memory) as f64;
 
             let dest_x = x.get_u8(memory) as f64 * 16.0 + 8.0;
             let dest_y = y.get_u8(memory) as f64 * 16.0 + 16.0;
@@ -295,7 +295,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
             // Set sprite priority from scene map properties.
             // todo move to actor tick & set pos
-            let props = scene_map.get_props_at_coordinates(actor.x, actor.y - 1.0);
+            let props = scene_map.get_props_at_coordinates(actor.x, actor.y);
             if let Some(props) = props {
                 if let Some(sprite_priority) = props.sprite_priority {
                     actor.sprite_priority_top = sprite_priority;

@@ -222,6 +222,10 @@ impl GameStateTrait for GameStateScene {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Treasure;
                         println!("Debug layer for treasure.");
                     },
+                    Some(Keycode::Slash) => {
+                        self.scene_renderer.debug_layer = SceneDebugLayer::Actors;
+                        println!("Debug layer for actors.");
+                    },
 
                     _ => {},
                 }
