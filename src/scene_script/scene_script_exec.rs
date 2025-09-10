@@ -1,5 +1,5 @@
 use std::f64::consts::PI;
-use crate::actor::{Actor, ActorFlags, Direction};
+use crate::actor::{Actor, ActorFlags, DebugSprite, Direction, ActorTask};
 use crate::Context;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
@@ -130,7 +130,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let state = &mut ctx.sprites_states.get_state_mut(this_actor);
             state.enabled = true;
             state.sprite_index = real_index;
-            ctx.sprites_states.set_animation(&ctx.sprite_assets, this_actor, 0, true);
+            ctx.sprites_states.set_animation(&ctx.sprite_assets, this_actor, 0, true, actors[this_actor].direction);
 
             (false, true)
         },
@@ -140,7 +140,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let x = x.get_u8(memory) as f64;
             let y = y.get_u8(memory) as f64;
 
-            actors[actor_index].move_to(x * 16.0 + 8.0, y * 16.0 + 16.0, true);
+            actors[actor_index].move_to(x * 16.0 + 8.0, y * 16.0 + 16.0, true, &scene_map);
 
             // Set sprite priority from scene map properties.
             let tile_x = (actors[actor_index].x / 16.0) as u32;
@@ -168,7 +168,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let actor_index = actor.deref(this_actor);
             let x = x.get_u16(memory) as f64;
             let y = y.get_u16(memory) as f64;
-            actors[actor_index].move_to(x, y, true);
+            actors[actor_index].move_to(x, y, true, &scene_map);
 
             // Set sprite priority from scene map properties.
             let props = scene_map.get_props_at_coordinates(actors[actor_index].x, actors[actor_index].y);
@@ -210,8 +210,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
         Op::ActorSetSpeed { actor, speed } => {
             let actor_index = actor.deref(this_actor);
-            actors[actor_index].move_speed = speed.get_u8(memory) as f64 / 32.0;
-
+            actors[actor_index].move_speed = (speed.get_u8(memory).saturating_sub(1) as f64) / 16.0;
             (false, true)
         },
 
@@ -221,89 +220,42 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             let loops = loops.get_u8(memory) as u32;
 
             let state = ctx.sprites_states.get_state(actor_index);
+
+            // Start animating.
             if state.anim_index != anim_index {
-                ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run);
+                ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run, actors[actor_index].direction);
+                return if wait {
+                    actors[actor_index].debug_sprite = DebugSprite::Animating;
+                    (true, false)
+                } else {
+                    (false, true)
+                }
+
+            // Wait for animation to complete.
             } else if wait && loops < 0xFFFFFFFF && state.anim_loop_count <= loops {
-                return (false, true);
+                return (true, false);
             }
 
+            // Wait completed.
+            actors[actor_index].debug_sprite = DebugSprite::None;
             (false, true)
         },
 
-        Op::ActorMoveTo { actor, x, y, distance: _, update_direction, animated: _ } => {
+        Op::ActorMoveAtAngle { actor, angle, steps, update_direction, animated } => {
             let actor_index = actor.deref(this_actor);
-            let actor = actors.get_mut(actor_index).unwrap();
-            // let distance = distance.get_u8(memory) as f64;
+            let angle = angle.get_u8(memory) as f64 * 1.40625;
+            let steps = steps.get_u8(memory) as u32;
 
-            let dest_x = x.get_u8(memory) as f64 * 16.0 + 8.0;
-            let dest_y = y.get_u8(memory) as f64 * 16.0 + 16.0;
+            handle_vector_movement_op(ctx, actor_index, actors, angle, steps, update_direction, animated)
+        },
 
-            if actor.flags.contains(ActorFlags::MOVE_ONTO_TILE) {
-                // todo move onto tile does what exactly?
-            }
-            if actor.flags.contains(ActorFlags::MOVE_ONTO_ACTOR) {
-                // todo move onto actor does what exactly?
-            }
+        Op::ActorMoveTo { actor, x, y, steps, update_direction, animated } => {
+            let actor_index = actor.deref(this_actor);
+            let dest_tile_x = x.get_u8(memory) as i32;
+            let dest_tile_y = y.get_u8(memory) as i32;
+            let steps = if let Some(steps) = steps { Some(steps.get_u8(memory) as u32) } else { None };
 
-            let diff_x = dest_x - actor.x;
-            let diff_y = dest_y - actor.y;
-
-            // We're there, end the movement.
-            if  diff_x.abs() < actor.move_speed && diff_y.abs() < actor.move_speed && actor.stop_at.is_none() {
-                return (false, true);
-            }
-
-            // Set walking animation (assumed to be animation 1).
-            let state = ctx.sprites_states.get_state(actor_index);
-            if state.anim_index != 1 {
-                ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, 1, true);
-            }
-
-            // Actor must face the direction of movement.
-            if update_direction {
-                let mut angle = (diff_y.atan2(diff_x) * 180.0 / PI) - 45.0;
-                if angle < 0.0 {
-                    angle += 360.0;
-                }
-                let direction = match (angle / 90.0).floor() as u32 {
-                    0 => Direction::Down,
-                    1 => Direction::Left,
-                    2 => Direction::Up,
-                    3 => Direction::Right,
-                    _ => Direction::Up,
-                };
-                actor.direction = direction;
-                ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
-            }
-
-            // todo keep distance
-            // todo animated does what?
-
-            // Calculate steps needed based on the longest side.
-            let mut step_count = if diff_x.abs() > diff_y.abs() {
-                (diff_x / actor.move_speed).abs()
-            } else {
-                (diff_y / actor.move_speed).abs()
-            };
-
-            // Slow down at the end of fast movements.
-            if actor.move_speed > 1.0 && step_count < 8.0 {
-                step_count += 4.0;
-            }
-            actor.set_velocity(diff_x / step_count, diff_y / step_count);
-            actor.stop_at = Some((dest_x, dest_y));
-
-            // Set sprite priority from scene map properties.
-            // todo move to actor tick & set pos
-            let props = scene_map.get_props_at_coordinates(actor.x, actor.y);
-            if let Some(props) = props {
-                if let Some(sprite_priority) = props.sprite_priority {
-                    actor.sprite_priority_top = sprite_priority;
-                    actor.sprite_priority_bottom = sprite_priority;
-                }
-            }
-
-            (true, false)
+            handle_tile_movement_op(ctx, state, actor_index, actors, dest_tile_x, dest_tile_y, steps, update_direction, animated)
         },
 
         // Copy tiles around on the map.
@@ -344,15 +296,189 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
         Op::SetScriptDelay { delay } => {
             state.delay = delay;
+            state.delay_counter = delay;
             (false, true)
         },
 
-        Op::Wait { ticks } => {
-            // Convert from 1/16th intervals to 1/60th ticks.
-            state.delay_counter = (ticks as f64 * 3.75).ceil() as u32;
-            (true, true)
+        Op::Wait { actor, ticks } => {
+            let actor_index = actor.deref(this_actor);
+            let actor = actors.get_mut(actor_index).unwrap();
+
+            // Start counting.
+            if state.pause_counter == 0 {
+                state.pause_counter = 1;
+                actor.debug_sprite = DebugSprite::Waiting;
+                return (true, false);
+
+            // Count one more tick.
+            } else if state.pause_counter < ticks {
+                state.pause_counter += 1;
+                return (true, false);
+            }
+
+            // Finished counting.
+            state.pause_counter = 0;
+            actor.debug_sprite = DebugSprite::None;
+            actor.task = ActorTask::None;
+            (false, true)
         },
 
         _ => (false, true),
     }
+}
+
+fn handle_tile_movement_op(ctx: &mut Context, state: &mut ActorScriptState, actor_index: usize, actors: &mut Vec<Actor>, tile_x: i32, tile_y: i32, steps: Option<u32>, update_direction: bool, animated: bool) -> OpResult {
+    let actor = actors.get_mut(actor_index).unwrap();
+
+    // Only match tile movements.
+    if let ActorTask::MoveToTile { steps, .. } = actor.task {
+        // Wait for destination to be reached.
+        if steps > 0 {
+            return (true, false);
+        }
+    }
+
+    let actor_tile_x = (actor.x / 16.0) as i32;
+    let actor_tile_y = (actor.y / 16.0) as i32;
+
+    let mut move_x = 0.0;
+    let mut move_y = 0.0;
+    let mut move_steps = 0;
+
+    // Destination tile was reached?
+    if actor_tile_x == tile_x && actor_tile_y == tile_y {
+
+        // If enabled, slowly move the actor to the bottom center of the tile, x first.
+        if actor.flags.contains(ActorFlags::MOVE_ONTO_TILE) {
+            let x = actor.x as i32;
+            let y = actor.y as i32;
+            let dest_x = (tile_x as f64 * 16.0 + 8.0) as i32;
+            let dest_y = (tile_y as f64 * 16.0 + 15.0) as i32;
+
+            // Destination reached, snap to whole pixel coordinate.
+            if x == dest_x && y == dest_y {
+                actor.x = dest_x as f64;
+                actor.y = dest_y as f64;
+
+            // Move on x-axis first.
+            } else if x != dest_x {
+                (move_x, move_y) = (
+                    (dest_x - x).signum() as f64 * 1.0,
+                    0.0,
+                );
+                move_steps = 1;
+
+            // Move on y-axis last.
+            } else {
+                (move_x, move_y) = (
+                    0.0,
+                    (dest_y - y).signum() as f64 * 1.0,
+                );
+                move_steps = 1;
+            }
+        }
+
+    // (Re)calculate the destination.
+    } else {
+
+        // Move towards the destination tile.
+        let angle = (tile_y as f64 - actor_tile_y as f64).atan2(tile_x as f64 - actor_tile_x as f64);
+        (move_x, move_y) = (
+            actor.move_speed * angle.cos(),
+            actor.move_speed * angle.sin(),
+        );
+
+        // Script speed is the number of movement steps, or an immediate value if set.
+        move_steps = if let Some(steps) = steps {
+            steps
+        } else {
+            state.delay
+        };
+    }
+
+    // No more steps to be taken, complete op.
+    if move_steps == 0 {
+        if animated {
+            ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, 0, true, actor.direction);
+        }
+        actor.task = ActorTask::None;
+        actor.debug_sprite = DebugSprite::None;
+        return (false, true);
+    }
+
+    actor.task = ActorTask::MoveToTile {
+        tile_x, tile_y,
+        move_x, move_y,
+        steps: move_steps,
+    };
+    actor.debug_sprite = DebugSprite::Moving;
+
+    if update_direction {
+        actor.face_towards(actor.x + move_x, actor.y + move_y);
+    }
+
+    if animated {
+
+        // Player characters have a separate run animation.
+        let is_pc = actor.player_index.is_some();
+        let anim_index = if is_pc && move_x + move_y >= 2.0 {
+            6
+        } else {
+            1
+        };
+        ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, true, actor.direction);
+    }
+
+    (true, false)
+}
+
+fn handle_vector_movement_op(ctx: &mut Context, actor_index: usize, actors: &mut Vec<Actor>, angle: f64, steps: u32, update_direction: bool, animated: bool) -> OpResult {
+    let actor = actors.get_mut(actor_index).unwrap();
+
+    // Only match angle movements.
+    if let ActorTask::MoveByAngle { steps, .. } = actor.task {
+
+        // Wait for destination to be reached.
+        if steps > 0 {
+            return (true, false);
+        }
+
+        // No more steps to be taken, complete op.
+        if animated {
+            ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, 0, true, actor.direction);
+        }
+        actor.task = ActorTask::None;
+        actor.debug_sprite = DebugSprite::None;
+        return (false, true);
+    }
+
+    // Calculate the movement vector.
+    let radians = angle * (PI / 180.0);
+    let move_x = actor.move_speed * radians.cos();
+    let move_y = actor.move_speed * radians.sin();
+
+    actor.task = ActorTask::MoveByAngle {
+        angle,
+        move_x, move_y,
+        steps,
+    };
+    actor.debug_sprite = DebugSprite::Moving;
+
+    if update_direction {
+        actor.face_towards(actor.x + move_x, actor.y + move_y);
+    }
+
+    if animated {
+
+        // Player characters have a separate run animation.
+        let is_pc = actor.player_index.is_some();
+        let anim_index = if is_pc && move_x + move_y >= 2.0 {
+            6
+        } else {
+            1
+        };
+        ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, true, actor.direction);
+    }
+
+    (true, false)
 }

@@ -1,5 +1,5 @@
 use std::path::Path;
-use crate::actor::Actor;
+use crate::actor::{Actor, DebugSprite, ActorTask};
 use crate::camera::Camera;
 use crate::scene::scene::{Scene, SceneTreasure};
 use crate::scene::scene::SceneExit;
@@ -31,6 +31,7 @@ pub enum SceneDebugLayer {
 
 pub struct SceneRenderer {
     pub debug_tiles: Surface,
+    pub debug_sprites: Surface,
     pub debug_layer: SceneDebugLayer,
     pub debug_palette: bool,
 }
@@ -38,6 +39,7 @@ pub struct SceneRenderer {
 impl SceneRenderer {
     pub fn new() -> SceneRenderer {
         SceneRenderer {
+            debug_sprites: Surface::from_png(Path::new("data/scene_debug_sprites.png")),
             debug_tiles: Surface::from_png(Path::new("data/scene_debug_tiles.png")),
             debug_layer: SceneDebugLayer::Disabled,
             debug_palette: false,
@@ -83,7 +85,31 @@ impl SceneRenderer {
             let x = (actor.x - camera.lerp_x).floor() as i32;
             let y = (actor.y - camera.lerp_y).floor() as i32;
             draw_box(surface, Rect::new(x - 8, y - 16, x + 8, y), [0, 255, 255, 127], SurfaceBlendOps::Blend);
-            draw_line(surface, x, y, x + (actor.vel_x * 8.0) as i32, y + (actor.vel_y * 8.0) as i32, [255, 0, 0, 255], SurfaceBlendOps::Copy);
+
+            // If the actor is moving, draw the movement data.
+            match actor.task {
+                ActorTask::MoveByAngle { move_x, move_y, .. } => {
+                    draw_line(surface, x, y, x + (move_x * 8.0) as i32, y + (move_y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
+                },
+                ActorTask::MoveToTile { tile_x, tile_y, move_x, move_y, .. } => {
+                    let (x2, y2) = (
+                        (tile_x as f64 * 16.0 + 8.0 - camera.lerp_x).floor() as i32,
+                        (tile_y as f64 * 16.0 + 15.0 - camera.lerp_y).floor() as i32,
+                    );
+                    draw_line(surface, x, y, x2, y2, [0, 255, 0, 191], SurfaceBlendOps::Blend);
+                    draw_line(surface, x, y, x + (move_x * 8.0) as i32, y + (move_y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
+                },
+                _ => {},
+            }
+
+            // Draw debug sprite.
+            let (src_x, src_y) = match actor.debug_sprite {
+                DebugSprite::Moving => (0, 0),
+                DebugSprite::Waiting => (8, 0),
+                DebugSprite::Animating => (16, 0),
+                DebugSprite::None => continue,
+            };
+            blit_surface_to_surface(&self.debug_sprites, surface, src_x, src_y, 8, 8, x - 4, y - 12, SurfaceBlendOps::CopyAlpha);
         }
     }
 

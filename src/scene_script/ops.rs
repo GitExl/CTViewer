@@ -23,6 +23,7 @@ pub enum Op {
         delay: u32,
     },
     Wait {
+        actor: ActorRef,
         ticks: u32,
     },
     Control {
@@ -89,7 +90,7 @@ pub enum Op {
         actor: ActorRef,
         x: DataSource,
         y: DataSource,
-        distance: DataSource,
+        steps: Option<DataSource>,
         update_direction: bool,
         animated: bool,
     },
@@ -105,7 +106,7 @@ pub enum Op {
     ActorMoveAtAngle {
         actor: ActorRef,
         angle: DataSource,
-        distance: DataSource,
+        steps: DataSource,
         update_direction: bool,
         animated: bool,
     },

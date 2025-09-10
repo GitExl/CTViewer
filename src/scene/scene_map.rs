@@ -98,8 +98,8 @@ pub struct SceneMap {
 
 impl SceneMap {
     pub fn get_props_at_coordinates(&self, x: f64, y: f64) -> Option<SceneTileProps> {
-        let tile_x = (x / 16.0).floor() as u32;
-        let tile_y = (y / 16.0).floor() as u32;
+        let tile_x = (x / 16.0) as u32;
+        let tile_y = (y / 16.0) as u32;
         let index = (tile_y * self.props.width + tile_x) as usize;
         if index < self.props.props.len() {
             return Some(self.props.props[index])

@@ -29,6 +29,7 @@ impl SceneActorScript {
             address: self.ptrs[0],
             delay: 4,
             delay_counter: 0,
+            pause_counter: 0,
             priority_ptrs: [0; 8],
             current_priority: 0,
             current_op: None,
@@ -44,6 +45,9 @@ pub struct ActorScriptState {
     /// The delay counter tracks how many such ticks are left.
     pub delay: u32,
     pub delay_counter: u32,
+
+    /// Script pause counter for delays.
+    pub pause_counter: u32,
 
     /// The current address of execution.
     pub address: u64,

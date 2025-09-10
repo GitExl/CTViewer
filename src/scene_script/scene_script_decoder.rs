@@ -337,18 +337,23 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         // Wait durations are 1/16th of a second for NPCs, 1/64th for PCs?
         0xAD => Op::Wait {
             ticks: data.read_u8().unwrap() as u32,
+            actor: ActorRef::This,
         },
         0xB9 => Op::Wait {
             ticks: 4,
+            actor: ActorRef::This,
         },
         0xBA => Op::Wait {
             ticks: 8,
+            actor: ActorRef::This,
         },
         0xBC => Op::Wait {
             ticks: 16,
+            actor: ActorRef::This,
         },
         0xBD => Op::Wait {
             ticks: 32,
+            actor: ActorRef::This,
         },
 
         // Script execution delay in ticks.

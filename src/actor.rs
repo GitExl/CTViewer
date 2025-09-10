@@ -1,8 +1,18 @@
+use std::f64::consts::PI;
 use bitflags::bitflags;
 use crate::Context;
+use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::ActorScriptState;
 use crate::sprites::sprite_state_list::SpriteState;
 use crate::sprites::sprite_renderer::SpritePriority;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DebugSprite {
+    None,
+    Moving,
+    Waiting,
+    Animating,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ActorClass {
@@ -63,6 +73,39 @@ bitflags! {
     }
 }
 
+pub enum ActorTask {
+    None,
+    MoveToTile {
+        tile_x: i32,
+        tile_y: i32,
+        move_x: f64,
+        move_y: f64,
+        steps: u32,
+    },
+    MoveByAngle {
+        angle: f64,
+        move_x: f64,
+        move_y: f64,
+        steps: u32,
+    },
+}
+
+impl ActorTask {
+    pub fn dump(&self) {
+        match self {
+            ActorTask::None {} => {
+                return;
+            },
+            ActorTask::MoveToTile { tile_x, tile_y, move_x, move_y, steps } => {
+                println!("Moving to tile {}x{}, by {}x{} pixels in {} steps", tile_x, tile_y, move_x, move_y, steps);
+            },
+            ActorTask::MoveByAngle { angle, move_x, move_y, steps } => {
+                println!("Moving at angle {}, by {}x{} pixels in {} steps", angle, move_x, move_y, steps);
+            },
+        }
+
+    }
+}
 
 pub struct Actor {
     pub index: usize,
@@ -71,14 +114,11 @@ pub struct Actor {
     pub y: f64,
     last_x: f64,
     last_y: f64,
-    lerp_x: f64,
-    lerp_y: f64,
+    pub lerp_x: f64,
+    pub lerp_y: f64,
 
-    pub vel_x: f64,
-    pub vel_y: f64,
-
-    pub stop_at: Option<(f64, f64)>,
-
+    pub task: ActorTask,
+    pub debug_sprite: DebugSprite,
     pub sprite_priority_top: SpritePriority,
     pub sprite_priority_bottom: SpritePriority,
     pub class: Option<ActorClass>,
@@ -101,11 +141,8 @@ impl Actor {
             last_x: 0.0,
             last_y: 0.0,
 
-            vel_x: 0.0,
-            vel_y: 0.0,
-
-            stop_at: None,
-
+            task: ActorTask::None,
+            debug_sprite: DebugSprite::None,
             sprite_priority_top: SpritePriority::default(),
             sprite_priority_bottom: SpritePriority::default(),
             class: None,
@@ -117,22 +154,12 @@ impl Actor {
         }
     }
 
-    pub fn tick(&mut self, _delta: f64) {
+    pub fn tick(&mut self, _delta: f64, scene_map: &SceneMap) {
         self.last_x = self.x;
         self.last_y = self.y;
 
-        self.x += self.vel_x;
-        self.y += self.vel_y;
-
-        if let Some(stop_at) = self.stop_at {
-            let diff_x = (self.x - stop_at.0).abs();
-            let diff_y = (self.y - stop_at.1).abs();
-            if diff_x < self.move_speed && diff_y < self.move_speed {
-                self.move_to(stop_at.0, stop_at.1, false);
-                self.set_velocity(0.0, 0.0);
-                self.stop_at = None;
-            }
-        }
+        self.run_task();
+        self.update_sprite_priority(scene_map);
     }
 
     pub fn lerp(&mut self, lerp: f64) {
@@ -149,7 +176,25 @@ impl Actor {
         sprite_state.enabled = self.flags.contains(ActorFlags::VISIBLE);
     }
 
-    pub fn move_to(&mut self, x: f64, y: f64, warp: bool) {
+    pub fn face_towards(&mut self, x: f64, y: f64) {
+        let diff_x = x - self.x;
+        let diff_y = y - self.y;
+
+        let mut angle = (diff_y.atan2(diff_x) * 180.0 / PI) - 45.0;
+        if angle < 0.0 {
+            angle += 360.0;
+        }
+
+        self.direction = match (angle / 90.0).floor() as u32 {
+            0 => Direction::Down,
+            1 => Direction::Left,
+            2 => Direction::Up,
+            3 => Direction::Right,
+            _ => Direction::Up,
+        };
+    }
+
+    pub fn move_to(&mut self, x: f64, y: f64, warp: bool, scene_map: &SceneMap) {
         self.x = x;
         self.y = y;
 
@@ -157,16 +202,45 @@ impl Actor {
             self.last_x = x;
             self.last_y = y;
         }
+
+        self.update_sprite_priority(scene_map);
     }
 
-    pub fn move_by(&mut self, x: f64, y: f64) {
+    pub fn move_by(&mut self, x: f64, y: f64, scene_map: &SceneMap) {
         self.x += x;
         self.y += y;
+
+        self.update_sprite_priority(scene_map);
     }
 
-    pub fn set_velocity(&mut self, vel_x: f64, vel_y: f64) {
-        self.vel_x = vel_x;
-        self.vel_y = vel_y;
+    fn run_task(&mut self) {
+        match self.task {
+            ActorTask::MoveToTile { move_x, move_y, ref mut steps, .. } => {
+                if *steps > 0 {
+                    self.x += move_x;
+                    self.y += move_y;
+                    *steps -= 1;
+                }
+            },
+            ActorTask::MoveByAngle { move_x, move_y, ref mut steps, .. } => {
+                if *steps > 0 {
+                    self.x += move_x;
+                    self.y += move_y;
+                    *steps -= 1;
+                }
+            },
+            ActorTask::None {} => return,
+        }
+    }
+
+    pub fn update_sprite_priority(&mut self, scene_map: &SceneMap) {
+        let props = scene_map.get_props_at_coordinates(self.x, self.y);
+        if let Some(props) = props {
+            if let Some(sprite_priority) = props.sprite_priority {
+                self.sprite_priority_top = sprite_priority;
+                self.sprite_priority_bottom = sprite_priority;
+            }
+        }
     }
 
     pub fn dump(&self, ctx: &Context, script_state: &ActorScriptState) {
@@ -183,6 +257,9 @@ impl Actor {
         println!("  Sprite priority top {:?}", self.sprite_priority_top);
         println!("  Sprite priority bottom {:?}", self.sprite_priority_bottom);
         println!("  Flags: {:?}", self.flags);
+        println!();
+
+        self.task.dump();
         println!();
 
         ctx.sprites_states.get_state(self.index).dump();

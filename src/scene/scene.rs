@@ -150,7 +150,10 @@ impl Scene {
         self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
 
         for (index, actor) in self.actors.iter_mut().enumerate() {
-            actor.tick(delta);
+            actor.tick(delta, &self.scene_map);
+
+            let state = ctx.sprites_states.get_state_mut(index);
+            actor.update_sprite_state(state);
             ctx.sprites_states.tick(&ctx.sprite_assets, delta, index);
         }
 
@@ -169,7 +172,8 @@ impl Scene {
             actor.lerp(lerp);
 
             let state = ctx.sprites_states.get_state_mut(actor_index);
-            actor.update_sprite_state(state);
+            state.x = actor.lerp_x;
+            state.y = actor.lerp_y;
         }
     }
 }

@@ -90,12 +90,17 @@ impl SpriteStateList {
         &self.states
     }
 
-    pub fn set_animation(&mut self, assets: &SpriteAssets, actor_index: usize, anim_index: usize, animate: bool) {
+    pub fn set_animation(&mut self, assets: &SpriteAssets, actor_index: usize, anim_index: usize, animate: bool, direction: Direction) {
         let state = &self.states[actor_index];
+        if state.anim_index == anim_index {
+            return;
+        }
+
         let (frame, anim_index, frame_index) = assets.get_frame_for_animation(state.sprite_index, anim_index, 0);
-        let sprite_frame = frame.sprite_frames[state.direction.to_index()];
+        let sprite_frame = frame.sprite_frames[direction.to_index()];
 
         let state = &mut self.states[actor_index];
+        state.direction = direction;
         state.sprite_frame = sprite_frame;
         state.anim_index = anim_index;
         state.anim_frame = frame_index;
@@ -106,6 +111,10 @@ impl SpriteStateList {
 
     pub fn set_direction(&mut self, assets: &SpriteAssets, actor_index: usize, direction: Direction) {
         let state = &self.states[actor_index];
+        if state.direction == direction {
+            return;
+        }
+
         let (frame, _, _) = assets.get_frame_for_animation(state.sprite_index, state.anim_index, state.anim_frame);
         let sprite_frame = frame.sprite_frames[direction.to_index()];
 
