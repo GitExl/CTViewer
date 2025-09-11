@@ -18,3 +18,4 @@ mod ops_inventory;
 mod ops_audio;
 mod scene_script_memory;
 mod scene_script_exec;
+mod exec_movement;

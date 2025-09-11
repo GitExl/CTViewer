@@ -161,16 +161,19 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             pc2_y: data.read_u8().unwrap() as i32,
         },
 
-        // Physical movement related.
-        0x7A => Op::ActorMoveJump {
+        // Jumping.
+        0x7A => Op::ActorJump {
             actor: ActorRef::This,
             x: data.read_i8().unwrap() as i32,
             y: data.read_i8().unwrap() as i32,
             height: data.read_u8().unwrap() as u32,
         },
-        0x7B => Op::Unknown {
-            code: 0x7B,
-            data: [data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap()],
+        0x7B => Op::ActorJumpUnknown {
+            actor: ActorRef::This,
+            move_x: data.read_u8().unwrap() as i32,
+            move_y: data.read_u8().unwrap() as i32,
+            unknown: data.read_u8().unwrap() as u32,
+            steps: data.read_u8().unwrap() as u32,
         },
 
         _ => panic!("Unknown movement op."),

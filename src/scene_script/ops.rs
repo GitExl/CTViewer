@@ -67,11 +67,18 @@ pub enum Op {
         actor: ActorRef,
         source: DataSource,
     },
-    ActorMoveJump {
+    ActorJump {
         actor: ActorRef,
         x: i32,
         y: i32,
         height: u32,
+    },
+    ActorJumpUnknown {
+        actor: ActorRef,
+        move_x: i32,
+        move_y: i32,
+        steps: u32,
+        unknown: u32,
     },
     ActorSetSpritePriority {
         actor: ActorRef,

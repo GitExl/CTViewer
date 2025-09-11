@@ -28,7 +28,7 @@ impl SceneActorScript {
             ptrs: self.ptrs,
             address: self.ptrs[0],
             delay: 4,
-            delay_counter: 0,
+            delay_counter: 4,
             pause_counter: 0,
             priority_ptrs: [0; 8],
             current_priority: 0,
@@ -159,7 +159,7 @@ impl SceneScript {
             }
 
             // Countdown until next time this actor's script needs to be processed.
-            if state.delay_counter > 0 {
+            if state.delay_counter > 1 {
                 state.delay_counter -= 1;
                 continue;
             }

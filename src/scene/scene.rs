@@ -85,9 +85,11 @@ impl Scene {
         // Create actors and related state.
         for actor_script_index in 0..self.script.actor_scripts.len() {
             let actor = Actor::new(actor_script_index);
+
             self.script.add_initial_state(actor_script_index);
             let state = ctx.sprites_states.add_state();
             actor.update_sprite_state(state);
+
             self.actors.push(actor);
         }
 

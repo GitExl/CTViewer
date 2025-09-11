@@ -148,7 +148,7 @@ impl Actor {
             class: None,
             player_index: None,
             direction: Direction::default(),
-            move_speed: 0.5,
+            move_speed: 1.0,
             flags: ActorFlags::empty(),
             battle_index: 0,
         }
@@ -158,8 +158,7 @@ impl Actor {
         self.last_x = self.x;
         self.last_y = self.y;
 
-        self.run_task();
-        self.update_sprite_priority(scene_map);
+        self.run_task(scene_map);
     }
 
     pub fn lerp(&mut self, lerp: f64) {
@@ -213,28 +212,34 @@ impl Actor {
         self.update_sprite_priority(scene_map);
     }
 
-    fn run_task(&mut self) {
+    fn run_task(&mut self, scene_map: &SceneMap) {
         match self.task {
             ActorTask::MoveToTile { move_x, move_y, ref mut steps, .. } => {
-                if *steps > 0 {
-                    self.x += move_x;
-                    self.y += move_y;
-                    *steps -= 1;
+                if *steps == 0 {
+                    return;
                 }
+
+                *steps -= 1;
+                self.x += move_x;
+                self.y += move_y;
+                self.update_sprite_priority(scene_map);
             },
             ActorTask::MoveByAngle { move_x, move_y, ref mut steps, .. } => {
-                if *steps > 0 {
-                    self.x += move_x;
-                    self.y += move_y;
-                    *steps -= 1;
+                if *steps == 0 {
+                    return;
                 }
+
+                *steps -= 1;
+                self.x += move_x;
+                self.y += move_y;
+                self.update_sprite_priority(scene_map);
             },
             ActorTask::None {} => return,
         }
     }
 
     pub fn update_sprite_priority(&mut self, scene_map: &SceneMap) {
-        let props = scene_map.get_props_at_coordinates(self.x, self.y);
+        let props = scene_map.get_props_at_coordinates(self.x, self.y - 1.0);
         if let Some(props) = props {
             if let Some(sprite_priority) = props.sprite_priority {
                 self.sprite_priority_top = sprite_priority;

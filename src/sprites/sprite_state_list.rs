@@ -1,4 +1,5 @@
 use crate::actor::Direction;
+use crate::sprites::sprite_anim::{SpriteAnim, SpriteAnimFrame};
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_renderer::SpritePriority;
 
@@ -39,8 +40,30 @@ impl SpriteState {
             anim_index: 0,
             anim_frame: 0,
             anim_timer: 0.0,
-            anim_enabled: false,
+            anim_enabled: true,
             anim_loop_count: 0,
+        }
+    }
+
+    pub fn tick_animation(&mut self, anim: &SpriteAnim, frame: &SpriteAnimFrame, delta: f64) {
+
+        // 0-duration frames show indefinitely.
+        if frame.duration == 0.0 {
+            return;
+        }
+
+        // Advance animation time.
+        self.anim_timer += delta;
+        if self.anim_timer < frame.duration {
+            return;
+        }
+
+        // Advance to the next frame.
+        self.anim_timer -= frame.duration;
+        self.anim_frame += 1;
+        if self.anim_frame >= anim.frames.len() {
+            self.anim_loop_count += 1;
+            self.anim_frame = 0;
         }
     }
 
@@ -132,35 +155,19 @@ impl SpriteStateList {
     // Updates sprite state.
     pub fn tick(&mut self, assets: &SpriteAssets, delta: f64, actor_index: usize) {
         let state = self.states.get_mut(actor_index).unwrap();
-        if !state.anim_enabled {
-            return;
-        }
 
-        // Get the current visible animation frame through the sprite's animation set.
-        let sprite = assets.get(state.sprite_index);
-        let anim_set = assets.get_anim_set(sprite.anim_set_index);
-        let anim = &anim_set.anims[state.anim_index];
-        let frame = &anim.frames[state.anim_frame];
+        if state.anim_enabled {
 
-        // 0-duration frames show indefinitely.
-        if frame.duration == 0.0 {
-            return;
-        }
+            // Get the current visible animation frame through the sprite's animation set.
+            let sprite = assets.get(state.sprite_index);
+            let anim_set = assets.get_anim_set(sprite.anim_set_index);
+            let anim = &anim_set.anims[state.anim_index];
+            let frame = &anim.frames[state.anim_frame];
 
-        // Advance animation time.
-        state.anim_timer += delta;
-        if state.anim_timer < frame.duration {
-            return;
+            state.tick_animation(anim, frame, delta);
+            
+            state.sprite_frame = anim.frames[state.anim_frame].sprite_frames[state.direction.to_index()];
         }
-
-        // Advance to the next frame.
-        state.anim_timer -= frame.duration;
-        state.anim_frame += 1;
-        if state.anim_frame >= anim.frames.len() {
-            state.anim_loop_count += 1;
-            state.anim_frame = 0;
-        }
-        state.sprite_frame = anim.frames[state.anim_frame].sprite_frames[state.direction.to_index()];
     }
 
 }
