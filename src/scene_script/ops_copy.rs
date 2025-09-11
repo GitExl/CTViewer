@@ -1,10 +1,11 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{read_24_bit_address, read_script_blob};
+use crate::scene_script::scene_script::SceneScriptMode;
+use crate::scene_script::scene_script_decoder::{read_24_bit_address, read_script_blob, read_segmented_address};
 use crate::scene_script::scene_script_memory::{DataDest, DataSource};
 
-pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
+pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
 
         // todo PC version uses different indexing for 24-bit op addresses
@@ -17,33 +18,54 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         // From RAM to temporary memory.
         0x48 => Op::Copy8 {
-            source: DataSource::Memory(read_24_bit_address(data)),
+            source: match mode {
+                SceneScriptMode::Snes => DataSource::Memory(read_24_bit_address(data)),
+                SceneScriptMode::Pc => DataSource::Memory(read_segmented_address(data)),
+            },
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x49 => Op::Copy8 {
-            source: DataSource::Memory(read_24_bit_address(data)),
+            source: match mode {
+                SceneScriptMode::Snes => DataSource::Memory(read_24_bit_address(data)),
+                SceneScriptMode::Pc => DataSource::Memory(read_segmented_address(data)),
+            },
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Write to RAM.
         0x4A => Op::Copy8 {
-            dest: DataDest::Memory(read_24_bit_address(data)),
+            dest: match mode {
+                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+            },
             source: DataSource::Immediate(data.read_u8().unwrap() as u32),
         },
         0x4B => Op::Copy16 {
-            dest: DataDest::Memory(read_24_bit_address(data)),
+            dest: match mode {
+                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+            },
             source: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
         },
         0x4C => Op::Copy8 {
-            dest: DataDest::Memory(read_24_bit_address(data)),
+            dest: match mode {
+                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+            },
             source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x4D => Op::Copy8 {
-            dest: DataDest::Memory(read_24_bit_address(data)),
+            dest: match mode {
+                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+            },
             source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x4E => {
-            let destination = read_24_bit_address(data);
+            let destination = match mode {
+                SceneScriptMode::Snes => read_24_bit_address(data),
+                SceneScriptMode::Pc => read_segmented_address(data),
+            };
             let (blob, length) = read_script_blob(data);
             Op::CopyBytes {
                 dest: DataDest::Memory(destination),
@@ -111,6 +133,16 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x5A => Op::Copy8 {
             source: DataSource::Immediate(data.read_u8().unwrap() as u32),
             dest: DataDest::for_global_memory(0x00),
+        },
+
+        // PC-specific ops.
+        0x3A => Op::Copy8 {
+            source: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            dest: DataDest::for_extended_memory(data.read_u8().unwrap() as usize),
+        },
+        0x3D => Op::Copy8 {
+            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_extended_memory(data.read_u8().unwrap() as usize),
         },
 
         _ => panic!("Unknown copy op."),

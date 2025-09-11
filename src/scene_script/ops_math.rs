@@ -140,7 +140,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             }
         },
         0x64 => {
-            let rhs = 1 >> data.read_u8().unwrap() as u32;
+            let rhs = !(1 >> data.read_u8().unwrap() as u32);
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::BitMath {
                 dest: DataDest::for_local_memory(lhs),
@@ -163,14 +163,14 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             }
         },
         0x66 => {
-            let bit = data.read_u8().unwrap();
+            let bit = !(1 >> (data.read_u8().unwrap() & 0x7F)) as u32;
             let mut lhs = data.read_u8().unwrap() as usize;
             if bit & 0x80 > 0 {
                 lhs += 0x100;
             }
             Op::BitMath {
                 dest: DataDest::for_temp_memory(lhs),
-                rhs: DataSource::Immediate(1 >> (bit & 0x7F) as u32),
+                rhs: DataSource::Immediate(bit),
                 lhs: DataSource::for_temp_memory(lhs),
                 op: BitMathOp::And,
             }
@@ -212,6 +212,28 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 dest: DataDest::for_local_memory(lhs),
                 lhs: DataSource::for_local_memory(lhs),
                 op: BitMathOp::ShiftRight,
+                rhs: DataSource::Immediate(rhs),
+            }
+        },
+
+        // PC specific ops.
+        0x45 => {
+            let bit = data.read_u8().unwrap();
+            let lhs = data.read_u8().unwrap() as usize;
+            Op::BitMath {
+                dest: DataDest::for_extended_memory(lhs),
+                rhs: DataSource::Immediate(1 >> (bit & 0x7F) as u32),
+                lhs: DataSource::for_extended_memory(lhs),
+                op: BitMathOp::Or,
+            }
+        },
+        0x46 => {
+            let rhs = !(1 >> data.read_u8().unwrap() as u32);
+            let lhs = data.read_u8().unwrap() as usize;
+            Op::BitMath {
+                dest: DataDest::for_extended_memory(lhs),
+                lhs: DataSource::for_extended_memory(lhs),
+                op: BitMathOp::And,
                 rhs: DataSource::Immediate(rhs),
             }
         },

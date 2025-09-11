@@ -269,10 +269,12 @@ pub enum Op {
     ItemGive {
         actor: ActorRef,
         item: DataSource,
+        category: usize,
     },
     ItemTake {
         actor: ActorRef,
         item: DataSource,
+        category: usize,
     },
     GoldGive {
         actor: ActorRef,
@@ -284,6 +286,7 @@ pub enum Op {
     },
     ItemGetAmount {
         item: usize,
+        category: usize,
         dest: DataSource,
     },
 

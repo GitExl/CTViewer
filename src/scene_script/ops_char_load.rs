@@ -92,7 +92,10 @@ pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
             let bits = data.read_u8().unwrap();
             Op::LoadCharacter {
                 char_type: CharacterType::Enemy,
-                index,
+                index: match mode {
+                    SceneScriptMode::Snes => index,
+                    SceneScriptMode::Pc => index + 7,
+                },
                 must_be_in_party: false,
                 is_static: bits & 0x80 > 0,
                 battle_index: bits as usize & 0x7F,

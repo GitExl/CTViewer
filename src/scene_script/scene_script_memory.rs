@@ -150,6 +150,10 @@ impl DataSource {
         DataSource::Memory(address + 0x7F0000)
     }
 
+    pub fn for_extended_memory(address: usize) -> DataSource {
+        DataSource::Memory(address + 0x9F0000)
+    }
+
     pub fn get_u8(self, memory: &SceneScriptMemory) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
@@ -205,6 +209,10 @@ impl DataDest {
 
     pub fn for_upper_memory(address: usize) -> DataDest {
         DataDest::Memory(address + 0x7F0000)
+    }
+
+    pub fn for_extended_memory(address: usize) -> DataDest {
+        DataDest::Memory(address + 0x9F0000)
     }
 
     pub fn put_u8(&self, memory: &mut SceneScriptMemory, value: u8) {

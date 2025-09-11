@@ -32,6 +32,9 @@ struct SceneHeader {
 
     // Area to constrain the camera to.
     scroll_mask: ScrollMask,
+
+    // Unknown value, present in PC version.
+    unknown: u32,
 }
 
 impl FileSystem {
@@ -52,6 +55,7 @@ impl FileSystem {
                 chip_anims_index: data.read_u8().unwrap() as usize,
                 palette_anims_index: data.read_u8().unwrap() as usize,
                 script_index: data.read_u16::<LittleEndian>().unwrap() as usize,
+                unknown: 0,
                 scroll_mask: ScrollMask {
                     left: data.read_u8().unwrap() as isize,
                     top: data.read_u8().unwrap() as isize,
@@ -69,7 +73,8 @@ impl FileSystem {
                 palette_anims_index: data.read_u16::<LittleEndian>().unwrap() as usize,
                 map_index: data.read_u16::<LittleEndian>().unwrap() as usize,
                 chip_anims_index: data.read_u16::<LittleEndian>().unwrap() as usize,
-                script_index: data.read_u32::<LittleEndian>().unwrap() as usize,
+                script_index: data.read_u16::<LittleEndian>().unwrap() as usize,
+                unknown: data.read_u16::<LittleEndian>().unwrap() as u32,
                 scroll_mask: ScrollMask {
                     left: data.read_u8().unwrap() as isize,
                     top: data.read_u8().unwrap() as isize,
@@ -124,6 +129,7 @@ impl FileSystem {
             index: scene_index,
 
             music_index: header.music_index,
+            unknown: header.unknown,
 
             map,
             scene_map,

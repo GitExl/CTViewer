@@ -112,7 +112,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 CharacterType::PC => index,
                 CharacterType::PCAsNPC => index,
                 CharacterType::NPC => index + 7,
-                CharacterType::Enemy => index + 256, // todo another +7 for PC version, does it store more NPC sprites?
+                CharacterType::Enemy => index + 256,
             };
 
             ctx.sprite_assets.load(&ctx.fs, real_index);

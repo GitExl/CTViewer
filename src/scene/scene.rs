@@ -64,6 +64,7 @@ pub struct Scene {
     pub index: usize,
 
     pub music_index: usize,
+    pub unknown: u32,
 
     pub scene_map: SceneMap,
     pub map: Map,
@@ -120,6 +121,7 @@ impl Scene {
             self.scroll_mask.right,
             self.scroll_mask.bottom,
         );
+        println!("  Unknown: {}", self.unknown);
         println!();
 
         self.scene_map.dump();

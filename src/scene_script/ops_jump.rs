@@ -256,6 +256,20 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             offset: data.read_u8().unwrap() as i64,
         },
 
+        // PC specific ops.
+        // 1 byte direct compare with extended memory.
+        0x6E => {
+            let lhs = data.read_u8().unwrap() as usize;
+            let value = data.read_u8().unwrap();
+            let op_value = data.read_u8().unwrap();
+            Op::JumpConditional8 {
+                lhs: DataSource::for_extended_memory(lhs),
+                rhs: DataSource::Immediate(value as u32),
+                cmp: CompareOp::from_value(op_value as usize & 0x7F),
+                offset: data.read_u8().unwrap() as i64,
+            }
+        },
+
         _ => panic!("Unknown jump op."),
     }
 }

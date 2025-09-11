@@ -54,7 +54,7 @@ pub fn op_decode_dialogue(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
                     address: read_24_bit_address(data),
                 },
                 SceneScriptMode::Pc => Op::DialogueSetTable {
-                  address: data.read_u8().unwrap() as usize,
+                    address: data.read_u8().unwrap() as usize,
                 },
             }
         },
