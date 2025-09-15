@@ -36,7 +36,7 @@ impl SceneActorScript {
             delay: 4,
             delay_counter: 4,
             pause_counter: 0,
-            priority_ptrs: [0; 8],
+            priority_return_ptrs: [0; 8],
             current_priority: 0,
             current_op: None,
             op_result: OpResult::empty(),
@@ -46,22 +46,24 @@ impl SceneActorScript {
 
 pub struct ActorScriptState {
 
-    /// Delay is how many ticks need to pass before this script state is processed again.
-    /// The delay counter tracks how many such ticks are left.
+    /// The delay is how many ticks need to pass before this script state is processed again.
+    /// The counter tracks how many such ticks are left in the current cycle.
     pub delay: u32,
     pub delay_counter: u32,
 
-    /// Script pause counter for delays.
+    /// Counter for pausing.
     pub pause_counter: u32,
 
-    /// The current address of execution.
+    /// The current execution address.
     pub address: u64,
 
     /// Pointers to each script function.
     pub ptrs: [u64; 16],
 
-    /// Pointers to script function at prioritry levels.
-    pub priority_ptrs: [usize; 8],
+    /// Return addresses for each priority level call.
+    pub priority_return_ptrs: [usize; 8],
+
+    /// The active priority level.
     pub current_priority: usize,
 
     /// Current decoded op.
@@ -75,8 +77,9 @@ impl ActorScriptState {
     pub fn dump(&self) {
         println!("Actor script state");
         println!("  Delay {} / {}", self.delay_counter, self.delay);
+        println!("  Pause {}", self.pause_counter);
         println!("  Current address 0x{:04X}", self.address);
-        println!("  Priorities: {:04X?}", self.priority_ptrs);
+        println!("  Return addresses: {:04X?}", self.priority_return_ptrs);
         println!("  Current priority: {}", self.current_priority);
         println!("  Current op {:?}", self.current_op);
         println!("  Result: {:?}", self.op_result);
@@ -179,7 +182,7 @@ impl SceneScript {
                 state.op_result = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
                 self.data.set_position(state.address);
 
-                if state.op_result.contains(OpResult::COMPLETE) {
+                if state.op_result.contains(OpResult::YIELD) {
                     break;
                 }
             }
