@@ -144,6 +144,22 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
             source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             dest: DataDest::for_extended_memory(data.read_u8().unwrap() as usize),
         },
+        0x3E => Op::Copy8 {
+            source: DataSource::for_extended_memory(data.read_u8().unwrap() as usize),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
+        },
+        0x70 => Op::Copy8 {
+            source: DataSource::PartyCharacter(data.read_u8().unwrap() as usize),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
+        },
+        0x74 => Op::Copy16 {
+            source: DataSource::for_extended_memory(data.read_u8().unwrap() as usize),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
+        },
+        0x78 => Op::Copy16 {
+            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_extended_memory(data.read_u8().unwrap() as usize),
+        },
 
         _ => panic!("Unknown copy op."),
     }

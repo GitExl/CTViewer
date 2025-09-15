@@ -130,7 +130,8 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
 
         // Data copy.
         0x20 | 0x48 | 0x49 | 0x4A | 0x4B | 0x4C | 0x4D | 0x4E | 0x4F | 0x50 | 0x51 | 0x52 | 0x53 |
-        0x54 | 0x55 | 0x56 | 0x58 | 0x59 | 0x5A | 0x75 | 0x76 | 0x77 | 0x3A | 0x3D => op_decode_copy(op_byte, data, mode),
+        0x54 | 0x55 | 0x56 | 0x58 | 0x59 | 0x5A | 0x75 | 0x76 | 0x77 | 0x3A | 0x3D | 0x3E | 0x70 |
+        0x74 | 0x78 => op_decode_copy(op_byte, data, mode),
 
         // Byte math.
         0x5B | 0x5D | 0x5E | 0x5F | 0x60 | 0x61 | 0x71 | 0x72 | 0x73 | 0x63 | 0x64 | 0x65 | 0x66 |
@@ -328,12 +329,15 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         // Yield to the function with the next higher priority number.
         // If there is none, simply yield.
         0x00 => Op::Return,
+
+        // Yield once or forever.
         0xB1 => Op::Yield {
             forever: false,
         },
         0xB2 => Op::Yield {
             forever: true,
         },
+
         // Wait durations are 1/16th of a second for NPCs, 1/64th for PCs?
         0xAD => Op::Wait {
             ticks: data.read_u8().unwrap() as u32,
