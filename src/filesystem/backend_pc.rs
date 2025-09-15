@@ -250,21 +250,13 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
     }
 
     fn get_world_player_sprite_graphics(&self) -> Option<Vec<u8>> {
-        let mut file = File::open(Path::new("data/pc_sprites_empty.bmp")).unwrap();
-        let mut data = vec![0u8; file.metadata().unwrap().len() as usize];
-        file.read_exact(&mut data).unwrap();
-        let mut cursor = Cursor::new(data);
-        let bmp = Bmp::from_cursor(&mut cursor);
+        let bmp = Bmp::from_path(Path::new("data/pc_sprites_empty.bmp"));
 
         Some(bmp.pixels)
     }
 
     fn get_world_epoch_sprite_graphics(&self) -> Option<Vec<u8>> {
-        let mut file = File::open(Path::new("data/epoch_sprites_empty.bmp")).unwrap();
-        let mut data = vec![0u8; file.metadata().unwrap().len() as usize];
-        file.read_exact(&mut data).unwrap();
-        let mut cursor = Cursor::new(data);
-        let bmp = Bmp::from_cursor(&mut cursor);
+        let bmp = Bmp::from_path(Path::new("data/epoch_sprites_empty.bmp"));
 
         Some(bmp.pixels)
     }

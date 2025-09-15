@@ -1,9 +1,11 @@
+use std::fs::File;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
-
+use std::path::Path;
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
+use crate::software_renderer::palette::Color;
 
 pub type BmpColor = [u8; 4];
 
@@ -23,6 +25,26 @@ pub struct Bmp {
 }
 
 impl Bmp {
+    pub fn get_raw_palette(&self) -> Vec<[u8; 4]> {
+        let mut colors = vec![Color::default(); self.palette.len()];
+        for (index, color) in self.palette.iter().enumerate() {
+            colors[index][0] = color[0];
+            colors[index][1] = color[1];
+            colors[index][2] = color[2];
+            colors[index][3] = 0xFF;
+        }
+
+        colors
+    }
+
+    pub fn from_path(path: &Path) -> Bmp {
+        let mut file = File::open(path).unwrap();
+        let mut data = vec![0u8; file.metadata().unwrap().len() as usize];
+        file.read_exact(&mut data).unwrap();
+        let mut cursor = Cursor::new(data);
+        Bmp::from_cursor(&mut cursor)
+    }
+
     pub fn from_cursor(cursor: &mut Cursor<Vec<u8>>) -> Bmp {
 
         // BitmapHeader

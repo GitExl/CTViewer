@@ -40,7 +40,7 @@ impl SpriteState {
             anim_index: 0,
             anim_frame: 0,
             anim_timer: 0.0,
-            anim_enabled: true,
+            anim_enabled: false,
             anim_loop_count: 0,
         }
     }
@@ -65,6 +65,8 @@ impl SpriteState {
             self.anim_loop_count += 1;
             self.anim_frame = 0;
         }
+
+        self.sprite_frame = anim.frames[self.anim_frame].sprite_frames[self.direction.to_index()];
     }
 
     pub fn dump(&self) {
@@ -115,24 +117,33 @@ impl SpriteStateList {
 
     pub fn set_animation(&mut self, assets: &SpriteAssets, actor_index: usize, anim_index: usize, animate: bool, direction: Direction) {
         let state = &self.states[actor_index];
-        if state.anim_index == anim_index {
-            return;
-        }
 
-        let (frame, anim_index, frame_index) = assets.get_frame_for_animation(state.sprite_index, anim_index, 0);
+        // Only reset playing the animation if a new animation was set.
+        let frame_index = if state.anim_index == anim_index {
+            state.anim_frame
+        } else {
+            0
+        };
+
+        let (frame, anim_index, frame_index) = assets.get_frame_for_animation(state.sprite_index, anim_index, frame_index);
         let sprite_frame = frame.sprite_frames[direction.to_index()];
 
         let state = &mut self.states[actor_index];
+
+        // Only reset playing the animation if a new animation was set.
+        if state.anim_index != anim_index {
+            state.anim_timer = 0.0;
+            state.anim_loop_count = 0;
+        }
+
         state.direction = direction;
         state.sprite_frame = sprite_frame;
         state.anim_index = anim_index;
         state.anim_frame = frame_index;
-        state.anim_timer = 0.0;
         state.anim_enabled = animate;
-        state.anim_loop_count = 0;
-    }
+}
 
-    pub fn set_direction(&mut self, assets: &SpriteAssets, actor_index: usize, direction: Direction) {
+pub fn set_direction(&mut self, assets: &SpriteAssets, actor_index: usize, direction: Direction) {
         let state = &self.states[actor_index];
         if state.direction == direction {
             return;
@@ -157,16 +168,12 @@ impl SpriteStateList {
         let state = self.states.get_mut(actor_index).unwrap();
 
         if state.anim_enabled {
-
-            // Get the current visible animation frame through the sprite's animation set.
             let sprite = assets.get(state.sprite_index);
             let anim_set = assets.get_anim_set(sprite.anim_set_index);
             let anim = &anim_set.anims[state.anim_index];
             let frame = &anim.frames[state.anim_frame];
 
             state.tick_animation(anim, frame, delta);
-            
-            state.sprite_frame = anim.frames[state.anim_frame].sprite_frames[state.direction.to_index()];
         }
     }
 
