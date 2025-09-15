@@ -1,4 +1,4 @@
-use crate::actor::{Actor, ActorFlags, DebugSprite, Direction, ActorTask};
+use crate::actor::{Actor, ActorFlags, DebugSprite, Direction};
 use crate::Context;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
@@ -14,36 +14,40 @@ use crate::scene_script::scene_script_memory::SceneScriptMemory;
 pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: usize, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> OpResult {
     let op = match state.current_op {
         Some(op) => op,
-        None => return (true, true),
+        None => return OpResult::YIELD | OpResult::COMPLETE,
     };
 
     match op {
-        Op::NOP => (false, true),
+        Op::NOP => OpResult::COMPLETE,
         Op::Yield { forever } => {
-            (true, !forever)
+            if !forever {
+                OpResult::YIELD | OpResult::COMPLETE
+            } else {
+                OpResult::YIELD
+            }
         },
 
         // todo return never completes for now, but should move execution elsewhere.
-        Op::Return => (true, false),
+        Op::Return => OpResult::YIELD,
 
         // Copy.
         Op::Copy8 { source, dest } => {
             dest.put_u8(memory, source.get_u8(memory));
-            (false, true)
+            OpResult::COMPLETE
         },
         Op::Copy16 { source, dest } => {
             dest.put_u16(memory, source.get_u16(memory));
-            (false, true)
+            OpResult::COMPLETE
         },
         Op::CopyBytes { dest, bytes, length } => {
             dest.put_bytes(memory, bytes, length);
-            (false, true)
+            OpResult::COMPLETE
         },
 
         // Jump.
         Op::Jump { offset } => {
             state.address = (state.address as i64 + offset - 1) as u64;
-            (false, true)
+            OpResult::COMPLETE
         },
         Op::JumpConditional8 { lhs, cmp, rhs, offset } => {
             let lhs_value = lhs.get_u8(memory);
@@ -62,7 +66,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 state.address = (state.address as i64 + offset - 1) as u64;
             }
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         // Math.
@@ -76,7 +80,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             };
             dest.put_u8(memory, result);
 
-            (false, true)
+            OpResult::COMPLETE
         },
         Op::ByteMath16 { dest, lhs, op, rhs } => {
             let lhs_value = lhs.get_u16(memory);
@@ -88,7 +92,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             };
             dest.put_u16(memory, result);
 
-            (false, true)
+            OpResult::COMPLETE
         },
         Op::BitMath { dest, lhs, op, rhs } => {
             let lhs_value = lhs.get_u8(memory);
@@ -103,36 +107,37 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             };
             dest.put_u8(memory, result);
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         // todo must_be_in_party
         Op::LoadCharacter { char_type, index, is_static, battle_index, .. } => {
-            let real_index = match char_type {
+            let sprite_index = match char_type {
                 CharacterType::PC => index,
                 CharacterType::PCAsNPC => index,
                 CharacterType::NPC => index + 7,
                 CharacterType::Enemy => index + 256,
             };
 
-            ctx.sprite_assets.load(&ctx.fs, real_index);
+            let actor = actors.get_mut(this_actor).unwrap();
 
-            actors[this_actor].battle_index = battle_index;
-            actors[this_actor].flags |= ActorFlags::RENDERED | ActorFlags::VISIBLE | ActorFlags::SOLID;
+            actor.battle_index = battle_index;
+            actor.flags |= ActorFlags::RENDERED | ActorFlags::VISIBLE | ActorFlags::SOLID;
             if is_static {
-                actors[this_actor].flags |= ActorFlags::BATTLE_STATIC;
+                actor.flags |= ActorFlags::BATTLE_STATIC;
             }
 
             if char_type == CharacterType::PC {
-                actors[this_actor].player_index = Some(index);
+                actor.player_index = Some(index);
             }
 
             let state = &mut ctx.sprites_states.get_state_mut(this_actor);
+            ctx.sprite_assets.load(&ctx.fs, sprite_index);
+            state.sprite_index = sprite_index;
             state.enabled = true;
-            state.sprite_index = real_index;
-            ctx.sprites_states.set_animation(&ctx.sprite_assets, this_actor, 0, true, actors[this_actor].direction);
+            ctx.sprites_states.set_animation(&ctx.sprite_assets, this_actor, 0, true, actor.direction);
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::ActorCoordinatesSet { actor, x, y } => {
@@ -142,7 +147,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
             actors[actor_index].move_to(x * 16.0 + 8.0, y * 16.0 + 16.0, true, &scene_map);
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::ActorUpdateFlags { actor, set, remove } => {
@@ -150,7 +155,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             actors[actor_index].flags |= set;
             actors[actor_index].flags.remove(remove);
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::ActorCoordinatesSetPrecise { actor, x, y } => {
@@ -160,7 +165,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
             actors[actor_index].move_to(x, y, true, &scene_map);
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::ActorSetDirection { actor, direction } => {
@@ -169,7 +174,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             actors[actor_index].direction = direction;
             ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
 
-            (true, true)
+            OpResult::YIELD | OpResult::COMPLETE
         },
 
         Op::ActorSetSpriteFrame { actor, frame } => {
@@ -178,7 +183,7 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
             ctx.sprites_states.set_sprite_frame(actor_index, frame_index);
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         // todo mode, unknowns
@@ -187,13 +192,13 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             actors[actor_index].sprite_priority_top = top;
             actors[actor_index].sprite_priority_bottom = bottom;
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::ActorSetSpeed { actor, speed } => {
             let actor_index = actor.deref(this_actor);
             actors[actor_index].move_speed = speed.get_u8(memory) as f64 / 16.0;
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::Animate { actor, animation, run, loops, wait } => {
@@ -208,19 +213,19 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run, actors[actor_index].direction);
                 return if wait {
                     actors[actor_index].debug_sprite = DebugSprite::Animating;
-                    (true, false)
+                    OpResult::YIELD
                 } else {
-                    (false, true)
+                    OpResult::COMPLETE
                 }
 
             // Wait for animation to complete.
             } else if wait && loops < 0xFFFFFFFF && state.anim_loop_count <= loops {
-                return (true, false);
+                return OpResult::YIELD;
             }
 
             // Wait completed.
             actors[actor_index].debug_sprite = DebugSprite::None;
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::ActorMoveAtAngle { actor, angle, steps, update_direction, animated } => {
@@ -273,13 +278,13 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 }
             }
 
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::SetScriptDelay { delay } => {
             state.delay = delay + 1;
             state.delay_counter = delay + 1;
-            (false, true)
+            OpResult::COMPLETE
         },
 
         Op::Wait { actor, ticks } => {
@@ -290,21 +295,28 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
             if state.pause_counter == 0 {
                 state.pause_counter = 1;
                 actor.debug_sprite = DebugSprite::Waiting;
-                return (true, false);
+                return OpResult::YIELD;
 
             // Count one more tick.
-            } else if state.pause_counter < ticks {
+            } else if state.pause_counter <= ticks {
                 state.pause_counter += 1;
-                return (true, false);
+                return OpResult::YIELD;
             }
 
             // Finished counting.
             state.pause_counter = 0;
             actor.debug_sprite = DebugSprite::None;
-            actor.task = ActorTask::None;
-            (false, true)
+            OpResult::COMPLETE
         },
 
-        _ => (false, true),
+        Op::Control { forever } => {
+            if forever {
+                OpResult::YIELD
+            } else {
+                OpResult::YIELD | OpResult::COMPLETE
+            }
+        },
+
+        _ => OpResult::COMPLETE,
     }
 }

@@ -10,7 +10,7 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
     if let ActorTask::MoveToTile { steps, .. } = actor.task {
         // Wait for destination to be reached.
         if steps > 0 {
-            return (true, false);
+            return OpResult::YIELD;
         }
     }
 
@@ -79,7 +79,7 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
         }
         actor.task = ActorTask::None;
         actor.debug_sprite = DebugSprite::None;
-        return (false, true);
+        return OpResult::COMPLETE;
     }
 
     actor.task = ActorTask::MoveToTile {
@@ -105,7 +105,7 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
         ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, true, actor.direction);
     }
 
-    (true, false)
+    OpResult::YIELD
 }
 
 pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut Vec<Actor>, angle: f64, steps: u32, update_direction: bool, animated: bool) -> OpResult {
@@ -116,7 +116,7 @@ pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut 
 
         // Wait for destination to be reached.
         if steps > 0 {
-            return (true, false);
+            return OpResult::YIELD;
         }
 
         // No more steps to be taken, complete op.
@@ -125,7 +125,7 @@ pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut 
         }
         actor.task = ActorTask::None;
         actor.debug_sprite = DebugSprite::None;
-        return (false, true);
+        return OpResult::COMPLETE;
     }
 
     // Calculate the movement vector.
@@ -156,5 +156,5 @@ pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut 
         ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, true, actor.direction);
     }
 
-    (true, false)
+    OpResult::YIELD
 }

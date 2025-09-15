@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::Cursor;
+use bitflags::bitflags;
 use crate::actor::{Actor, ActorFlags};
 use crate::Context;
 use crate::map::Map;
@@ -9,8 +10,13 @@ use crate::scene_script::scene_script_decoder::op_decode;
 use crate::scene_script::scene_script_exec::op_execute;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
 
-/// Yield, Completed
-pub type OpResult = (bool, bool);
+bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq)]
+    pub struct OpResult: u32 {
+        const YIELD = 0x0001;
+        const COMPLETE = 0x0002;
+    }
+}
 
 pub struct SceneActorScript {
     ptrs: [u64; 16],
@@ -33,8 +39,7 @@ impl SceneActorScript {
             priority_ptrs: [0; 8],
             current_priority: 0,
             current_op: None,
-            op_yielded: false,
-            op_completed: false,
+            op_result: OpResult::empty(),
         }
     }
 }
@@ -62,11 +67,8 @@ pub struct ActorScriptState {
     /// Current decoded op.
     pub current_op: Option<Op>,
 
-    /// True if the current op yielded processing.
-    pub op_yielded: bool,
-
-    /// True if the current op completed processing and we should advance to the next op.
-    pub op_completed: bool,
+    /// Result from the last op execution.
+    pub op_result: OpResult,
 }
 
 impl ActorScriptState {
@@ -77,8 +79,7 @@ impl ActorScriptState {
         println!("  Priorities: {:04X?}", self.priority_ptrs);
         println!("  Current priority: {}", self.current_priority);
         println!("  Current op {:?}", self.current_op);
-        println!("    Yielded: {}", self.op_yielded);
-        println!("    Completed {}", self.op_completed);
+        println!("  Result: {:?}", self.op_result);
         println!();
     }
 }
@@ -134,17 +135,17 @@ impl SceneScript {
             loop {
                 self.data.set_position(state.address);
 
-                if state.current_op.is_none() || state.op_completed {
+                if state.current_op.is_none() || state.op_result.contains(OpResult::COMPLETE) {
                     state.current_op = op_decode(&mut self.data, self.mode);
                     state.address = self.data.position();
                 }
 
-                (state.op_yielded, state.op_completed) = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
+                state.op_result = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
                 self.data.set_position(state.address);
 
                 if let Some(op) = state.current_op {
                     if op == Op::Return {
-                        state.op_completed = true;
+                        state.op_result |= OpResult::COMPLETE;
                         break;
                     }
                 }
@@ -170,15 +171,15 @@ impl SceneScript {
                 self.data.set_position(state.address);
 
                 // Advance to the next op.
-                if state.current_op.is_none() || state.op_completed {
+                if state.current_op.is_none() || state.op_result.contains(OpResult::COMPLETE) {
                     state.current_op = op_decode(&mut self.data, self.mode);
                     state.address = self.data.position();
                 }
 
-                (state.op_yielded, state.op_completed) = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
+                state.op_result = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
                 self.data.set_position(state.address);
 
-                if state.op_yielded {
+                if state.op_result.contains(OpResult::COMPLETE) {
                     break;
                 }
             }
