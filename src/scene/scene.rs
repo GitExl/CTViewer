@@ -86,16 +86,19 @@ impl Scene {
         // Create actors and related state.
         for actor_script_index in 0..self.script.actor_scripts.len() {
             let actor = Actor::new(actor_script_index);
-
             self.script.add_initial_state(actor_script_index);
-            let state = ctx.sprites_states.add_state();
-            actor.update_sprite_state(state);
-
+            ctx.sprites_states.add_state();
             self.actors.push(actor);
         }
 
         // Run first actor script until it yields (first return op).
         self.script.run_until_return(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
+
+        // Update sprite state after script init.
+        for (actor_index, actor) in self.actors.iter_mut().enumerate() {
+            let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
+            actor.update_sprite_state(sprite_state);
+        }
     }
 
     pub fn dump(&self, ctx: &Context) {

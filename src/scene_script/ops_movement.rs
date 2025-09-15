@@ -88,7 +88,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             angle: DataSource::Immediate(data.read_u8().unwrap() as u32),
             steps: DataSource::Immediate(data.read_u8().unwrap() as u32),
             update_direction: false,
-            animated: true,
+            animated: false,
         },
         // Same as 0x9C, but different in some unknown way?
         0x9D => Op::ActorMoveAtAngle {
