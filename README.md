@@ -62,7 +62,7 @@ When viewing scenes, the following keys are available:
 - `m` render sprite priority data
 - `,` render exits
 - `.` render treasures
-- `/` render actors
+- `/` render actor data
 
 Information about exits, treasure and actors is displayed when the mouse is over them. You can move to another scene
 or world by clicking on exits. Clicking on an actor will dump debug information about them to `stdout`.
@@ -72,12 +72,13 @@ or world by clicking on exits. Clicking on an actor will dump debug information 
 These are some screenshots from various scenes. They have been scaled to a 4/3 aspect ratio.
 
 ![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png "Castle Magus Throne of Strength. (SNES)")
-![Denadoro South Face](/readme/Denadoro%20South%20Face.png "Denadoro South Face. (SNES)")
+![Denadoro South Face](/readme/Cave%20of%20Masamune%20Exterior.png "Cave of Masamune exterior. (SNES)")
 ![Crono's Kitchen](/readme/Crono's%20Kitchen.png "Chrono's Kitchen. (SNES)")
 ![Zeal Kingdom](/readme/Zeal%20Kingdom.png "Zeal Kingdom world. (SNES)")
-![Frog's Burrow](/readme/Frog's%20Burrow.png "Frog's Burrow with treasure contents. (PC)")
+![Frog's Burrow](/readme/Frog's%20Burrow.png "Frog's Burrow with treasure contents. (SNES)")
 ![Mountain of Woe Z Debug data](/readme/Mt%20Woe%20Debug.png "Mountain of Woe with Z debug information. (PC)")
 ![1000 A.D.](/readme/1000%20AD.png "1000 A.D. with exit debug information. (PC)")
+![Frog's Burrow Entrance](/readme/Frog's%20Burrow%20actors.png "Frog's Burrow entrance with actor debug information. (SNES)")
 
 ## Known issues
 
@@ -104,4 +105,8 @@ look wrong.
 
 ## Thanks to...
 
-- Mauron for help with scene script specifics.
+- Geiger for some of the invaluable documentation about CT's internals.
+- Micheal Springer for Temporal Flux.
+- rivernyxx for CTExplore.
+- Mauron for help with some scene script specifics.
+- ...many other people who documented (small) parts of Chrono Trigger over the past decades.
