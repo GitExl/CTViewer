@@ -58,18 +58,44 @@ impl Direction {
 bitflags! {
     #[derive(Clone, Default, Copy, Debug, PartialEq)]
     pub struct ActorFlags: u32 {
+        /// Script execution is disabled.
         const SCRIPT_DISABLED = 0x0001;
+
+        /// Actor is visible.
         const VISIBLE = 0x0002;
+
+        /// Actor is processed by the sprite renderer.
         const RENDERED = 0x0004;
+
+        /// Actor is solid to other actors for collision detection.
         const SOLID = 0x0008;
-        const TOUCHABLE = 0x0010;
-        const COLLISION_TILE = 0x0020;
-        const COLLISION_PC = 0x0040;
+
+        /// Actor can have its touch and activate functions triggered.
+        const INTERACTABLE = 0x0010;
+
+        /// Actor collides with solid tiles.
+        const COLLISION_WITH_TILES = 0x0020;
+
+        /// Actor avoids collision with players.
+        const COLLISION_AVOID_PC = 0x0040;
+
+        /// Actor movement end on tiles.
         const MOVE_ONTO_TILE = 0x0080;
+
+        /// Actor movement ends on other actors (?).
         const MOVE_ONTO_ACTOR = 0x0100;
+
+        /// Actor is currently in battle.
         const IN_BATTLE = 0x0200;
+
+        /// Actor can be pushed.
         const PUSHABLE = 0x0400;
+
+        /// Actor remains static during battles.
         const BATTLE_STATIC = 0x0800;
+
+        /// Actor is dead.
+        const DEAD = 0x1000;
     }
 }
 
@@ -149,7 +175,7 @@ impl Actor {
             player_index: None,
             direction: Direction::default(),
             move_speed: 1.0,
-            flags: ActorFlags::empty(),
+            flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::INTERACTABLE,
             battle_index: 0,
         }
     }

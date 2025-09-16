@@ -15,6 +15,7 @@ bitflags! {
     pub struct OpResult: u32 {
         const YIELD = 0x0001;
         const COMPLETE = 0x0002;
+        const JUMPED = 0x0004;
     }
 }
 
@@ -31,19 +32,23 @@ impl SceneActorScript {
 
     pub fn get_initial_state(&self) -> ActorScriptState {
         ActorScriptState {
-            ptrs: self.ptrs,
-            address: self.ptrs[0],
             delay: 4,
             delay_counter: 4,
             pause_counter: 0,
+
+            current_address: self.ptrs[0],
+            function_ptrs: self.ptrs,
             priority_return_ptrs: [0; 8],
-            current_priority: 0,
+            current_priority: 7,
+
+            call_waiting: false,
             current_op: None,
             op_result: OpResult::empty(),
         }
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct ActorScriptState {
 
     /// The delay is how many ticks need to pass before this script state is processed again.
@@ -55,16 +60,19 @@ pub struct ActorScriptState {
     pub pause_counter: u32,
 
     /// The current execution address.
-    pub address: u64,
+    pub current_address: u64,
 
     /// Pointers to each script function.
-    pub ptrs: [u64; 16],
+    pub function_ptrs: [u64; 16],
 
     /// Return addresses for each priority level call.
-    pub priority_return_ptrs: [usize; 8],
+    pub priority_return_ptrs: [u64; 8],
 
     /// The active priority level.
     pub current_priority: usize,
+
+    /// True if waiting for another call to complete.
+    pub call_waiting: bool,
 
     /// Current decoded op.
     pub current_op: Option<Op>,
@@ -78,11 +86,12 @@ impl ActorScriptState {
         println!("Actor script state");
         println!("  Delay {} / {}", self.delay_counter, self.delay);
         println!("  Pause {}", self.pause_counter);
-        println!("  Current address 0x{:04X}", self.address);
+        println!("  Current address 0x{:04X}", self.current_address);
         println!("  Return addresses: {:04X?}", self.priority_return_ptrs);
         println!("  Current priority: {}", self.current_priority);
         println!("  Current op {:?}", self.current_op);
         println!("  Result: {:?}", self.op_result);
+        println!("  Call waiting: {:?}", self.call_waiting);
         println!();
     }
 }
@@ -130,62 +139,72 @@ impl SceneScript {
     }
 
     pub fn run_until_return(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
-        for (state_index, state) in self.script_states.iter_mut().enumerate() {
+        for state_index in 0..self.script_states.len() {
             if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
                 continue;
             }
 
+            let mut state_dup = self.script_states[state_index].clone();
             loop {
-                self.data.set_position(state.address);
 
-                if state.current_op.is_none() || state.op_result.contains(OpResult::COMPLETE) {
-                    state.current_op = op_decode(&mut self.data, self.mode);
-                    state.address = self.data.position();
+                // Decode op at current position.
+            self.data.set_position(state_dup.current_address);
+                state_dup.current_op = op_decode(&mut self.data, self.mode);
+
+                // Execute op and handle result.
+                state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory);
+                if state_dup.op_result.contains(OpResult::JUMPED) {
+                    self.data.set_position(state_dup.current_address);
+                } else if state_dup.op_result.contains(OpResult::COMPLETE) {
+                    state_dup.current_address = self.data.position();
                 }
 
-                state.op_result = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
-                self.data.set_position(state.address);
-
-                if let Some(op) = state.current_op {
+                if let Some(op) = state_dup.current_op {
                     if op == Op::Return {
-                        state.op_result |= OpResult::COMPLETE;
+                        state_dup.op_result |= OpResult::COMPLETE;
                         break;
                     }
                 }
             }
+            self.script_states[state_index] = state_dup;
         }
     }
 
     pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
-        for (state_index, state) in self.script_states.iter_mut().enumerate() {
+        for state_index in 0..self.script_states.len() {
             if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
                 continue;
             }
 
+            let mut state_dup = self.script_states[state_index].clone();
+
             // Countdown until next time this actor's script needs to be processed.
-            if state.delay_counter > 1 {
-                state.delay_counter -= 1;
-                continue;
-            }
-            state.delay_counter = state.delay;
+            if state_dup.delay_counter > 1 {
+                state_dup.delay_counter -= 1;
+            } else {
+                state_dup.delay_counter = state_dup.delay;
 
-            // Execute up to 5 instructions, unless one yields.
-            for _ in 0..5 {
-                self.data.set_position(state.address);
+                // Execute up to 5 instructions, unless one yields.
+                for _ in 0..5 {
 
-                // Advance to the next op.
-                if state.current_op.is_none() || state.op_result.contains(OpResult::COMPLETE) {
-                    state.current_op = op_decode(&mut self.data, self.mode);
-                    state.address = self.data.position();
+                    // Decode op at current position.
+                    self.data.set_position(state_dup.current_address);
+                    state_dup.current_op = op_decode(&mut self.data, self.mode);
+
+                    // Execute op and handle result.
+                    state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory);
+                    if state_dup.op_result.contains(OpResult::JUMPED) {
+                        self.data.set_position(state_dup.current_address);
+                    } else if state_dup.op_result.contains(OpResult::COMPLETE) {
+                        state_dup.current_address = self.data.position();
+                    }
+                    if state_dup.op_result.contains(OpResult::YIELD) {
+                        break;
+                    }
                 }
-
-                state.op_result = op_execute(ctx, state, state_index, actors, map, scene_map, &mut self.memory);
-                self.data.set_position(state.address);
-
-                if state.op_result.contains(OpResult::YIELD) {
-                    break;
-                }
             }
+
+            self.script_states[state_index] = state_dup;
         }
     }
 

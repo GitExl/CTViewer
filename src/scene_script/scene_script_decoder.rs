@@ -82,9 +82,9 @@ pub enum ActorRef {
 }
 
 impl ActorRef {
-    pub fn deref(self, this: usize) -> usize {
+    pub fn deref(self, current_actor_index: usize) -> usize {
         match self {
-            ActorRef::This => this,
+            ActorRef::This => current_actor_index,
             ActorRef::ScriptActor(index) => index,
             ActorRef::PartyMember(_index) => 0,  // todo
             ActorRef::ScriptActorStoredUpper(_address) => 0,  //todo

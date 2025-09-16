@@ -12,12 +12,12 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Enable/disable this actor being able to be touched.
         0x08 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::TOUCHABLE,
+            set: ActorFlags::INTERACTABLE,
             remove: ActorFlags::empty(),
         },
         0x09 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::TOUCHABLE,
+            set: ActorFlags::INTERACTABLE,
             remove: ActorFlags::empty(),
         },
 
@@ -130,14 +130,14 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let mut flags_remove = ActorFlags::empty();
 
             if flags & 0x01 > 0 {
-                flags_set.set(ActorFlags::COLLISION_TILE, true);
+                flags_set.set(ActorFlags::COLLISION_WITH_TILES, true);
             } else {
-                flags_remove.set(ActorFlags::COLLISION_TILE, true);
+                flags_remove.set(ActorFlags::COLLISION_WITH_TILES, true);
             }
             if flags & 0x02 > 0 {
-                flags_set.set(ActorFlags::COLLISION_PC, true);
+                flags_set.set(ActorFlags::COLLISION_AVOID_PC, true);
             } else {
-                flags_remove.set(ActorFlags::COLLISION_PC, true);
+                flags_remove.set(ActorFlags::COLLISION_AVOID_PC, true);
             }
 
             Op::ActorUpdateFlags {

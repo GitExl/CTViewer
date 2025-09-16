@@ -3,14 +3,6 @@ use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
 
-/// How to wait for script execution.
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum WaitMode {
-    NoWait,
-    WaitForCompletion,
-    WaitForReturn,
-}
-
 pub fn op_decode_call(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
 
@@ -31,18 +23,16 @@ pub fn op_decode_call(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 actor: ActorRef::ScriptActor(actor_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
-                wait_mode: WaitMode::NoWait,
             }
         },
         // Wait until the other actor completes a more urgent task, then call as in 0x02.
         0x03 => {
             let actor_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
-            Op::Call {
+            Op::CallWaitCompletion {
                 actor: ActorRef::ScriptActor(actor_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
-                wait_mode: WaitMode::WaitForCompletion,
             }
         },
         // Wait until the other actor completes a more urgent task, then call as in 0x02,
@@ -50,11 +40,10 @@ pub fn op_decode_call(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         0x04 => {
             let actor_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
-            Op::Call {
+            Op::CallWaitReturn {
                 actor: ActorRef::ScriptActor(actor_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
-                wait_mode: WaitMode::WaitForReturn,
             }
         },
 
@@ -66,27 +55,24 @@ pub fn op_decode_call(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 actor: ActorRef::PartyMember(party_member_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
-                wait_mode: WaitMode::NoWait,
             }
         },
         0x06 => {
             let party_member_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
-            Op::Call {
+            Op::CallWaitCompletion {
                 actor: ActorRef::PartyMember(party_member_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
-                wait_mode: WaitMode::WaitForCompletion,
             }
         },
         0x07 => {
             let party_member_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
-            Op::Call {
+            Op::CallWaitReturn {
                 actor: ActorRef::PartyMember(party_member_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
-                wait_mode: WaitMode::WaitForReturn,
             }
         },
 

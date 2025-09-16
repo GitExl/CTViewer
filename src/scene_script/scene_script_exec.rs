@@ -1,4 +1,4 @@
-use crate::actor::{Actor, ActorFlags, DebugSprite, Direction};
+use crate::actor::{Actor, ActorFlags, ActorTask, DebugSprite, Direction};
 use crate::Context;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
@@ -11,7 +11,7 @@ use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 use crate::scene_script::scene_script_decoder::CopyTilesFlags;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
 
-pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: usize, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> OpResult {
+pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptState, states: &mut Vec<ActorScriptState>, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> OpResult {
     let op = match state.current_op {
         Some(op) => op,
         None => return OpResult::YIELD | OpResult::COMPLETE,
@@ -19,16 +19,180 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
     match op {
         Op::NOP => OpResult::COMPLETE,
+
         Op::Yield { forever } => {
-            if !forever {
-                OpResult::YIELD | OpResult::COMPLETE
-            } else {
+            if forever {
                 OpResult::YIELD
+            } else {
+                OpResult::YIELD | OpResult::COMPLETE
             }
         },
 
-        // todo return never completes for now, but should move execution elsewhere.
-        Op::Return => OpResult::YIELD,
+        Op::Return => {
+
+            // If the current priority is the least urgent, just yield.
+            // Priority 7 is what the object init scripts are started at.
+            if state.current_priority == 7 {
+                return OpResult::YIELD | OpResult::COMPLETE;
+            }
+
+            // Remove the current priority pointer.
+            state.priority_return_ptrs[state.current_priority] = 0;
+
+            // Find the next non-zero lower priority pointer and use that as the current priority.
+            // Priority 7 should always be available, as that is the init function.
+            for priority_index in state.current_priority + 1..8 {
+                state.current_priority = priority_index;
+                state.current_address = state.priority_return_ptrs[priority_index];
+                if state.priority_return_ptrs[priority_index] != 0 {
+                    break;
+                }
+            }
+
+            OpResult::COMPLETE | OpResult::JUMPED
+        },
+
+        Op::Call { actor, priority, function } => {
+            let target = actor.deref(this_actor);
+            let target_actor = &mut actors[target];
+            let target_state = &mut states[target];
+
+            // Complete immediately if the object is not interactive, dead or disabled.
+            if !target_actor.flags.contains(ActorFlags::INTERACTABLE) {
+                return OpResult::COMPLETE;
+            }
+            if target_actor.flags.contains(ActorFlags::DEAD) {
+                return OpResult::COMPLETE;
+            }
+            if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                return OpResult::COMPLETE;
+            }
+
+            // Complete if the current priority is the same as the call priority.
+            if target_state.current_priority == priority {
+                return OpResult::COMPLETE;
+            }
+
+            // If the current priority is more important than the new one, store the new function
+            // address at that priority pointer, if not already set. A future call to return can
+            // then exit to the new function.
+            if target_state.current_priority < priority {
+                if target_state.priority_return_ptrs[target_state.current_priority] > 0 {
+                    return OpResult::COMPLETE;
+                }
+
+                target_state.priority_return_ptrs[priority] = target_state.function_ptrs[function];
+                return OpResult::COMPLETE;
+            }
+
+            // The new priority is more important than the current one. Set the priority pointer to
+            // the new function and immediately continue execution there.
+            target_state.priority_return_ptrs[target_state.current_priority] = target_state.current_address;
+            target_state.current_address = target_state.function_ptrs[function];
+            target_state.current_priority = priority;
+
+            // The new function must interrupt any active movement/task.
+            target_actor.task = ActorTask::None;
+
+            OpResult::COMPLETE
+        },
+
+        Op::CallWaitCompletion { actor, priority, function } => {
+            let target = actor.deref(this_actor);
+            let target_actor = &mut actors[target];
+            let target_state = &mut states[target];
+
+            // Wait until a non-interactive target object becomes interactive.
+            if !target_actor.flags.contains(ActorFlags::INTERACTABLE) {
+                return OpResult::YIELD;
+            }
+
+            // Complete immediately if the object is dead or disabled.
+            if target_actor.flags.contains(ActorFlags::DEAD) {
+                return OpResult::COMPLETE;
+            }
+            if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                return OpResult::COMPLETE;
+            }
+
+            // Complete if the current priority is the same as the call priority.
+            if target_state.current_priority <= priority {
+                return OpResult::YIELD;
+            }
+
+            // The new priority is more important than the current one. Set the priority pointer to
+            // the new function and immediately continue execution there.
+            target_state.priority_return_ptrs[target_state.current_priority] = target_state.current_address;
+            target_state.current_address = target_state.function_ptrs[function];
+            target_state.current_priority = priority;
+
+            // The new function must interrupt any active movement/task.
+            target_actor.task = ActorTask::None;
+
+            OpResult::COMPLETE
+        },
+
+        Op::CallWaitReturn { actor, priority, function } => {
+            let target = actor.deref(this_actor);
+            let target_actor = &mut actors[target];
+            let target_state = &mut states[target];
+
+            if !state.call_waiting {
+
+                // Wait until a non-interactive target object becomes interactive.
+                if !target_actor.flags.contains(ActorFlags::INTERACTABLE) {
+                    return OpResult::YIELD;
+                }
+
+                // Complete immediately if the object is dead or disabled.
+                if target_actor.flags.contains(ActorFlags::DEAD) {
+                    return OpResult::COMPLETE;
+                }
+                if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                    return OpResult::COMPLETE;
+                }
+
+                // Wait until the target object is done executing a function of
+                // the same or more importance.
+                if target_state.current_priority <= priority {
+                    return OpResult::YIELD;
+                }
+
+                // The new priority is more important than the current one. Set the priority pointer to the new function
+                // and immediately continue execution there.
+                target_state.priority_return_ptrs[target_state.current_priority] = target_state.current_address;
+                target_state.current_address = target_state.function_ptrs[function];
+                target_state.current_priority = priority;
+
+                // The new function must interrupt any active movement.
+                target_actor.task = ActorTask::None;
+
+                // We are now waiting on the target object to finish their function.
+                state.call_waiting = true;
+
+                return OpResult::YIELD;
+            }
+
+            // Complete immediately if the object is dead or disabled.
+            if target_actor.flags.contains(ActorFlags::DEAD) {
+                state.call_waiting = false;
+                return OpResult::COMPLETE;
+            }
+            if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                state.call_waiting = false;
+                return OpResult::COMPLETE;
+            }
+
+            // Wait until the target object is done executing our previously set
+            // function call.
+            if target_state.current_priority <= priority {
+                return OpResult::YIELD;
+            }
+
+            // The call we were waiting for has completed.
+            state.call_waiting = false;
+            OpResult::COMPLETE
+        },
 
         // Copy.
         Op::Copy8 { source, dest } => {
@@ -46,8 +210,8 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
 
         // Jump.
         Op::Jump { offset } => {
-            state.address = (state.address as i64 + offset - 1) as u64;
-            OpResult::COMPLETE
+            state.current_address = (state.current_address as i64 + offset) as u64;
+            OpResult::COMPLETE | OpResult::JUMPED
         },
         Op::JumpConditional8 { lhs, cmp, rhs, offset } => {
             let lhs_value = lhs.get_u8(memory);
@@ -63,7 +227,8 @@ pub fn op_execute(ctx: &mut Context, state: &mut ActorScriptState, this_actor: u
                 CompareOp::Or => lhs_value | rhs_value > 0,
             };
             if !result {
-                state.address = (state.address as i64 + offset - 1) as u64;
+                state.current_address = (state.current_address as i64 + offset) as u64;
+                return OpResult::COMPLETE | OpResult::JUMPED;
             }
 
             OpResult::COMPLETE

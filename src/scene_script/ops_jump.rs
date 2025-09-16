@@ -42,10 +42,10 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Relative unconditional jumps.
         0x10 => Op::Jump {
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x11 => Op::Jump {
-            offset: -(data.read_u8().unwrap() as i64),
+            offset: -(data.read_u8().unwrap() as i64) + 1,
         },
 
         // Conditional jumps.
@@ -54,28 +54,28 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as usize as u32),
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 4,
         },
         // 2 byte direct compare with 0x7F0200.
         0x13 => Op::JumpConditional16 {
             lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             rhs: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 5,
         },
         // 1 byte from 0x7F0200 compare with 0x7F0200.
         0x14 => Op::JumpConditional8 {
             lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             rhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 4,
         },
         // 2 byte from 0x7F0200 compare with 0x7F0200.
         0x15 => Op::JumpConditional16 {
             lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             rhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 4,
         },
         // 1 byte direct compare with 0x7E0000 or 0x7E0100.
         0x16 => {
@@ -89,7 +89,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 lhs: DataSource::for_global_memory(lhs),
                 rhs: DataSource::Immediate((value & 0x7F) as u32),
                 cmp: CompareOp::from_value(op_value as usize & 0x7F),
-                offset: data.read_u8().unwrap() as i64,
+                offset: data.read_u8().unwrap() as i64 + 4,
             }
         },
         // Less than with storyline counter.
@@ -97,28 +97,28 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             lhs: DataSource::for_global_memory(0x000),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
             cmp: CompareOp::Lt,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 2,
         },
         // Equal with actor result.
         0x1A => Op::JumpConditional8 {
             lhs: DataSource::ActorResult(ActorRef::This),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
             cmp: CompareOp::Eq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 2,
         },
         // If actor is hidden.
         0x27 => Op::JumpConditional8 {
             lhs: DataSource::ActorFlag(ActorRef::ScriptActor(data.read_u8().unwrap() as usize * 2), ActorFlags::VISIBLE),
             rhs: DataSource::Immediate(1),
             cmp: CompareOp::NotEq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 2,
         },
         // If actor is in battle.
         0x28 => Op::JumpConditional8 {
             lhs: DataSource::ActorFlag(ActorRef::ScriptActor(data.read_u8().unwrap() as usize * 2), ActorFlags::IN_BATTLE),
             rhs: DataSource::Immediate(1),
             cmp: CompareOp::Eq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 2,
         },
 
         // Jump on input tests.
@@ -126,55 +126,55 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Immediate(0),
             cmp: CompareOp::NotEq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x30 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::Dash),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x31 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::Confirm),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x34 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::A),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x35 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::B),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x36 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::X),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x37 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::Y),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x38 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::L),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x39 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Input(InputBinding::R),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
 
         // Jump on input tests, changed since last test.
@@ -182,49 +182,49 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::Dash),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x3C => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::Confirm),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x3F => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::A),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x40 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::B),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x41 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::X),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x42 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::Y),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x43 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::L),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
         0x44 => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(true),
             rhs: DataSource::Input(InputBinding::R),
             cmp: CompareOp::Or,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 1,
         },
 
         // Inventory-based jumps
@@ -232,13 +232,13 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             lhs: DataSource::ItemCount(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(1),
             cmp: CompareOp::GtEq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 2,
         },
-        0xCC => Op::JumpConditional8 {
+        0xCC => Op::JumpConditional16 {
             lhs: DataSource::GoldCount,
             rhs: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
             cmp: CompareOp::GtEq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 3,
         },
 
         // Party member has been recruited.
@@ -246,14 +246,14 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             lhs: DataSource::PCIsRecruited,
             rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
             cmp: CompareOp::GtEq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 2,
         },
         // Party member is in active party.
         0xD2 => Op::JumpConditional8 {
             lhs: DataSource::PCIsActive,
             rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
             cmp: CompareOp::GtEq,
-            offset: data.read_u8().unwrap() as i64,
+            offset: data.read_u8().unwrap() as i64 + 2,
         },
 
         // PC specific ops.
@@ -266,7 +266,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 lhs: DataSource::for_extended_memory(lhs),
                 rhs: DataSource::Immediate(value as u32),
                 cmp: CompareOp::from_value(op_value as usize & 0x7F),
-                offset: data.read_u8().unwrap() as i64,
+                offset: data.read_u8().unwrap() as i64 + 4,
             }
         },
 

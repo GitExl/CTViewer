@@ -1,5 +1,4 @@
 use crate::actor::ActorFlags;
-use crate::scene_script::ops_call::WaitMode;
 use crate::scene_script::ops_char_load::CharacterType;
 use crate::scene_script::ops_dialogue::{DialogueInput, DialoguePosition, DialogueSpecialType};
 use crate::scene_script::ops_jump::CompareOp;
@@ -35,7 +34,16 @@ pub enum Op {
         actor: ActorRef,
         priority: usize,
         function: usize,
-        wait_mode: WaitMode,
+    },
+    CallWaitCompletion {
+        actor: ActorRef,
+        priority: usize,
+        function: usize,
+    },
+    CallWaitReturn {
+        actor: ActorRef,
+        priority: usize,
+        function: usize,
     },
 
     // Actor properties.

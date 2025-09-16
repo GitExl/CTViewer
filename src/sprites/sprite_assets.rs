@@ -57,7 +57,7 @@ impl SpriteAssets {
         let sprite = self.assets.get(&sprite_index).unwrap();
         let anim_set = self.anim_sets.get(&sprite.anim_set_index).unwrap();
 
-        let real_anim_index = if anim_set.anims.len() <= anim_index {
+        let real_anim_index = if anim_index >= anim_set.anims.len() {
             println!("Warning: sprite {} does not have animation {}. Using animation 0.", sprite_index, anim_index);
             0
         } else {
@@ -65,8 +65,8 @@ impl SpriteAssets {
         };
 
         let anim = &anim_set.anims[real_anim_index];
-        let real_frame_index = if anim.frames.len() == 0 {
-            println!("Warning: sprite {} animation {} does not have frame {}. Using frame 0.", sprite_index, anim_index, frame_index);
+        let real_frame_index = if frame_index >= anim.frames.len() || anim.frames.len() == 0 {
+            println!("Warning: sprite {} animation {} does not have frame {}. Using frame 0.", sprite_index, real_anim_index, frame_index);
             0
         } else {
             frame_index

@@ -47,7 +47,7 @@ impl SpriteState {
 
     pub fn tick_animation(&mut self, anim: &SpriteAnim, frame: &SpriteAnimFrame, delta: f64) {
 
-        // 0-duration frames show indefinitely.
+        // 0-duration frames show indefinitely?
         if frame.duration == 0.0 {
             return;
         }
