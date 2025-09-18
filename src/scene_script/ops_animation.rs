@@ -50,10 +50,8 @@ pub fn op_decode_animation(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             loops: DataSource::Immediate(data.read_u8().unwrap() as u32),
         },
 
-        // Limit active animations?
-        0x47 => Op::AnimationLimit {
-            limit: data.read_u8().unwrap(),
-        },
+        // Limit active animations, but we don't have to deal with this because we are not an SNES?
+        0x47 => Op::NOP,
 
         _ => panic!("Unknown animate op."),
     }

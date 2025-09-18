@@ -125,12 +125,14 @@ impl SpriteStateList {
             0
         };
 
-        let (frame, anim_index, frame_index) = assets.get_frame_for_animation(state.sprite_index, anim_index, frame_index);
-        let sprite_frame = frame.sprite_frames[direction.to_index()];
-
-        let state = &mut self.states[actor_index];
+        let frame = assets.get_frame_for_animation(state.sprite_index, anim_index, frame_index);
+        let sprite_frame = match frame {
+            None => return,
+            Some(frame) => frame.sprite_frames[direction.to_index()],
+        };
 
         // Only reset playing the animation if a new animation was set.
+        let state = &mut self.states[actor_index];
         if state.anim_index != anim_index {
             state.anim_timer = 0.0;
             state.anim_loop_count = 0;
@@ -149,8 +151,12 @@ pub fn set_direction(&mut self, assets: &SpriteAssets, actor_index: usize, direc
             return;
         }
 
-        let (frame, _, _) = assets.get_frame_for_animation(state.sprite_index, state.anim_index, state.anim_frame);
-        let sprite_frame = frame.sprite_frames[direction.to_index()];
+        let frame = assets.get_frame_for_animation(state.sprite_index, state.anim_index, state.anim_frame);
+        let sprite_frame = if let Some(frame) = frame {
+            frame.sprite_frames[direction.to_index()]
+        } else {
+            0
+        };
 
         let state = &mut self.states[actor_index];
         state.direction = direction;

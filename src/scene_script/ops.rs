@@ -156,17 +156,12 @@ pub enum Op {
     },
 
     // Animation.
-    // 0 loops means do not loop, only play once.
-    // 0xFFFFFFFF loops means loop forever.
     Animate {
         actor: ActorRef,
         animation: DataSource,
         wait: bool,
         run: bool,
         loops: DataSource,
-    },
-    AnimationLimit {
-        limit: u8,
     },
 
     // Code jumps.

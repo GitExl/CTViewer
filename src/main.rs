@@ -17,6 +17,7 @@ use crate::destination::Destination;
 use crate::renderer::Renderer;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state_list::SpriteStateList;
+use crate::util::random::Random;
 
 mod actor;
 mod camera;
@@ -85,6 +86,7 @@ pub struct Context<'a> {
     sprites_states: SpriteStateList,
     sprite_assets: SpriteAssets,
     render: Renderer<'a>,
+    random: Random,
 }
 
 fn main() -> Result<(), String> {
@@ -98,6 +100,7 @@ fn main() -> Result<(), String> {
     let render = Renderer::new(&sdl, args.scale, args.scale_linear, args.aspect_ratio, !args.no_vsync);
     let sprite_assets = SpriteAssets::new(&fs);
     let sprites = SpriteStateList::new();
+    let random = Random::new();
 
     let mut ctx = Context {
         fs,
@@ -105,6 +108,7 @@ fn main() -> Result<(), String> {
         sprites_states: sprites,
         sprite_assets,
         render,
+        random,
     };
 
     let mut gamestate: Box<dyn GameStateTrait>;
