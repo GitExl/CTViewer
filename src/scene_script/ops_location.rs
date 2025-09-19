@@ -11,7 +11,7 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
         // The differences are not at all documented.
         0xDC => {
             Op::ChangeLocation {
-                index_direction: if matches!(mode, SceneScriptMode::Snes) {
+                index_facing: if matches!(mode, SceneScriptMode::Snes) {
                     DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
                 } else {
                     DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
@@ -22,7 +22,7 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
             }
         },
         0xDD => Op::ChangeLocation {
-            index_direction: if matches!(mode, SceneScriptMode::Snes) {
+            index_facing: if matches!(mode, SceneScriptMode::Snes) {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
             } else {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
@@ -32,7 +32,7 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
             variant: 0xDD,
         },
         0xDE => Op::ChangeLocation {
-            index_direction: if matches!(mode, SceneScriptMode::Snes) {
+            index_facing: if matches!(mode, SceneScriptMode::Snes) {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
             } else {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
@@ -42,7 +42,7 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
             variant: 0xDE,
         },
         0xDF => Op::ChangeLocation {
-            index_direction: if matches!(mode, SceneScriptMode::Snes) {
+            index_facing: if matches!(mode, SceneScriptMode::Snes) {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
             } else {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
@@ -52,7 +52,7 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
             variant: 0xDF,
         },
         0xE0 => Op::ChangeLocation {
-            index_direction: if matches!(mode, SceneScriptMode::Snes) {
+            index_facing: if matches!(mode, SceneScriptMode::Snes) {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
             } else {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
@@ -62,7 +62,7 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
             variant: 0xDE,
         },
         0xE1 => Op::ChangeLocation {
-            index_direction: if matches!(mode, SceneScriptMode::Snes) {
+            index_facing: if matches!(mode, SceneScriptMode::Snes) {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
             } else {
                 DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
@@ -72,7 +72,7 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
             variant: 0xE1,
         },
         0xE2 => Op::ChangeLocation {
-            index_direction: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            index_facing: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             variant: 0xE2,

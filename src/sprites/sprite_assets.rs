@@ -53,53 +53,25 @@ impl SpriteAssets {
         self.anim_sets.get(&anim_set_index).unwrap()
     }
 
-    pub fn get_frame_for_animation(&self, sprite_index: usize, anim_index: usize, frame_index: usize) -> Option<SpriteAnimFrame> {
-        let sprite = self.assets.get(&sprite_index).unwrap();
-
-        if !self.anim_sets.contains_key(&sprite.anim_set_index) {
-            println!("Warning: sprite {} does not have animation set {}.", sprite_index, sprite.anim_set_index);
-            return None;
-        }
-        let anim_set = self.anim_sets.get(&sprite.anim_set_index).unwrap();
-
-        if anim_index >= anim_set.anims.len() {
-            println!("Warning: sprite {} does not have animation {}.", sprite_index, anim_index);
-            return None;
-        }
-
-        let anim = &anim_set.anims[anim_index];
-        if anim.frames.len() == 0 {
-            println!("Warning: sprite {} animation {} does has no frames.", sprite_index, anim_index);
-            return None;
-        }
-
-        if frame_index >= anim.frames.len() {
-            println!("Warning: sprite {} animation {} does not have frame {}.", sprite_index, anim_index, frame_index);
-            return None;
-        };
-
-        Some(anim.frames[frame_index])
-    }
-
     // Load a sprite for future use.
-    pub fn load(&mut self, fs: &FileSystem, sprite_index: usize) {
-        if self.assets.contains_key(&sprite_index) {
-            return;
+    pub fn load(&mut self, fs: &FileSystem, sprite_index: usize) -> &SpriteAsset {
+        if !self.assets.contains_key(&sprite_index) {
+            let info = fs.read_sprite_header(sprite_index);
+            let assembly = fs.read_sprite_assembly(info.assembly_index, &info);
+            let palette = fs.read_sprite_palette(info.palette_index).unwrap();
+            let tiles = fs.read_sprite_tiles(info.bitmap_index, assembly.chip_max);
+
+            let sprite = SpriteAsset {
+                index: sprite_index,
+                tiles,
+                assembly,
+                palette,
+                anim_set_index: info.anim_index,
+            };
+            self.assets.insert(sprite_index, sprite);
         }
 
-        let info = fs.read_sprite_header(sprite_index);
-        let assembly = fs.read_sprite_assembly(info.assembly_index, &info);
-        let palette = fs.read_sprite_palette(info.palette_index).unwrap();
-        let tiles = fs.read_sprite_tiles(info.bitmap_index, assembly.chip_max);
-
-        let sprite = SpriteAsset {
-            index: sprite_index,
-            tiles,
-            assembly,
-            palette,
-            anim_set_index: info.anim_index,
-        };
-        self.assets.insert(sprite_index, sprite);
+        self.assets.get(&sprite_index).unwrap()
     }
 
     // Loads the generic world sprite used by world maps.
@@ -183,19 +155,17 @@ impl SpriteAssets {
 }
 
 fn generate_null_sprite_anim_set() -> SpriteAnimSet {
-    SpriteAnimSet {
-        index: NULL_ANIM_SET_INDEX,
-        anims: vec![
-            SpriteAnim {
-                frames: vec![
-                    SpriteAnimFrame {
-                        sprite_frames: [0, 0, 0, 0],
-                        duration: 60,
-                    }
-                ],
-            },
+    let mut set = SpriteAnimSet::new(NULL_ANIM_SET_INDEX);
+    set.add_anim(SpriteAnim {
+        frames: vec![
+            SpriteAnimFrame {
+                sprite_frames: [0, 0, 0, 0],
+                duration: 60,
+            }
         ],
-    }
+    });
+    
+    set
 }
 
 fn generate_null_sprite_asset() -> SpriteAsset {

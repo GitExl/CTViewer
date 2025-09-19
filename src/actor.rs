@@ -27,7 +27,7 @@ pub enum ActorClass {
 }
 
 #[derive(Clone, Copy, Default, Debug, PartialEq)]
-pub enum Direction {
+pub enum Facing {
     Up,
     #[default]
     Down,
@@ -35,23 +35,23 @@ pub enum Direction {
     Right,
 }
 
-impl Direction {
+impl Facing {
     pub fn to_index(&self) -> usize {
         match self {
-            Direction::Up => 0,
-            Direction::Down => 1,
-            Direction::Left => 2,
-            Direction::Right => 3,
+            Facing::Up => 0,
+            Facing::Down => 1,
+            Facing::Left => 2,
+            Facing::Right => 3,
         }
     }
 
-    pub fn from_index(index: usize) -> Direction {
+    pub fn from_index(index: usize) -> Facing {
         match index {
-            0 => Direction::Up,
-            1 => Direction::Down,
-            2 => Direction::Left,
-            3 => Direction::Right,
-            _ => Direction::default(),
+            0 => Facing::Up,
+            1 => Facing::Down,
+            2 => Facing::Left,
+            3 => Facing::Right,
+            _ => Facing::default(),
         }
     }
 }
@@ -150,7 +150,7 @@ pub struct Actor {
     pub sprite_priority_bottom: SpritePriority,
     pub class: ActorClass,
     pub player_index: Option<usize>,
-    pub direction: Direction,
+    pub facing: Facing,
     pub move_speed: f64,
     pub flags: ActorFlags,
     pub battle_index: usize,
@@ -174,7 +174,7 @@ impl Actor {
             sprite_priority_bottom: SpritePriority::default(),
             class: ActorClass::None,
             player_index: None,
-            direction: Direction::default(),
+            facing: Facing::default(),
             move_speed: 1.0,
             flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::INTERACTABLE,
             battle_index: 0,
@@ -196,7 +196,7 @@ impl Actor {
     pub fn update_sprite_state(&self, sprite_state: &mut SpriteState) {
         sprite_state.x = self.lerp_x;
         sprite_state.y = self.lerp_y;
-        sprite_state.direction = self.direction;
+        sprite_state.facing = self.facing;
         sprite_state.priority_top = self.sprite_priority_top;
         sprite_state.priority_bottom = self.sprite_priority_bottom;
         sprite_state.enabled = self.flags.contains(ActorFlags::VISIBLE);
@@ -211,12 +211,12 @@ impl Actor {
             angle += 360.0;
         }
 
-        self.direction = match (angle / 90.0).floor() as u32 {
-            0 => Direction::Down,
-            1 => Direction::Left,
-            2 => Direction::Up,
-            3 => Direction::Right,
-            _ => Direction::Up,
+        self.facing = match (angle / 90.0).floor() as u32 {
+            0 => Facing::Down,
+            1 => Facing::Left,
+            2 => Facing::Up,
+            3 => Facing::Right,
+            _ => Facing::Up,
         };
     }
 
@@ -282,7 +282,7 @@ impl Actor {
             println!("  Player {}", player_index);
         }
         println!("  At {} x {}", self.x, self.y);
-        println!("  Direction: {:?}", self.direction);
+        println!("  Facing: {:?}", self.facing);
         println!("  Speed: {}", self.move_speed);
         println!("  Sprite priority top {:?}", self.sprite_priority_top);
         println!("  Sprite priority bottom {:?}", self.sprite_priority_bottom);

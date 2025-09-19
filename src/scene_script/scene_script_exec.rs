@@ -1,4 +1,4 @@
-use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, Direction};
+use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, Facing};
 use crate::Context;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
@@ -167,8 +167,9 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             }
 
             let state = &mut ctx.sprites_states.get_state_mut(this_actor);
-            ctx.sprite_assets.load(&ctx.fs, sprite_index);
+            let sprite_asset = ctx.sprite_assets.load(&ctx.fs, sprite_index);
             state.sprite_index = sprite_index;
+            state.anim_set_index = sprite_asset.anim_set_index;
             state.enabled = true;
 
             OpResult::COMPLETE
@@ -202,11 +203,34 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE
         },
 
-        Op::ActorSetDirection { actor, direction } => {
+        // Actor facing.
+        Op::ActorFacingSet { actor, facing } => {
             let actor_index = actor.deref(this_actor);
-            let direction = Direction::from_index(direction.get_u8(memory) as usize);
-            actors[actor_index].direction = direction;
-            ctx.sprites_states.set_direction(&ctx.sprite_assets, actor_index, direction);
+            let facing = Facing::from_index(facing.get_u8(memory) as usize);
+            let state = ctx.sprites_states.get_state_mut(actor_index);
+
+            actors[actor_index].facing = facing;
+            state.facing = facing;
+            state.anim_delay = 0;
+
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+
+        Op::ActorSetFacingTowards { actor, to } => {
+            let actor_index = actor.deref(this_actor);
+            let actor_to_index = to.deref(this_actor);
+            let state = ctx.sprites_states.get_state_mut(actor_index);
+
+            let other_actor = &actors[actor_to_index];
+            if other_actor.flags.contains(ActorFlags::DEAD) {
+                return OpResult::COMPLETE;
+            }
+            let other_x = other_actor.x;
+            let other_y = other_actor.y;
+
+            actors[actor_index].face_towards(other_x, other_y);
+            state.facing = actors[actor_index].facing;
+            state.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE
         },
@@ -260,21 +284,30 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         },
 
         // Movement ops.
-        Op::ActorMoveAtAngle { actor, angle, steps, update_direction, animated } => {
+        Op::ActorMoveAtAngle { actor, angle, steps, update_facing, animated } => {
             let actor_index = actor.deref(this_actor);
             let angle = angle.get_u8(memory) as f64 * 1.40625;
             let steps = steps.get_u8(memory) as u32;
 
-            exec_movement_vector(ctx, actor_index, actors, angle, steps, update_direction, animated)
+            exec_movement_vector(ctx, actor_index, actors, angle, steps, update_facing, animated)
         },
 
-        Op::ActorMoveTo { actor, x, y, steps, update_direction, animated } => {
+        Op::ActorMoveTo { actor, x, y, steps, update_facing, animated } => {
             let actor_index = actor.deref(this_actor);
             let dest_tile_x = x.get_u8(memory) as i32;
             let dest_tile_y = y.get_u8(memory) as i32;
             let steps = if let Some(steps) = steps { Some(steps.get_u8(memory) as u32) } else { None };
 
-            exec_movement_tile(ctx, state, actor_index, actors, dest_tile_x, dest_tile_y, steps, update_direction, animated)
+            exec_movement_tile(ctx, state, actor_index, actors, dest_tile_x, dest_tile_y, steps, update_facing, animated)
+        }
+
+        // todo
+        Op::ActorMoveToActor { forever, .. } => {
+            if forever {
+                return OpResult::YIELD;
+            }
+
+            OpResult::COMPLETE
         },
 
         // Copy tiles around on the map.

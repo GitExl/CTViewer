@@ -10,7 +10,7 @@ use crate::software_renderer::palette::Palette;
 use crate::sprites::sprite_anim::SpriteAnim;
 use crate::sprites::sprite_anim::SpriteAnimFrame;
 use crate::sprites::sprite_anim::SpriteAnimSet;
-use crate::sprites::sprite_anim::DIRECTION_COUNT;
+use crate::sprites::sprite_anim::FACING_COUNT;
 use crate::sprites::sprite_assembly::SpriteAssembly;
 use crate::sprites::sprite_assembly::SpriteAssemblyFrame;
 use crate::sprites::sprite_assembly::SpriteAssemblyChip;
@@ -103,7 +103,7 @@ impl FileSystem {
     // Read all sprite animations.
     //
     // Sprite animations are split into slots (sprite assembly frames) and durations.
-    // They also list data for each of the 4 directions a sprite can be facing.
+    // They also list data for each of the 4 sprite facings.
     pub fn read_sprite_animations(&self) -> HashMap<usize, SpriteAnimSet> {
         let (
             slot_ptrs,
@@ -119,24 +119,21 @@ impl FileSystem {
         // data, but ends only if an 0xFF slot byte is encountered.
         let mut anim_sets = HashMap::new();
         for set_index in 0..slot_ptrs.len() - 1 {
-            let mut set = SpriteAnimSet {
-                index: set_index,
-                anims: Vec::new(),
-            };
+            let mut set = SpriteAnimSet::new(set_index);
 
             // Read each animation from 4 byte starts.
             let anim_data_len = slot_ptrs[set_index + 1] - slot_ptrs[set_index];
-            let anim_count = ((anim_data_len / 4) as f64 / DIRECTION_COUNT as f64).ceil() as usize;
-            let data_per_direction = anim_data_len / 4;
+            let anim_count = ((anim_data_len / 4) as f64 / FACING_COUNT as f64).ceil() as usize;
+            let data_per_facing = anim_data_len / 4;
             for anim_index in 0..anim_count {
-                set.anims.push(SpriteAnim {
+                set.add_anim(SpriteAnim {
                     frames: parse_sprite_animation_frames(
                         &slot_data,
                         slot_ptrs[set_index],
                         &interval_data,
                         interval_ptrs[set_index],
                         anim_index,
-                        data_per_direction,
+                        data_per_facing,
                     ),
                 });
             }
@@ -339,7 +336,7 @@ impl FileSystem {
                 debug_data.push(op_data);
             }
 
-            anim_set.anims.push(anim);
+            anim_set.add_anim(anim);
 
             // println!("{:>04}: {:>3}: {:02X?}", offset, index, debug_data);
         }
@@ -388,20 +385,20 @@ impl FileSystem {
 }
 
 // Read an animation's frames directly from slot and interval data.
-fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, interval_data: &Vec<u8>, start_interval_offset: usize, anim_index: usize, data_per_direction: usize) -> Vec<SpriteAnimFrame> {
+fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, interval_data: &Vec<u8>, start_interval_offset: usize, anim_index: usize, data_per_facing: usize) -> Vec<SpriteAnimFrame> {
     let mut frame_index = 0;
     let mut frames: Vec<SpriteAnimFrame> = Vec::new();
 
     loop {
-        // Calculate offsets for each direction.
+        // Calculate offsets for each facing.
         let offsets = [
-            start_slot_offset + (data_per_direction * 0) + anim_index * 4 + frame_index,
-            start_slot_offset + (data_per_direction * 1) + anim_index * 4 + frame_index,
-            start_slot_offset + (data_per_direction * 2) + anim_index * 4 + frame_index,
-            start_slot_offset + (data_per_direction * 3) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_facing * 0) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_facing * 1) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_facing * 2) + anim_index * 4 + frame_index,
+            start_slot_offset + (data_per_facing * 3) + anim_index * 4 + frame_index,
         ];
 
-        // Build a sprite frame from data for all 4 directions.
+        // Build a sprite frame from data for all 4 facings.
         let sprite_frames = [
             slot_data[offsets[0]] as usize,
             slot_data[offsets[1]] as usize,

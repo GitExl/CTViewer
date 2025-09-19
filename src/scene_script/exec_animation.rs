@@ -7,7 +7,7 @@ pub fn exec_animation(state: &mut SpriteState, anim_index: usize) -> OpResult {
     state.anim_delay = 0;
     state.anim_loops_remaining = 0;
     state.anim_frame = 0;
-    state.anim_mode = AnimationMode::LoopForever;
+    state.anim_mode = AnimationMode::Loop;
 
     OpResult::COMPLETE
 }
@@ -20,7 +20,7 @@ pub fn exec_animation_loop_count(state: &mut SpriteState, actor: &mut Actor, ani
         state.anim_frame = 0;
         state.anim_delay = 0;
         state.anim_index = 0xFF;
-        state.anim_mode = AnimationMode::Loop;
+        state.anim_mode = AnimationMode::LoopCount;
         state.anim_loops_remaining = loop_count + 1;
 
         actor.debug_sprite = DebugSprite::Animating;
@@ -42,7 +42,7 @@ pub fn exec_animation_loop_count(state: &mut SpriteState, actor: &mut Actor, ani
         state.anim_index = 0;
         state.anim_mode = AnimationMode::None;
     } else {
-        state.anim_mode = AnimationMode::LoopForever;
+        state.anim_mode = AnimationMode::Loop;
     }
 
     actor.debug_sprite = DebugSprite::None;

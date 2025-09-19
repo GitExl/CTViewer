@@ -10,7 +10,7 @@ use crate::scene_script::ops_call::op_decode_call;
 use crate::scene_script::ops_char_load::op_decode_char_load;
 use crate::scene_script::ops_copy::op_decode_copy;
 use crate::scene_script::ops_dialogue::op_decode_dialogue;
-use crate::scene_script::ops_direction::op_decode_direction;
+use crate::scene_script::ops_facing::op_decode_facing;
 use crate::scene_script::ops_jump::op_decode_jump;
 use crate::scene_script::ops_location::op_decode_location;
 use crate::scene_script::ops_math::op_decode_math;
@@ -139,9 +139,9 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         // Load character.
         0x57 | 0x5C | 0x62 | 0x68 | 0x6A | 0x6C | 0x6D | 0x80 | 0x81 | 0x82 | 0x83 => op_decode_char_load(op_byte, data, mode),
 
-        // Actor direction.
+        // Actor facing.
         0x0F | 0x17 | 0x1B | 0x1D | 0x1E | 0x1F | 0x25 | 0x26 | 0x23 | 0x24 | 0xA6 | 0xA7 | 0xA8 |
-        0xA9 => op_decode_direction(op_byte, data),
+        0xA9 => op_decode_facing(op_byte, data),
 
         // Code jumps.
         0x10 | 0x11 | 0x12 | 0x13 | 0x14 | 0x15 | 0x16 | 0x18 | 0x1A | 0x27 | 0x28 | 0x2D | 0x30 |

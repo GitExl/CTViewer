@@ -1,12 +1,12 @@
-use crate::actor::{ActorClass, Direction};
-use crate::sprites::sprite_anim::SpriteAnim;
+use crate::actor::{ActorClass, Facing};
+use crate::sprites::sprite_anim::SpriteAnimSet;
 use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(Clone,PartialEq,Debug)]
 pub enum AnimationMode {
     None,
-    LoopForever,
     Loop,
+    LoopCount,
     Static,
 }
 
@@ -18,11 +18,12 @@ pub struct SpriteState {
     pub sprite_index: usize,
     pub sprite_frame: usize,
     pub palette_offset: usize,
-    pub direction: Direction,
+    pub facing: Facing,
     pub priority_top: SpritePriority,
     pub priority_bottom: SpritePriority,
     pub enabled: bool,
 
+    pub anim_set_index: usize,
     pub anim_delay: u32,
     pub anim_index: usize,
     pub anim_index_loop: usize,
@@ -40,11 +41,12 @@ impl SpriteState {
             sprite_index: 0,
             sprite_frame: 0,
             palette_offset: 0,
-            direction: Direction::default(),
+            facing: Facing::default(),
             priority_top: SpritePriority::default(),
             priority_bottom: SpritePriority::default(),
             enabled: false,
 
+            anim_set_index: 0,
             anim_delay: 0,
             anim_index: 0,
             anim_index_loop: 0,
@@ -54,10 +56,10 @@ impl SpriteState {
         }
     }
 
-    pub fn tick_animation(&mut self, anims: &Vec<SpriteAnim>) -> usize {
+    pub fn tick_animation(&mut self, anim_set: &SpriteAnimSet) -> usize {
         // todo: only do this for sprites that are visible
 
-        let anim_index = if self.anim_mode == AnimationMode::Loop {
+        let anim_index = if self.anim_mode == AnimationMode::LoopCount {
             self.anim_index_loop
         } else {
             self.anim_index
@@ -77,17 +79,21 @@ impl SpriteState {
 
         self.anim_frame += 1;
 
-        // Advance to next frame if available.
-        let anim = &anims[anim_index];
-        if self.anim_frame < anim.frames.len() {
-            self.anim_delay = anim.frames[self.anim_frame].duration;
-            return anim_index;
+        let anim = &anim_set.get_anim(anim_index);
+        if let Some(anim) = anim {
+
+            // Advance to next frame if available.
+            if self.anim_frame < anim.frames.len() {
+                self.anim_delay = anim.frames[self.anim_frame].duration;
+                return anim_index;
+            }
+
+            // Otherwise loop back to frame 0.
+            self.anim_delay = anim.frames[0].duration;
         }
-        // Otherwise loop back to frame 0.
-        self.anim_delay = anim.frames[0].duration;
 
         // Track loop count in mode 2.
-        if self.anim_mode == AnimationMode::Loop {
+        if self.anim_mode == AnimationMode::LoopCount {
             if self.anim_loops_remaining > 1 {
                 self.anim_loops_remaining -= 1;
 
@@ -124,7 +130,7 @@ impl SpriteState {
     pub fn animate_for_movement(&mut self, actor_class: ActorClass, movement_x: f64, movement_y: f64) {
         if self.anim_mode == AnimationMode::Static {
             if self.anim_index != 0xFF {
-                self.anim_mode = AnimationMode::LoopForever;
+                self.anim_mode = AnimationMode::Loop;
                 return;
             } else {
                 self.anim_mode = AnimationMode::None;
@@ -155,7 +161,7 @@ impl SpriteState {
         println!("Sprite state - {}", if self.enabled { "enabled" } else { "disabled" });
         println!("  Sprite {} frame {}", self.sprite_index, self.sprite_frame);
         println!("  At {} x {}", self.x, self.y);
-        println!("  Direction: {:?}", self.direction);
+        println!("  Facing: {:?}", self.facing);
         println!("  Priority top {:?}", self.priority_top);
         println!("  Priority bottom {:?}", self.priority_bottom);
         println!("  Palette offset {}", self.palette_offset);

@@ -1,10 +1,10 @@
-pub const DIRECTION_COUNT: usize = 4;
+pub const FACING_COUNT: usize = 4;
 
 // A sprite animation frame.
-// Each frame references sprite frames for each direction.
+// Each frame references sprite frames for each facing.
 #[derive(Copy, Clone)]
 pub struct SpriteAnimFrame {
-    pub sprite_frames: [usize; DIRECTION_COUNT],
+    pub sprite_frames: [usize; FACING_COUNT],
     pub duration: u32,
 }
 
@@ -24,7 +24,7 @@ impl SpriteAnim {
 // A set of sprite animations, usually associated with one sprite.
 pub struct SpriteAnimSet {
     pub index: usize,
-    pub anims: Vec<SpriteAnim>,
+    anims: Vec<SpriteAnim>,
 }
 
 impl SpriteAnimSet {
@@ -33,6 +33,17 @@ impl SpriteAnimSet {
             index,
             anims: Vec::new(),
         }
+    }
+    
+    pub fn add_anim(&mut self, anim: SpriteAnim) {
+        self.anims.push(anim);
+    }
+
+    pub fn get_anim(&self, index: usize) -> Option<&SpriteAnim> {
+        if index >= self.anims.len() {
+            return self.anims.get(0);
+        }
+        self.anims.get(index)
     }
 
     pub fn dump(&self) {

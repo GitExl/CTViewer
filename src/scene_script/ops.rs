@@ -71,7 +71,7 @@ pub enum Op {
         x: DataSource,
         y: DataSource,
     },
-    ActorDirectionGet {
+    ActorFacingGet {
         actor: ActorRef,
         source: DataSource,
     },
@@ -106,14 +106,14 @@ pub enum Op {
         x: DataSource,
         y: DataSource,
         steps: Option<DataSource>,
-        update_direction: bool,
+        update_facing: bool,
         animated: bool,
     },
     ActorMoveToActor {
         actor: ActorRef,
         to_actor: ActorRef,
         distance: DataSource,
-        update_direction: bool,
+        update_facing: bool,
         animated: bool,
         distant: bool,
         forever: bool,
@@ -122,7 +122,7 @@ pub enum Op {
         actor: ActorRef,
         angle: DataSource,
         steps: DataSource,
-        update_direction: bool,
+        update_facing: bool,
         animated: bool,
     },
     MovePartyTo {
@@ -139,12 +139,12 @@ pub enum Op {
         mp: bool,
     },
 
-    // Actor direction.
-    ActorSetDirection {
+    // Actor facing.
+    ActorFacingSet {
         actor: ActorRef,
-        direction: DataSource,
+        facing: DataSource,
     },
-    ActorSetDirectionTowards {
+    ActorSetFacingTowards {
         actor: ActorRef,
         to: ActorRef,
     },
@@ -323,7 +323,7 @@ pub enum Op {
 
     // Change location.
     ChangeLocation {
-        index_direction: DataSource,
+        index_facing: DataSource,
         x: DataSource,
         y: DataSource,
         variant: u8,

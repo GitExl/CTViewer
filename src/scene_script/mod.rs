@@ -3,7 +3,7 @@ mod scene_script_decoder;
 mod ops_copy;
 mod ops_math;
 mod ops_jump;
-mod ops_direction;
+mod ops_facing;
 mod ops_movement;
 mod ops;
 mod ops_call;
