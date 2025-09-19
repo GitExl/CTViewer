@@ -14,7 +14,8 @@ use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_renderer::{render_sprite, SpritePriority};
-use crate::sprites::sprite_state_list::{SpriteState, SpriteStateList};
+use crate::sprites::sprite_state::SpriteState;
+use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::tileset::TileSet;
 
 // Data used in a main or subscreen render pass.

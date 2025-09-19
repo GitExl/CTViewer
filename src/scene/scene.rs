@@ -161,7 +161,7 @@ impl Scene {
 
             let state = ctx.sprites_states.get_state_mut(index);
             actor.update_sprite_state(state);
-            ctx.sprites_states.tick(&ctx.sprite_assets, delta, index);
+            ctx.sprites_states.tick(&ctx.sprite_assets, index);
         }
 
         self.tileset_l12.tick(delta);

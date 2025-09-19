@@ -1,7 +1,8 @@
-use crate::actor::{Actor, ActorFlags, DebugSprite, Direction};
+use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, Direction};
 use crate::Context;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
+use crate::scene_script::exec_animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
 use crate::scene_script::exec_call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
 use crate::scene_script::exec_movement::{exec_movement_tile, exec_movement_vector};
 use crate::scene_script::ops::Op;
@@ -157,11 +158,18 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
                 actor.player_index = Some(index);
             }
 
+            // todo: set remaining actor classes
+            if char_type == CharacterType::PCAsNPC || char_type == CharacterType::NPC {
+                actor.class = ActorClass::NPC;
+            }
+            if char_type == CharacterType::Enemy {
+                actor.class = ActorClass::Monster;
+            }
+
             let state = &mut ctx.sprites_states.get_state_mut(this_actor);
             ctx.sprite_assets.load(&ctx.fs, sprite_index);
             state.sprite_index = sprite_index;
             state.enabled = true;
-            ctx.sprites_states.set_animation(&ctx.sprite_assets, this_actor, 0, true, actor.direction);
 
             OpResult::COMPLETE
         },
@@ -203,15 +211,6 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::YIELD | OpResult::COMPLETE
         },
 
-        Op::ActorSetSpriteFrame { actor, frame } => {
-            let actor_index = actor.deref(this_actor);
-            let frame_index = frame.get_u8(memory) as usize;
-
-            ctx.sprites_states.set_sprite_frame(actor_index, frame_index);
-
-            OpResult::COMPLETE
-        },
-
         // todo mode, unknowns
         Op::ActorSetSpritePriority { actor, top, bottom, .. } => {
             let actor_index = actor.deref(this_actor);
@@ -227,33 +226,40 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE
         },
 
-        Op::Animate { actor, animation, run, loops, wait } => {
+        // Animation ops.
+        Op::Animation { actor, animation } => {
             let actor_index = actor.deref(this_actor);
             let anim_index = animation.get_u8(memory) as usize;
-            let loops = loops.get_u8(memory) as u32;
+            let state = ctx.sprites_states.get_state_mut(actor_index);
 
-            let state = ctx.sprites_states.get_state(actor_index);
-
-            // Start animating.
-            if state.anim_index != anim_index {
-                ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, run, actors[actor_index].direction);
-                return if wait {
-                    actors[actor_index].debug_sprite = DebugSprite::Animating;
-                    OpResult::YIELD
-                } else {
-                    OpResult::COMPLETE
-                }
-
-            // Wait for animation to complete.
-            } else if wait && loops < 0xFFFFFFFF && state.anim_loop_count <= loops {
-                return OpResult::YIELD;
-            }
-
-            // Wait completed.
-            actors[actor_index].debug_sprite = DebugSprite::None;
-            OpResult::COMPLETE
+            exec_animation(state, anim_index)
         },
 
+        Op::AnimationLoopCount { actor, animation, loops } => {
+            let actor_index = actor.deref(this_actor);
+            let anim_index = animation.get_u8(memory) as usize;
+            let loop_count = loops.get_u8(memory) as u32;
+            let state = ctx.sprites_states.get_state_mut(actor_index);
+
+            exec_animation_loop_count(state, &mut actors[actor_index], anim_index, loop_count)
+        },
+
+        Op::AnimationReset { actor } => {
+            let actor_index = actor.deref(this_actor);
+            let state = ctx.sprites_states.get_state_mut(actor_index);
+
+            exec_animation_reset(state)
+        },
+
+        Op::AnimationStaticFrame { actor, frame} => {
+            let actor_index = actor.deref(this_actor);
+            let frame_index = frame.get_u8(memory) as usize;
+            let state = ctx.sprites_states.get_state_mut(actor_index);
+
+            exec_animation_static_frame(state, frame_index)
+        },
+
+        // Movement ops.
         Op::ActorMoveAtAngle { actor, angle, steps, update_direction, animated } => {
             let actor_index = actor.deref(this_actor);
             let angle = angle.get_u8(memory) as f64 * 1.40625;

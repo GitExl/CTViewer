@@ -263,7 +263,7 @@ impl FileSystem {
                 //   for this tile
                 else if op == 0x04 {
                     let ptr = data.read_u16::<LittleEndian>().unwrap() as u64;
-                    let duration = data.read_u8().unwrap() as usize;
+                    let duration = data.read_u8().unwrap() as u32;
 
                     // Read frame assembly data from the position, but keep track
                     // of the current position so we can return here later.
@@ -308,7 +308,7 @@ impl FileSystem {
                     let frame_index = assembly.frames.len() - 1;
                     anim.frames.push(SpriteAnimFrame {
                         sprite_frames: [frame_index, frame_index, frame_index, frame_index],
-                        duration: duration as f64 * (1.0 / 60.0),
+                        duration,
                     });
 
                     data.seek(SeekFrom::Start(old_pos)).unwrap();
@@ -414,8 +414,7 @@ fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, 
 
         // A frame duration is measured in 1/60th of a second (or one SNES frame).
         let interval_offset = start_interval_offset + anim_index * 4 + frame_index;
-        let interval = interval_data[interval_offset] as usize;
-        let duration = interval as f64 * (1.0 / 60.0);
+        let duration = interval_data[interval_offset] as u32;
 
         frames.push(SpriteAnimFrame {
             sprite_frames,

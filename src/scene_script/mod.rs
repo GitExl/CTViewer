@@ -20,3 +20,4 @@ mod scene_script_memory;
 mod scene_script_exec;
 mod exec_movement;
 mod exec_call;
+mod exec_animation;

@@ -149,19 +149,22 @@ pub enum Op {
         to: ActorRef,
     },
 
-    // Sprite.
-    ActorSetSpriteFrame {
-        actor: ActorRef,
-        frame: DataSource,
-    },
-
     // Animation.
-    Animate {
+    Animation {
         actor: ActorRef,
         animation: DataSource,
-        wait: bool,
-        run: bool,
+    },
+    AnimationLoopCount {
+        actor: ActorRef,
+        animation: DataSource,
         loops: DataSource,
+    },
+    AnimationReset {
+        actor: ActorRef,
+    },
+    AnimationStaticFrame {
+        actor: ActorRef,
+        frame: DataSource,
     },
 
     // Code jumps.

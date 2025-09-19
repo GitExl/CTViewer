@@ -3,8 +3,8 @@ use bitflags::bitflags;
 use crate::Context;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::ActorScriptState;
-use crate::sprites::sprite_state_list::SpriteState;
 use crate::sprites::sprite_renderer::SpritePriority;
+use crate::sprites::sprite_state::SpriteState;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DebugSprite {
@@ -16,6 +16,7 @@ pub enum DebugSprite {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ActorClass {
+    None,
     PC1,
     PC2,
     PC3,
@@ -147,7 +148,7 @@ pub struct Actor {
     pub debug_sprite: DebugSprite,
     pub sprite_priority_top: SpritePriority,
     pub sprite_priority_bottom: SpritePriority,
-    pub class: Option<ActorClass>,
+    pub class: ActorClass,
     pub player_index: Option<usize>,
     pub direction: Direction,
     pub move_speed: f64,
@@ -171,7 +172,7 @@ impl Actor {
             debug_sprite: DebugSprite::None,
             sprite_priority_top: SpritePriority::default(),
             sprite_priority_bottom: SpritePriority::default(),
-            class: None,
+            class: ActorClass::None,
             player_index: None,
             direction: Direction::default(),
             move_speed: 1.0,
@@ -276,9 +277,7 @@ impl Actor {
 
     pub fn dump(&self, ctx: &Context, script_state: &ActorScriptState) {
         println!("Actor {}", self.index);
-        if let Some(class) = self.class {
-            println!("  Class {:?}", class);
-        }
+        println!("  Class {:?}", self.class);
         if let Some(player_index) = self.player_index {
             println!("  Player {}", player_index);
         }

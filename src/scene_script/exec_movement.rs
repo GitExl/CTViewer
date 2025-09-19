@@ -75,7 +75,7 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
     // No more steps to be taken, complete op.
     if move_steps == 0 {
         if animated {
-            ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, 0, true, actor.direction);
+            ctx.sprites_states.get_state_mut(actor_index).reset_animation();
         }
         actor.task = ActorTask::None;
         actor.debug_sprite = DebugSprite::None;
@@ -92,17 +92,8 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
     if update_direction {
         actor.face_towards(actor.x + move_x, actor.y + move_y);
     }
-
     if animated {
-
-        // Player characters have a separate run animation.
-        let is_pc = actor.player_index.is_some();
-        let anim_index = if is_pc && move_x + move_y >= 2.0 {
-            6
-        } else {
-            1
-        };
-        ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, true, actor.direction);
+        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_x, move_y);
     }
 
     OpResult::YIELD
@@ -121,7 +112,7 @@ pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut 
 
         // No more steps to be taken, complete op.
         if animated {
-            ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, 0, true, actor.direction);
+            ctx.sprites_states.get_state_mut(actor_index).reset_animation();
         }
         actor.task = ActorTask::None;
         actor.debug_sprite = DebugSprite::None;
@@ -143,17 +134,8 @@ pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut 
     if update_direction {
         actor.face_towards(actor.x + move_x, actor.y + move_y);
     }
-
     if animated {
-
-        // Player characters have a separate run animation.
-        let is_pc = actor.player_index.is_some();
-        let anim_index = if is_pc && move_x + move_y >= 2.0 {
-            6
-        } else {
-            1
-        };
-        ctx.sprites_states.set_animation(&ctx.sprite_assets, actor_index, anim_index, true, actor.direction);
+        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_x, move_y);
     }
 
     OpResult::YIELD

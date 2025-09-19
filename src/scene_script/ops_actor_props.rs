@@ -211,12 +211,6 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             y: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 >> 4),
         },
 
-        // Actor sprite.
-        0xAC => Op::ActorSetSpriteFrame {
-            actor: ActorRef::This,
-            frame: DataSource::Immediate(data.read_u8().unwrap() as u32),
-        },
-
         0xF8 => Op::ActorHeal {
             actor: ActorRef::This,
             hp: true,

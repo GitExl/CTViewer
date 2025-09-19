@@ -5,7 +5,7 @@ pub const DIRECTION_COUNT: usize = 4;
 #[derive(Copy, Clone)]
 pub struct SpriteAnimFrame {
     pub sprite_frames: [usize; DIRECTION_COUNT],
-    pub duration: f64,
+    pub duration: u32,
 }
 
 // A sprite animation.
