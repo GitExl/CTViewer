@@ -292,7 +292,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             exec_movement_vector(ctx, actor_index, actors, angle, steps, update_facing, animated)
         },
 
-        Op::ActorMoveTo { actor, x, y, steps, update_facing, animated } => {
+        Op::ActorMoveToTile { actor, x, y, steps, update_facing, animated } => {
             let actor_index = actor.deref(this_actor);
             let dest_tile_x = x.get_u8(memory) as i32;
             let dest_tile_y = y.get_u8(memory) as i32;

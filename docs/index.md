@@ -25,9 +25,10 @@
     - Animations
   - Strings
 - Scene scripts
-  - Memory areas
-  - Script execution flow
-  - Actor movement
-  - [Sprite animation](scene_scripts/04_sprite_animation.md)
+  - [Initialization](scene_scripts/initialization.md) 
+  - [Memory areas](scene_scripts/memory_areas.md)
+  - [Script execution flow](scene_scripts/execution_flow.md)
+  - [Actor movement](scene_scripts/actor_movement.md)
+  - [Sprite animation](scene_scripts/sprite_animation.md)
   - Op descriptions
 - [Glossary](glossary.md)

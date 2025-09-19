@@ -101,7 +101,7 @@ pub enum Op {
     },
 
     // Actor movement.
-    ActorMoveTo {
+    ActorMoveToTile {
         actor: ActorRef,
         x: DataSource,
         y: DataSource,

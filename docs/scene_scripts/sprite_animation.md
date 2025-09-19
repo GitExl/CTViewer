@@ -17,6 +17,7 @@ These animation related properties are available for each actor in a scene scrip
 
 ## Ops
 
+- `$47` Animation limiter, not implemented
 - `$AA` Play animation `x`, loop indefinitely (mode 1)
 - `$AB` Play animation, once, wait (mode 2)
 - `$AC` Set sprite frame `x` (mode 3)
@@ -24,7 +25,6 @@ These animation related properties are available for each actor in a scene scrip
 - `$B3` Play animation 0, loop indefinitely (mode 1)
 - `$B4` Play animation 1, loop indefinitely (mode 1)
 - `$B7` Play animation `x`, loop `y` times, wait (mode 2)
-- `$47` Animation limiter, not implemented
 
 ## Animation modes
 

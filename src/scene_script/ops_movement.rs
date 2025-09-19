@@ -6,6 +6,20 @@ use crate::scene_script::scene_script_memory::DataSource;
 
 pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
+        0x7A => Op::ActorJump {
+            actor: ActorRef::This,
+            x: data.read_i8().unwrap() as i32,
+            y: data.read_i8().unwrap() as i32,
+            height: data.read_u8().unwrap() as u32,
+        },
+        0x7B => Op::ActorJumpUnknown {
+            actor: ActorRef::This,
+            move_x: data.read_u8().unwrap() as i32,
+            move_y: data.read_u8().unwrap() as i32,
+            unknown: data.read_u8().unwrap() as u32,
+            steps: data.read_u8().unwrap() as u32,
+        },
+
         0x8F => Op::ActorMoveToActor {
             actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
@@ -40,7 +54,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             distant: false,
             forever: false,
         },
-        0x96 => Op::ActorMoveTo {
+        0x96 => Op::ActorMoveToTile {
             actor: ActorRef::This,
             x: DataSource::Immediate(data.read_u8().unwrap() as u32),
             y: DataSource::Immediate(data.read_u8().unwrap() as u32),
@@ -48,7 +62,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_facing: true,
             animated: true,
         },
-        0x97 => Op::ActorMoveTo {
+        0x97 => Op::ActorMoveToTile {
             actor: ActorRef::This,
             x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
@@ -74,7 +88,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             distant: false,
             forever: false,
         },
-        0x9A => Op::ActorMoveTo {
+        0x9A => Op::ActorMoveToTile {
             actor: ActorRef::This,
             x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
@@ -118,7 +132,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             distant: false,
             forever: false,
         },
-        0xA0 => Op::ActorMoveTo {
+        0xA0 => Op::ActorMoveToTile {
             actor: ActorRef::This,
             x: DataSource::Immediate(data.read_u8().unwrap() as u32),
             y: DataSource::Immediate(data.read_u8().unwrap() as u32),
@@ -126,7 +140,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_facing: false,
             animated: true,
         },
-        0xA1 => Op::ActorMoveTo {
+        0xA1 => Op::ActorMoveToTile {
             actor: ActorRef::This,
             x: DataSource::for_local_memory(data.read_u8().unwrap() as usize),
             y: DataSource::for_local_memory(data.read_u8().unwrap() as usize),
@@ -159,21 +173,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             pc1_y: data.read_u8().unwrap() as i32,
             pc2_x: data.read_u8().unwrap() as i32,
             pc2_y: data.read_u8().unwrap() as i32,
-        },
-
-        // Jumping.
-        0x7A => Op::ActorJump {
-            actor: ActorRef::This,
-            x: data.read_i8().unwrap() as i32,
-            y: data.read_i8().unwrap() as i32,
-            height: data.read_u8().unwrap() as u32,
-        },
-        0x7B => Op::ActorJumpUnknown {
-            actor: ActorRef::This,
-            move_x: data.read_u8().unwrap() as i32,
-            move_y: data.read_u8().unwrap() as i32,
-            unknown: data.read_u8().unwrap() as u32,
-            steps: data.read_u8().unwrap() as u32,
         },
 
         _ => panic!("Unknown movement op."),
