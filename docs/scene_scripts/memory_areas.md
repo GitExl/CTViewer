@@ -15,50 +15,66 @@ these are part of RAM in the `$7E0000` or `$7F0000` banks. These areas can be di
 
 ## Actor data
 
-The following are values available for each of the 64 possible actors in a scene script. The default values are set for
+The following are values available for each of the 64 possible actors in a scene script. The default values are set
 during scene initialization.
 
-| Name                   | SNES address | Default value                     |
-|------------------------|--------------|-----------------------------------|
-| ?                      | `$7E0B00`    | `$0000`                           |
-| ?                      | `$7E0B80`    | `$FFFF`                           |
-| ?                      | `$7E0F80`    | `$0080`                           |
-| `script_delay`         | `$7E1000`    | `$04`                             |
-| `script_delay_counter` | `$7E1001`    | `$00`                             |
-| ?                      | `$7E1080`    | `$0080`                           |
-| `type_status`          | `$7E1100`    | `$80` or `$07` if it has a script |
-| `player_index`         | `$7E1101`    | ?                                 |
-| `script_ptr`           | `$7E1180`    | `$0000`                           |
-| ?                      | `$7E1200`    | ?                                 |
-| ?                      | `$7E1280`    | ?                                 |
-| ?                      | `$7E1300`    | ?                                 |
-| `sprite_frame`         | `$7E1301`    | ?                                 |
-| ?                      | `$7E1380`    | ?                                 |
-| ?                      | `$7E1400`    | ?                                 |
-| ?                      | `$7E1480`    | ?                                 |
-| ?                      | `$7E1500`    | ?                                 |
-| `anim_set_pointer`     | `$7E1580`    | ?                                 |
-| ?                      | `$7E1600`    | ?                                 |
-| `anim_delay`           | `$7E1601`    | ?                                 |
-| `anim_index`           | `$7E1680`    | ?                                 |
-| `anim_frame`           | `$7E1681`    | ?                                 |
-| ?                      | `$7E1700`    | ?                                 |
-| `anim_mode`            | `$7E1780`    | `$00`                             |
-| `anim_index_loop`      | `$7E1781`    | `$00`                             |
-| `x`                    | `$7E1800`    | `$00FF`                           |
-| `y`                    | `$7E1880`    | `$00FF`                           |
-| ?                      | `$7E1900`    | ?                                 |
-| ?                      | `$7E1980`    | ?                                 |
-| `move_speed`           | `$7E1A00`    | `$0010`                           |
-| `is_moving`            | `$7E1A80`    | `$00`                             |
-| ?                      | `$7E1A81`    | `$00`                             |
-| ?                      | `$7E1B00`    | ?                                 |
-| `solidity_flags`       | `$7E1B01`    | `$00`                             |
-| ?                      | `$7E1B80`    | `$00`                             |
-| ?                      | `$7E1B81`    | ?                                 |
-| `current_priority`     | `$7E1C00`    | `$07`                             |
-| `calls_disabled`       | `$7E1C01`    | `$00`                             |
-| ?                      | `$7E1C80`    | ?                                 |
-| `priority_ptrs`        | `$7F0580`    | `$0000`                           |
-| `anim_loops_remaining` | `$7F0B01`    | ?                                 |
-| `move_dest_flags`      | `$7F1C80`    | `$0003`                           |
+| Name                   | SNES address          | Purpose                          | Default value                     |
+|------------------------|-----------------------|----------------------------------|-----------------------------------|
+| ?                      | `$7E0B00`             |                                  | `$00`                             |
+| ?                      | `$7E0B01`             |                                  | `$00`                             |
+| ?                      | `$7E0B80`             |                                  | `$FFFF`                           |
+| ?                      | `$7E0C00`             |                                  |                                   |
+| ?                      | `$7E0C01`             |                                  |                                   |
+| ?                      | `$7E0C80`             |                                  |                                   |
+| ?                      | `$7E0D00`             |                                  |                                   |
+| ?                      | `$7E0D80`             |                                  |                                   |
+| ?                      | `$7E0E00`             |                                  |                                   |
+| ?                      | `$7E0E80`             |                                  |                                   |
+| ?                      | `$7E0F00`             | Actor draw status                |                                   |
+| ?                      | `$7E0F01`             | Animation related                |                                   |
+| ?                      | `$7E0F80`             | Sprite priority info             | `$80`                             |
+| ?                      | `$7E0F81`             | Palette index                    | `$00`                             |
+| `script_delay`         | `$7E1000`             | Script cycle time                | `$04`                             |
+| `script_delay_counter` | `$7E1001`             | Script cycle delay               | `$00`                             |
+| ?                      | `$7E1080`             | Script is ready to run           | `$80`                             |
+| ?                      | `$7E1081`             |                                  | `$00`                             |
+| `type_status`          | `$7E1100`             | Actor type                       | `$80` or `$07` if it has a script |
+| `player_index`         | `$7E1101`             | Index of player owner            | ?                                 |
+| `script_ptr`           | `$7E1180`             | Pointer to next op               | `$0000`                           |
+| ?                      | `$7E1200`             | Sprite graphics bank?            | ?                                 |
+| ?                      | `$7E1280`             | Sprite graphics pointer?         | ?                                 |
+| ?                      | `$7E1300`             |                                  | ?                                 |
+| `sprite_frame`         | `$7E1301`             | Static sprite frame              | ?                                 |
+| ?                      | `$7E1380`             | Sprite info pointer?             |                                   |
+| ?                      | `$7E1400`             | Palette pointers                 |                                   |
+| ?                      | `$7E1480`             |                                  | ?                                 |
+| ?                      | `$7E1500`             |                                  | ?                                 |
+| `anim_set_pointer`     | `$7E1580`             | Animation set pointer            | ?                                 |
+| ?                      | `$7E1600`             | Actor facing                     | ?                                 |
+| `anim_delay`           | `$7E1601`             | Animation frame delay            | ?                                 |
+| `anim_index`           | `$7E1680`             | Current animation                | ?                                 |
+| `anim_frame`           | `$7E1681`             | Animation frame                  | ?                                 |
+| ?                      | `$7E1700`             |                                  |                                   |
+| `anim_mode`            | `$7E1780`             | Animation mode                   | `$00`                             |
+| `anim_index_loop`      | `$7E1781`             | Current loop tracked animation   | `$00`                             |
+| `x`                    | `$7E1800`             | X position                       | `$00FF`                           |
+| `y`                    | `$7E1880`             | Y position                       | `$00FF`                           |
+| ?                      | `$7E1900`             | X movement speed                 |                                   |
+| ?                      | `$7E1980`             | Y movement speed                 |                                   |
+| `move_speed`           | `$7E1A00`             | Movement speed                   | `$0010`                           |
+| `is_moving`            | `$7E1A80`             | Is currently moving?             | `$00`                             |
+| ?                      | `$7E1A81`             | Actor drawing mode               | `$01`                             |
+| ?                      | `$7E1B00`             |                                  | ?                                 |
+| `solidity_flags`       | `$7E1B01`             | Collision flags                  | `$00`                             |
+| ?                      | `$7E1B80`             | Actor is jumping                 | `$00`                             |
+| ?                      | `$7E1B81`             |                                  | `$00`                             |
+| `current_priority`     | `$7E1C00`             | Current script priority          | `$07`                             |
+| `calls_disabled`       | `$7E1C01`             | Cannot have functions called     | `$00`                             |
+| ?                      | `$7E1C80`             | Actor movement flags             | `$03`                             |
+| `priority_ptrs`        | `$7F0580` - `$7F0900` | Script priority pointers         | `$0000`                           |
+| `call_busy`            | `$7F0980`             | Waiting for a call to finish     |                                   |
+| ?                      | `$7F0A00`             | Text dialog string               |                                   |
+| ?                      | `$7F0A80`             | Text dialog choice result        |                                   |
+| `anim_loops_remaining` | `$7F0B01`             | Number of animation loops left   |                                   |
+| ?                      | `$7F0B80`             | Related to op 88, palette cycle? | ?                                 |
+| `move_dest_flags`      | `$7F1C80`             | Move onto tile flags             | `$0003`                           |
