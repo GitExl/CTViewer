@@ -1,5 +1,5 @@
 use crate::actor::{ActorClass, Facing};
-use crate::sprites::sprite_anim::SpriteAnimSet;
+use crate::sprites::sprite_anim::SpriteAnim;
 use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(Clone,PartialEq,Debug)]
@@ -26,8 +26,9 @@ pub struct SpriteState {
     pub anim_set_index: usize,
     pub anim_delay: u32,
     pub anim_index: usize,
-    pub anim_index_loop: usize,
+    pub anim_index_looped: usize,
     pub anim_frame: usize,
+    pub anim_frame_static: usize,
     pub anim_mode: AnimationMode,
     pub anim_loops_remaining: u32,
 }
@@ -49,27 +50,22 @@ impl SpriteState {
             anim_set_index: 0,
             anim_delay: 0,
             anim_index: 0,
-            anim_index_loop: 0,
+            anim_index_looped: 0,
             anim_frame: 0,
+            anim_frame_static: 0,
             anim_mode: AnimationMode::None,
             anim_loops_remaining: 0,
         }
     }
 
-    pub fn tick_animation(&mut self, anim_set: &SpriteAnimSet) -> usize {
+    pub fn tick_animation(&mut self, anim: &SpriteAnim) {
         // todo: only do this for sprites that are visible
-
-        let anim_index = if self.anim_mode == AnimationMode::LoopCount {
-            self.anim_index_loop
-        } else {
-            self.anim_index
-        };
 
         if self.anim_delay > 0 {
             self.anim_delay -= 1;
         }
         if self.anim_delay > 0 {
-            return anim_index;
+            return;
         }
 
         // todo: dead actors should stop here
@@ -79,36 +75,30 @@ impl SpriteState {
 
         self.anim_frame += 1;
 
-        let anim = &anim_set.get_anim(anim_index);
-        if let Some(anim) = anim {
-
-            // Advance to next frame if available.
-            if self.anim_frame < anim.frames.len() {
-                self.anim_delay = anim.frames[self.anim_frame].duration;
-                return anim_index;
-            }
-
-            // Otherwise loop back to frame 0.
-            self.anim_delay = anim.frames[0].duration;
+        // Advance to the next frame if available.
+        if self.anim_frame < anim.frames.len() {
+            self.anim_delay = anim.frames[self.anim_frame].delay;
+            return;
         }
+
+        // Otherwise loop back to frame 0.
+        self.anim_delay = anim.frames[0].delay;
 
         // Track loop count in mode 2.
         if self.anim_mode == AnimationMode::LoopCount {
-            if self.anim_loops_remaining > 1 {
-                self.anim_loops_remaining -= 1;
-
-            // If loop count is reached, undo the advance to the next frame.
-            } else {
-                self.anim_loops_remaining = 0;
+            if self.anim_loops_remaining == 1 {
                 self.anim_frame -= 1;
+                return;
+            } else if self.anim_loops_remaining == 2 {
+                self.anim_loops_remaining = 1;
+                self.anim_frame -= 1;
+                return;
             }
 
-            return anim_index;
+            self.anim_loops_remaining -= 2;
         }
 
         self.anim_frame = 0;
-
-        anim_index
     }
 
     pub fn reset_animation(&mut self) {
@@ -165,7 +155,10 @@ impl SpriteState {
         println!("  Priority top {:?}", self.priority_top);
         println!("  Priority bottom {:?}", self.priority_bottom);
         println!("  Palette offset {}", self.palette_offset);
-        println!("  Animation mode {:?}, animation {}, frame {} at {} ticks, {} loops remaining", self.anim_mode, self.anim_index, self.anim_frame, self.anim_delay, self.anim_loops_remaining);
+        println!("  Animation mode {:?}", self.anim_mode);
+        println!("    Index {}, looped index {}", self.anim_index, self.anim_index_looped);
+        println!("    Frame {} at {} ticks", self.anim_frame, self.anim_delay);
+        println!("    Loops remaining: {}", self.anim_loops_remaining);
         println!();
     }
 }

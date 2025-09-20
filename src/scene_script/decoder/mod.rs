@@ -1,0 +1,15 @@
+pub mod ops_copy;
+pub mod ops_math;
+pub mod ops_jump;
+pub mod ops_facing;
+pub mod ops_movement;
+pub mod ops_call;
+pub mod ops_actor_props;
+pub mod ops_char_load;
+pub mod ops_dialogue;
+pub mod ops_animation;
+pub mod ops_party;
+pub mod ops_palette;
+pub mod ops_location;
+pub mod ops_inventory;
+pub mod ops_audio;

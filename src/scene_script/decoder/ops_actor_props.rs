@@ -9,15 +9,15 @@ use crate::sprites::sprite_renderer::SpritePriority;
 pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
 
-        // Enable/disable this actor being able to be touched.
+        // Enable/disable function calls on this actor.
         0x08 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::INTERACTABLE,
+            set: ActorFlags::CALLS_ENABLED,
             remove: ActorFlags::empty(),
         },
         0x09 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::INTERACTABLE,
+            set: ActorFlags::CALLS_ENABLED,
             remove: ActorFlags::empty(),
         },
 

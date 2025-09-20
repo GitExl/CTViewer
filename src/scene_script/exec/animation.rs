@@ -16,27 +16,31 @@ pub fn exec_animation_loop_count(state: &mut SpriteState, actor: &mut Actor, ani
 
     // Start playback.
     if state.anim_loops_remaining == 0 {
-        state.anim_index_loop = anim_index;
+        state.anim_index_looped = anim_index;
         state.anim_frame = 0;
         state.anim_delay = 0;
-        state.anim_index = 0xFF;
+
+        if state.anim_mode == AnimationMode::None {
+            state.anim_index = 0xFF;
+        }
         state.anim_mode = AnimationMode::LoopCount;
         state.anim_loops_remaining = loop_count + 1;
 
         actor.debug_sprite = DebugSprite::Animating;
 
-        return OpResult::YIELD | OpResult::COMPLETE;
+        return OpResult::YIELD;
     }
 
     // Check loops remaining, yield if not done.
-    if state.anim_loops_remaining > 1 && state.anim_index_loop == anim_index {
+    if state.anim_loops_remaining > 1 && state.anim_index_looped == anim_index {
         return OpResult::YIELD;
     }
 
     // Stop playback.
-    state.anim_index_loop = 0;
+    state.anim_index_looped = 0;
     state.anim_delay = 0;
     state.anim_frame = 0;
+    state.anim_loops_remaining = 0;
 
     if state.anim_index == 0xFF {
         state.anim_index = 0;
@@ -61,7 +65,7 @@ pub fn exec_animation_reset(state: &mut SpriteState) -> OpResult {
 }
 
 pub fn exec_animation_static_frame(state: &mut SpriteState, frame_index: usize) -> OpResult {
-    state.sprite_frame = frame_index;
+    state.anim_frame_static = frame_index;
     state.anim_frame = 0;
     state.anim_delay = 0;
     if state.anim_mode == AnimationMode::None {

@@ -1,9 +1,9 @@
 use crate::actor::ActorFlags;
-use crate::scene_script::ops_char_load::CharacterType;
-use crate::scene_script::ops_dialogue::{DialogueInput, DialoguePosition, DialogueSpecialType};
-use crate::scene_script::ops_jump::CompareOp;
-use crate::scene_script::ops_math::{BitMathOp, ByteMathOp};
-use crate::scene_script::ops_palette::{ColorMathMode, SubPalette};
+use crate::scene_script::decoder::ops_char_load::CharacterType;
+use crate::scene_script::decoder::ops_dialogue::{DialogueInput, DialoguePosition, DialogueSpecialType};
+use crate::scene_script::decoder::ops_jump::CompareOp;
+use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
+use crate::scene_script::decoder::ops_palette::{ColorMathMode, SubPalette};
 use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, ScrollLayerFlags, SpecialEffect};
 use crate::scene_script::scene_script_memory::{DataDest, DataSource};
 use crate::sprites::sprite_renderer::SpritePriority;

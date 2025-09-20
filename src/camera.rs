@@ -53,19 +53,23 @@ impl Camera {
     }
 
     pub fn wrap(&mut self) {
-        // @todo broken, wraps but not to the correct spot
+        let mut cx = self.x + self.width / 2.0;
+        let mut cy = self.y + self.height / 2.0;
 
-        if self.x < self.x1 {
-            self.x = self.x2 - self.width + (self.x - self.x1);
-        } else if self.x + self.width >= self.x2 {
-            self.x = self.x1 + (self.x + self.width - self.x2);
+        if cx < self.x1 {
+            cx = self.x2 - (self.x1 - cx);
+        } else if cx >= self.x2 {
+            cx = self.x1 + (cx - self.x2);
         }
 
-        if self.y < self.y1 {
-            self.y = self.y2 - self.height + (self.y - self.y1);
-        } else if self.y + self.height >= self.y2 {
-            self.y = self.y1 + (self.y + self.height - self.y2);
+        if cy < self.y1 {
+            cy = self.y2 - (self.y1 - cy);
+        } else if cy >= self.y2 {
+            cy = self.y1 + (cy - self.y2);
         }
+
+        self.x = cx - self.width / 2.0;
+        self.y = cy - self.height / 2.0;
     }
 
     pub fn center_to(&mut self, x: f64, y: f64) {

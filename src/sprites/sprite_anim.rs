@@ -5,7 +5,7 @@ pub const FACING_COUNT: usize = 4;
 #[derive(Copy, Clone)]
 pub struct SpriteAnimFrame {
     pub sprite_frames: [usize; FACING_COUNT],
-    pub duration: u32,
+    pub delay: u32,
 }
 
 // A sprite animation.
@@ -51,7 +51,7 @@ impl SpriteAnimSet {
         for (j, anim) in self.anims.iter().enumerate() {
             println!("  Sprite animation {}", j);
             for (k, frame) in anim.frames.iter().enumerate() {
-                println!("    Frame {}: U {:>3} D {:>3} L {:>3} R {:>3}, {:.3} seconds", k, frame.sprite_frames[0], frame.sprite_frames[1], frame.sprite_frames[2], frame.sprite_frames[3], frame.duration);
+                println!("    Frame {}: U {:>3} D {:>3} L {:>3} R {:>3}, {:.3} seconds", k, frame.sprite_frames[0], frame.sprite_frames[1], frame.sprite_frames[2], frame.sprite_frames[3], frame.delay);
             }
         }
     }

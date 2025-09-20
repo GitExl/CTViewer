@@ -28,7 +28,7 @@ pub fn exec_call_return(state: &mut ActorScriptState) -> OpResult {
 pub fn exec_call(target_actor: &mut Actor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
 
     // Complete immediately if the object is not interactive, dead or disabled.
-    if !target_actor.flags.contains(ActorFlags::INTERACTABLE) {
+    if !target_actor.flags.contains(ActorFlags::CALLS_ENABLED) {
         return OpResult::COMPLETE;
     }
     if target_actor.flags.contains(ActorFlags::DEAD) {
@@ -69,7 +69,7 @@ pub fn exec_call(target_actor: &mut Actor, target_state: &mut ActorScriptState, 
 
 pub fn exec_call_wait_completion(target_actor: &mut Actor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
     // Wait until a non-interactive target object becomes interactive.
-    if !target_actor.flags.contains(ActorFlags::INTERACTABLE) {
+    if !target_actor.flags.contains(ActorFlags::CALLS_ENABLED) {
         return OpResult::YIELD;
     }
 
@@ -102,7 +102,7 @@ pub fn exec_call_wait_return(state: &mut ActorScriptState, target_actor: &mut Ac
     if !state.call_waiting {
 
         // Wait until a non-interactive target object becomes interactive.
-        if !target_actor.flags.contains(ActorFlags::INTERACTABLE) {
+        if !target_actor.flags.contains(ActorFlags::CALLS_ENABLED) {
             return OpResult::YIELD;
         }
 

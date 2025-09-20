@@ -305,7 +305,7 @@ impl FileSystem {
                     let frame_index = assembly.frames.len() - 1;
                     anim.frames.push(SpriteAnimFrame {
                         sprite_frames: [frame_index, frame_index, frame_index, frame_index],
-                        duration,
+                        delay: duration,
                     });
 
                     data.seek(SeekFrom::Start(old_pos)).unwrap();
@@ -405,17 +405,17 @@ fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, 
             slot_data[offsets[2]] as usize,
             slot_data[offsets[3]] as usize,
         ];
-        if sprite_frames[0] == 0xFF {
-            break;
-        }
 
         // A frame duration is measured in 1/60th of a second (or one SNES frame).
         let interval_offset = start_interval_offset + anim_index * 4 + frame_index;
-        let duration = interval_data[interval_offset] as u32;
+        let delay = interval_data[interval_offset] as u32;
+        if delay == 0 {
+            break;
+        }
 
         frames.push(SpriteAnimFrame {
             sprite_frames,
-            duration,
+            delay,
         });
         frame_index += 1;
     }

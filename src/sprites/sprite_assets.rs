@@ -160,7 +160,7 @@ fn generate_null_sprite_anim_set() -> SpriteAnimSet {
         frames: vec![
             SpriteAnimFrame {
                 sprite_frames: [0, 0, 0, 0],
-                duration: 60,
+                delay: 60,
             }
         ],
     });
