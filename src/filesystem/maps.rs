@@ -12,6 +12,7 @@ use crate::map::ScreenFlags;
 use crate::scene::scene_map::{SceneMap, SceneMoveDirection, ScenePropLayer, SceneTileCollision, SceneTileFlags, SceneTileProps};
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::tileset::TileSet;
+use crate::util::vec2df64::Vec2Df64;
 use crate::world::world_map::{WorldChip, WorldChipFlags, WorldMap};
 
 struct SceneMapHeader {
@@ -44,27 +45,22 @@ impl FileSystem {
         let mut screen_flags = ScreenFlags::SCREEN_L1_MAIN | ScreenFlags::SCREEN_L2_MAIN | ScreenFlags::SCREEN_L3_SUB | ScreenFlags::SCREEN_SPR_MAIN;
         let effect_flags = EffectFlags::EFFECT_L1 | EffectFlags::EFFECT_L2 | EffectFlags::EFFECT_SPR | EffectFlags::EFFECT_HALF_INTENSITY;
         if index == 0 {
-            layer_3.scroll_speed_x = -16.0;
-            layer_3.scroll_speed_y = 8.0;
+            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
         } else if index == 1 {
-            layer_3.scroll_speed_x = -16.0;
-            layer_3.scroll_speed_y = 8.0;
+            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
         } else if index == 2 {
             screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
             screen_flags.insert(ScreenFlags::SCREEN_L3_MAIN);
         } else if index == 3 {
-            layer_3.scroll_speed_x = -16.0;
-            layer_3.scroll_speed_y = 8.0;
+            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
         } else if index == 4 {
             screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
         } else if index == 5 {
-            layer_3.scroll_speed_x = -16.0;
-            layer_3.scroll_speed_y = 8.0;
+            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
         } else if index == 6 {
-            layer_3.scroll_speed_x = -16.0;
-            layer_3.scroll_speed_y = 8.0;
+            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
         } else if index == 7 {
-            layer_1.scroll_speed_x = 16.0;
+            layer_1.scroll_speed = Vec2Df64::new(16.0, 0.0);
         }
 
         // Read 2x2 chip map tiles and assemble chips from them.
@@ -219,8 +215,7 @@ impl FileSystem {
             };
         }
         layer_2.scroll_mode = scroll_mode;
-        layer_2.scroll_speed_x = scroll_speed_x;
-        layer_2.scroll_speed_y = scroll_speed_y;
+        layer_2.scroll_speed = Vec2Df64::new(scroll_speed_x, scroll_speed_y);
 
         // Set layer 3 scrolling properties.
         let (scroll_speed_x, scroll_speed_y) = decode_scene_layer_scroll_speed(header.scroll_l3);
@@ -229,8 +224,7 @@ impl FileSystem {
             _ => LayerScrollMode::Normal,
         };
         layer_3.scroll_mode = scroll_mode;
-        layer_3.scroll_speed_x = scroll_speed_x;
-        layer_3.scroll_speed_y = scroll_speed_y;
+        layer_3.scroll_speed = Vec2Df64::new(scroll_speed_x, scroll_speed_y);
 
         // Read some unknown layer priority data per map.
         // These are unique to the PC version, so might be related to how it renders maps, where it

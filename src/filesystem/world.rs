@@ -5,7 +5,7 @@ use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 use crate::destination::{Destination, Facing};
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
-
+use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::WorldExit;
 use crate::world::world::ScriptedWorldExit;
 use crate::world::world::World;
@@ -183,8 +183,10 @@ impl FileSystem {
 
             let destination = Destination::Scene {
                 index: scene_index,
-                x: (exit_data.scene_tile_x as i32 * 16) - if shift_left { 8 } else { 0 },
-                y: (exit_data.scene_tile_y as i32 * 16) - if shift_up { 8 } else { 0 },
+                pos: Vec2Di32::new(
+                 (exit_data.scene_tile_x as i32 * 16) - if shift_left { 8 } else { 0 },
+                 (exit_data.scene_tile_y as i32 * 16) - if shift_up { 8 } else { 0 },
+                ),
                 facing: match facing {
                     0 => Facing::Up,
                     1 => Facing::Down,
@@ -197,8 +199,10 @@ impl FileSystem {
             exits.push(WorldExit {
                 index: exit_index,
 
-                x: tile_x as i32 * 16,
-                y: tile_y as i32 * 16 - 8,
+                pos: Vec2Di32::new(
+                    tile_x as i32 * 16,
+                    tile_y as i32 * 16 - 8,
+                ),
                 is_available,
                 name_index: exit_data.name_index as usize,
 
@@ -223,8 +227,10 @@ impl FileSystem {
 
             scripted_exits.push(ScriptedWorldExit {
                 index: scripted_exit_index,
-                x: (x * 16) as i32,
-                y: (y * 16) as i32 - 8,
+                pos: Vec2Di32::new(
+                    (x * 16) as i32,
+                    (y * 16) as i32 - 8,
+                ),
                 script_offset_index,
             });
         }

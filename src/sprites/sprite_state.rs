@@ -1,6 +1,7 @@
-use crate::actor::{ActorClass, Facing};
+use crate::actor::ActorClass;
 use crate::sprites::sprite_anim::SpriteAnim;
 use crate::sprites::sprite_renderer::SpritePriority;
+use crate::util::vec2df64::Vec2Df64;
 
 #[derive(Clone,PartialEq,Debug)]
 pub enum AnimationMode {
@@ -12,13 +13,11 @@ pub enum AnimationMode {
 
 #[derive(Clone)]
 pub struct SpriteState {
-    pub x: f64,
-    pub y: f64,
+    pub pos: Vec2Df64,
 
     pub sprite_index: usize,
     pub sprite_frame: usize,
     pub palette_offset: usize,
-    pub facing: Facing,
     pub priority_top: SpritePriority,
     pub priority_bottom: SpritePriority,
     pub enabled: bool,
@@ -36,13 +35,11 @@ pub struct SpriteState {
 impl SpriteState {
     pub fn new() -> SpriteState {
         SpriteState {
-            x: 0.0,
-            y: 0.0,
+            pos: Vec2Df64::default(),
 
             sprite_index: 0,
             sprite_frame: 0,
             palette_offset: 0,
-            facing: Facing::default(),
             priority_top: SpritePriority::default(),
             priority_bottom: SpritePriority::default(),
             enabled: false,
@@ -117,7 +114,7 @@ impl SpriteState {
         self.anim_delay = 0;
     }
 
-    pub fn animate_for_movement(&mut self, actor_class: ActorClass, movement_x: f64, movement_y: f64) {
+    pub fn animate_for_movement(&mut self, actor_class: ActorClass, move_by: Vec2Df64) {
         if self.anim_mode == AnimationMode::Static {
             if self.anim_index != 0xFF {
                 self.anim_mode = AnimationMode::Loop;
@@ -131,7 +128,7 @@ impl SpriteState {
             return;
         }
 
-        let movement_total = movement_x.abs() + movement_y.abs();
+        let movement_total = move_by.x.abs() + move_by.y.abs();
         let mut anim_index = 0;
         if actor_class != ActorClass::NPC && movement_total > 4.0 {
             anim_index = 6;
@@ -150,8 +147,7 @@ impl SpriteState {
     pub fn dump(&self) {
         println!("Sprite state - {}", if self.enabled { "enabled" } else { "disabled" });
         println!("  Sprite {} frame {}", self.sprite_index, self.sprite_frame);
-        println!("  At {} x {}", self.x, self.y);
-        println!("  Facing: {:?}", self.facing);
+        println!("  At {}", self.pos);
         println!("  Priority top {:?}", self.priority_top);
         println!("  Priority bottom {:?}", self.priority_bottom);
         println!("  Palette offset {}", self.palette_offset);

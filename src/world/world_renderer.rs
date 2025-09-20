@@ -57,32 +57,26 @@ impl WorldRenderer {
 
     fn render_debug_exits(&mut self, exits: &Vec<WorldExit>, scripted_exits: &Vec<ScriptedWorldExit>, camera: &Camera, surface: &mut Surface) {
         for exit in exits {
-            let x = exit.x - camera.lerp_x.floor() as i32;
-            let y = exit.y - camera.lerp_y.floor() as i32;
-
+            let pos = exit.pos - camera.pos_lerp.as_vec2d_i32();
             let (src_x, src_y) = if exit.is_available { (0, 8) } else { (16, 8) };
-            blit_surface_to_surface(&self.debug_tiles, surface, src_x, src_y, 16, 16, x, y, SurfaceBlendOps::Blend);
+            blit_surface_to_surface(&self.debug_tiles, surface, src_x, src_y, 16, 16, pos.x, pos.y, SurfaceBlendOps::Blend);
         }
 
         for scripted_exit in scripted_exits {
-            let x = scripted_exit.x - camera.lerp_x.floor() as i32;
-            let y = scripted_exit.y - camera.lerp_y.floor() as i32;
-            
-            blit_surface_to_surface(&self.debug_tiles, surface, 32, 8, 16, 16, x, y, SurfaceBlendOps::Blend);
+            let pos = scripted_exit.pos - camera.pos_lerp.as_vec2d_i32();
+            blit_surface_to_surface(&self.debug_tiles, surface, 32, 8, 16, 16, pos.x, pos.y, SurfaceBlendOps::Blend);
         }
     }
 
     fn render_debug_layer(&mut self, map: &Map, world_map: &WorldMap, camera: &Camera, surface: &mut Surface) {
-        let chip_x1 = (camera.lerp_x / 8.0).floor() as i32;
-        let chip_y1 = (camera.lerp_y / 8.0).floor() as i32;
-        let chip_x2 = ((camera.lerp_x + camera.width) / 8.0).ceil() as i32;
-        let chip_y2 = ((camera.lerp_y + camera.height) / 8.0).ceil() as i32;
+        let chip1 = (camera.pos_lerp / 8.0).floor().as_vec2d_i32();
+        let chip2 = ((camera.pos_lerp + camera.size) / 8.0).ceil().as_vec2d_i32();
         let layer = &map.layers[1];
 
         let chip_width = layer.chip_width as i32;
         let chip_height = layer.chip_height as i32;
 
-        for chip_y in chip_y1..chip_y2 {
+        for chip_y in chip1.y..chip2.y {
             let chip_y_wrap;
             if chip_y < 0 {
                 chip_y_wrap = chip_height - (chip_y.abs() % chip_height) - 1;
@@ -90,7 +84,7 @@ impl WorldRenderer {
                 chip_y_wrap = chip_y % chip_height;
             }
 
-            for chip_x in chip_x1..chip_x2 {
+            for chip_x in chip1.x..chip2.x {
                 let chip_x_wrap;
                 if chip_x < 0 {
                     chip_x_wrap = chip_width - (chip_x.abs() % chip_width) - 1;
@@ -135,8 +129,8 @@ impl WorldRenderer {
                     continue;
                 }
 
-                let px = (chip_x * 8) - camera.lerp_x.floor() as i32;
-                let py = (chip_y * 8) - camera.lerp_y.floor() as i32;
+                let px = (chip_x * 8) - camera.pos_lerp.x.floor() as i32;
+                let py = (chip_y * 8) - camera.pos_lerp.y.floor() as i32;
                 blit_surface_to_surface(&self.debug_tiles, surface, src_x * 8, src_y * 8, 8, 8, px, py, SurfaceBlendOps::Blend);
             }
         }

@@ -1,5 +1,6 @@
 use crate::Context;
 use crate::l10n::IndexedType;
+use crate::util::vec2di32::Vec2Di32;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Facing {
@@ -9,18 +10,16 @@ pub enum Facing {
     Right,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone)]
 pub enum Destination {
     Scene {
         index: usize,
-        x: i32,
-        y: i32,
+        pos: Vec2Di32,
         facing: Facing,
     },
     World {
         index: usize,
-        x: i32,
-        y: i32,
+        pos: Vec2Di32,
     },
 }
 
@@ -38,11 +37,11 @@ impl Destination {
 
     pub fn dump(&self, ctx: &Context) {
         match self {
-            Destination::Scene { index, x, y, facing } => {
-                println!("  To scene {} - '{}', {} x {} facing {:?}", index, ctx.l10n.get_indexed(IndexedType::Scene, *index), x, y, facing);
+            Destination::Scene { index, pos, facing } => {
+                println!("  To scene {} - '{}', {} facing {:?}", index, ctx.l10n.get_indexed(IndexedType::Scene, *index), pos, facing);
             },
-            Destination::World { index, x, y } => {
-                println!("  To world {} - '{}', {} x {}", index, ctx.l10n.get_indexed(IndexedType::World, *index), x, y);
+            Destination::World { index, pos } => {
+                println!("  To world {} - '{}', {}", index, ctx.l10n.get_indexed(IndexedType::World, *index), pos);
             },
         }
     }

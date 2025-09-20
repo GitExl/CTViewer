@@ -203,30 +203,24 @@ impl MapRenderer {
 }
 
 fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: LayerFlags, tileset: &TileSet, layer: &MapLayer, priority: u8, palette: &Palette, camera: &Camera) {
-    let x1;
-    let y1;
+    let pos;
     if matches!(layer.scroll_mode, LayerScrollMode::IgnoreCamera) {
-        x1 = layer.lerp_scroll_x.floor();
-        y1 = layer.lerp_scroll_y.floor();
+        pos = layer.scroll_lerp.floor();
     } else if matches!(layer.scroll_mode, LayerScrollMode::Parallax) {
-        x1 = ((camera.lerp_x / 2.0) + layer.lerp_scroll_x).floor();
-        y1 = ((camera.lerp_y / 2.0) + layer.lerp_scroll_y).floor();
+        pos = ((camera.pos_lerp / 2.0) + layer.scroll_lerp).floor();
     } else {
-        x1 = (camera.lerp_x + layer.lerp_scroll_x).floor();
-        y1 = (camera.lerp_y + layer.lerp_scroll_y).floor();
+        pos = (camera.pos_lerp + layer.scroll_lerp).floor();
     }
 
-    let chip_x1 = (x1 / 8.0).floor() as i32;
-    let chip_y1 = (y1 / 8.0).floor() as i32;
-    let chip_x2 = ((x1 + camera.width) / 8.0).ceil() as i32;
-    let chip_y2 = ((y1 + camera.height) / 8.0).ceil() as i32;
+    let chip1 = (pos / 8.0).floor().as_vec2d_i32();
+    let chip2 = ((pos + camera.size) / 8.0).ceil().as_vec2d_i32();
 
     let source_bits = source_value.bits();
 
     let chip_width = layer.chip_width as i32;
     let chip_height = layer.chip_height as i32;
 
-    for chip_y in chip_y1..chip_y2 {
+    for chip_y in chip1.y..chip2.y {
         let chip_y_wrap;
         if chip_y < 0 {
             chip_y_wrap = chip_height - (chip_y.abs() % chip_height) - 1;
@@ -234,7 +228,7 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
             chip_y_wrap = chip_y % chip_height;
         }
 
-        for chip_x in chip_x1..chip_x2 {
+        for chip_x in chip1.x..chip2.x {
             let chip_x_wrap;
             if chip_x < 0 {
                 chip_x_wrap = chip_width - (chip_x.abs() % chip_width) - 1;
@@ -264,8 +258,8 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
                 render_flags |= BitmapBlitFlags::FLIP_Y;
             }
 
-            let px = chip_x * 8 - x1 as i32;
-            let py = chip_y * 8 - y1 as i32;
+            let px = chip_x * 8 - pos.x as i32;
+            let py = chip_y * 8 - pos.y as i32;
             blit_bitmap_to_surface_and_source(&tileset.chip_bitmaps[chip.chip], target, pixel_source, 0, 0, 8, 8, px, py, palette, chip.palette, source_bits, render_flags);
         }
     }
@@ -335,14 +329,14 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
         }
         sorted.push(&sprite_state);
     }
-    sorted.sort_by(|a, b| a.y.partial_cmp(&b.y).unwrap());
+    sorted.sort_by(|a, b| a.pos.y.partial_cmp(&b.pos.y).unwrap());
 
     for sprite_state in sorted.iter() {
         let render_top = sprite_state.priority_top == priority;
         let render_bottom = sprite_state.priority_bottom == priority;
         if render_top || render_bottom {
-            let x = (sprite_state.x - camera.lerp_x.floor()).floor() as i32;
-            let y = (sprite_state.y - camera.lerp_y.floor()).floor() as i32;
+            let x = (sprite_state.pos.x - camera.pos_lerp.x.floor()).floor() as i32;
+            let y = (sprite_state.pos.y - camera.pos_lerp.y.floor()).floor() as i32;
             render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, &sprite_assets.get(sprite_state.sprite_index), sprite_state.sprite_frame, x, y, sprite_state.palette_offset);
         }
     }

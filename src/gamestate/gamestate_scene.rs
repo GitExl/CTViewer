@@ -13,6 +13,8 @@ use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
+use crate::util::vec2df64::Vec2Df64;
+use crate::util::vec2di32::Vec2Di32;
 
 pub struct GameStateScene {
     pub scene: Scene,
@@ -26,8 +28,7 @@ pub struct GameStateScene {
     key_left: bool,
     key_right: bool,
 
-    mouse_x: i32,
-    mouse_y: i32,
+    mouse_pos: Vec2Di32,
 
     debug_text: Option<TextRenderable>,
     debug_text_x: i32,
@@ -38,7 +39,7 @@ pub struct GameStateScene {
 }
 
 impl GameStateScene {
-    pub fn new(ctx: &mut Context, scene_index: usize, x: i32, y: i32) -> GameStateScene {
+    pub fn new(ctx: &mut Context, scene_index: usize, camera_center: Vec2Df64) -> GameStateScene {
         ctx.sprites_states.clear();
 
         let mut scene = ctx.fs.read_scene(scene_index);
@@ -54,7 +55,7 @@ impl GameStateScene {
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut scene.map);
 
-        camera.center_to(x as f64, y as f64);
+        camera.center_to(camera_center);
 
         scene.init(ctx);
 
@@ -72,8 +73,7 @@ impl GameStateScene {
             key_right: false,
             key_up: false,
 
-            mouse_x: 0,
-            mouse_y: 0,
+            mouse_pos: Vec2Di32::default(),
 
             debug_text: None,
             debug_text_x: 0,
@@ -89,16 +89,16 @@ impl GameStateTrait for GameStateScene {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.camera.tick(delta);
         if self.key_up {
-            self.camera.y -= 300.0 * delta;
+            self.camera.pos.y -= 300.0 * delta;
         }
         else if self.key_down {
-            self.camera.y += 300.0 * delta;
+            self.camera.pos.y += 300.0 * delta;
         }
         if self.key_left {
-            self.camera.x -= 300.0 * delta;
+            self.camera.pos.x -= 300.0 * delta;
         }
         else if self.key_right {
-            self.camera.x += 300.0 * delta;
+            self.camera.pos.x += 300.0 * delta;
         }
         self.camera.clamp();
 
@@ -138,13 +138,13 @@ impl GameStateTrait for GameStateScene {
         if self.debug_text.is_some() {
             ctx.render.render_text(
                 &mut self.debug_text.as_mut().unwrap(),
-                self.debug_text_x - self.camera.lerp_x as i32, self.debug_text_y - self.camera.lerp_y as i32,
+                self.debug_text_x - self.camera.pos_lerp.x as i32, self.debug_text_y - self.camera.pos_lerp.y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
         if self.debug_box.is_some() {
             ctx.render.render_box(
-                self.debug_box.as_mut().unwrap().moved_by(-self.camera.lerp_x as i32, -self.camera.lerp_y as i32),
+                self.debug_box.as_mut().unwrap().moved_by(-self.camera.pos_lerp.x as i32, -self.camera.pos_lerp.y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
             );
@@ -243,14 +243,14 @@ impl GameStateTrait for GameStateScene {
 
             Event::MouseButtonDown { mouse_btn, .. } => {
                 if *mouse_btn == MouseButton::Left {
-                    let index = self.get_actor_at(self.mouse_x, self.mouse_y);
+                    let index = self.get_actor_at(self.mouse_pos);
                     if let Some(index) = index {
                         let actor = &self.scene.actors[index];
                         actor.dump(ctx, &self.scene.script.script_states[index]);
                     }
 
                     if index.is_none() {
-                        let index = self.get_exit_at(self.mouse_x, self.mouse_y);
+                        let index = self.get_exit_at(self.mouse_pos);
                         if let Some(index) = index {
                             let exit = &self.scene.exits[index];
                             self.next_game_event = Some(GameEvent::GotoDestination {
@@ -269,10 +269,12 @@ impl GameStateTrait for GameStateScene {
     fn mouse_motion(&mut self, ctx: &Context, x: i32, y: i32) {
 
         // Keep world coordinate mouse position.
-        self.mouse_x = (x as f64 + self.camera.x) as i32;
-        self.mouse_y = (y as f64 + self.camera.y) as i32;
+        self.mouse_pos = Vec2Di32::new(
+            (x as f64 + self.camera.pos.x) as i32,
+            (y as f64 + self.camera.pos.y) as i32,
+        );
 
-        let mut index = self.get_actor_at(self.mouse_x, self.mouse_y);
+        let mut index = self.get_actor_at(self.mouse_pos);
         if let Some(index) = index {
             let actor = &self.scene.actors[index];
             let text = format!("Actor {}", index);
@@ -282,16 +284,16 @@ impl GameStateTrait for GameStateScene {
                 TextDrawFlags::SHADOW,
                 0,
             ));
-            self.debug_text_x = actor.x as i32;
-            self.debug_text_y = actor.y as i32 + 16;
+            self.debug_text_x = actor.pos.x as i32;
+            self.debug_text_y = actor.pos.y as i32 + 16;
             self.debug_box = Some(Rect::new(
-                actor.x as i32 - 8, actor.y as i32 - 16,
-                actor.x as i32 + 8, actor.y as i32,
+                actor.pos.x as i32 - 8, actor.pos.y as i32 - 16,
+                actor.pos.x as i32 + 8, actor.pos.y as i32,
             ));
         }
 
         if index.is_none() {
-            index = self.get_exit_at(self.mouse_x, self.mouse_y);
+            index = self.get_exit_at(self.mouse_pos);
             if let Some(index) = index {
                 let exit = &self.scene.exits[index];
                 let text = exit.destination.info(&ctx);
@@ -302,17 +304,17 @@ impl GameStateTrait for GameStateScene {
                     TextDrawFlags::SHADOW,
                     0,
                 ));
-                self.debug_text_x = exit.x + exit.width / 2;
-                self.debug_text_y = exit.y;
+                self.debug_text_x = exit.pos.x + exit.size.x / 2;
+                self.debug_text_y = exit.pos.y;
                 self.debug_box = Some(Rect::new(
-                    exit.x, exit.y,
-                    exit.x + exit.width, exit.y + exit.height,
+                    exit.pos.x, exit.pos.y,
+                    exit.pos.x + exit.size.x, exit.pos.y + exit.size.y,
                 ));
             }
         }
 
         if index.is_none() {
-            index = self.get_treasure_at(self.mouse_x, self.mouse_y);
+            index = self.get_treasure_at(self.mouse_pos);
             if let Some(index) = index {
                 let treasure = &self.scene.treasure[index];
                 let text = if treasure.gold > 0 {
@@ -328,11 +330,11 @@ impl GameStateTrait for GameStateScene {
                     TextDrawFlags::SHADOW,
                     0,
                 ));
-                self.debug_text_x = treasure.tile_x * 16 + 8;
-                self.debug_text_y = treasure.tile_y * 16;
+                self.debug_text_x = treasure.tile_pos.x * 16 + 8;
+                self.debug_text_y = treasure.tile_pos.y * 16;
                 self.debug_box = Some(Rect::new(
-                    treasure.tile_x * 16, treasure.tile_y * 16,
-                    treasure.tile_x * 16 + 16, treasure.tile_y * 16 + 16,
+                    treasure.tile_pos.x * 16, treasure.tile_pos.y * 16,
+                    treasure.tile_pos.x * 16 + 16, treasure.tile_pos.y * 16 + 16,
                 ));
             }
         }
@@ -356,9 +358,10 @@ impl GameStateTrait for GameStateScene {
 
 impl GameStateScene {
 
-    fn get_exit_at(&self, x: i32, y: i32) -> Option<usize> {
+    fn get_exit_at(&self, pos: Vec2Di32) -> Option<usize> {
         for (index, exit) in self.scene.exits.iter().enumerate() {
-            if x < exit.x - 8 || x >= exit.x + exit.width + 8 || y < exit.y - 8 || y >= exit.y + exit.height + 8 {
+            if pos.x < exit.pos.x - 8 || pos.x >= exit.pos.x + exit.size.y + 8 ||
+               pos.y < exit.pos.y - 8 || pos.y >= exit.pos.y + exit.size.y + 8 {
                 continue;
             }
             return Some(index);
@@ -367,9 +370,10 @@ impl GameStateScene {
         None
     }
 
-    fn get_treasure_at(&self, x: i32, y: i32) -> Option<usize> {
+    fn get_treasure_at(&self, pos: Vec2Di32) -> Option<usize> {
         for (index, treasure) in self.scene.treasure.iter().enumerate() {
-            if x < treasure.tile_x * 16 || x >= treasure.tile_x * 16 + 16 || y < treasure.tile_y * 16 || y >= treasure.tile_y * 16 + 16 {
+            if pos.x < treasure.tile_pos.x * 16 || pos.x >= treasure.tile_pos.x * 16 + 16 ||
+               pos.y < treasure.tile_pos.y * 16 || pos.y >= treasure.tile_pos.y * 16 + 16 {
                 continue;
             }
             return Some(index);
@@ -378,9 +382,10 @@ impl GameStateScene {
         None
     }
 
-    fn get_actor_at(&self, x: i32, y: i32) -> Option<usize> {
+    fn get_actor_at(&self, pos: Vec2Di32) -> Option<usize> {
         for (index, actor) in self.scene.actors.iter().enumerate() {
-            if x < actor.x as i32 - 8 || x >= actor.x as i32 + 8 || y < actor.y as i32 - 16 || y >= actor.y as i32 {
+            if pos.x < actor.pos.x as i32 - 8 || pos.x >= actor.pos.x as i32 + 8 ||
+               pos.y < actor.pos.y as i32 - 16 || pos.y >= actor.pos.y as i32 {
                 continue;
             }
             return Some(index);

@@ -18,6 +18,7 @@ use crate::renderer::Renderer;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::util::random::Random;
+use crate::util::vec2df64::Vec2Df64;
 
 mod actor;
 mod camera;
@@ -37,12 +38,13 @@ mod gamestate;
 mod renderer;
 mod destination;
 mod scene_script;
+mod facing;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
 
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone)]
 pub enum GameEvent {
     GotoDestination {
         destination: Destination,
@@ -113,12 +115,12 @@ fn main() -> Result<(), String> {
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {
-        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, 0, 0));
+        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(0.0, 0.0)));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, 768, 512));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(768.0, 512.0)));
     } else {
         println!("No scene or world specified, loading scene 0x1.");
-        gamestate = Box::new(GameStateScene::new(&mut ctx, 1, 0, 0));
+        gamestate = Box::new(GameStateScene::new(&mut ctx, 1, Vec2Df64::new(0.0, 0.0)));
     }
 
     let title = format!("Chrono Trigger - {}", gamestate.get_title(&ctx));
@@ -182,11 +184,11 @@ fn main() -> Result<(), String> {
                 match game_event.unwrap() {
                     GameEvent::GotoDestination { destination } => {
                         match destination {
-                            Destination::Scene { index, x, y, .. } => {
-                                gamestate = Box::new(GameStateScene::new(&mut ctx, index, x, y));
+                            Destination::Scene { index, pos, .. } => {
+                                gamestate = Box::new(GameStateScene::new(&mut ctx, index, pos.as_vec2d_f64()));
                             },
-                            Destination::World { index, x, y } => {
-                                gamestate = Box::new(GameStateWorld::new(&mut ctx, index, x, y));
+                            Destination::World { index, pos } => {
+                                gamestate = Box::new(GameStateWorld::new(&mut ctx, index, pos.as_vec2d_f64()));
                             },
                         };
 

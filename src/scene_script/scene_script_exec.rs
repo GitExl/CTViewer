@@ -1,5 +1,6 @@
-use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, Facing};
+use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite};
 use crate::Context;
+use crate::facing::Facing;
 use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
@@ -12,6 +13,8 @@ use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 use crate::scene_script::scene_script_decoder::CopyTilesFlags;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
+use crate::util::vec2df64::Vec2Df64;
+use crate::util::vec2di32::Vec2Di32;
 
 pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptState, states: &mut Vec<ActorScriptState>, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> OpResult {
     let op = match state.current_op {
@@ -180,7 +183,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let x = x.get_u8(memory) as f64;
             let y = y.get_u8(memory) as f64;
 
-            actors[actor_index].move_to(x * 16.0 + 8.0, y * 16.0 + 16.0, true, &scene_map);
+            actors[actor_index].move_to(Vec2Df64::new(x * 16.0 + 8.0, y * 16.0 + 16.0), true, &scene_map);
 
             OpResult::COMPLETE
         },
@@ -195,10 +198,12 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorCoordinatesSetPrecise { actor, x, y } => {
             let actor_index = actor.deref(this_actor);
-            let x = x.get_u16(memory) as f64;
-            let y = y.get_u16(memory) as f64;
+            let pos = Vec2Df64::new(
+                x.get_u16(memory) as f64,
+                y.get_u16(memory) as f64,
+            );
 
-            actors[actor_index].move_to(x, y, true, &scene_map);
+            actors[actor_index].move_to(pos, true, &scene_map);
 
             OpResult::COMPLETE
         },
@@ -210,7 +215,6 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             actors[actor_index].facing = facing;
-            state.facing = facing;
             state.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE
@@ -225,11 +229,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             if other_actor.flags.contains(ActorFlags::DEAD) {
                 return OpResult::COMPLETE;
             }
-            let other_x = other_actor.x;
-            let other_y = other_actor.y;
-
-            actors[actor_index].face_towards(other_x, other_y);
-            state.facing = actors[actor_index].facing;
+            let other_pos = other_actor.pos;
+            actors[actor_index].face_towards(other_pos);
             state.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE
@@ -298,7 +299,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let dest_tile_y = y.get_u8(memory) as i32;
             let steps = if let Some(steps) = steps { Some(steps.get_u8(memory) as u32) } else { None };
 
-            exec_movement_tile(ctx, state, actor_index, actors, dest_tile_x, dest_tile_y, steps, update_facing, animated)
+            exec_movement_tile(ctx, state, actor_index, actors, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
 
         // todo

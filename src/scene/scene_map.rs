@@ -1,5 +1,6 @@
 use bitflags::bitflags;
 use crate::sprites::sprite_renderer::SpritePriority;
+use crate::util::vec2df64::Vec2Df64;
 
 bitflags! {
     #[derive(Clone, Copy, Default)]
@@ -97,10 +98,9 @@ pub struct SceneMap {
 }
 
 impl SceneMap {
-    pub fn get_props_at_coordinates(&self, x: f64, y: f64) -> Option<SceneTileProps> {
-        let tile_x = (x / 16.0) as u32;
-        let tile_y = (y / 16.0) as u32;
-        let index = (tile_y * self.props.width + tile_x) as usize;
+    pub fn get_props_at_pixel(&self, pos: Vec2Df64) -> Option<SceneTileProps> {
+        let tile_pos = (pos / 16.0).as_vec2d_i32();
+        let index = (tile_pos.y * self.props.width as i32 + tile_pos.x) as usize;
         if index < self.props.props.len() {
             return Some(self.props.props[index])
         }

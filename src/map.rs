@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use crate::util::vec2df64::Vec2Df64;
 
 pub enum LayerScrollMode {
     Normal,
@@ -69,15 +70,10 @@ pub struct MapLayer {
     pub tiles: Vec<usize>,
 
     pub scroll_mode: LayerScrollMode,
-    pub scroll_speed_x: f64,
-    pub scroll_speed_y: f64,
-
-    pub scroll_x: f64,
-    pub scroll_y: f64,
-    pub lerp_scroll_x: f64,
-    pub lerp_scroll_y: f64,
-    pub last_scroll_x: f64,
-    pub last_scroll_y: f64,
+    pub scroll_speed: Vec2Df64,
+    pub scroll: Vec2Df64,
+    pub scroll_last: Vec2Df64,
+    pub scroll_lerp: Vec2Df64,
 }
 
 impl MapLayer {
@@ -94,29 +90,20 @@ impl MapLayer {
             tiles: vec![0; len / 4],
 
             scroll_mode: LayerScrollMode::Normal,
-            scroll_speed_x: 0.0,
-            scroll_speed_y: 0.0,
-
-            scroll_x: 0.0,
-            scroll_y: 0.0,
-            lerp_scroll_x: 0.0,
-            lerp_scroll_y: 0.0,
-            last_scroll_x: 0.0,
-            last_scroll_y: 0.0,
+            scroll_speed: Vec2Df64::default(),
+            scroll: Vec2Df64::default(),
+            scroll_last: Vec2Df64::default(),
+            scroll_lerp: Vec2Df64::default(),
         }
     }
 
     pub fn tick(&mut self, delta: f64) {
-        self.last_scroll_x = self.scroll_x;
-        self.last_scroll_y = self.scroll_y;
-
-        self.scroll_x += self.scroll_speed_x * delta;
-        self.scroll_y += self.scroll_speed_y * delta;
+        self.scroll_last = self.scroll;
+        self.scroll = self.scroll + self.scroll_speed * delta;
     }
 
     pub fn lerp(&mut self, lerp: f64) {
-        self.lerp_scroll_x = self.last_scroll_x + (self.scroll_x - self.last_scroll_x) * lerp;
-        self.lerp_scroll_y = self.last_scroll_y + (self.scroll_y - self.last_scroll_y) * lerp;
+        self.scroll_lerp = Vec2Df64::interpolate(self.scroll_last, self.scroll, lerp);
     }
 }
 
@@ -147,7 +134,7 @@ impl Map {
             println!("    {} x {} tiles", layer.tile_width, layer.tile_height);
             println!("    {} x {} chips", layer.chip_width, layer.chip_height);
             println!("    {} scroll mode", layer.scroll_mode.to_string());
-            println!("    Scroll {:.2} x {:.2} pixels/s", layer.scroll_speed_x, layer.scroll_speed_y);
+            println!("    Scroll at {} by {} pixels/s", layer.scroll, layer.scroll_speed);
         }
 
         println!();

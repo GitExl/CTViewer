@@ -1,28 +1,25 @@
+use crate::util::vec2df64::Vec2Df64;
+
 pub struct Camera {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
+    pub pos: Vec2Df64,
+    pos_last: Vec2Df64,
+    pub pos_lerp: Vec2Df64,
+    pub size: Vec2Df64,
 
     x1: f64,
     y1: f64,
     x2: f64,
     y2: f64,
-
-    last_x: f64,
-    last_y: f64,
-    pub lerp_x: f64,
-    pub lerp_y: f64,
 }
 
 impl Camera {
     pub fn new(x: f64, y: f64, width: f64, height: f64, x1: f64, y1: f64, x2: f64, y2: f64) -> Camera {
         let mut camera = Camera {
-            x, y, width, height,
+            pos: Vec2Df64::new(x, y),
+            pos_last: Vec2Df64::new(x, y),
+            pos_lerp: Vec2Df64::new(x, y),
+            size: Vec2Df64::new(width, height),
             x1, y1, x2, y2,
-
-            last_x: x, last_y: y,
-            lerp_x: x, lerp_y: y,
         };
         camera.clamp();
         camera.tick(0.0);
@@ -38,48 +35,42 @@ impl Camera {
     }
 
     pub fn tick(&mut self, _: f64) {
-        self.last_x = self.x;
-        self.last_y = self.y;
+        self.pos_last = self.pos;
     }
 
     pub fn lerp(&mut self, lerp: f64) {
-        self.lerp_x = self.last_x + (self.x - self.last_x) * lerp;
-        self.lerp_y = self.last_y + (self.y - self.last_y) * lerp;
+        self.pos_lerp = Vec2Df64::interpolate(self.pos_last, self.pos, lerp);
     }
 
     pub fn clamp(&mut self) {
-        self.x = self.x.min(self.x2 - self.width).max(self.x1);
-        self.y = self.y.min(self.y2 - self.height).max(self.y1);
+        self.pos.x = self.pos.x.min(self.x2 - self.size.x).max(self.x1);
+        self.pos.y = self.pos.y.min(self.y2 - self.size.y).max(self.y1);
     }
 
     pub fn wrap(&mut self) {
-        let mut cx = self.x + self.width / 2.0;
-        let mut cy = self.y + self.height / 2.0;
+        let mut center = self.pos + self.size / 2.0;
 
-        if cx < self.x1 {
-            cx = self.x2 - (self.x1 - cx);
-        } else if cx >= self.x2 {
-            cx = self.x1 + (cx - self.x2);
+        if center.x < self.x1 {
+            center.x = self.x2 - (self.x1 - center.x);
+        } else if center.x >= self.x2 {
+            center.x = self.x1 + (center.x - self.x2);
         }
 
-        if cy < self.y1 {
-            cy = self.y2 - (self.y1 - cy);
-        } else if cy >= self.y2 {
-            cy = self.y1 + (cy - self.y2);
+        if center.y < self.y1 {
+            center.y = self.y2 - (self.y1 - center.y);
+        } else if center.y >= self.y2 {
+            center.y = self.y1 + (center.y - self.y2);
         }
 
-        self.x = cx - self.width / 2.0;
-        self.y = cy - self.height / 2.0;
+        self.pos = center - self.size / 2.0;
     }
 
-    pub fn center_to(&mut self, x: f64, y: f64) {
-        self.x = x - self.width / 2.0;
-        self.y = y - self.height / 2.0;
+    pub fn center_to(&mut self, center: Vec2Df64) {
+        self.pos = center - self.size / 2.0;
+
         self.clamp();
 
-        self.last_x = self.x;
-        self.last_y = self.y;
-        self.lerp_x = self.x;
-        self.lerp_y = self.y;
+        self.pos_last = self.pos;
+        self.pos_lerp = self.pos;
     }
 }

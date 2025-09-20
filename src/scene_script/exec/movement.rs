@@ -2,55 +2,52 @@ use std::f64::consts::PI;
 use crate::actor::{Actor, ActorFlags, ActorTask, DebugSprite};
 use crate::Context;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
+use crate::util::vec2df64::Vec2Df64;
+use crate::util::vec2di32::Vec2Di32;
 
-pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor_index: usize, actors: &mut Vec<Actor>, tile_x: i32, tile_y: i32, steps: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
+pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor_index: usize, actors: &mut Vec<Actor>, tile_dest_pos: Vec2Di32, steps: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
     let actor = actors.get_mut(actor_index).unwrap();
 
     // Only match tile movements.
     if let ActorTask::MoveToTile { steps, .. } = actor.task {
+
         // Wait for destination to be reached.
         if steps > 0 {
             return OpResult::YIELD;
         }
     }
 
-    let actor_tile_x = (actor.x / 16.0) as i32;
-    let actor_tile_y = (actor.y / 16.0) as i32;
-
-    let mut move_x = 0.0;
-    let mut move_y = 0.0;
+    let actor_tile_pos = (actor.pos / 16.0).as_vec2d_i32();
+    let mut move_by = Vec2Df64::default();
     let mut move_steps = 0;
 
     // Destination tile was reached?
-    if actor_tile_x == tile_x && actor_tile_y == tile_y {
+    if actor_tile_pos.x == tile_dest_pos.x && actor_tile_pos.y == tile_dest_pos.y {
 
         // If enabled, slowly move the actor to the bottom center of the tile, x first.
         if actor.flags.contains(ActorFlags::MOVE_ONTO_TILE) {
-            let x = actor.x as i32;
-            let y = actor.y as i32;
-            let dest_x = (tile_x as f64 * 16.0 + 8.0) as i32;
-            let dest_y = (tile_y as f64 * 16.0 + 15.0) as i32;
+            let actor_pos = actor.pos.as_vec2d_i32();
+            let dest_pos = tile_dest_pos * 16 + Vec2Di32::new(8, 15);
 
             // Move on x-axis first.
-            if x != dest_x {
-                (move_x, move_y) = (
-                    (dest_x - x).signum() as f64 * 1.0,
+            if actor_pos.x != dest_pos.x {
+                move_by = Vec2Df64::new(
+                    (dest_pos.x - actor_pos.x).signum() as f64 * 1.0,
                     0.0,
                 );
                 move_steps = 1;
 
             // Move on y-axis last.
-            } else if y != dest_y {
-                (move_x, move_y) = (
+            } else if actor_pos.y != dest_pos.y {
+                move_by = Vec2Df64::new(
                     0.0,
-                    (dest_y - y).signum() as f64 * 1.0,
+                    (dest_pos.y - actor_pos.y).signum() as f64 * 1.0,
                 );
                 move_steps = 1;
 
             // Destination reached, snap to whole pixel coordinate.
             } else {
-                actor.x = dest_x as f64;
-                actor.y = dest_y as f64;
+                actor.pos = dest_pos.as_vec2d_f64();
             }
         }
 
@@ -58,10 +55,10 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
     } else {
 
         // Move towards the destination tile.
-        let angle = (tile_y as f64 - actor_tile_y as f64).atan2(tile_x as f64 - actor_tile_x as f64);
-        (move_x, move_y) = (
-            (actor.move_speed / 2.0) * angle.cos(),
-            (actor.move_speed / 2.0) * angle.sin(),
+        let angle_rads = Vec2Di32::angle_rad_between(actor_tile_pos, tile_dest_pos);
+        move_by = Vec2Df64::new(
+            (actor.move_speed / 2.0) * angle_rads.cos(),
+            (actor.move_speed / 2.0) * angle_rads.sin(),
         );
 
         // Script speed is the number of movement steps, or an immediate value if set.
@@ -83,17 +80,17 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
     }
 
     actor.task = ActorTask::MoveToTile {
-        tile_x, tile_y,
-        move_x, move_y,
+        tile_pos: tile_dest_pos,
+        move_by,
         steps: move_steps,
     };
     actor.debug_sprite = DebugSprite::Moving;
 
     if update_facing {
-        actor.face_towards(actor.x + move_x, actor.y + move_y);
+        actor.face_towards((tile_dest_pos * 16 + 8).as_vec2d_f64());
     }
     if animated {
-        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_x, move_y);
+        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_by);
     }
 
     OpResult::YIELD
@@ -121,21 +118,23 @@ pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut 
 
     // Calculate the movement vector.
     let angle_rads = angle * (PI / 180.0);
-    let move_x = (actor.move_speed / 2.0) * angle_rads.cos();
-    let move_y = (actor.move_speed / 2.0) * angle_rads.sin();
+    let move_by = Vec2Df64::new(
+        (actor.move_speed / 2.0) * angle_rads.cos(),
+        (actor.move_speed / 2.0) * angle_rads.sin(),
+    );
 
     actor.task = ActorTask::MoveByAngle {
         angle,
-        move_x, move_y,
+        move_by,
         steps,
     };
     actor.debug_sprite = DebugSprite::Moving;
 
     if update_facing {
-        actor.face_towards(actor.x + move_x, actor.y + move_y);
+        actor.face_towards(actor.pos + move_by);
     }
     if animated {
-        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_x, move_y);
+        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_by);
     }
 
     OpResult::YIELD

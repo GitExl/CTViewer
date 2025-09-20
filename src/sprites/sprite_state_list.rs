@@ -1,3 +1,4 @@
+use crate::actor::Actor;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state::{AnimationMode, SpriteState};
 
@@ -34,7 +35,7 @@ impl SpriteStateList {
         &self.states
     }
 
-    pub fn tick(&mut self, assets: &SpriteAssets, actor_index: usize) {
+    pub fn tick(&mut self, assets: &SpriteAssets, actor_index: usize, actor: &Actor) {
         let state = self.states.get_mut(actor_index).unwrap();
 
         if state.anim_mode == AnimationMode::Static {
@@ -51,7 +52,7 @@ impl SpriteStateList {
             if let Some(anim) = anim {
                 state.tick_animation(&anim);
                 let frame = &anim.frames[state.anim_frame];
-                state.sprite_frame = frame.sprite_frames[state.facing.to_index()];
+                state.sprite_frame = frame.sprite_frames[actor.facing.to_index()];
             }
         }
     }

@@ -5,6 +5,7 @@ use crate::destination::{Destination, Facing};
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
 use crate::scene_script::scene_script::{SceneActorScript, SceneScript, SceneScriptMode};
+use crate::util::vec2di32::Vec2Di32;
 
 struct SceneHeader {
 
@@ -178,24 +179,25 @@ impl FileSystem {
         // Read exits.
         let mut exits = Vec::new();
         for exit_index in 0..count {
-            let width;
-            let height;
-            let x;
-            let y;
+            let pos;
+            let size;
             let facing;
-            let mut dest_x;
-            let mut dest_y;
+            let mut dest_pos;
             let dest_index;
 
             match self.parse_mode {
                 ParseMode::Pc => {
-                    x = data.read_u8().unwrap() as i32 * 16;
-                    y = data.read_u8().unwrap() as i32 * 16;
+                    pos = Vec2Di32::new(
+                        data.read_u8().unwrap() as i32 * 16,
+                        data.read_u8().unwrap() as i32 * 16,
+                    );
                     let size_bits = data.read_u8().unwrap() as u32;
                     let facing_shift = data.read_u8().unwrap();
                     dest_index = data.read_u16::<LittleEndian>().unwrap() as usize;
-                    dest_x = data.read_u8().unwrap() as i32;
-                    dest_y = data.read_u8().unwrap() as i32;
+                    dest_pos = Vec2Di32::new(
+                        data.read_u8().unwrap() as i32,
+                        data.read_u8().unwrap() as i32,
+                    );
 
                     facing = match facing_shift & 0x3 {
                         0 => Facing::Up,
@@ -205,39 +207,41 @@ impl FileSystem {
                         _ => panic!(),
                     };
 
-                    let size = (((size_bits & 0x7F) + 1) * 16) as i32;
-                    (width, height) = if size_bits & 0x80 > 0 {
-                        (16, size)
+                    let side = (((size_bits & 0x7F) + 1) * 16) as i32;
+                    size = if size_bits & 0x80 > 0 {
+                        Vec2Di32::new(16, side)
                     } else {
-                        (size, 16)
+                        Vec2Di32::new(side, 16)
                     };
 
                     if dest_index >= 0x1F0 && dest_index <= 0x1FF {
-                        dest_x *= 8;
-                        dest_y *= 8;
+                        dest_pos = dest_pos * 8;
                     } else {
-                        dest_x *= 16;
-                        dest_y *= 16;
+                        dest_pos = dest_pos * 16;
                     }
 
                     // Shift destination if flags are set.
                     if facing_shift & 0x4 > 0 {
-                        dest_x -= 8;
+                        dest_pos.x -= 8;
                     }
                     if facing_shift & 0x8 > 0 {
-                        dest_y -= 8;
+                        dest_pos.y -= 8;
                     }
                 },
 
                 // The SNES uses 7 bytes and packs the facing and destination offset
                 // into the destination bytes.
                 ParseMode::Snes => {
-                    x = data.read_u8().unwrap() as i32 * 16;
-                    y = data.read_u8().unwrap() as i32 * 16;
+                    pos = Vec2Di32::new(
+                        data.read_u8().unwrap() as i32 * 16,
+                        data.read_u8().unwrap() as i32 * 16,
+                    );
                     let size_bits = data.read_u8().unwrap() as u32;
                     let dest_index_facing = data.read_u16::<LittleEndian>().unwrap() as usize;
-                    dest_x = data.read_u8().unwrap() as i32;
-                    dest_y = data.read_u8().unwrap() as i32;
+                    dest_pos = Vec2Di32::new(
+                        data.read_u8().unwrap() as i32,
+                        data.read_u8().unwrap() as i32,
+                    );
 
                     dest_index = dest_index_facing & 0x1FF;
                     facing = match (dest_index_facing & 0x600) >> 9 {
@@ -248,27 +252,25 @@ impl FileSystem {
                         _ => panic!(),
                     };
 
-                    let size = ((size_bits & 0x7F) + 1) as i32 * 16;
-                    (width, height) = if size_bits & 0x80 > 0 {
-                        (16, size)
+                    let side = (((size_bits & 0x7F) + 1) * 16) as i32;
+                    size = if size_bits & 0x80 > 0 {
+                        Vec2Di32::new(16, side)
                     } else {
-                        (size, 16)
+                        Vec2Di32::new(side, 16)
                     };
 
                     if dest_index >= 0x1F0 && dest_index <= 0x1FF {
-                        dest_x *= 8;
-                        dest_y *= 8;
+                        dest_pos = dest_pos * 8;
                     } else {
-                        dest_x *= 16;
-                        dest_y *= 16;
+                        dest_pos = dest_pos * 16;
                     }
 
                     // Shift destination if flags are set.
                     if dest_index_facing & 0x800 > 0 {
-                        dest_x -= 8;
+                        dest_pos.x -= 8;
                     }
                     if dest_index_facing & 0x1000 > 0 {
-                        dest_y -= 8;
+                        dest_pos.y -= 8;
                     }
                 },
             };
@@ -276,22 +278,19 @@ impl FileSystem {
             let destination = if dest_index >= 0x1F0 && dest_index <= 0x1FF {
                 Destination::World {
                     index: dest_index - 0x1F0,
-                    x: dest_x,
-                    y: dest_y,
+                    pos: dest_pos,
                 }
             } else {
                 Destination::Scene {
                     index: dest_index,
-                    x: dest_x,
-                    y: dest_y,
+                    pos: dest_pos,
                     facing,
                 }
             };
 
             exits.push(SceneExit {
                 index: exit_index,
-                x, y,
-                width, height,
+                pos, size,
                 destination,
             });
         }
@@ -310,18 +309,21 @@ impl FileSystem {
         data.seek(SeekFrom::Start(pointers[scene_index] as u64)).unwrap();
         for index in 0..treasure_count {
             let id = format!("{}_{}", scene_index, index);
-            let x = data.read_u8().unwrap();
-            let y = data.read_u8().unwrap();
+            let tile_pos = Vec2Di32::new(
+                data.read_u8().unwrap() as i32,
+                data.read_u8().unwrap() as i32,
+            );
+
             let contents = data.read_u16::<LittleEndian>().unwrap();
 
             // Pointer to other location chest data.
-            if x == 0 && y == 0 {
+            if tile_pos.x == 0 && tile_pos.y == 0 {
                 return self.read_scene_treasure(contents as usize);
             }
 
             let item = match self.parse_mode {
-                ParseMode::Snes => parse_snes_treasure(id, x, y, contents),
-                ParseMode::Pc => parse_pc_treasure(id, x, y, contents),
+                ParseMode::Snes => parse_snes_treasure(id, tile_pos, contents),
+                ParseMode::Pc => parse_pc_treasure(id, tile_pos, contents),
             };
             treasure.push(item);
 
@@ -334,7 +336,7 @@ impl FileSystem {
     }
 }
 
-fn parse_pc_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure {
+fn parse_pc_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> SceneTreasure {
 
     let mut gold = 0;
     let mut item = 0;
@@ -365,14 +367,13 @@ fn parse_pc_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure {
 
     SceneTreasure {
         id,
-        tile_x: x as i32,
-        tile_y: y as i32,
+        tile_pos,
         gold,
         item,
     }
 }
 
-fn parse_snes_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure {
+fn parse_snes_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> SceneTreasure {
     let mut gold = 0;
     let mut item = 0;
 
@@ -384,8 +385,7 @@ fn parse_snes_treasure(id: String, x: u8, y: u8, contents: u16) -> SceneTreasure
 
     SceneTreasure {
         id,
-        tile_x: x as i32,
-        tile_y: y as i32,
+        tile_pos,
         gold,
         item,
     }

@@ -11,6 +11,8 @@ use crate::renderer::{TextFlags, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
+use crate::util::vec2df64::Vec2Df64;
+use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 
@@ -26,8 +28,7 @@ pub struct GameStateWorld {
     key_left: bool,
     key_right: bool,
 
-    mouse_x: i32,
-    mouse_y: i32,
+    mouse_pos: Vec2Di32,
 
     debug_text: Option<TextRenderable>,
     debug_text_x: i32,
@@ -38,7 +39,7 @@ pub struct GameStateWorld {
 }
 
 impl GameStateWorld {
-    pub fn new(ctx: &mut Context, world_index: usize, x: i32, y: i32) -> GameStateWorld {
+    pub fn new(ctx: &mut Context, world_index: usize, camera_center: Vec2Df64) -> GameStateWorld {
         ctx.sprites_states.clear();
 
         let mut world = ctx.fs.read_world(world_index);
@@ -75,7 +76,7 @@ impl GameStateWorld {
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut world.map);
 
-        camera.center_to(x as f64, y as f64);
+        camera.center_to(camera_center);
 
         println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));
 
@@ -91,8 +92,7 @@ impl GameStateWorld {
             key_right: false,
             key_up: false,
 
-            mouse_x: 0,
-            mouse_y: 0,
+            mouse_pos: Vec2Di32::default(),
 
             debug_text: None,
             debug_text_x: 0,
@@ -108,16 +108,16 @@ impl GameStateTrait for GameStateWorld {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.camera.tick(delta);
         if self.key_up {
-            self.camera.y -= 300.0 * delta;
+            self.camera.pos.y -= 300.0 * delta;
         }
         else if self.key_down {
-            self.camera.y += 300.0 * delta;
+            self.camera.pos.y += 300.0 * delta;
         }
         if self.key_left {
-            self.camera.x -= 300.0 * delta;
+            self.camera.pos.x -= 300.0 * delta;
         }
         else if self.key_right {
-            self.camera.x += 300.0 * delta;
+            self.camera.pos.x += 300.0 * delta;
         }
         self.camera.wrap();
 
@@ -156,13 +156,13 @@ impl GameStateTrait for GameStateWorld {
         if self.debug_text.is_some() {
             ctx.render.render_text(
                 &mut self.debug_text.as_mut().unwrap(),
-                self.debug_text_x - self.camera.lerp_x as i32, self.debug_text_y - self.camera.lerp_y as i32,
+                self.debug_text_x - self.camera.pos_lerp.x as i32, self.debug_text_y - self.camera.pos_lerp.y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
         if self.debug_box.is_some() {
             ctx.render.render_box(
-                self.debug_box.as_mut().unwrap().moved_by(-self.camera.lerp_x as i32, -self.camera.lerp_y as i32),
+                self.debug_box.as_mut().unwrap().moved_by(-self.camera.pos_lerp.x as i32, -self.camera.pos_lerp.y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
             );
@@ -235,7 +235,7 @@ impl GameStateTrait for GameStateWorld {
 
             Event::MouseButtonDown { mouse_btn, .. } => {
                 if *mouse_btn == MouseButton::Left {
-                    let index = self.get_exit_at(self.mouse_x, self.mouse_y);
+                    let index = self.get_exit_at(self.mouse_pos);
                     if index.is_some() {
                         let exit = &self.world.exits[index.unwrap()];
                         self.next_game_event = Some(GameEvent::GotoDestination {
@@ -250,11 +250,13 @@ impl GameStateTrait for GameStateWorld {
     }
 
     fn mouse_motion(&mut self, ctx: &Context, x: i32, y: i32) {
-        self.mouse_x = (x as f64 + self.camera.x) as i32;
-        self.mouse_y = (y as f64 + self.camera.y) as i32;
+        self.mouse_pos = Vec2Di32::new(
+            (x as f64 + self.camera.pos.x) as i32,
+            (y as f64 + self.camera.pos.y) as i32,
+        );
 
         // Output exit or treasure data at mouse position.
-        let index = self.get_exit_at(self.mouse_x, self.mouse_y);
+        let index = self.get_exit_at(self.mouse_pos);
         if index.is_some() {
             let exit = &self.world.exits[index.unwrap()];
             let text = exit.destination.info(&ctx);
@@ -265,11 +267,11 @@ impl GameStateTrait for GameStateWorld {
                 TextDrawFlags::SHADOW,
                 0,
             ));
-            self.debug_text_x = exit.x + 8;
-            self.debug_text_y = exit.y;
+            self.debug_text_x = exit.pos.x + 8;
+            self.debug_text_y = exit.pos.y;
             self.debug_box = Some(Rect::new(
-                exit.x, exit.y,
-                exit.x + 16, exit.y + 16,
+                exit.pos.x, exit.pos.y,
+                exit.pos.x + 16, exit.pos.y + 16,
             ));
         }
 
@@ -293,9 +295,10 @@ impl GameStateTrait for GameStateWorld {
 }
 
 impl GameStateWorld {
-    fn get_exit_at(&self, x: i32, y: i32) -> Option<usize> {
+    fn get_exit_at(&self, pos: Vec2Di32) -> Option<usize> {
         for (index, exit) in self.world.exits.iter().enumerate() {
-            if x < exit.x || x >= exit.x + 16 || y < exit.y || y >= exit.y + 16 {
+            if pos.x < exit.pos.x || pos.x >= exit.pos.x + 16 ||
+               pos.y < exit.pos.y || pos.y >= exit.pos.y + 16 {
                 continue;
             }
             return Some(index);

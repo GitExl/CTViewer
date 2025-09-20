@@ -15,6 +15,7 @@ pub const WORLD_SPRITE_INDEX: usize = 0xFFFFFFF0;
 pub const WORLD_ANIM_SET_INDEX: usize = 0xFFFFFFF0;
 pub const WORLD_ASSEMBLY_SET_INDEX: usize = 0xFFFFFFF0;
 
+// Keys for null sprite.
 const NULL_SPRITE_INDEX: usize = 0xFFFFFFFF;
 const NULL_ANIM_SET_INDEX: usize = 0xFFFFFFFF;
 pub const NULL_ASSEMBLY_SET_INDEX: usize = 0xFFFFFFFF;

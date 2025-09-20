@@ -9,6 +9,7 @@ use crate::palette_anim::PaletteAnimSet;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::SceneScript;
 use crate::tileset::TileSet;
+use crate::util::vec2di32::Vec2Di32;
 
 pub struct ScrollMask {
     pub left: isize,
@@ -20,18 +21,15 @@ pub struct ScrollMask {
 pub struct SceneExit {
     pub index: usize,
 
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-
+    pub pos: Vec2Di32,
+    pub size: Vec2Di32,
     pub destination: Destination
 }
 
 impl SceneExit {
     pub fn dump(&self, ctx: &Context) {
         println!("Scene exit {}", self.index);
-        println!("  At {} x {}, {} by {}", self.x, self.y, self.width, self.height);
+        println!("  At {}, size {}", self.pos, self.size);
         self.destination.dump(ctx);
 
         println!();
@@ -40,8 +38,7 @@ impl SceneExit {
 
 pub struct SceneTreasure {
     pub id: String,
-    pub tile_x: i32,
-    pub tile_y: i32,
+    pub tile_pos: Vec2Di32,
     pub gold: u32,
     pub item: usize,
 }
@@ -49,7 +46,7 @@ pub struct SceneTreasure {
 impl SceneTreasure {
     pub fn dump(&self, ctx: &Context) {
         println!("Treasure '{}'", self.id);
-        println!("  At {} x {}", self.tile_x, self.tile_y);
+        println!("  At tile {}", self.tile_pos);
         if self.gold > 0 {
             println!("  Contains {} gold", self.gold);
         }
@@ -161,7 +158,7 @@ impl Scene {
 
             let state = ctx.sprites_states.get_state_mut(index);
             actor.update_sprite_state(state);
-            ctx.sprites_states.tick(&ctx.sprite_assets, index);
+            ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
         }
 
         self.tileset_l12.tick(delta);
@@ -179,8 +176,7 @@ impl Scene {
             actor.lerp(lerp);
 
             let state = ctx.sprites_states.get_state_mut(actor_index);
-            state.x = actor.lerp_x;
-            state.y = actor.lerp_y;
+            state.pos = actor.pos_lerp;
         }
     }
 }

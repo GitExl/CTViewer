@@ -66,38 +66,37 @@ impl SceneRenderer {
 
     fn render_debug_exits(&mut self, exits: &Vec<SceneExit>, camera: &Camera, surface: &mut Surface) {
         for exit in exits {
-            let x = exit.x - camera.lerp_x.floor() as i32;
-            let y = exit.y - camera.lerp_y.floor() as i32;
-            draw_box(surface, Rect::new(x, y, x + exit.width, y + exit.height), [255, 0, 255, 127], SurfaceBlendOps::Blend);
+            let pos = exit.pos - camera.pos_lerp.as_vec2d_i32();
+            draw_box(surface, Rect::new(pos.x, pos.y, pos.x + exit.size.x, pos.y + exit.size.y), [255, 0, 255, 127], SurfaceBlendOps::Blend);
         }
     }
 
     fn render_debug_treasure(&mut self, treasure: &Vec<SceneTreasure>, camera: &Camera, surface: &mut Surface) {
         for item in treasure {
-            let x = item.tile_x * 16 - camera.lerp_x.floor() as i32;
-            let y = item.tile_y * 16 - camera.lerp_y.floor() as i32;
-            draw_box(surface, Rect::new(x, y, x + 16, y + 16), [0, 255, 0, 127], SurfaceBlendOps::Blend);
+            let pos = item.tile_pos * 16 - camera.pos_lerp.as_vec2d_i32();
+            draw_box(surface, Rect::new(pos.x, pos.y, pos.x + 16, pos.y + 16), [0, 255, 0, 127], SurfaceBlendOps::Blend);
         }
     }
 
     fn render_debug_actors(&mut self, actors: &Vec<Actor>, camera: &Camera, surface: &mut Surface) {
         for actor in actors {
-            let x = (actor.x - camera.lerp_x).floor() as i32;
-            let y = (actor.y - camera.lerp_y).floor() as i32;
+            let x = (actor.pos_lerp.x - camera.pos_lerp.x).floor() as i32;
+            let y = (actor.pos_lerp.y - camera.pos_lerp.y).floor() as i32;
+
             draw_box(surface, Rect::new(x - 8, y - 16, x + 8, y), [0, 255, 255, 127], SurfaceBlendOps::Blend);
 
             // If the actor is moving, draw the movement data.
             match actor.task {
-                ActorTask::MoveByAngle { move_x, move_y, .. } => {
-                    draw_line(surface, x, y, x + (move_x * 8.0) as i32, y + (move_y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
+                ActorTask::MoveByAngle { move_by, .. } => {
+                    draw_line(surface, x, y, x + (move_by.x * 8.0) as i32, y + (move_by.y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
                 },
-                ActorTask::MoveToTile { tile_x, tile_y, move_x, move_y, .. } => {
+                ActorTask::MoveToTile { tile_pos, move_by, .. } => {
                     let (x2, y2) = (
-                        (tile_x as f64 * 16.0 + 8.0 - camera.lerp_x).floor() as i32,
-                        (tile_y as f64 * 16.0 + 15.0 - camera.lerp_y).floor() as i32,
+                        (tile_pos.x as f64 * 16.0 + 8.0 - camera.pos_lerp.x).floor() as i32,
+                        (tile_pos.y as f64 * 16.0 + 15.0 - camera.pos_lerp.y).floor() as i32,
                     );
                     draw_line(surface, x, y, x2, y2, [0, 255, 0, 191], SurfaceBlendOps::Blend);
-                    draw_line(surface, x, y, x + (move_x * 8.0) as i32, y + (move_y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
+                    draw_line(surface, x, y, x + (move_by.x * 8.0) as i32, y + (move_by.y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
                 },
                 _ => {},
             }
@@ -114,15 +113,13 @@ impl SceneRenderer {
     }
 
     fn render_debug_layer(&mut self, scene_map: &SceneMap, camera: &Camera, surface: &mut Surface) {
-        let tile_x1 = (camera.lerp_x / 16.0).floor() as i32;
-        let tile_y1 = (camera.lerp_y / 16.0).floor() as i32;
-        let tile_x2 = ((camera.lerp_x + camera.width) / 16.0).ceil() as i32;
-        let tile_y2 = ((camera.lerp_y + camera.height) / 16.0).ceil() as i32;
-        
+        let tile1 = (camera.pos_lerp / 16.0).floor().as_vec2d_i32();
+        let tile2 = ((camera.pos_lerp + camera.size) / 16.0).ceil().as_vec2d_i32();
+
         let props_width = scene_map.props.width as i32;
         let props_height = scene_map.props.height as i32;
 
-        for tile_y in tile_y1..tile_y2 {
+        for tile_y in tile1.y..tile2.y {
             let tile_y_wrap: i32;
             if tile_y < 0 {
                 tile_y_wrap = props_height - (tile_y.abs() % props_height) - 1;
@@ -130,7 +127,7 @@ impl SceneRenderer {
                 tile_y_wrap = tile_y % props_height;
             }
 
-            for tile_x in tile_x1..tile_x2 {
+            for tile_x in tile1.x..tile2.x {
                 let tile_x_wrap: i32;
                 if tile_x < 0 {
                     tile_x_wrap = props_width - (tile_x.abs() % props_width) - 1;
@@ -284,8 +281,8 @@ impl SceneRenderer {
                     continue;
                 }
 
-                let px = tile_x * 16 - camera.lerp_x.floor() as i32;
-                let py = tile_y * 16 - camera.lerp_y.floor() as i32;
+                let px = tile_x * 16 - camera.pos_lerp.x.floor() as i32;
+                let py = tile_y * 16 - camera.pos_lerp.y.floor() as i32;
                 blit_surface_to_surface(&self.debug_tiles, surface, src_x * 16, src_y * 16, 16, 16, px, py, SurfaceBlendOps::Blend);
 
                 // Second pass for some layers.

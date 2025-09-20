@@ -1,10 +1,12 @@
-use std::f64::consts::PI;
 use bitflags::bitflags;
 use crate::Context;
+use crate::facing::Facing;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::ActorScriptState;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::sprites::sprite_state::SpriteState;
+use crate::util::vec2df64::Vec2Df64;
+use crate::util::vec2di32::Vec2Di32;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DebugSprite {
@@ -24,36 +26,6 @@ pub enum ActorClass {
     NPC,
     Monster,
     MonsterPeaceful,
-}
-
-#[derive(Clone, Copy, Default, Debug, PartialEq)]
-pub enum Facing {
-    Up,
-    #[default]
-    Down,
-    Left,
-    Right,
-}
-
-impl Facing {
-    pub fn to_index(&self) -> usize {
-        match self {
-            Facing::Up => 0,
-            Facing::Down => 1,
-            Facing::Left => 2,
-            Facing::Right => 3,
-        }
-    }
-
-    pub fn from_index(index: usize) -> Facing {
-        match index {
-            0 => Facing::Up,
-            1 => Facing::Down,
-            2 => Facing::Left,
-            3 => Facing::Right,
-            _ => Facing::default(),
-        }
-    }
 }
 
 bitflags! {
@@ -103,16 +75,13 @@ bitflags! {
 pub enum ActorTask {
     None,
     MoveToTile {
-        tile_x: i32,
-        tile_y: i32,
-        move_x: f64,
-        move_y: f64,
+        tile_pos: Vec2Di32,
+        move_by: Vec2Df64,
         steps: u32,
     },
     MoveByAngle {
         angle: f64,
-        move_x: f64,
-        move_y: f64,
+        move_by: Vec2Df64,
         steps: u32,
     },
 }
@@ -123,11 +92,11 @@ impl ActorTask {
             ActorTask::None {} => {
                 return;
             },
-            ActorTask::MoveToTile { tile_x, tile_y, move_x, move_y, steps } => {
-                println!("Moving to tile {}x{}, by {}x{} pixels in {} steps", tile_x, tile_y, move_x, move_y, steps);
+            ActorTask::MoveToTile { tile_pos, move_by, steps } => {
+                println!("Moving to tile {}, at {} pixels/s in {} steps", tile_pos, move_by, steps);
             },
-            ActorTask::MoveByAngle { angle, move_x, move_y, steps } => {
-                println!("Moving at angle {}, by {}x{} pixels in {} steps", angle, move_x, move_y, steps);
+            ActorTask::MoveByAngle { angle, move_by, steps } => {
+                println!("Moving at angle {}, at {} pixels/s in {} steps", angle, move_by, steps);
             },
         }
 
@@ -137,12 +106,9 @@ impl ActorTask {
 pub struct Actor {
     pub index: usize,
 
-    pub x: f64,
-    pub y: f64,
-    last_x: f64,
-    last_y: f64,
-    pub lerp_x: f64,
-    pub lerp_y: f64,
+    pub pos: Vec2Df64,
+    pub pos_last: Vec2Df64,
+    pub pos_lerp: Vec2Df64,
 
     pub task: ActorTask,
     pub debug_sprite: DebugSprite,
@@ -161,12 +127,9 @@ impl Actor {
         Actor {
             index,
 
-            x: 0.0,
-            y: 0.0,
-            lerp_x: 0.0,
-            lerp_y: 0.0,
-            last_x: 0.0,
-            last_y: 0.0,
+            pos: Vec2Df64::default(),
+            pos_last: Vec2Df64::default(),
+            pos_lerp: Vec2Df64::default(),
 
             task: ActorTask::None,
             debug_sprite: DebugSprite::None,
@@ -182,83 +145,63 @@ impl Actor {
     }
 
     pub fn tick(&mut self, _delta: f64, scene_map: &SceneMap) {
-        self.last_x = self.x;
-        self.last_y = self.y;
+        self.pos_last = self.pos;
 
         self.run_task(scene_map);
     }
 
     pub fn lerp(&mut self, lerp: f64) {
-        self.lerp_x = self.last_x + (self.x - self.last_x) * lerp;
-        self.lerp_y = self.last_y + (self.y - self.last_y) * lerp;
+        self.pos_lerp = Vec2Df64::interpolate(self.pos_last, self.pos, lerp);
     }
 
     pub fn update_sprite_state(&self, sprite_state: &mut SpriteState) {
-        sprite_state.x = self.lerp_x;
-        sprite_state.y = self.lerp_y;
-        sprite_state.facing = self.facing;
+        sprite_state.pos = self.pos_lerp;
         sprite_state.priority_top = self.sprite_priority_top;
         sprite_state.priority_bottom = self.sprite_priority_bottom;
         sprite_state.enabled = self.flags.contains(ActorFlags::VISIBLE);
     }
 
-    pub fn face_towards(&mut self, x: f64, y: f64) {
-        let diff_x = x - self.x;
-        let diff_y = y - self.y;
-
-        let mut angle = (diff_y.atan2(diff_x) * 180.0 / PI) - 45.0;
+    pub fn face_towards(&mut self, pos: Vec2Df64) {
+        let mut angle = Vec2Df64::angle_deg_between(self.pos, pos) - 45.0;
         if angle < 0.0 {
             angle += 360.0;
         }
-
-        self.facing = match (angle / 90.0).floor() as u32 {
-            0 => Facing::Down,
-            1 => Facing::Left,
-            2 => Facing::Up,
-            3 => Facing::Right,
-            _ => Facing::Up,
-        };
+        self.facing = Facing::from_angle(angle);
     }
 
-    pub fn move_to(&mut self, x: f64, y: f64, warp: bool, scene_map: &SceneMap) {
-        self.x = x;
-        self.y = y;
-
+    pub fn move_to(&mut self, pos: Vec2Df64, warp: bool, scene_map: &SceneMap) {
+        self.pos = pos;
         if warp {
-            self.last_x = x;
-            self.last_y = y;
+            self.pos_last = pos;
         }
 
         self.update_sprite_priority(scene_map);
     }
 
-    pub fn move_by(&mut self, x: f64, y: f64, scene_map: &SceneMap) {
-        self.x += x;
-        self.y += y;
+    pub fn move_by(&mut self, movement: Vec2Df64, scene_map: &SceneMap) {
+        self.pos = self.pos + movement;
 
         self.update_sprite_priority(scene_map);
     }
 
     fn run_task(&mut self, scene_map: &SceneMap) {
         match self.task {
-            ActorTask::MoveToTile { move_x, move_y, ref mut steps, .. } => {
+            ActorTask::MoveToTile { move_by, ref mut steps, .. } => {
                 if *steps == 0 {
                     return;
                 }
 
                 *steps -= 1;
-                self.x += move_x;
-                self.y += move_y;
+                self.pos = self.pos + move_by;
                 self.update_sprite_priority(scene_map);
             },
-            ActorTask::MoveByAngle { move_x, move_y, ref mut steps, .. } => {
+            ActorTask::MoveByAngle { move_by, ref mut steps, .. } => {
                 if *steps == 0 {
                     return;
                 }
 
                 *steps -= 1;
-                self.x += move_x;
-                self.y += move_y;
+                self.pos = self.pos + move_by;
                 self.update_sprite_priority(scene_map);
             },
             ActorTask::None {} => return,
@@ -266,7 +209,7 @@ impl Actor {
     }
 
     pub fn update_sprite_priority(&mut self, scene_map: &SceneMap) {
-        let props = scene_map.get_props_at_coordinates(self.x, self.y - 1.0);
+        let props = scene_map.get_props_at_pixel(self.pos + Vec2Df64::new(0.0, 1.0));
         if let Some(props) = props {
             if let Some(sprite_priority) = props.sprite_priority {
                 self.sprite_priority_top = sprite_priority;
@@ -281,7 +224,7 @@ impl Actor {
         if let Some(player_index) = self.player_index {
             println!("  Player {}", player_index);
         }
-        println!("  At {} x {}", self.x, self.y);
+        println!("  At {}", self.pos);
         println!("  Facing: {:?}", self.facing);
         println!("  Speed: {}", self.move_speed);
         println!("  Sprite priority top {:?}", self.sprite_priority_top);
