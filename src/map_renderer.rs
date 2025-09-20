@@ -335,9 +335,8 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
         let render_top = sprite_state.priority_top == priority;
         let render_bottom = sprite_state.priority_bottom == priority;
         if render_top || render_bottom {
-            let x = (sprite_state.pos.x - camera.pos_lerp.x.floor()).floor() as i32;
-            let y = (sprite_state.pos.y - camera.pos_lerp.y.floor()).floor() as i32;
-            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, &sprite_assets.get(sprite_state.sprite_index), sprite_state.sprite_frame, x, y, sprite_state.palette_offset);
+            let pos = (sprite_state.pos - camera.pos_lerp).as_vec2d_i32();
+            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, &sprite_assets.get(sprite_state.sprite_index), sprite_state.sprite_frame, pos.x, pos.y, sprite_state.palette_offset);
         }
     }
 }

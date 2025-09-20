@@ -4,16 +4,17 @@
 
 These movement related properties are available for each actor in a scene script.
 
-| Name              | SNES address | Description                                                                             |
-|-------------------|--------------|-----------------------------------------------------------------------------------------|
-| `x`               | `$7E1800`    | 2 byte X coordinate of the actor.                                                       |
-| `y`               | `$7E1880`    | 2 byte Y coordinate of the actor.                                                       |
-| `x_speed`         | `$7E1900`    | The X movement speed of the actor. 16 = 1 pixel per tick.                               |
-| `y_speed`         | `$7E1980`    | The Y movement speed of the actor. 16 = 1 pixel per tick.                               |
-| `move_length`     | `$7E1A01`    | How many ticks to keep moving.                                                          |
-| `is_moving`       | `$7E1A80`    | If set, the actor is currently moving. Used by ops that need to move in a relative way. |
-| `solidity_flags`  | `$7E1B01`    | Flags describing how solid the actor is to others.                                      |
-| `move_dest_flags` | `$7F1C80`    | Flags describing how the actor moves onto the destination.                              |
+| Name              | SNES address | Description                                                                                                   |
+|-------------------|--------------|---------------------------------------------------------------------------------------------------------------|
+| `x`               | `$7E1800`    | 2 byte X coordinate of the actor. The low byte equals the current tile, the high byte the pixel from 1 to 16. |
+| `y`               | `$7E1880`    | 2 byte Y coordinate of the actor. The low byte equals the current tile, the high byte the pixel from 1 to 16. |
+| `x_speed`         | `$7E1900`    | The X movement speed of the actor. 16 = 1 pixel per tick.                                                     |
+| `y_speed`         | `$7E1980`    | The Y movement speed of the actor. 16 = 1 pixel per tick.                                                     |
+| `move_speed`      | `$7E1A00`    | The speed to move at. The X and Y movement speed are calculated from this.                                    |
+| `move_length`     | `$7E1A01`    | How many ticks to keep moving.                                                                                |
+| `is_moving`       | `$7E1A80`    | If set, the actor is currently moving. Used by ops that need to move in a relative way.                       |
+| `solidity_flags`  | `$7E1B01`    | Flags describing how solid the actor is to others.                                                            |
+| `move_dest_flags` | `$7F1C80`    | Flags describing how the actor moves onto the destination.                                                    |
 
 ## Ops
 
@@ -37,3 +38,7 @@ These movement related properties are available for each actor in a scene script
 - TODO `$B5` Keep moving towards actor `x`, yield forever
 - TODO `$B6` Keep moving towards party member `x`, yield forever
 - TODO `$D9` Move party members to positions `x` x `y`, `a` x `b` and `c` x `d`
+
+## Move towards tile coordinates
+
+## Move at angle

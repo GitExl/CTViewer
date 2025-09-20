@@ -25,7 +25,6 @@
     - Animations
   - Strings
 - Scene scripts
-  - [Initialization](scene_scripts/initialization.md) 
   - [Memory areas](scene_scripts/memory_areas.md)
   - [Script execution flow](scene_scripts/execution_flow.md)
   - [Actor movement](scene_scripts/actor_movement.md)
