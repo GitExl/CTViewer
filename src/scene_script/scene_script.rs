@@ -191,6 +191,13 @@ impl SceneScript {
                     self.data.set_position(state_dup.current_address);
                     state_dup.current_op = op_decode(&mut self.data, self.mode);
 
+                    // After reaching the end of data, reset the object to the init function.
+                    if state_dup.current_op.is_none() {
+                        state_dup.priority_return_ptrs = [0; 8];
+                        state_dup.current_priority = 7;
+                        state_dup.current_address = state_dup.function_ptrs[0];
+                    }
+
                     // Execute op and handle result.
                     state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory);
                     if state_dup.op_result.contains(OpResult::JUMPED) {
