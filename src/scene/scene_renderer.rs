@@ -141,13 +141,17 @@ impl SceneRenderer {
                 let src_x;
                 let src_y;
                 if self.debug_layer == SceneDebugLayer::SpritePriority {
-                    (src_x, src_y) = match tile.sprite_priority {
-                        Some(SpritePriority::BelowAll) => (4, 10),
-                        Some(SpritePriority::BelowL1L2) => (5, 10),
-                        Some(SpritePriority::BelowL2AboveL1) => (6, 10),
-                        Some(SpritePriority::AboveAll) => (7, 10),
-                        None => continue,
-                    };
+                    if tile.sprite_priority_top == SpritePriority::BelowL2AboveL1 && tile.sprite_priority_bottom == SpritePriority::BelowL2AboveL1 {
+                        (src_x, src_y) = (6, 10);
+                    } else if tile.sprite_priority_top == SpritePriority::BelowL2AboveL1 && tile.sprite_priority_bottom == SpritePriority::AboveAll {
+                        (src_x, src_y) = (5, 10);
+                    } else if tile.sprite_priority_top == SpritePriority::AboveAll && tile.sprite_priority_bottom == SpritePriority::BelowL2AboveL1 {
+                        (src_x, src_y) = (4, 10);
+                    } else if tile.sprite_priority_top == SpritePriority::AboveAll && tile.sprite_priority_bottom == SpritePriority::AboveAll {
+                        (src_x, src_y) = (7, 10);
+                    } else {
+                        continue;
+                    }
                 } else if self.debug_layer == SceneDebugLayer::ZPlane {
                     (src_x, src_y) = match tile.z_plane {
                         0 => (1, 5),

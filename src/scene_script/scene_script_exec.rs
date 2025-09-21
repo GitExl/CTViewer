@@ -237,11 +237,16 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::YIELD | OpResult::COMPLETE
         },
 
-        // todo mode, unknowns
-        Op::ActorSetSpritePriority { actor, top, bottom, .. } => {
+        // todo rest of bits
+        Op::ActorSetSpritePriority { actor, top, bottom, set_directly, .. } => {
             let actor_index = actor.deref(this_actor);
-            actors[actor_index].sprite_priority_top = top;
-            actors[actor_index].sprite_priority_bottom = bottom;
+
+            if set_directly {
+                actors[actor_index].sprite_priority_top = top;
+                actors[actor_index].sprite_priority_bottom = bottom;
+            } else {
+                actors[actor_index].update_sprite_priority(&scene_map);
+            }
 
             OpResult::COMPLETE
         },

@@ -80,7 +80,8 @@ pub enum SceneMoveDirection {
 pub struct SceneTileProps {
     pub flags: SceneTileFlags,
     pub collision: SceneTileCollision,
-    pub sprite_priority: Option<SpritePriority>,
+    pub sprite_priority_top: SpritePriority,
+    pub sprite_priority_bottom: SpritePriority,
     pub z_plane: u32,           // transition (solid), 1, 2, transition (walkable)
     pub move_direction: SceneMoveDirection,
     pub move_speed: u32,

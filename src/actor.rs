@@ -213,10 +213,8 @@ impl Actor {
     pub fn update_sprite_priority(&mut self, scene_map: &SceneMap) {
         let props = scene_map.get_props_at_pixel(self.pos + Vec2Df64::new(0.0, 1.0));
         if let Some(props) = props {
-            if let Some(sprite_priority) = props.sprite_priority {
-                self.sprite_priority_top = sprite_priority;
-                self.sprite_priority_bottom = sprite_priority;
-            }
+            self.sprite_priority_top = props.sprite_priority_top;
+            self.sprite_priority_bottom = props.sprite_priority_bottom;
         }
     }
 

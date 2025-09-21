@@ -406,7 +406,9 @@ fn read_scene_map_tile_props(width: u32, height: u32, data: &mut Cursor<Vec<u8>>
 
 // Parse 3 bytes worth of scene tile property data.
 fn parse_scene_tile_props(data: [u8; 3]) -> SceneTileProps {
-    let mut sprite_priority: Option<SpritePriority> = None;
+    let mut sprite_priority_top = SpritePriority::BelowL2AboveL1;
+    let mut sprite_priority_bottom = SpritePriority::BelowL2AboveL1;
+
     let mut flags = SceneTileFlags::default();
     if data[0] & 0x01 != 0 {
         flags |= SceneTileFlags::L1_TILE_ADD;
@@ -425,7 +427,7 @@ fn parse_scene_tile_props(data: [u8; 3]) -> SceneTileProps {
         flags |= SceneTileFlags::UNKNOWN_1;
     }
     if data[1] & 0x40 != 0 {
-        sprite_priority = Some(SpritePriority::BelowL2AboveL1);
+        sprite_priority_top = SpritePriority::AboveAll;
     }
     if data[1] & 0x80 != 0 {
         flags |= SceneTileFlags::NPC_COLLISION_BATTLE;
@@ -444,7 +446,7 @@ fn parse_scene_tile_props(data: [u8; 3]) -> SceneTileProps {
         flags |= SceneTileFlags::Z_NEUTRAL;
     }
     if data[2] & 0x40 != 0 {
-        sprite_priority = Some(SpritePriority::AboveAll);
+        sprite_priority_bottom = SpritePriority::AboveAll;
     }
     if data[2] & 0x80 != 0 {
         flags |= SceneTileFlags::NPC_COLLISION;
@@ -452,7 +454,8 @@ fn parse_scene_tile_props(data: [u8; 3]) -> SceneTileProps {
 
     SceneTileProps {
         flags,
-        sprite_priority,
+        sprite_priority_top,
+        sprite_priority_bottom,
         z_plane: (data[2] & 0x3) as u32,
         move_speed: ((data[1] >> 2) & 0x03) as u32,
         move_direction: match data[1] & 0x03 {

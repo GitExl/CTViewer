@@ -23,8 +23,8 @@ during scene initialization.
 | ?                      | `$7E0B00`             |                                  | `$00`                             |
 | ?                      | `$7E0B01`             |                                  | `$00`                             |
 | ?                      | `$7E0B80`             |                                  | `$FFFF`                           |
-| ?                      | `$7E0C00`             |                                  |                                   |
-| ?                      | `$7E0C01`             |                                  |                                   |
+| ?                      | `$7E0C00`             | Bottom sprite priority           | `$20`                             |
+| ?                      | `$7E0C01`             | Top sprite priority              | `$20`                             |
 | ?                      | `$7E0C80`             |                                  |                                   |
 | ?                      | `$7E0D00`             |                                  |                                   |
 | ?                      | `$7E0D80`             |                                  |                                   |
