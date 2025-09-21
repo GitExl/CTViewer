@@ -463,6 +463,13 @@ fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -
                 flags |= SpriteAssemblyChipFlags::UNKNOWN;
             }
 
+            let mut add_flags = SpriteAssemblyChipFlags::empty();
+            if chip % 16 > 8 {
+                add_flags |= SpriteAssemblyChipFlags::IS_TOP;
+            } else {
+                add_flags |= SpriteAssemblyChipFlags::IS_BOTTOM;
+            }
+
             let src_x = ((chip % 32) * 8) as i32;
             let src_y = ((chip / 32) * 16) as i32;
 
@@ -518,18 +525,17 @@ fn parse_snes_sprite_assembly(assembly_index: usize, groups_per_frame: usize, ti
             for tile in 0..tiles_per_group {
                 let tile_start = group_start + tile * 4;
 
-                let mut add_flags = SpriteAssemblyChipFlags::empty();
-                if tile >> 1 == 0 {
-                    add_flags |= SpriteAssemblyChipFlags::IS_TOP;
-                }
-                if tile >> 1 == 1 {
-                    add_flags |= SpriteAssemblyChipFlags::IS_BOTTOM;
-                }
-
                 let ox = data.read_i8().unwrap() as i32;
                 let oy = data.read_i8().unwrap() as i32;
 
                 for chip in 0..4 {
+                    let mut add_flags = SpriteAssemblyChipFlags::empty();
+                    if frame.chips[tile_start + chip].src_index % 16 > 8 {
+                        add_flags |= SpriteAssemblyChipFlags::IS_TOP;
+                    } else {
+                        add_flags |= SpriteAssemblyChipFlags::IS_BOTTOM;
+                    }
+
                     frame.chips[tile_start + chip].x += ox;
                     frame.chips[tile_start + chip].y += oy;
                     frame.chips[tile_start + chip].flags |= add_flags;
