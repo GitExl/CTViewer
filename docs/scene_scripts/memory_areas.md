@@ -70,11 +70,11 @@ during scene initialization.
 | ?                      | `$7E1B81`             |                                  | `$00`                             |
 | `current_priority`     | `$7E1C00`             | Current script priority          | `$07`                             |
 | `calls_disabled`       | `$7E1C01`             | Cannot have functions called     | `$00`                             |
-| ?                      | `$7E1C80`             | Actor movement flags             | `$03`                             |
+| `move_dest_flags`      | `$7E1C80`             | Move onto tile flags             | `$03`                             |
 | `priority_ptrs`        | `$7F0580` - `$7F0900` | Script priority pointers         | `$0000`                           |
 | `call_busy`            | `$7F0980`             | Waiting for a call to finish     |                                   |
 | ?                      | `$7F0A00`             | Text dialog string               |                                   |
 | ?                      | `$7F0A80`             | Text dialog choice result        |                                   |
+| ?                      | `$7F0B00`             |                                  |                                   |
 | `anim_loops_remaining` | `$7F0B01`             | Number of animation loops left   |                                   |
 | ?                      | `$7F0B80`             | Related to op 88, palette cycle? | ?                                 |
-| `move_dest_flags`      | `$7F1C80`             | Move onto tile flags             | `$0003`                           |

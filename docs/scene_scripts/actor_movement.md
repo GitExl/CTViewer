@@ -39,6 +39,21 @@ These movement related properties are available for each actor in a scene script
 - TODO `$B6` Keep moving towards party member `x`, yield forever
 - TODO `$D9` Move party members to positions `x` x `y`, `a` x `b` and `c` x `d`
 
+## Move at angle
+
+Ops that move actors at an angle will calculate that angle's movement vector, multiplied by the actor's speed. The
+actor will then move at that vector for the specified number of script cycles. 
+
 ## Move towards tile coordinates
 
-## Move at angle
+Ops that move to tile coordinates calculate the angle between the actor's current tile coordinates and the destination
+tile coordinates. The angle is multiplied by the actor's speed to get the movement vector. The actor will move at
+that vector until the next script cycles is run. It will then recalculate the movement vector, unless it reached the
+destination tile coordinates. If the actor has bit `$01` of `move_dest_flags` set, it will then continue moving towards
+the bottom center of the destination tile at 1 pixel per tick. First on the X axis, then on the Y axis.
+
+## Solid object avoidance
+
+If bit `$02` of `move_dest_flags` is set, actors will try to detect other solid actors during movent updates. These have
+bit `$01` of `solidity_flags` set. If one is found in front of where the actor is facing, the calculated movement angle
+is offset by 67.5 degrees clockwise.
