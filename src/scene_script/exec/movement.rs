@@ -87,7 +87,7 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
     actor.debug_sprite = DebugSprite::Moving;
 
     if update_facing {
-        actor.face_towards((tile_dest_pos * 16 + Vec2Di32::new(8, 16)).as_vec2d_f64());
+        actor.face_towards(actor.pos + move_by);
     }
     if animated {
         ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_by);
