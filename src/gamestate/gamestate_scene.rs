@@ -360,7 +360,7 @@ impl GameStateScene {
 
     fn get_exit_at(&self, pos: Vec2Di32) -> Option<usize> {
         for (index, exit) in self.scene.exits.iter().enumerate() {
-            if pos.x < exit.pos.x - 8 || pos.x >= exit.pos.x + exit.size.y + 8 ||
+            if pos.x < exit.pos.x - 8 || pos.x >= exit.pos.x + exit.size.x + 8 ||
                pos.y < exit.pos.y - 8 || pos.y >= exit.pos.y + exit.size.y + 8 {
                 continue;
             }

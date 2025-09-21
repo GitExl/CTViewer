@@ -87,7 +87,7 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
     actor.debug_sprite = DebugSprite::Moving;
 
     if update_facing {
-        actor.face_towards((tile_dest_pos * 16 + 8).as_vec2d_f64());
+        actor.face_towards((tile_dest_pos * 16 + Vec2Di32::new(8, 16)).as_vec2d_f64());
     }
     if animated {
         ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_by);
@@ -99,15 +99,15 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
 pub fn exec_movement_vector(ctx: &mut Context, actor_index: usize, actors: &mut Vec<Actor>, angle: f64, steps: u32, update_facing: bool, animated: bool) -> OpResult {
     let actor = actors.get_mut(actor_index).unwrap();
 
-    // Only match angle movements.
+    // Only match angle movement tasks.
     if let ActorTask::MoveByAngle { steps, .. } = actor.task {
 
-        // Wait for destination to be reached.
+        // Wait for steps to run out.
         if steps > 0 {
             return OpResult::YIELD;
         }
 
-        // No more steps to be taken, complete op.
+        // End op.
         if animated {
             ctx.sprites_states.get_state_mut(actor_index).reset_animation();
         }

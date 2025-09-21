@@ -55,8 +55,8 @@ bitflags! {
         /// Actor movement end on tiles.
         const MOVE_ONTO_TILE = 0x0080;
 
-        /// Actor movement ends on other actors (?).
-        const MOVE_ONTO_ACTOR = 0x0100;
+        /// Actor movements do not avoid other solid actors.
+        const MOVE_AROUND_SOLID_ACTORS = 0x0100;
 
         /// Actor is currently in battle.
         const IN_BATTLE = 0x0200;
@@ -120,6 +120,7 @@ pub struct Actor {
     pub move_speed: f64,
     pub flags: ActorFlags,
     pub battle_index: usize,
+    pub result: u32,
 }
 
 impl Actor {
@@ -141,6 +142,7 @@ impl Actor {
             move_speed: 1.0,
             flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::CALLS_ENABLED,
             battle_index: 0,
+            result: 0,
         }
     }
 

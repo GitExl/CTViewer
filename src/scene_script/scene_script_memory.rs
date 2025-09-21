@@ -1,4 +1,4 @@
-use crate::actor::ActorFlags;
+use crate::actor::{Actor, ActorFlags};
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 
 pub struct SceneScriptMemory {
@@ -158,14 +158,14 @@ impl DataSource {
         DataSource::Memory(address + 0x9F0000)
     }
 
-    pub fn get_u8(self, memory: &SceneScriptMemory) -> u8 {
+    pub fn get_u8(self, memory: &SceneScriptMemory, actors: &Vec<Actor>, current_actor: usize) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
             DataSource::Memory(address) => memory.read_u8(address),
-            DataSource::ActorResult(..) => 0,
+            DataSource::ActorResult(actor) => actors[actor.deref(current_actor)].result as u8,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
-            DataSource::ActorFlag(..) => 0,
+            DataSource::ActorFlag(actor, flags) => (actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u8,
             DataSource::PartyCharacter(..) => 0,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u8,
@@ -174,14 +174,14 @@ impl DataSource {
         }
     }
 
-    pub fn get_u16(self, memory: &SceneScriptMemory) -> u16 {
+    pub fn get_u16(self, memory: &SceneScriptMemory, actors: &Vec<Actor>, current_actor: usize) -> u16 {
         match self {
             DataSource::Immediate(value) => value as u16,
             DataSource::Memory(address) => memory.read_u16(address),
-            DataSource::ActorResult(..) => 0,
+            DataSource::ActorResult(actor) => actors[actor.deref(current_actor)].result as u16,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
-            DataSource::ActorFlag(..) => 0,
+            DataSource::ActorFlag(actor, flags) => (actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u16,
             DataSource::PartyCharacter(..) => 0,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u16,

@@ -87,7 +87,7 @@ impl ActorRef {
             ActorRef::This => current_actor_index,
             ActorRef::ScriptActor(index) => index,
             ActorRef::PartyMember(_index) => 0,  // todo
-            ActorRef::ScriptActorStoredUpper(_address) => 0,  //todo
+            ActorRef::ScriptActorStoredUpper(_address) => 0,  // todo
         }
     }
 }

@@ -61,11 +61,11 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         // Copy.
         Op::Copy8 { source, dest } => {
-            dest.put_u8(memory, source.get_u8(memory));
+            dest.put_u8(memory, source.get_u8(memory, &actors, this_actor));
             OpResult::COMPLETE
         },
         Op::Copy16 { source, dest } => {
-            dest.put_u16(memory, source.get_u16(memory));
+            dest.put_u16(memory, source.get_u16(memory, &actors, this_actor));
             OpResult::COMPLETE
         },
         Op::CopyBytes { dest, bytes, length } => {
@@ -79,8 +79,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE | OpResult::JUMPED
         },
         Op::JumpConditional8 { lhs, cmp, rhs, offset } => {
-            let lhs_value = lhs.get_u8(memory);
-            let rhs_value = rhs.get_u8(memory);
+            let lhs_value = lhs.get_u8(memory, &actors, this_actor);
+            let rhs_value = rhs.get_u8(memory, &actors, this_actor);
             let result = match cmp {
                 CompareOp::Eq => lhs_value == rhs_value,
                 CompareOp::NotEq => lhs_value != rhs_value,
@@ -101,8 +101,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         // Math.
         Op::ByteMath8 { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u8(memory);
-            let rhs_value = rhs.get_u8(memory);
+            let lhs_value = lhs.get_u8(memory, &actors, this_actor);
+            let rhs_value = rhs.get_u8(memory, &actors, this_actor);
 
             let result = match op {
                 ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
@@ -113,8 +113,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE
         },
         Op::ByteMath16 { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u16(memory);
-            let rhs_value = rhs.get_u16(memory);
+            let lhs_value = lhs.get_u16(memory, &actors, this_actor);
+            let rhs_value = rhs.get_u16(memory, &actors, this_actor);
 
             let result = match op {
                 ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
@@ -125,8 +125,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE
         },
         Op::BitMath { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u8(memory);
-            let rhs_value = rhs.get_u8(memory);
+            let lhs_value = lhs.get_u8(memory, &actors, this_actor);
+            let rhs_value = rhs.get_u8(memory, &actors, this_actor);
 
             let result = match op {
                 BitMathOp::And => lhs_value & rhs_value,
@@ -173,6 +173,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let sprite_asset = ctx.sprite_assets.load(&ctx.fs, sprite_index);
             state.sprite_index = sprite_index;
             state.anim_set_index = sprite_asset.anim_set_index;
+            state.palette_offset = 0;
             state.enabled = true;
 
             OpResult::COMPLETE
@@ -180,8 +181,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorCoordinatesSet { actor, x, y } => {
             let actor_index = actor.deref(this_actor);
-            let x = x.get_u8(memory) as f64;
-            let y = y.get_u8(memory) as f64;
+            let x = x.get_u8(memory, &actors, this_actor) as f64;
+            let y = y.get_u8(memory, &actors, this_actor) as f64;
 
             actors[actor_index].move_to(Vec2Df64::new(x * 16.0 + 8.0, y * 16.0 + 16.0), true, &scene_map);
 
@@ -199,8 +200,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         Op::ActorCoordinatesSetPrecise { actor, x, y } => {
             let actor_index = actor.deref(this_actor);
             let pos = Vec2Df64::new(
-                x.get_u16(memory) as f64,
-                y.get_u16(memory) as f64,
+                x.get_u16(memory, &actors, this_actor) as f64,
+                y.get_u16(memory, &actors, this_actor) as f64,
             );
 
             actors[actor_index].move_to(pos, true, &scene_map);
@@ -211,7 +212,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         // Actor facing.
         Op::ActorFacingSet { actor, facing } => {
             let actor_index = actor.deref(this_actor);
-            let facing = Facing::from_index(facing.get_u8(memory) as usize);
+            let facing = Facing::from_index(facing.get_u8(memory, &actors, this_actor) as usize);
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             actors[actor_index].facing = facing;
@@ -247,14 +248,14 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorSetSpeed { actor, speed } => {
             let actor_index = actor.deref(this_actor);
-            actors[actor_index].move_speed = speed.get_u8(memory) as f64 / 16.0;
+            actors[actor_index].move_speed = speed.get_u8(memory, &actors, this_actor) as f64 / 16.0;
             OpResult::COMPLETE
         },
 
         // Animation ops.
         Op::Animation { actor, animation } => {
             let actor_index = actor.deref(this_actor);
-            let anim_index = animation.get_u8(memory) as usize;
+            let anim_index = animation.get_u8(memory, &actors, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation(state, anim_index)
@@ -262,8 +263,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::AnimationLoopCount { actor, animation, loops } => {
             let actor_index = actor.deref(this_actor);
-            let anim_index = animation.get_u8(memory) as usize;
-            let loop_count = loops.get_u8(memory) as u32;
+            let anim_index = animation.get_u8(memory, &actors, this_actor) as usize;
+            let loop_count = loops.get_u8(memory, &actors, this_actor) as u32;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation_loop_count(state, &mut actors[actor_index], anim_index, loop_count)
@@ -278,7 +279,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::AnimationStaticFrame { actor, frame} => {
             let actor_index = actor.deref(this_actor);
-            let frame_index = frame.get_u8(memory) as usize;
+            let frame_index = frame.get_u8(memory, &actors, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation_static_frame(state, frame_index)
@@ -287,17 +288,17 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         // Movement ops.
         Op::ActorMoveAtAngle { actor, angle, steps, update_facing, animated } => {
             let actor_index = actor.deref(this_actor);
-            let angle = angle.get_u8(memory) as f64 * 1.40625;
-            let steps = steps.get_u8(memory) as u32;
+            let angle = angle.get_u8(memory, &actors, this_actor) as f64 * 1.40625;
+            let steps = steps.get_u8(memory, &actors, this_actor) as u32;
 
             exec_movement_vector(ctx, actor_index, actors, angle, steps, update_facing, animated)
         },
 
         Op::ActorMoveToTile { actor, x, y, steps, update_facing, animated } => {
             let actor_index = actor.deref(this_actor);
-            let dest_tile_x = x.get_u8(memory) as i32;
-            let dest_tile_y = y.get_u8(memory) as i32;
-            let steps = if let Some(steps) = steps { Some(steps.get_u8(memory) as u32) } else { None };
+            let dest_tile_x = x.get_u8(memory, &actors, this_actor) as i32;
+            let dest_tile_y = y.get_u8(memory, &actors, this_actor) as i32;
+            let steps = if let Some(steps) = steps { Some(steps.get_u8(memory, &actors, this_actor) as u32) } else { None };
 
             exec_movement_tile(ctx, state, actor_index, actors, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
