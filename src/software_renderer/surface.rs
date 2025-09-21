@@ -1,4 +1,4 @@
-use std::io::BufWriter;
+use std::io::{BufReader, BufWriter};
 use std::io::Write;
 use std::path::Path;
 use std::fs::File;
@@ -42,9 +42,10 @@ impl Surface {
     }
 
     pub fn from_png(path: &Path) -> Surface {
-        let decoder = Decoder::new(File::open(path).unwrap());
+        let buf = BufReader::new(File::open(path).unwrap());
+        let decoder = Decoder::new(buf);
         let mut reader = decoder.read_info().unwrap();
-        let mut buf = vec![0; reader.output_buffer_size()];
+        let mut buf = vec![0; reader.output_buffer_size().unwrap()];
 
         let info = reader.next_frame(&mut buf).unwrap();
         if info.color_type != ColorType::Rgba {

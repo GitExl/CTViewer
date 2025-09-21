@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use sdl3::pixels::{PixelFormat, PixelFormatEnum};
+use sdl3::pixels::PixelFormat;
 use sdl3::render::{Texture, TextureCreator, WindowCanvas};
 use sdl3::{sys, Sdl};
 use sdl3::sys::everything::SDL_ScaleMode;
@@ -119,14 +119,14 @@ impl<'a> Renderer<'a> {
         // Create a surface to copy the internal output to. This is used as the source for the
         // initial integer scaling.
         let texture = texture_creator
-            .create_texture_streaming(PixelFormat::from(PixelFormatEnum::ABGR8888), SCREEN_WIDTH, SCREEN_HEIGHT)
+            .create_texture_streaming(PixelFormat::from(PixelFormat::ABGR8888), SCREEN_WIDTH, SCREEN_HEIGHT)
             .unwrap();
         unsafe { sys::render::SDL_SetTextureScaleMode(texture.raw(), if scale_linear { SDL_ScaleMode::LINEAR } else { SDL_ScaleMode::NEAREST }); }
 
         // Create a surface to scale the output to. This will be scaled to match the final output size
         // linearly to mask uneven pixel widths.
         let scaled_texture = texture_creator
-            .create_texture_target(PixelFormat::from(PixelFormatEnum::ABGR8888), SCREEN_WIDTH * output_scale, SCREEN_HEIGHT * output_scale)
+            .create_texture_target(PixelFormat::from(PixelFormat::ABGR8888), SCREEN_WIDTH * output_scale, SCREEN_HEIGHT * output_scale)
             .unwrap();
         unsafe { sys::render::SDL_SetTextureScaleMode(scaled_texture.raw(), SDL_ScaleMode::LINEAR); }
 

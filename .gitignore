@@ -10,6 +10,7 @@
 # Runtime binary data.
 *.dll
 *.lib
+*.pdb
 
 # Internal documentation.
 /info
