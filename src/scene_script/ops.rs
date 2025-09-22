@@ -92,7 +92,7 @@ pub enum Op {
         actor: ActorRef,
         top: SpritePriority,
         bottom: SpritePriority,
-        set_directly: bool,
+        set_and_lock: bool,
         unknown_bits: u8,
     },
     ActorSetResult {

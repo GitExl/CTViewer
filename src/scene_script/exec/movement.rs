@@ -27,7 +27,7 @@ pub fn exec_movement_tile(ctx: &mut Context, state: &mut ActorScriptState, actor
         // If enabled, slowly move the actor to the bottom center of the tile, x first.
         if actor.flags.contains(ActorFlags::MOVE_ONTO_TILE) {
             let actor_pos = actor.pos.as_vec2d_i32();
-            let dest_pos = tile_dest_pos * 16 + Vec2Di32::new(8, 15);
+            let dest_pos = tile_dest_pos * 16 + Vec2Di32::new(7, 15);
 
             // Move on x-axis first.
             if actor_pos.x != dest_pos.x {

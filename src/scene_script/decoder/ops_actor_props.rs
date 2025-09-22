@@ -86,7 +86,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Sprite priority.
         0x8E => {
             let bits = data.read_u8().unwrap();
-            let set_directly = bits & 0x80 == 0;
+            let set_and_lock = bits & 0x80 == 0;
             let top = bits & 0x3;
             let bottom = (bits & 0x30) >> 4;
             let unknown_bits = bits & 0x4C;
@@ -95,7 +95,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 actor: ActorRef::This,
                 top: SpritePriority::from_value(top),
                 bottom: SpritePriority::from_value(bottom),
-                set_directly,
+                set_and_lock,
                 unknown_bits,
             }
         },

@@ -238,14 +238,16 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         },
 
         // todo rest of bits
-        Op::ActorSetSpritePriority { actor, top, bottom, set_directly, .. } => {
+        Op::ActorSetSpritePriority { actor, top, bottom, set_and_lock, .. } => {
             let actor_index = actor.deref(this_actor);
 
-            if set_directly {
+            if set_and_lock {
+                actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, true);
                 actors[actor_index].sprite_priority_top = top;
                 actors[actor_index].sprite_priority_bottom = bottom;
             } else {
                 actors[actor_index].update_sprite_priority(&scene_map);
+                actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, false);
             }
 
             OpResult::COMPLETE

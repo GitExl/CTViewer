@@ -69,6 +69,9 @@ bitflags! {
 
         /// Actor is dead.
         const DEAD = 0x1000;
+
+        /// Sprite priority does not change from movement.
+        const SPRITE_PRIORITY_LOCKED = 0x2000;
     }
 }
 
@@ -211,6 +214,10 @@ impl Actor {
     }
 
     pub fn update_sprite_priority(&mut self, scene_map: &SceneMap) {
+        if self.flags.contains(ActorFlags::SPRITE_PRIORITY_LOCKED) {
+            return;
+        }
+
         let props = scene_map.get_props_at_pixel(self.pos);
         if let Some(props) = props {
             self.sprite_priority_top = props.sprite_priority_top;

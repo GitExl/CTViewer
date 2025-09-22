@@ -99,14 +99,10 @@ pub struct SceneMap {
 }
 
 impl SceneMap {
-    pub fn get_props_at_pixel(&self, pos: Vec2Df64) -> Option<SceneTileProps> {
+    pub fn get_props_at_pixel(&self, pos: Vec2Df64) -> Option<&SceneTileProps> {
         let tile_pos = (pos / 16.0).as_vec2d_i32();
         let index = (tile_pos.y * self.props.width as i32 + tile_pos.x) as usize;
-        if index < self.props.props.len() {
-            return Some(self.props.props[index])
-        }
-
-        None
+        self.props.props.get(index)
     }
 
     pub fn dump(&self) {
