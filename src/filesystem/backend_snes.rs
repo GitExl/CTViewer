@@ -149,7 +149,7 @@ impl FileSystemBackendSnes {
     }
 
     fn get_bytes_cursor(&self, offset: usize, len: usize) -> Cursor<Vec<u8>> {
-        Cursor::new(self.data[offset..(offset + len)].to_vec())
+        Cursor::new(self.data[offset..offset + len].to_vec())
     }
 
     fn get_bytes_lz(&self, offset: usize) -> Vec<u8> {
@@ -508,6 +508,30 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
 
         // todo: remove first character, this is either a space or item type symbol we do not
         //  need (yet).
+
+        strings
+    }
+
+    fn get_dialogue_table(&self, address: usize) -> Vec<String> {
+        let page_start = address & 0xFF0000;
+
+        let mut strings = Vec::<String>::new();
+        for index in 0..256 {
+
+            // Cludgy way to read a 16 bit pointer, the next one, then verify if this is still
+            // likely a valid one based on their difference.
+            let ptr_start = address + index * 2;
+            let ptr = self.data[ptr_start] as usize | ((self.data[ptr_start + 1] as usize) << 8);
+            let ptr_next = self.data[ptr_start + 2] as usize | ((self.data[ptr_start + 3] as usize) << 8);
+            if ptr_next <= ptr || ptr == ptr_next || ptr_next - ptr > 255 {
+                break;
+            }
+
+            // Decode the string.
+            let len = ptr_next - ptr;
+            let mut data = self.get_bytes_cursor(page_start + ptr, len);
+            strings.push(self.text_decoder.decode_huffman_string(&mut data));
+        }
 
         strings
     }

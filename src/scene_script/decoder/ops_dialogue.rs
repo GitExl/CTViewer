@@ -51,7 +51,7 @@ pub fn op_decode_dialogue(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
         0xB8 => {
             match mode {
                 SceneScriptMode::Snes => Op::DialogueSetTable {
-                    address: read_24_bit_address(data),
+                    address: read_24_bit_address(data) - 0xC00000,
                 },
                 SceneScriptMode::Pc => Op::DialogueSetTable {
                     address: data.read_u8().unwrap() as usize,

@@ -109,6 +109,7 @@ pub struct SceneScript {
     memory: SceneScriptMemory,
     pub actor_scripts: Vec<SceneActorScript>,
     pub script_states: Vec<ActorScriptState>,
+    dialogue_strings: Vec<String>,
 }
 
 impl SceneScript {
@@ -129,6 +130,7 @@ impl SceneScript {
             memory,
             actor_scripts,
             script_states: Vec::new(),
+            dialogue_strings: Vec::new(),
         }
     }
 
@@ -152,7 +154,7 @@ impl SceneScript {
                 state_dup.current_op = op_decode(&mut self.data, self.mode);
 
                 // Execute op and handle result.
-                state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory);
+                state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
                 if state_dup.op_result.contains(OpResult::JUMPED) {
                     self.data.set_position(state_dup.current_address);
                 } else if state_dup.op_result.contains(OpResult::COMPLETE) {
@@ -199,7 +201,7 @@ impl SceneScript {
                     }
 
                     // Execute op and handle result.
-                    state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory);
+                    state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
                     if state_dup.op_result.contains(OpResult::JUMPED) {
                         self.data.set_position(state_dup.current_address);
                     } else if state_dup.op_result.contains(OpResult::COMPLETE) {

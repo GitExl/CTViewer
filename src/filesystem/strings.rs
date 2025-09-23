@@ -28,4 +28,9 @@ impl FileSystem {
     pub fn read_item_names(&self, language: &str) -> Vec<String> {
         self.backend.get_item_names(language)
     }
+
+    pub fn read_dialogue_table(&self, address: usize, strings: &mut Vec<String>) {
+        strings.clear();
+        strings.extend(self.backend.get_dialogue_table(address));
+    }
 }

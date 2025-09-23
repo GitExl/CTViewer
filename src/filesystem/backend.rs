@@ -55,4 +55,6 @@ pub trait FileSystemBackendTrait {
     fn get_sprite_graphics(&self, sprite_tiles_index: usize, chip_count: usize, compressed: bool) -> Vec<u8>;
 
     fn get_item_names(&self, language: &str) -> Vec<String>;
+
+    fn get_dialogue_table(&self, address: usize) -> Vec<String>;
 }

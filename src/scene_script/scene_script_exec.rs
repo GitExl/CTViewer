@@ -16,7 +16,7 @@ use crate::scene_script::scene_script_memory::SceneScriptMemory;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
-pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptState, states: &mut Vec<ActorScriptState>, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory) -> OpResult {
+pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptState, states: &mut Vec<ActorScriptState>, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory, mut dialogue: &mut Vec<String>) -> OpResult {
     let op = match state.current_op {
         Some(op) => op,
         None => return OpResult::YIELD | OpResult::COMPLETE,
@@ -393,6 +393,28 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::Random { dest } => {
             dest.put_u8(memory, ctx.random.get_u8());
+            OpResult::COMPLETE
+        },
+
+        Op::DialogueSetTable { address } => {
+            ctx.fs.read_dialogue_table(address, &mut dialogue);
+
+            OpResult::COMPLETE
+        },
+
+        Op::DialogueShow { index, .. } => {
+            if index < dialogue.len() {
+                println!(">>>> {}", dialogue[index]);
+            } else {
+                println!(">>>> {}", index);
+            }
+
+            OpResult::COMPLETE
+        },
+
+        Op::DialogueSpecial { dialogue_type } => {
+            println!(">>>> {:?}", dialogue_type);
+
             OpResult::COMPLETE
         },
 

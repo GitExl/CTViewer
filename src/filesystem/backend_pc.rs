@@ -487,4 +487,10 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         let data = self.get_file_cursor(&format!("Localize/{}/msg/item.txt", language), None, None);
         self.read_text_string_list(data, None, None)
     }
+
+    fn get_dialogue_table(&self, _address: usize) -> Vec<String> {
+        // todo: map to one of the localization files, but how?
+
+        Vec::new()
+    }
 }
