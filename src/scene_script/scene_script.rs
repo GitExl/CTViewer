@@ -172,6 +172,35 @@ impl SceneScript {
         }
     }
 
+    pub fn run_scene_init(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
+        let state_index = 0;
+
+        let mut state_dup = self.script_states[state_index].clone();
+        state_dup.current_address = state_dup.function_ptrs[1];
+
+        loop {
+
+            // Decode op at current position.
+            self.data.set_position(state_dup.current_address);
+            state_dup.current_op = op_decode(&mut self.data, self.mode);
+
+            // Execute op and handle result.
+            state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
+            if state_dup.op_result.contains(OpResult::JUMPED) {
+                self.data.set_position(state_dup.current_address);
+            } else if state_dup.op_result.contains(OpResult::COMPLETE) {
+                state_dup.current_address = self.data.position();
+            }
+
+            if let Some(op) = state_dup.current_op {
+                if op == Op::Return {
+                    state_dup.op_result |= OpResult::COMPLETE;
+                    break;
+                }
+            }
+        }
+    }
+
     pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for state_index in 0..self.script_states.len() {
             if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
