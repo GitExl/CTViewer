@@ -44,7 +44,7 @@ bitflags! {
         const SOLID = 0x0008;
 
         /// Actor can have functions called on it (including touch and activate).
-        const CALLS_ENABLED = 0x0010;
+        const CALLS_DISABLED = 0x0010;
 
         /// Actor collides with solid tiles.
         const COLLISION_WITH_TILES = 0x0020;
@@ -151,7 +151,7 @@ impl Actor {
             player_index: None,
             facing: Facing::default(),
             move_speed: 1.0,
-            flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::CALLS_ENABLED,
+            flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC,
             battle_index: 0,
             result: 0,
         }

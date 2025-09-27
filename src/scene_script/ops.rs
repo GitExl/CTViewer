@@ -58,13 +58,13 @@ pub enum Op {
     },
     ActorCoordinatesGet {
         actor: ActorRef,
-        x: DataSource,
-        y: DataSource,
+        tile_x: DataSource,
+        tile_y: DataSource,
     },
     ActorCoordinatesSet {
         actor: ActorRef,
-        x: DataSource,
-        y: DataSource,
+        tile_x: DataSource,
+        tile_y: DataSource,
     },
     ActorCoordinatesSetPrecise {
         actor: ActorRef,
@@ -95,7 +95,11 @@ pub enum Op {
         set_and_lock: bool,
         unknown_bits: u8,
     },
-    ActorSetResult {
+    ActorSetResult8 {
+        actor: ActorRef,
+        result: DataSource,
+    },
+    ActorSetResult16 {
         actor: ActorRef,
         result: DataSource,
     },
@@ -115,7 +119,7 @@ pub enum Op {
         script_cycle_count: Option<u32>,
         update_facing: bool,
         animated: bool,
-        keep_distance: bool,
+        into_battle_range: bool,
         forever: bool,
     },
     ActorMoveAtAngle {
@@ -181,6 +185,10 @@ pub enum Op {
         lhs: DataSource,
         cmp: CompareOp,
         rhs: DataSource,
+        offset: i64,
+    },
+    JumpConditionalBattleRange {
+        actor: ActorRef,
         offset: i64,
     },
 

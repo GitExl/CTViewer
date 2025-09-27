@@ -12,22 +12,22 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Enable/disable function calls on this actor.
         0x08 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::CALLS_ENABLED,
+            set: ActorFlags::CALLS_DISABLED,
             remove: ActorFlags::empty(),
         },
         0x09 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::CALLS_ENABLED,
-            remove: ActorFlags::empty(),
+            set: ActorFlags::empty(),
+            remove: ActorFlags::CALLS_DISABLED,
         },
 
         // Set actor result from 0x7F0200.
-        0x19 => Op::ActorSetResult {
+        0x19 => Op::ActorSetResult8 {
             actor: ActorRef::This,
             result: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
-        // Set actor result from 0x7F0000.
-        0x1C => Op::ActorSetResult {
+        // Set 16 bit actor result from 0x7F0000.
+        0x1C => Op::ActorSetResult16 {
             actor: ActorRef::This,
             result: DataSource::for_global_memory(data.read_u8().unwrap() as usize),
         },
@@ -35,7 +35,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Disable script processing and hide another actor.
         0x0A => Op::ActorUpdateFlags {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::SCRIPT_DISABLED,
+            set: ActorFlags::DEAD,
             remove: ActorFlags::RENDERED,
         },
 
@@ -169,27 +169,27 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Coordinates from actor.
         0x21 => Op::ActorCoordinatesGet {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Coordinates from party member actor.
         0x22 => Op::ActorCoordinatesGet {
             actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Set coordinates.
         0x8B => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
-            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            tile_x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            tile_y: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         0x8C => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
-            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x8D => Op::ActorCoordinatesSetPrecise {
             actor: ActorRef::This,

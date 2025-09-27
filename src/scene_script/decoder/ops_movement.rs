@@ -26,7 +26,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: None,
             update_facing: true,
             animated: true,
-            keep_distance: true,
+            into_battle_range: true,
             forever: false,
         },
         0x92 => Op::ActorMoveAtAngle {
@@ -42,7 +42,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: None,
             update_facing: true,
             animated: true,
-            keep_distance: false,
+            into_battle_range: false,
             forever: false,
         },
         0x95 => Op::ActorMoveToActor {
@@ -51,7 +51,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: None,
             update_facing: true,
             animated: true,
-            keep_distance: false,
+            into_battle_range: false,
             forever: false,
         },
         0x96 => Op::ActorMoveToTile {
@@ -76,7 +76,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: Some(data.read_u8().unwrap() as u32),
             update_facing: true,
             animated: true,
-            keep_distance: false,
+            into_battle_range: false,
             forever: false,
         },
         0x99 => Op::ActorMoveToActor {
@@ -85,7 +85,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: Some(data.read_u8().unwrap() as u32),
             update_facing: true,
             animated: true,
-            keep_distance: false,
+            into_battle_range: false,
             forever: false,
         },
         0x9A => Op::ActorMoveToTile {
@@ -118,7 +118,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: None,
             update_facing: false,
             animated: false,
-            keep_distance: false,
+            into_battle_range: false,
             forever: false,
         },
         // Same as 0x9E, but different in some unknown way?
@@ -128,7 +128,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: None,
             update_facing: false,
             animated: false,
-            keep_distance: false,
+            into_battle_range: false,
             forever: false,
         },
         0xA0 => Op::ActorMoveToTile {
@@ -153,7 +153,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: None,
             update_facing: true,
             animated: true,
-            keep_distance: false,
+            into_battle_range: false,
             forever: true,
         },
         0xB6 => Op::ActorMoveToActor {
@@ -162,7 +162,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             script_cycle_count: None,
             update_facing: true,
             animated: true,
-            keep_distance: false,
+            into_battle_range: false,
             forever: true,
         },
         0xD9 => Op::MovePartyTo {

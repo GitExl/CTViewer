@@ -8,8 +8,6 @@ use crate::scene_script::scene_script_memory::{DataDest, DataSource};
 pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
 
-        // todo PC version uses different indexing for 24-bit op addresses
-
         // Set what character the first party member is to 0x7F0200.
         0x20 => Op::Copy8 {
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
@@ -24,7 +22,7 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
             },
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
-        0x49 => Op::Copy8 {
+        0x49 => Op::Copy16 {
             source: match mode {
                 SceneScriptMode::Snes => DataSource::Memory(read_24_bit_address(data)),
                 SceneScriptMode::Pc => DataSource::Memory(read_segmented_address(data)),
@@ -54,7 +52,7 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
             },
             source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
-        0x4D => Op::Copy8 {
+        0x4D => Op::Copy16 {
             dest: match mode {
                 SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
                 SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
@@ -95,7 +93,7 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
             source: DataSource::for_upper_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
-        0x54 => Op::Copy8 {
+        0x54 => Op::Copy16 {
             source: DataSource::for_upper_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
@@ -114,21 +112,21 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
         },
         0x75 => Op::Copy8 {
             source: DataSource::Immediate(1),
-            dest: DataDest::for_global_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x76 => Op::Copy16 {
             source: DataSource::Immediate(1),
-            dest: DataDest::for_global_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x77 => Op::Copy8 {
             source: DataSource::Immediate(0),
-            dest: DataDest::for_global_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Write to storyline counter.
         0x55 => Op::Copy8 {
-            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            dest: DataDest::for_global_memory(0x00),
+            source: DataSource::for_global_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_local_memory(0x00),
         },
         0x5A => Op::Copy8 {
             source: DataSource::Immediate(data.read_u8().unwrap() as i32),

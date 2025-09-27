@@ -179,7 +179,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE
         },
 
-        Op::ActorCoordinatesSet { actor, x, y } => {
+        Op::ActorCoordinatesSet { actor, tile_x: x, tile_y: y } => {
             let actor_index = actor.deref(this_actor);
             let x = x.get_u8(memory, &actors, this_actor) as f64;
             let y = y.get_u8(memory, &actors, this_actor) as f64;
@@ -191,7 +191,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorUpdateFlags { actor, set, remove } => {
             let actor_index = actor.deref(this_actor);
-            actors[actor_index].flags |= set;
+            actors[actor_index].flags.insert(set);
             actors[actor_index].flags.remove(remove);
 
             OpResult::COMPLETE
@@ -301,11 +301,11 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             exec_movement_by_vector(ctx, actor_index, actors, angle, steps, update_facing, animated)
         },
 
-        Op::ActorMoveToActor { actor, to_actor, script_cycle_count, update_facing, animated, forever, keep_distance } => {
+        Op::ActorMoveToActor { actor, to_actor, script_cycle_count, update_facing, animated, forever, into_battle_range } => {
             let actor_index = actor.deref(this_actor);
             let target_actor_index = to_actor.deref(this_actor);
 
-            let result = exec_movement_to_actor(ctx, state, actor_index, actors, target_actor_index, script_cycle_count, update_facing, animated, keep_distance);
+            let result = exec_movement_to_actor(ctx, state, actor_index, actors, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
             if forever {
                 OpResult::YIELD
             } else {

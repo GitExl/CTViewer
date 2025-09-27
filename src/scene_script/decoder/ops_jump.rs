@@ -77,7 +77,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
             offset: data.read_u8().unwrap() as i64 + 4,
         },
-        // 1 byte direct compare with 0x7E0000 or 0x7E0100.
+        // 1 byte direct compare with 0x7F0000 or 0x7F0100.
         0x16 => {
             let mut lhs = data.read_u8().unwrap() as usize;
             let value = data.read_u8().unwrap();
@@ -94,7 +94,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // Less than with storyline counter.
         0x18 => Op::JumpConditional8 {
-            lhs: DataSource::for_global_memory(0x000),
+            lhs: DataSource::for_global_memory(0x0000),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Lt,
             offset: data.read_u8().unwrap() as i64 + 2,
@@ -113,11 +113,10 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             cmp: CompareOp::NotEq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
-        // If actor is in battle.
-        0x28 => Op::JumpConditional8 {
-            lhs: DataSource::ActorFlag(ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2), ActorFlags::IN_BATTLE),
-            rhs: DataSource::Immediate(1),
-            cmp: CompareOp::Eq,
+
+        // If actor is in battle range (see actor target movement op exec).
+        0x28 => Op::JumpConditionalBattleRange {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             offset: data.read_u8().unwrap() as i64 + 2,
         },
 
