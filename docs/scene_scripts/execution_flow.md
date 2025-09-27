@@ -53,5 +53,8 @@ execution from the next lower priority pointer.
 
 After a scene has loaded, actors are created for each actor in the script. Their priority level is set to 7, and their
 entry address is set to the start of the first actor function. Execution starts there. When a scene is loaded the
-initialization function is run until the first occurrence of a return op. An actual return while at priority level 7 is
-ignored. Execution continues past the return op during normal code execution.
+initialization function is run until the first occurrence of a return op (`$00`). An actual return while at priority
+level 7 is ignored. Execution continues past the return op during normal code execution.
+
+After all actors have been initialized, function 1 of actor 0 is run until it reaches a return op (`$00`). This is a
+sort of "scene initialization" function.

@@ -89,10 +89,10 @@ impl Scene {
         }
 
         // Run first actor script until it yields (first return op).
-        self.script.run_until_return(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
+        self.script.run_object_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
 
         // Run actor 0 script 1.
-        self.script.run_scene_init(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
+        self.script.run_scene_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
 
         // Update sprite state after script init.
         for (actor_index, actor) in self.actors.iter_mut().enumerate() {

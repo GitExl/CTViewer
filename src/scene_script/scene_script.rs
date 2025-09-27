@@ -117,8 +117,8 @@ impl SceneScript {
         let mut memory = SceneScriptMemory::new();
 
         // Cats!
-        memory.write_u8(0x7F0053, 0xFF);
-        memory.write_u8(0x7F005F, 0xFF);
+        memory.write_u8(0x7F0053, 0x7F);
+        memory.write_u8(0x7F005F, 0x7F);
 
         // Storyline.
         memory.write_u8(0x7F0000, 0x00);
@@ -140,7 +140,7 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_until_return(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
+    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
         for state_index in 0..self.script_states.len() {
             if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
                 continue;
@@ -161,6 +161,7 @@ impl SceneScript {
                     state_dup.current_address = self.data.position();
                 }
 
+                // Run until return.
                 if let Some(op) = state_dup.current_op {
                     if op == Op::Return {
                         state_dup.op_result |= OpResult::COMPLETE;
@@ -172,10 +173,8 @@ impl SceneScript {
         }
     }
 
-    pub fn run_scene_init(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
-        let state_index = 0;
-
-        let mut state_dup = self.script_states[state_index].clone();
+    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
+        let mut state_dup = self.script_states[0].clone();
         state_dup.current_address = state_dup.function_ptrs[1];
 
         loop {
@@ -185,13 +184,14 @@ impl SceneScript {
             state_dup.current_op = op_decode(&mut self.data, self.mode);
 
             // Execute op and handle result.
-            state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
+            state_dup.op_result = op_execute(ctx, 0, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
             if state_dup.op_result.contains(OpResult::JUMPED) {
                 self.data.set_position(state_dup.current_address);
             } else if state_dup.op_result.contains(OpResult::COMPLETE) {
                 state_dup.current_address = self.data.position();
             }
 
+            // Run until return.
             if let Some(op) = state_dup.current_op {
                 if op == Op::Return {
                     state_dup.op_result |= OpResult::COMPLETE;
