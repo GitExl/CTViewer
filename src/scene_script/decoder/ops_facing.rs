@@ -48,7 +48,7 @@ pub fn op_decode_facing(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xA6 => Op::ActorFacingSet {
             actor: ActorRef::This,
-            facing: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            facing: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         0xA7 => Op::ActorFacingSet {
             actor: ActorRef::This,

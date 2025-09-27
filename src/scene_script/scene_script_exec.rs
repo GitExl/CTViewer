@@ -5,7 +5,7 @@ use crate::map::Map;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
 use crate::scene_script::exec::call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
-use crate::scene_script::exec::movement::{exec_movement_tile, exec_movement_vector};
+use crate::scene_script::exec::movement::{exec_movement_to_tile, exec_movement_by_vector, exec_movement_to_actor};
 use crate::scene_script::ops::Op;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
 use crate::scene_script::decoder::ops_jump::CompareOp;
@@ -298,7 +298,19 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let angle = angle.get_u8(memory, &actors, this_actor) as f64 * 1.40625;
             let steps = steps.get_u8(memory, &actors, this_actor) as u32;
 
-            exec_movement_vector(ctx, actor_index, actors, angle, steps, update_facing, animated)
+            exec_movement_by_vector(ctx, actor_index, actors, angle, steps, update_facing, animated)
+        },
+
+        Op::ActorMoveToActor { actor, to_actor, script_cycle_count, update_facing, animated, forever, keep_distance } => {
+            let actor_index = actor.deref(this_actor);
+            let target_actor_index = to_actor.deref(this_actor);
+
+            let result = exec_movement_to_actor(ctx, state, actor_index, actors, target_actor_index, script_cycle_count, update_facing, animated, keep_distance);
+            if forever {
+                OpResult::YIELD
+            } else {
+                result
+            }
         },
 
         Op::ActorMoveToTile { actor, x, y, steps, update_facing, animated } => {
@@ -307,17 +319,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let dest_tile_y = y.get_u8(memory, &actors, this_actor) as i32;
             let steps = if let Some(steps) = steps { Some(steps.get_u8(memory, &actors, this_actor) as u32) } else { None };
 
-            exec_movement_tile(ctx, state, actor_index, actors, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
+            exec_movement_to_tile(ctx, state, actor_index, actors, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
-
-        // todo
-        Op::ActorMoveToActor { forever, .. } => {
-            if forever {
-                return OpResult::YIELD;
-            }
-
-            OpResult::COMPLETE
-        },
 
         // Copy tiles around on the map.
         Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags } => {
@@ -402,11 +405,11 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE
         },
 
-        Op::DialogueShow { index, .. } => {
+        Op::DialogueShow { index, position, .. } => {
             if index < dialogue.len() {
-                println!(">>>> {}", dialogue[index]);
+                println!(">>>> @ {:?}: {}", position, dialogue[index]);
             } else {
-                println!(">>>> {}", index);
+                println!(">>>> @{:?}: {}", position, index);
             }
 
             OpResult::COMPLETE

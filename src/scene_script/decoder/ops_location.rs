@@ -12,63 +12,63 @@ pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptM
         0xDC => {
             Op::ChangeLocation {
                 index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                    DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
+                    DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
                 } else {
-                    DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
+                    DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
                 },
-                x: DataSource::Immediate(data.read_u8().unwrap() as u32),
-                y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+                x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+                y: DataSource::Immediate(data.read_u8().unwrap() as i32),
                 variant: 0xDC,
             }
         },
         0xDD => Op::ChangeLocation {
             index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
             } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
             },
-            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
             variant: 0xDD,
         },
         0xDE => Op::ChangeLocation {
             index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
             } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
             },
-            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
             variant: 0xDE,
         },
         0xDF => Op::ChangeLocation {
             index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
             } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
             },
-            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
             variant: 0xDF,
         },
         0xE0 => Op::ChangeLocation {
             index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
             } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
             },
-            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
             variant: 0xDE,
         },
         0xE1 => Op::ChangeLocation {
             index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
             } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 | data.read_u8().unwrap() as u32 >> 16)
+                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
             },
-            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
             variant: 0xE1,
         },
         0xE2 => Op::ChangeLocation {

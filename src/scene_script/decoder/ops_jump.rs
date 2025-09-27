@@ -52,14 +52,14 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // 1 byte direct compare with 0x7F0200.
         0x12 => Op::JumpConditional8 {
             lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as usize as u32),
+            rhs: DataSource::Immediate(data.read_u8().unwrap() as usize as i32),
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
             offset: data.read_u8().unwrap() as i64 + 4,
         },
         // 2 byte direct compare with 0x7F0200.
         0x13 => Op::JumpConditional16 {
             lhs: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            rhs: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            rhs: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
             cmp: CompareOp::from_value(data.read_u8().unwrap() as usize),
             offset: data.read_u8().unwrap() as i64 + 5,
         },
@@ -87,7 +87,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             }
             Op::JumpConditional8 {
                 lhs: DataSource::for_global_memory(lhs),
-                rhs: DataSource::Immediate((value & 0x7F) as u32),
+                rhs: DataSource::Immediate((value & 0x7F) as i32),
                 cmp: CompareOp::from_value(op_value as usize & 0x7F),
                 offset: data.read_u8().unwrap() as i64 + 4,
             }
@@ -95,14 +95,14 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Less than with storyline counter.
         0x18 => Op::JumpConditional8 {
             lhs: DataSource::for_global_memory(0x000),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Lt,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
         // Equal with actor result.
         0x1A => Op::JumpConditional8 {
             lhs: DataSource::ActorResult(ActorRef::This),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Eq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
@@ -236,7 +236,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xCC => Op::JumpConditional16 {
             lhs: DataSource::GoldCount,
-            rhs: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            rhs: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as i64 + 3,
         },
@@ -244,14 +244,14 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Party member has been recruited.
         0xCF => Op::JumpConditional8 {
             lhs: DataSource::PCIsRecruited,
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
         // Party member is in active party.
         0xD2 => Op::JumpConditional8 {
             lhs: DataSource::PCIsActive,
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
@@ -264,7 +264,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let op_value = data.read_u8().unwrap();
             Op::JumpConditional8 {
                 lhs: DataSource::for_extended_memory(lhs),
-                rhs: DataSource::Immediate(value as u32),
+                rhs: DataSource::Immediate(value as i32),
                 cmp: CompareOp::from_value(op_value as usize & 0x7F),
                 offset: data.read_u8().unwrap() as i64 + 4,
             }

@@ -55,8 +55,8 @@ bitflags! {
         /// Actor movement end on tiles.
         const MOVE_ONTO_TILE = 0x0080;
 
-        /// Actor movements do not avoid other solid actors.
-        const MOVE_AROUND_SOLID_ACTORS = 0x0100;
+        /// Move onto target actor position.
+        const MOVE_ONTO_OBJECT = 0x0100;
 
         /// Actor is currently in battle.
         const IN_BATTLE = 0x0200;
@@ -80,12 +80,17 @@ pub enum ActorTask {
     MoveToTile {
         tile_pos: Vec2Di32,
         move_by: Vec2Df64,
-        steps: u32,
+        cycles: u32,
+    },
+    MoveToActor {
+        actor_index: usize,
+        move_by: Vec2Df64,
+        cycles: u32,
     },
     MoveByAngle {
         angle: f64,
         move_by: Vec2Df64,
-        steps: u32,
+        cycles: u32,
     },
 }
 
@@ -95,11 +100,14 @@ impl ActorTask {
             ActorTask::None {} => {
                 return;
             },
-            ActorTask::MoveToTile { tile_pos, move_by, steps } => {
-                println!("Moving to tile {}, at {} pixels/s in {} steps", tile_pos, move_by, steps);
+            ActorTask::MoveToTile { tile_pos, move_by, cycles } => {
+                println!("Moving to tile {}, at {} pixels/s in {} script cycles", tile_pos, move_by, cycles);
             },
-            ActorTask::MoveByAngle { angle, move_by, steps } => {
-                println!("Moving at angle {}, at {} pixels/s in {} steps", angle, move_by, steps);
+            ActorTask::MoveToActor { actor_index, move_by, cycles } => {
+                println!("Moving to actor {}, at {} pixels/s in {} script cycles", actor_index, move_by, cycles);
+            },
+            ActorTask::MoveByAngle { angle, move_by, cycles } => {
+                println!("Moving at angle {}, at {} pixels/s in {} script cycles", angle, move_by, cycles);
             },
         }
 
@@ -191,7 +199,7 @@ impl Actor {
 
     fn run_task(&mut self, scene_map: &SceneMap) {
         match self.task {
-            ActorTask::MoveToTile { move_by, ref mut steps, .. } => {
+            ActorTask::MoveToTile { move_by, cycles: ref mut steps, .. } => {
                 if *steps == 0 {
                     return;
                 }
@@ -200,7 +208,16 @@ impl Actor {
                 self.pos = self.pos + move_by;
                 self.update_sprite_priority(scene_map);
             },
-            ActorTask::MoveByAngle { move_by, ref mut steps, .. } => {
+            ActorTask::MoveToActor { move_by, cycles: ref mut steps, .. } => {
+                if *steps == 0 {
+                    return;
+                }
+
+                *steps -= 1;
+                self.pos = self.pos + move_by;
+                self.update_sprite_priority(scene_map);
+            },
+            ActorTask::MoveByAngle { move_by, cycles: ref mut steps, .. } => {
                 if *steps == 0 {
                     return;
                 }

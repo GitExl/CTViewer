@@ -31,7 +31,7 @@ during scene initialization.
 | ?                      | `$7E0E00`             |                                  |                                   |
 | ?                      | `$7E0E80`             |                                  |                                   |
 | ?                      | `$7E0F00`             | Actor draw status                |                                   |
-| ?                      | `$7E0F01`             | Animation related                |                                   |
+| ?                      | `$7E0F01`             | Current sprite frame             |                                   |
 | ?                      | `$7E0F80`             | Sprite priority info             | `$80`                             |
 | ?                      | `$7E0F81`             | Palette index                    | `$00`                             |
 | `script_delay`         | `$7E1000`             | Script cycle time                | `$04`                             |
@@ -53,7 +53,7 @@ during scene initialization.
 | ?                      | `$7E1600`             | Actor facing                     | ?                                 |
 | `anim_delay`           | `$7E1601`             | Animation frame delay            | ?                                 |
 | `anim_index`           | `$7E1680`             | Current animation                | ?                                 |
-| `anim_frame`           | `$7E1681`             | Animation frame                  | ?                                 |
+| `anim_frame`           | `$7E1681`             | Current animation frame          | ?                                 |
 | ?                      | `$7E1700`             |                                  |                                   |
 | `anim_mode`            | `$7E1780`             | Animation mode                   | `$00`                             |
 | `anim_index_loop`      | `$7E1781`             | Current loop tracked animation   | `$00`                             |
@@ -70,7 +70,8 @@ during scene initialization.
 | ?                      | `$7E1B81`             |                                  | `$00`                             |
 | `current_priority`     | `$7E1C00`             | Current script priority          | `$07`                             |
 | `calls_disabled`       | `$7E1C01`             | Cannot have functions called     | `$00`                             |
-| `move_dest_flags`      | `$7E1C80`             | Move onto tile flags             | `$03`                             |
+| `move_flags`           | `$7E1C80`             | Movement flags                   | `$03`                             |
+| `move_dest_flags`      | `$7E1C81`             | Movement destination flags       | `$00`                             |
 | `priority_ptrs`        | `$7F0580` - `$7F0900` | Script priority pointers         | `$0000`                           |
 | `call_busy`            | `$7F0980`             | Waiting for a call to finish     |                                   |
 | ?                      | `$7F0A00`             | Text dialog string               |                                   |

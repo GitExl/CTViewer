@@ -105,16 +105,12 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let bits = data.read_u8().unwrap();
             let mut flags_set = ActorFlags::empty();
             let mut flags_remove = ActorFlags::empty();
-            if bits & 0x01 > 0 {
-                flags_set |= ActorFlags::SOLID;
-            } else {
-                flags_remove |= ActorFlags::SOLID;
-            }
-            if bits & 0x02 > 0 {
-                flags_set |= ActorFlags::PUSHABLE;
-            } else {
-                flags_remove |= ActorFlags::PUSHABLE;
-            }
+
+            flags_set.set(ActorFlags::SOLID, bits & 0x01 > 0);
+            flags_set.set(ActorFlags::PUSHABLE, bits & 0x02 > 0);
+
+            flags_remove.set(ActorFlags::SOLID, bits & 0x01 == 0);
+            flags_remove.set(ActorFlags::PUSHABLE, bits & 0x02 == 0);
 
             Op::ActorUpdateFlags {
                 actor: ActorRef::This,
@@ -129,16 +125,11 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let mut flags_set = ActorFlags::empty();
             let mut flags_remove = ActorFlags::empty();
 
-            if flags & 0x01 > 0 {
-                flags_set.set(ActorFlags::COLLISION_WITH_TILES, true);
-            } else {
-                flags_remove.set(ActorFlags::COLLISION_WITH_TILES, true);
-            }
-            if flags & 0x02 > 0 {
-                flags_set.set(ActorFlags::COLLISION_AVOID_PC, true);
-            } else {
-                flags_remove.set(ActorFlags::COLLISION_AVOID_PC, true);
-            }
+            flags_set.set(ActorFlags::COLLISION_WITH_TILES, flags & 0x01 > 0);
+            flags_set.set(ActorFlags::COLLISION_AVOID_PC, flags & 0x02 > 0);
+
+            flags_remove.set(ActorFlags::COLLISION_WITH_TILES, flags & 0x01 == 0);
+            flags_remove.set(ActorFlags::COLLISION_AVOID_PC, flags & 0x02 == 0);
 
             Op::ActorUpdateFlags {
                 actor: ActorRef::This,
@@ -147,22 +138,17 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             }
         },
 
-        // Set actor movement properties.
+        // Set actor movement destination properties.
         0x0E => {
             let flags = data.read_u8().unwrap();
             let mut flags_set = ActorFlags::empty();
             let mut flags_remove = ActorFlags::empty();
 
-            if flags & 0x01 > 0 {
-                flags_set.set(ActorFlags::MOVE_ONTO_TILE, true);
-            } else {
-                flags_remove.set(ActorFlags::MOVE_ONTO_TILE, true);
-            }
-            if flags & 0x02 > 0 {
-                flags_set.set(ActorFlags::MOVE_AROUND_SOLID_ACTORS, true);
-            } else {
-                flags_remove.set(ActorFlags::MOVE_AROUND_SOLID_ACTORS, true);
-            }
+            flags_set.set(ActorFlags::MOVE_ONTO_TILE, flags & 0x01 > 0);
+            flags_set.set(ActorFlags::MOVE_ONTO_OBJECT, flags & 0x02 > 0);
+
+            flags_remove.set(ActorFlags::MOVE_ONTO_TILE, flags & 0x01 == 0);
+            flags_remove.set(ActorFlags::MOVE_ONTO_OBJECT, flags & 0x02 == 0);
 
             Op::ActorUpdateFlags {
                 actor: ActorRef::This,
@@ -173,7 +159,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         0x89 => Op::ActorSetSpeed {
             actor: ActorRef::This,
-            speed: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            speed: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         0x8A => Op::ActorSetSpeed {
             actor: ActorRef::This,
@@ -197,8 +183,8 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Set coordinates.
         0x8B => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
-            x: DataSource::Immediate(data.read_u8().unwrap() as u32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         0x8C => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
@@ -207,8 +193,8 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x8D => Op::ActorCoordinatesSetPrecise {
             actor: ActorRef::This,
-            x: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 >> 4),
-            y: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32 >> 4),
+            x: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 >> 4),
+            y: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 >> 4),
         },
 
         0xF8 => Op::ActorHeal {

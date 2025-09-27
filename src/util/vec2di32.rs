@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 use std::{fmt, ops};
 use crate::util::vec2df64::Vec2Df64;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Vec2Di32 {
     pub x: i32,
     pub y: i32,
@@ -41,6 +41,12 @@ impl Vec2Di32 {
         diff_y.atan2(diff_x)
     }
 
+    pub fn abs(&self) -> Vec2Di32 {
+        Vec2Di32 {
+            x: self.x.abs(),
+            y: self.y.abs(),
+        }
+    }
     pub fn as_vec2d_f64(&self) -> Vec2Df64 {
         Vec2Df64::new(self.x as f64, self.y as f64)
     }

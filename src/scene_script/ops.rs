@@ -112,10 +112,10 @@ pub enum Op {
     ActorMoveToActor {
         actor: ActorRef,
         to_actor: ActorRef,
-        distance: DataSource,
+        script_cycle_count: Option<u32>,
         update_facing: bool,
         animated: bool,
-        distant: bool,
+        keep_distance: bool,
         forever: bool,
     },
     ActorMoveAtAngle {

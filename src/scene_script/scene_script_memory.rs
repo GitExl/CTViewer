@@ -105,7 +105,7 @@ impl SceneScriptMemory {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataSource {
     // Immediate value.
-    Immediate(u32),
+    Immediate(i32),
 
     // From memory.
     Memory(usize),

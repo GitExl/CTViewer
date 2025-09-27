@@ -106,7 +106,7 @@ pub struct SceneScript {
     index: usize,
     mode: SceneScriptMode,
     data: Cursor<Vec<u8>>,
-    memory: SceneScriptMemory,
+    pub memory: SceneScriptMemory,
     pub actor_scripts: Vec<SceneActorScript>,
     pub script_states: Vec<ActorScriptState>,
     dialogue_strings: Vec<String>,

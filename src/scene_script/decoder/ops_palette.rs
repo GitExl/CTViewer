@@ -21,11 +21,11 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
 
         // Dual mode palette command.
         0x2E => {
-            let mode = data.read_u8().unwrap();
-            if mode & 0x40 > 0 {
-                let b = ((mode & 0x4) >> 2) > 0;
-                let g = ((mode & 0x2) >> 1) > 0;
-                let r = ((mode & 0x1) >> 0) > 0;
+            let cmd_mode = data.read_u8().unwrap();
+            if cmd_mode & 0x40 > 0 {
+                let b = ((cmd_mode & 0x4) >> 2) > 0;
+                let g = ((cmd_mode & 0x2) >> 1) > 0;
+                let r = ((cmd_mode & 0x1) >> 0) > 0;
 
                 let color_start = data.read_u8().unwrap();
                 let color_count = data.read_u8().unwrap();
@@ -38,25 +38,42 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 let duration = data.read_u8().unwrap() as f64 * (1.0 / 60.0);
 
                 Op::ColorMath {
-                    mode: if mode & 0x50 > 0 { ColorMathMode::Additive } else { ColorMathMode::Subtractive },
+                    mode: if cmd_mode & 0x50 > 0 { ColorMathMode::Additive } else { ColorMathMode::Subtractive },
                     r, g, b,
                     color_start, color_count,
                     intensity_start, intensity_end,
                     duration,
                 }
 
-            } else if mode & 0x80 > 0 {
-                let bits = data.read_u8().unwrap() as usize;
-                let color_index = bits & 0xF;
-                let sub_palette = (bits & 0xF0) >> 4;
-                let (blob, length) = read_script_blob(data);
+            } else if cmd_mode & 0x80 > 0 {
+                match mode {
+                    SceneScriptMode::Snes => {
+                        let bits = data.read_u8().unwrap() as usize;
+                        let color_index = bits & 0xF;
+                        let sub_palette = (bits & 0xF0) >> 4;
+                        let (blob, length) = read_script_blob(data);
 
-                Op::PaletteSetImmediate {
-                    sub_palette: SubPalette::Index(sub_palette),
-                    color_index,
-                    data: blob,
-                    length,
+                        Op::PaletteSetImmediate {
+                            sub_palette: SubPalette::Index(sub_palette),
+                            color_index,
+                            data: blob,
+                            length,
+                        }
+                    },
+                    SceneScriptMode::Pc => {
+                        let bits = data.read_u8().unwrap() as usize;
+                        let color_index = bits & 0xF;
+                        let sub_palette = (bits & 0xF0) >> 4;
+
+                        Op::PaletteSetImmediate {
+                            color_index,
+                            sub_palette: SubPalette::Index(sub_palette),
+                            data: [data.read_u8().unwrap(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            length: 0,
+                        }
+                    },
                 }
+
             } else {
                 println!("Mode for op 0x2E is unknown.");
                 Op::NOP

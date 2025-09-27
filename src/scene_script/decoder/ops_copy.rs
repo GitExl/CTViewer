@@ -38,14 +38,14 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
                 SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
                 SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
             },
-            source: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            source: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         0x4B => Op::Copy16 {
             dest: match mode {
                 SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
                 SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
             },
-            source: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            source: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
         },
         0x4C => Op::Copy8 {
             dest: match mode {
@@ -76,11 +76,11 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
 
         // To local variables.
         0x4F => Op::Copy8 {
-            source: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            source: DataSource::Immediate(data.read_u8().unwrap() as i32),
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x50 => Op::Copy16 {
-            source: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            source: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x51 => Op::Copy8 {
@@ -101,7 +101,7 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
         },
 
         0x56 => Op::Copy8 {
-            source: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            source: DataSource::Immediate(data.read_u8().unwrap() as i32),
             dest: DataDest::for_upper_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
         },
         0x58 => Op::Copy8 {
@@ -131,13 +131,13 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
             dest: DataDest::for_global_memory(0x00),
         },
         0x5A => Op::Copy8 {
-            source: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            source: DataSource::Immediate(data.read_u8().unwrap() as i32),
             dest: DataDest::for_global_memory(0x00),
         },
 
         // PC-specific ops.
         0x3A => Op::Copy8 {
-            source: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            source: DataSource::Immediate(data.read_u8().unwrap() as i32),
             dest: DataDest::for_extended_memory(data.read_u8().unwrap() as usize),
         },
         0x3D => Op::Copy8 {

@@ -18,7 +18,7 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
         },
         0xCA => Op::ItemGive {
             actor: ActorRef::This,
-            item: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            item: DataSource::Immediate(data.read_u8().unwrap() as i32),
             category: match mode {
                 SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
                 SceneScriptMode::Snes => 0,
@@ -26,7 +26,7 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
         },
         0xCB => Op::ItemTake {
             actor: ActorRef::This,
-            item: DataSource::Immediate(data.read_u8().unwrap() as u32),
+            item: DataSource::Immediate(data.read_u8().unwrap() as i32),
             category: match mode {
                 SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
                 SceneScriptMode::Snes => 0,
@@ -34,11 +34,11 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
         },
         0xCD => Op::GoldGive {
             actor: ActorRef::This,
-            amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
         },
         0xCE => Op::GoldTake {
             actor: ActorRef::This,
-            amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as u32),
+            amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
         },
         0xD7 => Op::ItemGetAmount {
             item: data.read_u8().unwrap() as usize,
