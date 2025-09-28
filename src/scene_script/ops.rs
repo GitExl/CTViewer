@@ -368,6 +368,7 @@ pub enum Op {
         dest_x: u32,
         dest_y: u32,
         flags: CopyTilesFlags,
+        delayed: bool,
     },
 
     // Scroll map layers.

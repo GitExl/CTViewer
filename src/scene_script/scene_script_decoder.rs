@@ -293,8 +293,8 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             dest_x: data.read_u8().unwrap() as u32,
             dest_y: data.read_u8().unwrap() as u32,
             flags: CopyTilesFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
+            delayed: false,
         },
-        // What is different in this version?
         0xE5 => Op::CopyTiles {
             left: data.read_u8().unwrap() as u32,
             top: data.read_u8().unwrap() as u32,
@@ -303,6 +303,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             dest_x: data.read_u8().unwrap() as u32,
             dest_y: data.read_u8().unwrap() as u32,
             flags: CopyTilesFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
+            delayed: true,
         },
 
         // Scroll map layers.

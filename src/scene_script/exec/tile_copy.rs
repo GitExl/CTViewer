@@ -3,7 +3,9 @@ use crate::scene::scene_map::{SceneMap, SceneTileFlags};
 use crate::scene_script::scene_script::OpResult;
 use crate::scene_script::scene_script_decoder::CopyTilesFlags;
 
-pub fn exec_tile_copy(left: u32, top: u32, right: u32, bottom: u32, dest_x: u32, dest_y: u32, flags: CopyTilesFlags, map: &mut Map, scene_map: &mut SceneMap) -> OpResult {
+pub fn exec_tile_copy(left: u32, top: u32, right: u32, bottom: u32, dest_x: u32, dest_y: u32, flags: CopyTilesFlags, _delayed: bool, map: &mut Map, scene_map: &mut SceneMap) -> OpResult {
+    // todo the delay option is unclear. op E5 will delay the actual tile copy until some later
+    //  point, possibly when there is time for it, or when the player is not moving?
 
     // Copy tile indexes.
     if flags.contains(CopyTilesFlags::LAYER1) || flags.contains(CopyTilesFlags::LAYER2) || flags.contains(CopyTilesFlags::LAYER3) {
@@ -18,6 +20,7 @@ pub fn exec_tile_copy(left: u32, top: u32, right: u32, bottom: u32, dest_x: u32,
                 continue;
             }
 
+            // Convert tile coordinates to chip coordinates.
             let chip_left = left * 2;
             let chip_top = top * 2;
             let chip_bottom = bottom * 2;
@@ -48,9 +51,10 @@ pub fn exec_tile_copy(left: u32, top: u32, right: u32, bottom: u32, dest_x: u32,
     }
 
     // Copy property bytes.
-    // Since we do not store them as bytes, we have to do some extra work to copy the specific flags
-    // and struct members.
     if flags.contains(CopyTilesFlags::PROPS1) || flags.contains(CopyTilesFlags::PROPS2) || flags.contains(CopyTilesFlags::PROPS3) {
+
+        // Since we do not store properties as bytes, we have to do some extra work to copy the
+        // specific flags and struct members.
         let mut flag_mask = SceneTileFlags::empty();
         if flags.contains(CopyTilesFlags::PROPS2) {
             flag_mask |= SceneTileFlags::L1_TILE_ADD | SceneTileFlags::L2_TILE_ADD | SceneTileFlags::RLE_COMPRESSED;
@@ -74,7 +78,7 @@ pub fn exec_tile_copy(left: u32, top: u32, right: u32, bottom: u32, dest_x: u32,
                     continue;
                 }
 
-                // Mask off flags to copy.
+                // Copy only masked flags.
                 scene_map.props.props[dest_index].flags.remove(flag_mask);
                 let new_flags = flag_mask & scene_map.props.props[src_index].flags;
                 scene_map.props.props[dest_index].flags.insert(new_flags);

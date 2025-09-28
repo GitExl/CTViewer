@@ -358,8 +358,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             exec_movement_to_tile(ctx, state, actor_index, actors, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
 
-        Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags } => {
-            exec_tile_copy(left, top, right, bottom, dest_x, dest_y, flags, map, scene_map)
+        Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags, delayed } => {
+            exec_tile_copy(left, top, right, bottom, dest_x, dest_y, flags, delayed, map, scene_map)
         },
 
         Op::SetScriptDelay { delay } => {
