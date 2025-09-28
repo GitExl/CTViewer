@@ -10,8 +10,8 @@ use crate::scene_script::ops::Op;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
 use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
+use crate::scene_script::exec::tile_copy::exec_tile_copy;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
-use crate::scene_script::scene_script_decoder::CopyTilesFlags;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
@@ -358,40 +358,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             exec_movement_to_tile(ctx, state, actor_index, actors, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
 
-        // Copy tiles around on the map.
         Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags } => {
-            println!("CopyTiles: from {}x{} {}x{} to {}x{} with {:?}", left, top, right, bottom, dest_x, dest_y, flags);
-
-            for (layer_index, layer) in map.layers.iter_mut().enumerate() {
-                if layer_index == 0 && !flags.contains(CopyTilesFlags::COPY_L1) {
-                    continue;
-                }
-                if layer_index == 1 && !flags.contains(CopyTilesFlags::COPY_L2) {
-                    continue;
-                }
-                if layer_index == 2 && !flags.contains(CopyTilesFlags::COPY_L3) {
-                    continue;
-                }
-
-                for chip_y in 0..bottom - top {
-                    for chip_x in 0..right - left {
-
-                        let src_chip_x = chip_x + left;
-                        let src_chip_y = chip_y + top;
-                        let src_chip_index = (src_chip_x + src_chip_y * layer.chip_width) as usize;
-
-                        let dest_chip_x = chip_x + dest_x;
-                        let dest_chip_y = chip_y + dest_y;
-                        let dest_chip_index = (dest_chip_x + dest_chip_y * layer.chip_width) as usize;
-
-                        layer.chips[dest_chip_index] = layer.chips[src_chip_index];
-
-                        // todo copy flagged props
-                    }
-                }
-            }
-
-            OpResult::COMPLETE
+            exec_tile_copy(left, top, right, bottom, dest_x, dest_y, flags, map, scene_map)
         },
 
         Op::SetScriptDelay { delay } => {

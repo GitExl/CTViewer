@@ -46,14 +46,14 @@ bitflags! {
 bitflags! {
     #[derive(Clone, Default, Copy, Debug, PartialEq)]
     pub struct CopyTilesFlags: u32 {
-        const COPY_L1 = 0x01;
-        const COPY_L2 = 0x02;
-        const COPY_L3 = 0x04;
-        const COPY_PROPS = 0x08;
-        const UNKNOWN1 = 0x10;
-        const UNKNOWN2 = 0x20;
-        const COPY_Z_PLANE = 0x40;
-        const COPY_MOVEMENT = 0x80;
+        const LAYER1 = 0x01;
+        const LAYER2 = 0x02;
+        const LAYER3 = 0x04;
+        const PROPS1 = 0x08;
+        const PROPS2 = 0x10;
+        const PROPS3 = 0x20;
+        const L1_TILE_ADD = 0x40;
+        const L2_TILE_ADD = 0x80;
     }
 }
 
@@ -86,7 +86,7 @@ impl ActorRef {
         match self {
             ActorRef::This => current_actor_index,
             ActorRef::ScriptActor(index) => index,
-            ActorRef::PartyMember(_index) => 0,  // todo
+            ActorRef::PartyMember(index) => index,  // todo
             ActorRef::ScriptActorStoredUpper(_address) => 0,  // todo
         }
     }
@@ -286,22 +286,22 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
 
         // Copy tiles from somewhere else in the map.
         0xE4 => Op::CopyTiles {
-            left: data.read_u8().unwrap() as u32 * 2,
-            top: data.read_u8().unwrap() as u32 * 2,
-            right: data.read_u8().unwrap() as u32 * 2 + 2,
-            bottom: data.read_u8().unwrap() as u32 * 2 + 2,
-            dest_x: data.read_u8().unwrap() as u32 * 2,
-            dest_y: data.read_u8().unwrap() as u32 * 2,
+            left: data.read_u8().unwrap() as u32,
+            top: data.read_u8().unwrap() as u32,
+            right: data.read_u8().unwrap() as u32 + 1,
+            bottom: data.read_u8().unwrap() as u32 + 1,
+            dest_x: data.read_u8().unwrap() as u32,
+            dest_y: data.read_u8().unwrap() as u32,
             flags: CopyTilesFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
         },
         // What is different in this version?
         0xE5 => Op::CopyTiles {
-            left: data.read_u8().unwrap() as u32 * 2,
-            top: data.read_u8().unwrap() as u32 * 2,
-            right: data.read_u8().unwrap() as u32 * 2 + 2,
-            bottom: data.read_u8().unwrap() as u32 * 2 + 2,
-            dest_x: data.read_u8().unwrap() as u32 * 2,
-            dest_y: data.read_u8().unwrap() as u32 * 2,
+            left: data.read_u8().unwrap() as u32,
+            top: data.read_u8().unwrap() as u32,
+            right: data.read_u8().unwrap() as u32 + 1,
+            bottom: data.read_u8().unwrap() as u32 + 1,
+            dest_x: data.read_u8().unwrap() as u32,
+            dest_y: data.read_u8().unwrap() as u32,
             flags: CopyTilesFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
         },
 
