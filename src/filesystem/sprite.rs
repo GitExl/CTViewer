@@ -464,7 +464,7 @@ fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -
             }
 
             let mut add_flags = SpriteAssemblyChipFlags::empty();
-            if y <= -24 {
+            if y <= -23 {
                 add_flags |= SpriteAssemblyChipFlags::IS_TOP;
             } else {
                 add_flags |= SpriteAssemblyChipFlags::IS_BOTTOM;
@@ -537,7 +537,7 @@ fn parse_snes_sprite_assembly(assembly_index: usize, groups_per_frame: usize, ti
 
         // Chips above -24 are considered to be the top of the sprite.
         for chip in frame.chips.iter_mut() {
-            if chip.y <= -24 {
+            if chip.y <= -23 {
                 chip.flags |= SpriteAssemblyChipFlags::IS_TOP;
             } else {
                 chip.flags |= SpriteAssemblyChipFlags::IS_BOTTOM;
