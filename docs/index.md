@@ -26,8 +26,7 @@
   - Strings
 - Scene scripts
   - [Memory areas](scene_scripts/memory_areas.md)
-  - [Script execution flow](scene_scripts/execution_flow.md)
+  - [Script execution flow](scene_scripts/script_execution_flow.md)
   - [Actor movement](scene_scripts/actor_movement.md)
   - [Sprite animation](scene_scripts/sprite_animation.md)
-  - Op descriptions
 - [Glossary](glossary.md)

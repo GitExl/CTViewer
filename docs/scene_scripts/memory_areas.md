@@ -40,7 +40,7 @@ during scene initialization.
 | ?                      | `$7E1081`             |                                  | `$00`                             |
 | `type_status`          | `$7E1100`             | Actor type                       | `$80` or `$07` if it has a script |
 | `player_index`         | `$7E1101`             | Index of player owner            | ?                                 |
-| `script_ptr`           | `$7E1180`             | Pointer to next op               | `$0000`                           |
+| `current_address`      | `$7E1180`             | Pointer to next op               | `$0000`                           |
 | ?                      | `$7E1200`             | Sprite graphics bank?            | ?                                 |
 | ?                      | `$7E1280`             | Sprite graphics pointer?         | ?                                 |
 | ?                      | `$7E1300`             |                                  | ?                                 |
