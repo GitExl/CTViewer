@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::actor::ActorFlags;
+use crate::actor::{ActorFlags, DrawMode};
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::scene_script::scene_script_memory::DataSource;
@@ -32,55 +32,31 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             result: DataSource::for_global_memory(data.read_u8().unwrap() as usize),
         },
 
-        // Disable script processing and hide another actor.
-        0x0A => Op::ActorUpdateFlags {
+        // Disable script processing and hide.
+        0x0A => Op::ActorRemove {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::DEAD,
-            remove: ActorFlags::RENDERED,
         },
 
-        // Disable/enable script processing.
-        0x0B => Op::ActorUpdateFlags {
+        // Set drawing mode.
+        0x7C => Op::ActorSetDrawMode {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::SCRIPT_DISABLED,
-            remove: ActorFlags::empty(),
+            draw_mode: DrawMode::Draw,
         },
-        0x0C => Op::ActorUpdateFlags {
+        0x7D => Op::ActorSetDrawMode {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::empty(),
-            remove: ActorFlags::SCRIPT_DISABLED,
+            draw_mode: DrawMode::Hidden,
         },
-
-        // Visibility/rendered.
-        // Rendered, and visible.
-        0x7C => Op::ActorUpdateFlags {
-            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::RENDERED | ActorFlags::VISIBLE,
-            remove: ActorFlags::empty(),
-        },
-        // Not rendered, but visible (?).
-        0x7D => Op::ActorUpdateFlags {
-            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            set: ActorFlags::VISIBLE,
-            remove: ActorFlags::RENDERED,
-        },
-        // Visible.
-        0x90 => Op::ActorUpdateFlags {
+        0x7E => Op::ActorSetDrawMode {
             actor: ActorRef::This,
-            set: ActorFlags::VISIBLE,
-            remove: ActorFlags::empty(),
+            draw_mode: DrawMode::Removed,
         },
-        // Hidden.
-        0x91 => Op::ActorUpdateFlags {
+        0x90 => Op::ActorSetDrawMode {
             actor: ActorRef::This,
-            set: ActorFlags::empty(),
-            remove: ActorFlags::VISIBLE,
+            draw_mode: DrawMode::Draw,
         },
-        // Hidden, but rendered.
-        0x7E => Op::ActorUpdateFlags {
+        0x91 => Op::ActorSetDrawMode {
             actor: ActorRef::This,
-            set: ActorFlags::RENDERED,
-            remove: ActorFlags::VISIBLE,
+            draw_mode: DrawMode::Hidden,
         },
 
         // Sprite priority.

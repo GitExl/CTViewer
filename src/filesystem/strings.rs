@@ -30,6 +30,8 @@ impl FileSystem {
     }
 
     pub fn read_dialogue_table(&self, address: usize, strings: &mut Vec<String>) {
+        println!("Loading dialogue table 0x{:06X}", address);
+
         strings.clear();
         strings.extend(self.backend.get_dialogue_table(address));
     }

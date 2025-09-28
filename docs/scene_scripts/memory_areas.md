@@ -30,7 +30,7 @@ during scene initialization.
 | ?                      | `$7E0D80`             |                                  |                                   |
 | ?                      | `$7E0E00`             |                                  |                                   |
 | ?                      | `$7E0E80`             |                                  |                                   |
-| ?                      | `$7E0F00`             | Actor draw status                |                                   |
+| ?                      | `$7E0F00`             | Actor is on screen & visible     |                                   |
 | ?                      | `$7E0F01`             | Current sprite frame             |                                   |
 | ?                      | `$7E0F80`             | Sprite priority info             | `$80`                             |
 | ?                      | `$7E0F81`             | Palette index                    | `$00`                             |

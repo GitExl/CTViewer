@@ -161,9 +161,10 @@ impl SceneScript {
                     state_dup.current_address = self.data.position();
                 }
 
-                // Run until return.
+                // Run until return, then skip it because it only yields.
                 if let Some(op) = state_dup.current_op {
                     if op == Op::Return {
+                        state_dup.current_address = self.data.position();
                         state_dup.op_result |= OpResult::COMPLETE;
                         break;
                     }
@@ -191,9 +192,10 @@ impl SceneScript {
                 state_dup.current_address = self.data.position();
             }
 
-            // Run until return.
+            // Run until return, then skip it because it only yields.
             if let Some(op) = state_dup.current_op {
                 if op == Op::Return {
+                    state_dup.current_address = self.data.position();
                     state_dup.op_result |= OpResult::COMPLETE;
                     break;
                 }

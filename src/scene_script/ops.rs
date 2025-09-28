@@ -1,4 +1,4 @@
-use crate::actor::ActorFlags;
+use crate::actor::{ActorFlags, DrawMode};
 use crate::scene_script::decoder::ops_char_load::CharacterType;
 use crate::scene_script::decoder::ops_dialogue::{DialogueInput, DialoguePosition, DialogueSpecialType};
 use crate::scene_script::decoder::ops_jump::CompareOp;
@@ -27,6 +27,10 @@ pub enum Op {
     },
     Control {
         forever: bool,
+    },
+    SetScriptProcessing {
+        actor: ActorRef,
+        enabled: bool,
     },
 
     // Function calls.
@@ -75,19 +79,6 @@ pub enum Op {
         actor: ActorRef,
         source: DataSource,
     },
-    ActorJump {
-        actor: ActorRef,
-        x: i32,
-        y: i32,
-        height: u32,
-    },
-    ActorJumpUnknown {
-        actor: ActorRef,
-        move_x: i32,
-        move_y: i32,
-        steps: u32,
-        unknown: u32,
-    },
     ActorSetSpritePriority {
         actor: ActorRef,
         top: SpritePriority,
@@ -102,6 +93,13 @@ pub enum Op {
     ActorSetResult16 {
         actor: ActorRef,
         result: DataSource,
+    },
+    ActorRemove {
+        actor: ActorRef,
+    },
+    ActorSetDrawMode {
+        actor: ActorRef,
+        draw_mode: DrawMode,
     },
 
     // Actor movement.
@@ -137,6 +135,20 @@ pub enum Op {
         pc2_x: i32,
         pc2_y: i32,
     },
+    ActorJump {
+        actor: ActorRef,
+        x: i32,
+        y: i32,
+        height: u32,
+    },
+    ActorJumpUnknown {
+        actor: ActorRef,
+        move_x: i32,
+        move_y: i32,
+        steps: u32,
+        unknown: u32,
+    },
+
     ActorHeal {
         actor: ActorRef,
         hp: bool,
@@ -185,6 +197,11 @@ pub enum Op {
         lhs: DataSource,
         cmp: CompareOp,
         rhs: DataSource,
+        offset: i64,
+    },
+    JumpConditionalDrawMode {
+        actor: ActorRef,
+        draw_mode: DrawMode,
         offset: i64,
     },
     JumpConditionalBattleRange {

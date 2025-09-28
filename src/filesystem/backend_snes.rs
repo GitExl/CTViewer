@@ -523,14 +523,15 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
             let ptr_start = address + index * 2;
             let ptr = self.data[ptr_start] as usize | ((self.data[ptr_start + 1] as usize) << 8);
             let ptr_next = self.data[ptr_start + 2] as usize | ((self.data[ptr_start + 3] as usize) << 8);
-            if ptr_next <= ptr || ptr == ptr_next || ptr_next - ptr > 255 {
+            if ptr_next <= ptr || ptr_next - ptr > 300 {
                 break;
             }
 
             // Decode the string.
             let len = ptr_next - ptr;
             let mut data = self.get_bytes_cursor(page_start + ptr, len);
-            strings.push(self.text_decoder.decode_huffman_string(&mut data));
+            let str = self.text_decoder.decode_huffman_string(&mut data);
+            strings.push(str);
         }
 
         strings

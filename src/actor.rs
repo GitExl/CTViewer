@@ -18,7 +18,6 @@ pub enum DebugSprite {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ActorClass {
-    None,
     PC1,
     PC2,
     PC3,
@@ -26,6 +25,14 @@ pub enum ActorClass {
     NPC,
     Monster,
     MonsterPeaceful,
+    Undefined,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum DrawMode {
+    Hidden,  // 0x00
+    Draw,    // 0x01
+    Removed, // 0x80
 }
 
 bitflags! {
@@ -34,44 +41,38 @@ bitflags! {
         /// Script execution is disabled.
         const SCRIPT_DISABLED = 0x0001;
 
-        /// Actor is visible.
-        const VISIBLE = 0x0002;
-
-        /// Actor is processed by the sprite renderer.
-        const RENDERED = 0x0004;
-
         /// Actor is solid to other actors for collision detection.
-        const SOLID = 0x0008;
+        const SOLID = 0x0002;
 
         /// Actor can have functions called on it (including touch and activate).
-        const CALLS_DISABLED = 0x0010;
+        const CALLS_DISABLED = 0x0004;
 
         /// Actor collides with solid tiles.
-        const COLLISION_WITH_TILES = 0x0020;
+        const COLLISION_WITH_TILES = 0x0008;
 
         /// Actor avoids collision with players.
-        const COLLISION_AVOID_PC = 0x0040;
+        const COLLISION_AVOID_PC = 0x0010;
 
         /// Actor movement end on tiles.
-        const MOVE_ONTO_TILE = 0x0080;
+        const MOVE_ONTO_TILE = 0x0020;
 
         /// Move onto target actor position.
-        const MOVE_ONTO_OBJECT = 0x0100;
+        const MOVE_ONTO_OBJECT = 0x0040;
 
         /// Actor is currently in battle.
-        const IN_BATTLE = 0x0200;
+        const IN_BATTLE = 0x0080;
 
         /// Actor can be pushed.
-        const PUSHABLE = 0x0400;
+        const PUSHABLE = 0x0100;
 
         /// Actor remains static during battles.
-        const BATTLE_STATIC = 0x0800;
+        const BATTLE_STATIC = 0x0200;
 
         /// Actor is dead.
-        const DEAD = 0x1000;
+        const DEAD = 0x0400;
 
         /// Sprite priority does not change from movement.
-        const SPRITE_PRIORITY_LOCKED = 0x2000;
+        const SPRITE_PRIORITY_LOCKED = 0x0800;
     }
 }
 
@@ -130,6 +131,7 @@ pub struct Actor {
     pub facing: Facing,
     pub move_speed: f64,
     pub flags: ActorFlags,
+    pub draw_mode: DrawMode,
     pub battle_index: usize,
     pub result: u32,
 }
@@ -147,11 +149,12 @@ impl Actor {
             debug_sprite: DebugSprite::None,
             sprite_priority_top: SpritePriority::default(),
             sprite_priority_bottom: SpritePriority::default(),
-            class: ActorClass::None,
+            class: ActorClass::Undefined,
             player_index: None,
             facing: Facing::default(),
             move_speed: 1.0,
-            flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC,
+            flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::DEAD,
+            draw_mode: DrawMode::Draw,
             battle_index: 0,
             result: 0,
         }
@@ -171,7 +174,7 @@ impl Actor {
         sprite_state.pos = self.pos_lerp;
         sprite_state.priority_top = self.sprite_priority_top;
         sprite_state.priority_bottom = self.sprite_priority_bottom;
-        sprite_state.enabled = self.flags.contains(ActorFlags::VISIBLE);
+        sprite_state.enabled = self.draw_mode == DrawMode::Draw && !self.flags.contains(ActorFlags::DEAD) && self.class != ActorClass::Undefined;
     }
 
     pub fn face_towards(&mut self, pos: Vec2Df64) {
@@ -251,9 +254,9 @@ impl Actor {
         println!("  At {}", self.pos);
         println!("  Facing: {:?}", self.facing);
         println!("  Speed: {}", self.move_speed);
-        println!("  Sprite priority top {:?}", self.sprite_priority_top);
-        println!("  Sprite priority bottom {:?}", self.sprite_priority_bottom);
+        println!("  Sprite priority top / bottom: {:?} {:?}", self.sprite_priority_top, self.sprite_priority_bottom);
         println!("  Flags: {:?}", self.flags);
+        println!("  Draw mode: {:?}", self.draw_mode);
         println!();
 
         self.task.dump();

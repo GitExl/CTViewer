@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::actor::ActorFlags;
+use crate::actor::DrawMode;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::scene_script::scene_script_memory::DataSource;
@@ -106,11 +106,10 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             cmp: CompareOp::Eq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
-        // If actor is hidden.
-        0x27 => Op::JumpConditional8 {
-            lhs: DataSource::ActorFlag(ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2), ActorFlags::VISIBLE),
-            rhs: DataSource::Immediate(1),
-            cmp: CompareOp::NotEq,
+        // If actor is not drawn.
+        0x27 => Op::JumpConditionalDrawMode {
+            actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
+            draw_mode: DrawMode::Hidden,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
 

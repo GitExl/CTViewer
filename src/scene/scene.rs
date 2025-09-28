@@ -1,5 +1,5 @@
 use std::path::Path;
-use crate::actor::{Actor, ActorFlags};
+use crate::actor::{Actor, ActorClass, ActorFlags, DrawMode};
 use crate::Context;
 use crate::destination::Destination;
 use crate::game_palette::GamePalette;
@@ -82,9 +82,13 @@ impl Scene {
 
         // Create actors and related state.
         for actor_script_index in 0..self.script.actor_scripts.len() {
-            let actor = Actor::new(actor_script_index);
+            let mut actor = Actor::new(actor_script_index);
+            actor.flags.remove(ActorFlags::DEAD);
+            actor.class = ActorClass::Undefined;
+
             self.script.add_initial_state(actor_script_index);
             ctx.sprites_states.add_state();
+
             self.actors.push(actor);
         }
 
@@ -172,7 +176,7 @@ impl Scene {
         self.map.lerp(lerp);
 
         for (actor_index, actor) in self.actors.iter_mut().enumerate() {
-            if !actor.flags.contains(ActorFlags::RENDERED) {
+            if actor.draw_mode != DrawMode::Draw {
                 continue;
             }
 

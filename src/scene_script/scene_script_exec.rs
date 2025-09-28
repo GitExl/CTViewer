@@ -1,4 +1,4 @@
-use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite};
+use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, DrawMode};
 use crate::Context;
 use crate::facing::Facing;
 use crate::map::Map;
@@ -13,6 +13,7 @@ use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 use crate::scene_script::scene_script_decoder::CopyTilesFlags;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
+use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
@@ -98,6 +99,16 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
             OpResult::COMPLETE
         },
+        Op::JumpConditionalDrawMode { actor, draw_mode, offset } => {
+            let actor_index = actor.deref(this_actor);
+
+            if actors[actor_index].draw_mode == draw_mode {
+                state.current_address = (state.current_address as i64 + offset) as u64;
+                return OpResult::COMPLETE | OpResult::JUMPED;
+            }
+
+            OpResult::COMPLETE
+        },
 
         // Math.
         Op::ByteMath8 { dest, lhs, op, rhs } => {
@@ -152,13 +163,16 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let actor = actors.get_mut(this_actor).unwrap();
 
             actor.battle_index = battle_index;
-            actor.flags |= ActorFlags::RENDERED | ActorFlags::VISIBLE | ActorFlags::SOLID;
+            actor.flags |= ActorFlags::SOLID;
+            actor.flags.remove(ActorFlags::PUSHABLE);
             if is_static {
                 actor.flags |= ActorFlags::BATTLE_STATIC;
             }
 
             if char_type == CharacterType::PC {
                 actor.player_index = Some(index);
+                // todo set actual pc index
+                actor.class = ActorClass::PC1;
             }
 
             // todo: set remaining actor classes
@@ -169,12 +183,17 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
                 actor.class = ActorClass::Monster;
             }
 
+            actor.facing = Facing::Down;
+            actor.sprite_priority_top = SpritePriority::BelowL2AboveL1;
+            actor.sprite_priority_bottom = SpritePriority::BelowL2AboveL1;
+
             let state = &mut ctx.sprites_states.get_state_mut(this_actor);
             let sprite_asset = ctx.sprite_assets.load(&ctx.fs, sprite_index);
             state.sprite_index = sprite_index;
             state.anim_set_index = sprite_asset.anim_set_index;
             state.palette_offset = 0;
-            state.enabled = true;
+            state.anim_index = 0;
+            state.anim_frame = 0;
 
             OpResult::COMPLETE
         },
@@ -191,8 +210,25 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorUpdateFlags { actor, set, remove } => {
             let actor_index = actor.deref(this_actor);
+
             actors[actor_index].flags.insert(set);
             actors[actor_index].flags.remove(remove);
+
+            OpResult::COMPLETE
+        },
+
+        Op::ActorSetDrawMode { actor, draw_mode } => {
+            let actor_index = actor.deref(this_actor);
+            actors[actor_index].draw_mode = draw_mode;
+
+            OpResult::COMPLETE | OpResult::YIELD
+        },
+
+        Op::ActorRemove { actor } => {
+            let actor_index = actor.deref(this_actor);
+
+            actors[actor_index].flags |= ActorFlags::DEAD;
+            actors[actor_index].draw_mode = DrawMode::Hidden;
 
             OpResult::COMPLETE
         },
@@ -361,6 +397,20 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         Op::SetScriptDelay { delay } => {
             state.delay = delay + 1;
             state.delay_counter = delay + 1;
+            OpResult::COMPLETE
+        },
+
+        Op::SetScriptProcessing { actor, enabled } => {
+            let actor_index = actor.deref(this_actor);
+            if enabled {
+                actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, false);
+            } else {
+                actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, true);
+                if actor_index == this_actor {
+                    return OpResult::COMPLETE | OpResult::YIELD;
+                }
+            }
+
             OpResult::COMPLETE
         },
 

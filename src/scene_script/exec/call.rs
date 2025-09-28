@@ -6,7 +6,7 @@ pub fn exec_call_return(state: &mut ActorScriptState) -> OpResult {
     // If the current priority is the least urgent, just yield.
     // Priority 7 is what the object init scripts are started at.
     if state.current_priority == 7 {
-        return OpResult::YIELD | OpResult::COMPLETE;
+        return OpResult::YIELD;
     }
 
     // Remove the current priority pointer.
