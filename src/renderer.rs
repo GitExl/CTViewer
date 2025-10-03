@@ -12,6 +12,11 @@ use crate::software_renderer::palette::Color;
 use crate::software_renderer::surface::Surface;
 use crate::software_renderer::text::{text_draw_to_surface, text_draw_to_surface_wrapped, TextDrawFlags};
 
+pub enum TextFont {
+    Regular,
+    Small,
+}
+
 const SCREEN_WIDTH: u32 = 256;
 const SCREEN_HEIGHT: u32 = 224;
 
@@ -27,7 +32,9 @@ pub struct Renderer<'a> {
     texture_creator: TextureCreator<WindowContext>,
     texture: Texture,
     scaled_texture: Texture,
+
     pub font: Font<'a>,
+    pub font_small: Font<'a>,
 
     pub target: Surface,
     pub canvas: WindowCanvas,
@@ -51,21 +58,44 @@ impl BoxRenderable {
 
 pub struct TextRenderable {
     text: String,
+    char_count: usize,
+    char_count_show: usize,
+
     color: Color,
     flags: TextDrawFlags,
+    font: TextFont,
     wrap_width: i32,
     surface: Option<Surface>,
 }
 
 impl TextRenderable {
-    pub fn new(text: String, color: Color, flags: TextDrawFlags, wrap_width: i32) -> TextRenderable {
+    pub fn new(text: String, font: TextFont, color: Color, flags: TextDrawFlags, wrap_width: i32) -> TextRenderable {
+        let char_count = text.chars().count();
+        let char_count_show = char_count;
+
         TextRenderable {
             text,
+            char_count,
+            char_count_show,
+
             color,
             flags,
+            font,
             wrap_width,
+
             surface: None
         }
+    }
+
+    pub fn set_char_count_to_show(&mut self, char_count: usize) {
+        if self.char_count_show != char_count {
+            self.surface = None;
+        }
+        self.char_count_show = self.char_count.min(char_count);
+    }
+
+    pub fn get_char_count(&self) -> usize {
+        self.char_count
     }
 }
 
@@ -91,6 +121,9 @@ impl<'a> Renderer<'a> {
         let ttf_context = sdl3::ttf::init().unwrap();
         let mut font = ttf_context.load_font(&"data/chronotype/ChronoType.ttf", 16.0).unwrap();
         font.set_style(sdl3::ttf::FontStyle::NORMAL);
+
+        let mut font_small = ttf_context.load_font(&"data/bm_mini/BMmini.TTF", 8.0).unwrap();
+        font_small.set_style(sdl3::ttf::FontStyle::NORMAL);
 
         // Auto-adjust scale to display size.
         let output_scale = if scale < 1 {
@@ -142,7 +175,9 @@ impl<'a> Renderer<'a> {
             texture_creator,
             texture,
             scaled_texture,
+
             font,
+            font_small,
 
             target,
             canvas,
@@ -184,11 +219,21 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn render_text(&mut self, renderable: &mut TextRenderable, x: i32, y: i32, flags: TextFlags) {
+        if renderable.char_count_show == 0 {
+            return;
+        }
+
+        let font_data = match renderable.font {
+            TextFont::Regular => &self.font,
+            TextFont::Small => &self.font_small,
+        };
+
         if renderable.surface.is_none() {
+            let text = &renderable.text.chars().take(renderable.char_count_show + 1).collect::<String>();
             if renderable.wrap_width > 0 {
-                renderable.surface = Some(text_draw_to_surface_wrapped(&renderable.text.as_str(), &self.font, renderable.color, renderable.flags, renderable.wrap_width));
+                renderable.surface = Some(text_draw_to_surface_wrapped(text, font_data, renderable.color, renderable.flags, renderable.wrap_width));
             } else {
-                renderable.surface = Some(text_draw_to_surface(&renderable.text.as_str(), &self.font, renderable.color, renderable.flags));
+                renderable.surface = Some(text_draw_to_surface(text, font_data, renderable.color, renderable.flags));
             }
         }
         let surface = renderable.surface.as_mut().unwrap();

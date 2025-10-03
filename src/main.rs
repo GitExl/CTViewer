@@ -17,6 +17,7 @@ use crate::destination::Destination;
 use crate::renderer::Renderer;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state_list::SpriteStateList;
+use crate::ui_theme::UiTheme;
 use crate::util::random::Random;
 use crate::util::vec2df64::Vec2Df64;
 
@@ -39,6 +40,7 @@ mod renderer;
 mod destination;
 mod scene_script;
 mod facing;
+mod ui_theme;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
@@ -89,6 +91,7 @@ pub struct Context<'a> {
     sprite_assets: SpriteAssets,
     render: Renderer<'a>,
     random: Random,
+    ui_theme: UiTheme,
 }
 
 fn main() -> Result<(), String> {
@@ -103,6 +106,7 @@ fn main() -> Result<(), String> {
     let sprite_assets = SpriteAssets::new(&fs);
     let sprites = SpriteStateList::new();
     let random = Random::new();
+    let ui_theme = fs.read_ui_theme(0);
 
     let mut ctx = Context {
         fs,
@@ -111,6 +115,7 @@ fn main() -> Result<(), String> {
         sprite_assets,
         render,
         random,
+        ui_theme,
     };
 
     let mut gamestate: Box<dyn GameStateTrait>;

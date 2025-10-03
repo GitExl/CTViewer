@@ -6,7 +6,7 @@ pub mod ops_movement;
 pub mod ops_call;
 pub mod ops_actor_props;
 pub mod ops_char_load;
-pub mod ops_dialogue;
+pub mod ops_textbox;
 pub mod ops_animation;
 pub mod ops_party;
 pub mod ops_palette;

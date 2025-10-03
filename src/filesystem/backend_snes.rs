@@ -5,6 +5,8 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::filesystem::backend::FileSystemBackendTrait;
 use crate::filesystem::filesystem::{FileSystem};
 use crate::filesystem::text_decoder::TextDecoder;
+use crate::software_renderer::bitmap::Bitmap;
+use crate::software_renderer::blit::{blit_bitmap_to_bitmap, BitmapBlitFlags};
 use crate::software_renderer::palette::{Color, Palette};
 use crate::util::lz_decompress::lz_decompress;
 
@@ -189,17 +191,18 @@ impl FileSystemBackendSnes {
         Palette::from_colors(&colors)
     }
 
-    fn convert_planar_chips_to_linear(&self, data: Vec<u8>, bitplanes: usize) -> Vec<u8> {
+    fn convert_planar_chips_to_linear(&self, data: Vec<u8>, width: usize, bitplanes: usize) -> Vec<u8> {
         let chip_count = data.len() / (bitplanes * 8);
-        let height = (chip_count as f64 / 16.0).ceil() as usize * 8;
-        let mut pixels = vec![0u8; 128 * height];
+        let chips_per_row = width / 8;
+        let height = (chip_count as f64 / chips_per_row as f64).ceil() as usize * 8;
+        let mut pixels = vec![0u8; width * height];
 
         let mut src_byte: usize = 0;
         for chip in 0..chip_count {
-            let chip_x = chip % 16;
-            let chip_y = chip / 16;
+            let chip_x = chip % chips_per_row;
+            let chip_y = chip / chips_per_row;
 
-            let mut dest = (chip_y * 8) * 128 + (chip_x * 8);
+            let mut dest = (chip_y * 8) * width + (chip_x * 8);
             for _ in 0..8 {
 
                 let mut bit = 0b10000000;
@@ -215,12 +218,12 @@ impl FileSystemBackendSnes {
                     bit >>= 1;
                 }
 
-                dest += 120;
+                dest += width - 8;
                 src_byte += 2;
             }
 
             if bitplanes == 4 {
-                let mut dest = (chip_y * 8) * 128 + (chip_x * 8);
+                let mut dest = (chip_y * 8) * width + (chip_x * 8);
                 for _ in 0..8 {
 
                     let mut bit = 0b10000000;
@@ -236,7 +239,7 @@ impl FileSystemBackendSnes {
                         bit >>= 1;
                     }
 
-                    dest += 120;
+                    dest += width - 8;
                     src_byte += 2;
                 }
             }
@@ -280,7 +283,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         }
 
         let data = self.get_bytes_lz(self.world_tileset_entries[chips_index].address);
-        let pixels = self.convert_planar_chips_to_linear(data, 4);
+        let pixels = self.convert_planar_chips_to_linear(data, 128, 4);
         Some(pixels)
     }
 
@@ -290,7 +293,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         }
 
         let data = self.get_bytes_lz(self.world_tileset_entries[chips_index].address);
-        let pixels = self.convert_planar_chips_to_linear(data, 2);
+        let pixels = self.convert_planar_chips_to_linear(data, 128, 2);
         Some(pixels)
     }
 
@@ -328,7 +331,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         }
 
         let data = self.get_bytes_lz(self.world_sprite_entries[tiles_index].address);
-        let pixels = self.convert_planar_chips_to_linear(data, 4);
+        let pixels = self.convert_planar_chips_to_linear(data, 128, 4);
         Some(pixels)
     }
 
@@ -383,7 +386,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
             return None;
         }
         let data = self.get_bytes_lz(self.scene_tileset_entries[chips_index].address);
-        Some(self.convert_planar_chips_to_linear(data, 2))
+        Some(self.convert_planar_chips_to_linear(data, 128, 2))
     }
 
     fn get_scene_tileset3_assembly_data(&self, assembly_index: usize) -> Option<Cursor<Vec<u8>>> {
@@ -395,7 +398,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
 
     fn get_scene_tileset12_graphics(&self, chips_index: usize) -> Vec<u8> {
         let data = self.get_bytes_lz(self.scene_tileset_entries[chips_index].address);
-        self.convert_planar_chips_to_linear(data, 4)
+        self.convert_planar_chips_to_linear(data, 128, 4)
     }
 
     fn get_scene_tileset12_assembly_data(&self, index_assembly: usize) -> Cursor<Vec<u8>> {
@@ -493,7 +496,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
             self.data[entry.address..entry.address + entry.length].to_vec()
         };
 
-        self.convert_planar_chips_to_linear(data, 4)
+        self.convert_planar_chips_to_linear(data, 128, 4)
     }
 
     fn get_item_names(&self, _language: &str) -> Vec<String> {
@@ -512,7 +515,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         strings
     }
 
-    fn get_dialogue_table(&self, address: usize) -> Vec<String> {
+    fn get_textbox_string_table(&self, address: usize) -> Vec<String> {
         let page_start = address & 0xFF0000;
 
         let mut strings = Vec::<String>::new();
@@ -535,6 +538,58 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         }
 
         strings
+    }
+
+    fn get_ui_theme_cursor_graphics(&self, _ui_theme_index: usize) -> (Bitmap, Palette) {
+        let data = self.data[0x3F9CF0..0x3F9CF0 + 0x100].to_vec();
+        let raw = self.convert_planar_chips_to_linear(data, 128, 4);
+        let src = Bitmap::from_raw_data(128, 64, raw);
+
+        let mut cursor_bitmap = Bitmap::new(32, 16);
+
+        // Hand
+        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 0, 0, 16, 8, 0, 0, BitmapBlitFlags::empty());
+        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 16, 0, 16, 8, 0, 8, BitmapBlitFlags::empty());
+
+        // Arrow
+        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 32, 0, 16, 8, 16, 0, BitmapBlitFlags::empty());
+        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 48, 0, 16, 8, 16, 8, BitmapBlitFlags::empty());
+
+        let cursor_palette = self.read_palette(self.get_bytes_cursor(0x3F9DF0, 32), 0, 16, 1, 0, 0);
+
+        (cursor_bitmap, cursor_palette)
+    }
+
+    fn get_ui_theme_window_graphics(&self, ui_theme_index: usize) -> (Bitmap, Palette) {
+        let start = 0x3F9E10 + ui_theme_index * 0x280;
+        let data = self.data[start..start + 0x1400].to_vec();
+        let raw = self.convert_planar_chips_to_linear(data, 64, 4);
+        let src = Bitmap::from_raw_data(64, 24, raw);
+
+        let mut window_bitmap = Bitmap::new(32, 48);
+
+        // Top
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 0, 0, 32, 8, 0, 0, BitmapBlitFlags::empty());
+
+        // Sides
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 32, 0, 8, 8, 0, 8, BitmapBlitFlags::empty());
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 48, 0, 8, 8, 0, 16, BitmapBlitFlags::empty());
+
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 40, 0, 8, 8, 24, 8, BitmapBlitFlags::empty());
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 56, 0, 8, 8, 24, 16, BitmapBlitFlags::empty());
+
+        // Bottom
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 0, 8, 32, 8, 0, 24, BitmapBlitFlags::empty());
+
+        // Fill
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 32, 8, 16, 8, 0, 32, BitmapBlitFlags::empty());
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 48, 8, 16, 8, 0, 40, BitmapBlitFlags::empty());
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 0, 16, 16, 8, 16, 32, BitmapBlitFlags::empty());
+        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 16, 16, 16, 8, 16, 40, BitmapBlitFlags::empty());
+
+        let window_palette = self.read_palette(self.get_bytes_cursor(0x3FB210 + ui_theme_index * 16, 16), 0, 8, 1, 0, 8);
+
+        (window_bitmap, window_palette)
     }
 }
 
@@ -594,11 +649,11 @@ fn get_entries(data: &Vec<u8>, pointers_address: usize, pointer_count: usize, la
 fn get_local_entries(data: &Vec<u8>, pointers_address: usize, pointer_count: usize, last_entry_end_address: usize, ordered: bool) -> Vec<Entry> {
     let mut entries = Vec::<Entry>::with_capacity(pointer_count);
 
-    let page_start = pointers_address & 0xFF0000;
+    let bank_start = pointers_address & 0xFF0000;
     let mut pointer_data = get_bytes_cursor(&data, pointers_address, pointer_count * 2);
     for _ in 0..pointer_count {
         entries.push(Entry {
-            address: page_start + pointer_data.read_u16::<LittleEndian>().unwrap() as usize,
+            address: bank_start + pointer_data.read_u16::<LittleEndian>().unwrap() as usize,
             length: 0,
         });
     }

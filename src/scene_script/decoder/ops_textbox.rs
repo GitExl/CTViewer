@@ -1,18 +1,12 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::read_24_bit_address;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum DialoguePosition {
-    Top,
-    Bottom,
-    Auto,
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum DialogueInput {
+pub enum TextBoxInput {
     None,
     Line(usize),
 }
@@ -44,81 +38,82 @@ impl DialogueSpecialType {
     }
 }
 
-pub fn op_decode_dialogue(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
 
         // Set string table address.
         0xB8 => {
             match mode {
-                SceneScriptMode::Snes => Op::DialogueSetTable {
+                SceneScriptMode::Snes => Op::TextSetTable {
                     address: read_24_bit_address(data) - 0xC00000,
                 },
-                SceneScriptMode::Pc => Op::DialogueSetTable {
+                SceneScriptMode::Pc => Op::TextSetTable {
                     address: data.read_u8().unwrap() as usize,
                 },
             }
         },
 
-        // Dialogue boxes.
-        0xBB => Op::DialogueShow {
+        // Textboxes.
+        0xBB => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
-            position: DialoguePosition::Auto,
-            input: DialogueInput::None,
+            position: TextBoxPosition::Auto,
+            input: TextBoxInput::None,
         },
-        0xC0 => Op::DialogueShow {
+        0xC0 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
-            position: DialoguePosition::Auto,
-            input: DialogueInput::Line(data.read_u8().unwrap() as usize),
+            position: TextBoxPosition::Auto,
+            input: TextBoxInput::Line(data.read_u8().unwrap() as usize),
         },
-        0xC1 => Op::DialogueShow {
+        0xC1 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
-            position: DialoguePosition::Top,
-            input: DialogueInput::None,
+            position: TextBoxPosition::Top,
+            input: TextBoxInput::None,
         },
-        0xC2 => Op::DialogueShow {
+        0xC2 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
-            position: DialoguePosition::Bottom,
-            input: DialogueInput::None,
+            position: TextBoxPosition::Bottom,
+            input: TextBoxInput::None,
         },
-        0xC3 => Op::DialogueShow {
+        0xC3 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
-            position: DialoguePosition::Top,
-            input: DialogueInput::Line(data.read_u8().unwrap() as usize),
+            position: TextBoxPosition::Top,
+            input: TextBoxInput::Line(data.read_u8().unwrap() as usize),
         },
-        0xC4 => Op::DialogueShow {
+        0xC4 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
-            position: DialoguePosition::Bottom,
-            input: DialogueInput::Line(data.read_u8().unwrap() as usize),
+            position: TextBoxPosition::Bottom,
+            input: TextBoxInput::Line(data.read_u8().unwrap() as usize),
         },
 
+        // Special dialogues.
         0xC8 => Op::DialogueSpecial {
             dialogue_type: DialogueSpecialType::from_value(data.read_u8().unwrap()),
         },
 
-        _ => panic!("Unknown dialogue op."),
+        _ => panic!("Unknown textbox op."),
     }
 }

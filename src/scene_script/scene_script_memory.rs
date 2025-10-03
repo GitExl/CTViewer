@@ -1,5 +1,6 @@
-use crate::actor::{Actor, ActorFlags};
+use crate::actor::ActorFlags;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
+use crate::scene_script::scene_script_exec::SceneScriptContext;
 
 pub struct SceneScriptMemory {
     pub temp: [u8; 0x200],
@@ -158,14 +159,14 @@ impl DataSource {
         DataSource::Memory(address + 0x9F0000)
     }
 
-    pub fn get_u8(self, memory: &SceneScriptMemory, actors: &Vec<Actor>, current_actor: usize) -> u8 {
+    pub fn get_u8(self, script_ctx: &SceneScriptContext, current_actor: usize) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
-            DataSource::Memory(address) => memory.read_u8(address),
-            DataSource::ActorResult(actor) => actors[actor.deref(current_actor)].result as u8,
+            DataSource::Memory(address) => script_ctx.memory.read_u8(address),
+            DataSource::ActorResult(actor) => script_ctx.actors[actor.deref(current_actor)].result as u8,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
-            DataSource::ActorFlag(actor, flags) => (actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u8,
+            DataSource::ActorFlag(actor, flags) => (script_ctx.actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u8,
             DataSource::PartyCharacter(..) => 0,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u8,
@@ -174,14 +175,14 @@ impl DataSource {
         }
     }
 
-    pub fn get_u16(self, memory: &SceneScriptMemory, actors: &Vec<Actor>, current_actor: usize) -> u16 {
+    pub fn get_u16(self, script_ctx: &SceneScriptContext, current_actor: usize) -> u16 {
         match self {
             DataSource::Immediate(value) => value as u16,
-            DataSource::Memory(address) => memory.read_u16(address),
-            DataSource::ActorResult(actor) => actors[actor.deref(current_actor)].result as u16,
+            DataSource::Memory(address) => script_ctx.memory.read_u16(address),
+            DataSource::ActorResult(actor) => script_ctx.actors[actor.deref(current_actor)].result as u16,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
-            DataSource::ActorFlag(actor, flags) => (actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u16,
+            DataSource::ActorFlag(actor, flags) => (script_ctx.actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u16,
             DataSource::PartyCharacter(..) => 0,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u16,
@@ -219,21 +220,21 @@ impl DataDest {
         DataDest::Memory(address + 0x9F0000)
     }
 
-    pub fn put_u8(&self, memory: &mut SceneScriptMemory, value: u8) {
+    pub fn put_u8(&self, script_ctx: &mut SceneScriptContext, value: u8) {
         match self {
-            DataDest::Memory(address) => memory.write_u8(*address, value),
+            DataDest::Memory(address) => script_ctx.memory.write_u8(*address, value),
         }
     }
 
-    pub fn put_u16(&self, memory: &mut SceneScriptMemory, value: u16) {
+    pub fn put_u16(&self, script_ctx: &mut SceneScriptContext, value: u16) {
         match self {
-            DataDest::Memory(address) => memory.write_u16(*address, value),
+            DataDest::Memory(address) => script_ctx.memory.write_u16(*address, value),
         }
     }
 
-    pub fn put_bytes(&self, memory: &mut SceneScriptMemory, bytes: [u8; 32], length: usize) {
+    pub fn put_bytes(&self, script_ctx: &mut SceneScriptContext, bytes: [u8; 32], length: usize) {
         match self {
-            DataDest::Memory(address) => memory.write_bytes(*address, &bytes[0..length]),
+            DataDest::Memory(address) => script_ctx.memory.write_bytes(*address, &bytes[0..length]),
         }
     }
 }

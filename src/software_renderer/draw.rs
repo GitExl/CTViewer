@@ -17,6 +17,34 @@ pub fn draw_box(surface: &mut Surface, rect: Rect, color: Color, blend_op: Surfa
     }
 }
 
+pub fn draw_box_gradient_vertical(surface: &mut Surface, rect: Rect, color_top: Color, color_bottom: Color, quantize: i32, blend_op: SurfaceBlendOps) {
+    let step = 1.0 / (rect.bottom - rect.top) as f64;
+    let q = 1.0 / ((rect.bottom - rect.top) as f64 / quantize as f64);
+
+    let diff_r: f64 = color_bottom[0] as f64 - color_top[0] as f64;
+    let diff_g: f64 = color_bottom[1] as f64 - color_top[1] as f64;
+    let diff_b: f64 = color_bottom[2] as f64 - color_top[2] as f64;
+
+    let mut alpha: f64 = 0.0;
+    for y in rect.top..rect.bottom {
+        let alpha_q = (alpha / q).floor() * q;
+        let blend = [
+            (color_top[0] as f64 + diff_r * alpha_q) as u8,
+            (color_top[1] as f64 + diff_g * alpha_q) as u8,
+            (color_top[2] as f64 + diff_b * alpha_q) as u8,
+            255,
+        ];
+
+        for x in rect.left..rect.right {
+            let dest = (x + y * surface.width as i32) as usize * 4;
+            let dest_color = &mut surface.data[dest..dest + 4];
+            blend_pixel(dest_color, blend, blend_op);
+        }
+
+        alpha += step;
+    }
+}
+
 pub fn draw_line(surface: &mut Surface, x1: i32, y1: i32, x2: i32, y2: i32, color: Color, blend_op: SurfaceBlendOps) {
     let clip = surface.clip;
 
@@ -119,8 +147,20 @@ pub fn draw_line(surface: &mut Surface, x1: i32, y1: i32, x2: i32, y2: i32, colo
     }
 }
 
-fn blend_pixel (dest_color: &mut [u8], color: Color, blend_op: SurfaceBlendOps) {
+pub fn blend_pixel (dest_color: &mut [u8], color: Color, blend_op: SurfaceBlendOps) {
     match blend_op {
+        SurfaceBlendOps::Add => {
+            dest_color[0] = dest_color[0].saturating_add(color[0]);
+            dest_color[1] = dest_color[1].saturating_add(color[1]);
+            dest_color[2] = dest_color[2].saturating_add(color[2]);
+            dest_color[3] = 0xFF;
+        },
+        SurfaceBlendOps::Subtract => {
+            dest_color[0] = dest_color[0].saturating_sub(color[0]);
+            dest_color[1] = dest_color[1].saturating_sub(color[1]);
+            dest_color[2] = dest_color[2].saturating_sub(color[2]);
+            dest_color[3] = 0xFF;
+        },
         SurfaceBlendOps::Blend => {
             if color[3] == 0 {
                 return;

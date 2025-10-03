@@ -7,7 +7,8 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::{TextFlags, TextRenderable};
+use crate::renderer::{TextFlags, TextFont, TextRenderable};
+use crate::scene::textbox::TextBox;
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
 use crate::software_renderer::blit::SurfaceBlendOps;
@@ -23,10 +24,13 @@ pub struct GameStateScene {
     map_renderer: MapRenderer,
     scene_renderer: SceneRenderer,
 
+    textbox: TextBox,
+
     key_up: bool,
     key_down: bool,
     key_left: bool,
     key_right: bool,
+    key_activate: bool,
 
     mouse_pos: Vec2Di32,
 
@@ -57,7 +61,8 @@ impl GameStateScene {
 
         camera.center_to(camera_center);
 
-        scene.init(ctx);
+        let mut textbox = TextBox::new(ctx);
+        scene.init(ctx, &mut textbox);
 
         println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
@@ -68,10 +73,13 @@ impl GameStateScene {
             scene_renderer,
             map_renderer,
 
+            textbox,
+
             key_down: false,
             key_left: false,
             key_right: false,
             key_up: false,
+            key_activate: false,
 
             mouse_pos: Vec2Di32::default(),
 
@@ -102,13 +110,15 @@ impl GameStateTrait for GameStateScene {
         }
         self.camera.clamp();
 
-        self.scene.tick(ctx, delta);
+        self.scene.tick(ctx, &mut self.textbox, delta);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
             self.next_game_event = None;
             return event;
         }
+
+        self.textbox.tick(delta);
 
         None
     }
@@ -149,6 +159,8 @@ impl GameStateTrait for GameStateScene {
                 SurfaceBlendOps::Blend,
             );
         }
+
+        self.textbox.render(ctx, lerp);
     }
 
     fn get_title(&self, ctx: &Context) -> String {
@@ -163,6 +175,11 @@ impl GameStateTrait for GameStateScene {
                     Some(Keycode::A) => self.key_left = true,
                     Some(Keycode::S) => self.key_down = true,
                     Some(Keycode::D) => self.key_right = true,
+
+                    Some(Keycode::F) => {
+                        self.key_activate = true;
+                        self.textbox.progress();
+                    },
 
                     Some(Keycode::_1) => {
                         self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
@@ -237,6 +254,7 @@ impl GameStateTrait for GameStateScene {
                     Some(Keycode::A) => self.key_left = false,
                     Some(Keycode::S) => self.key_down = false,
                     Some(Keycode::D) => self.key_right = false,
+                    Some(Keycode::F) => self.key_activate = false,
                     _ => {},
                 }
             },
@@ -280,12 +298,13 @@ impl GameStateTrait for GameStateScene {
             let text = format!("Actor {}", index);
             self.debug_text = Some(TextRenderable::new(
                 text,
-                [223, 223, 223, 255],
+                TextFont::Small,
+                [231, 231, 231, 255],
                 TextDrawFlags::SHADOW,
                 0,
             ));
             self.debug_text_x = actor.pos.x as i32;
-            self.debug_text_y = actor.pos.y as i32 + 16;
+            self.debug_text_y = actor.pos.y as i32 + 9;
             self.debug_box = Some(Rect::new(
                 actor.pos.x as i32 - 8, actor.pos.y as i32 - 16,
                 actor.pos.x as i32 + 8, actor.pos.y as i32,
@@ -300,7 +319,8 @@ impl GameStateTrait for GameStateScene {
 
                 self.debug_text = Some(TextRenderable::new(
                     text,
-                    [223, 223, 223, 255],
+                    TextFont::Small,
+                    [231, 231, 231, 255],
                     TextDrawFlags::SHADOW,
                     0,
                 ));
@@ -320,13 +340,14 @@ impl GameStateTrait for GameStateScene {
                 let text = if treasure.gold > 0 {
                     format!("{} gold", treasure.gold)
                 } else if treasure.item > 0 {
-                    format!("Item {} {}", treasure.item, ctx.l10n.get_indexed(IndexedType::Item, treasure.item))
+                    format!("{}", ctx.l10n.get_indexed(IndexedType::Item, treasure.item))
                 } else {
                     "Empty".to_string()
                 };
                 self.debug_text = Some(TextRenderable::new(
                     text,
-                    [223, 223, 223, 255],
+                    TextFont::Small,
+                    [231, 231, 231, 255],
                     TextDrawFlags::SHADOW,
                     0,
                 ));

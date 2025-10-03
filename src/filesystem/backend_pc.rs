@@ -5,6 +5,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::filesystem::backend::FileSystemBackendTrait;
 use crate::filesystem::filesystem::{FileSystem};
 use crate::filesystem::resourcesbin::ResourcesBin;
+use crate::software_renderer::bitmap::Bitmap;
 use crate::software_renderer::palette::{Color, Palette};
 use crate::util::bmp_reader::Bmp;
 use crate::util::lz_decompress::lz_decompress;
@@ -262,7 +263,7 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
     }
 
     fn get_world_palette(&self, world_palette_index: usize) -> Palette {
-        let mut data =self.get_file_cursor(&format!("Game/world/plt_bin/plt{}.bin", world_palette_index), None, None);
+        let mut data = self.get_file_cursor(&format!("Game/world/plt_bin/plt{}.bin", world_palette_index), None, None);
         data.seek(SeekFrom::Start(2)).unwrap();
 
         let mut colors = Vec::<Color>::new();
@@ -466,7 +467,7 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
 
     fn get_sprite_graphics(&self, sprite_index: usize, chip_count: usize, _compressed: bool) -> Vec<u8> {
         let bitmap_count = (chip_count as f64 / 512.0).ceil() as usize;
-        let mut tile_data =  vec![0u8; 256 * bitmap_count * 256];
+        let mut tile_data = vec![0u8; 256 * bitmap_count * 256];
 
         for bitmap_index in 0..bitmap_count {
             let filename = format!("Game/chara/bmp/c{:0>3}_{}.bmp", sprite_index, bitmap_index);
@@ -488,9 +489,17 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.read_text_string_list(data, None, None)
     }
 
-    fn get_dialogue_table(&self, _address: usize) -> Vec<String> {
+    fn get_textbox_string_table(&self, _address: usize) -> Vec<String> {
         // todo: map to one of the localization files, but how?
 
         Vec::new()
+    }
+
+    fn get_ui_theme_cursor_graphics(&self, _ui_theme_index: usize) -> (Bitmap, Palette) {
+        (Bitmap::new(32, 16), Palette::new(16))
+    }
+
+    fn get_ui_theme_window_graphics(&self, _ui_theme_index: usize) -> (Bitmap, Palette) {
+        (Bitmap::new(32, 48), Palette::new(16))
     }
 }

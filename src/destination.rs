@@ -24,6 +24,17 @@ pub enum Destination {
 }
 
 impl Destination {
+    pub fn title(&self, ctx: &Context) -> String {
+        match self {
+            Destination::Scene { index, .. } => {
+                ctx.l10n.get_indexed(IndexedType::Scene, *index)
+            },
+            Destination::World { index, .. } => {
+                ctx.l10n.get_indexed(IndexedType::World, *index)
+            },
+        }
+    }
+
     pub fn info(&self, ctx: &Context) -> String {
         match self {
             Destination::Scene { index, .. } => {

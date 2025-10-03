@@ -29,10 +29,8 @@ impl FileSystem {
         self.backend.get_item_names(language)
     }
 
-    pub fn read_dialogue_table(&self, address: usize, strings: &mut Vec<String>) {
-        println!("Loading dialogue table 0x{:06X}", address);
-
+    pub fn read_textbox_string_table(&self, address: usize, strings: &mut Vec<String>) {
         strings.clear();
-        strings.extend(self.backend.get_dialogue_table(address));
+        strings.extend(self.backend.get_textbox_string_table(address));
     }
 }

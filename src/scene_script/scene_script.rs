@@ -4,10 +4,11 @@ use bitflags::bitflags;
 use crate::actor::{Actor, ActorFlags};
 use crate::Context;
 use crate::map::Map;
+use crate::scene::textbox::TextBox;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::op_decode;
-use crate::scene_script::scene_script_exec::op_execute;
+use crate::scene_script::scene_script_exec::{op_execute, SceneScriptContext};
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
 
 bitflags! {
@@ -109,7 +110,7 @@ pub struct SceneScript {
     pub memory: SceneScriptMemory,
     pub actor_scripts: Vec<SceneActorScript>,
     pub script_states: Vec<ActorScriptState>,
-    dialogue_strings: Vec<String>,
+    textbox_strings: Vec<String>,
 }
 
 impl SceneScript {
@@ -130,7 +131,7 @@ impl SceneScript {
             memory,
             actor_scripts,
             script_states: Vec::new(),
-            dialogue_strings: Vec::new(),
+            textbox_strings: Vec::new(),
         }
     }
 
@@ -140,13 +141,23 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
-        for state_index in 0..self.script_states.len() {
-            if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
+    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox) {
+        let mut script_ctx = SceneScriptContext {
+            memory: &mut self.memory,
+            scene_map,
+            actors,
+            map,
+            textbox_strings: &mut self.textbox_strings,
+            textbox,
+            states: &mut self.script_states,
+        };
+
+        for state_index in 0..script_ctx.states.len() {
+            if script_ctx.actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
                 continue;
             }
 
-            let mut state_dup = self.script_states[state_index].clone();
+            let mut state_dup = script_ctx.states[state_index].clone();
             loop {
 
                 // Decode op at current position.
@@ -154,7 +165,7 @@ impl SceneScript {
                 state_dup.current_op = op_decode(&mut self.data, self.mode);
 
                 // Execute op and handle result.
-                state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
+                state_dup.op_result = op_execute(ctx, &mut script_ctx, state_index, &mut state_dup);
                 if state_dup.op_result.contains(OpResult::JUMPED) {
                     self.data.set_position(state_dup.current_address);
                 } else if state_dup.op_result.contains(OpResult::COMPLETE) {
@@ -170,12 +181,22 @@ impl SceneScript {
                     }
                 }
             }
-            self.script_states[state_index] = state_dup;
+            script_ctx.states[state_index] = state_dup;
         }
     }
 
-    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
-        let mut state_dup = self.script_states[0].clone();
+    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox) {
+        let mut script_ctx = SceneScriptContext {
+            memory: &mut self.memory,
+            scene_map,
+            actors,
+            map,
+            textbox_strings: &mut self.textbox_strings,
+            textbox,
+            states: &mut self.script_states,
+        };
+
+        let mut state_dup = script_ctx.states[0].clone();
         state_dup.current_address = state_dup.function_ptrs[1];
 
         loop {
@@ -185,7 +206,7 @@ impl SceneScript {
             state_dup.current_op = op_decode(&mut self.data, self.mode);
 
             // Execute op and handle result.
-            state_dup.op_result = op_execute(ctx, 0, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
+            state_dup.op_result = op_execute(ctx, &mut script_ctx, 0, &mut state_dup);
             if state_dup.op_result.contains(OpResult::JUMPED) {
                 self.data.set_position(state_dup.current_address);
             } else if state_dup.op_result.contains(OpResult::COMPLETE) {
@@ -203,13 +224,23 @@ impl SceneScript {
         }
     }
 
-    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap) {
-        for state_index in 0..self.script_states.len() {
-            if actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
+    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox) {
+        let mut script_ctx = SceneScriptContext {
+            memory: &mut self.memory,
+            scene_map,
+            actors,
+            map,
+            textbox_strings: &mut self.textbox_strings,
+            textbox,
+            states: &mut self.script_states,
+        };
+
+        for state_index in 0..script_ctx.states.len() {
+            if script_ctx.actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
                 continue;
             }
 
-            let mut state_dup = self.script_states[state_index].clone();
+            let mut state_dup = script_ctx.states[state_index].clone();
 
             // Countdown until next time this actor's script needs to be processed.
             if state_dup.delay_counter > 1 {
@@ -232,7 +263,7 @@ impl SceneScript {
                     }
 
                     // Execute op and handle result.
-                    state_dup.op_result = op_execute(ctx, state_index, &mut state_dup, &mut self.script_states, actors, map, scene_map, &mut self.memory, &mut self.dialogue_strings);
+                    state_dup.op_result = op_execute(ctx, &mut script_ctx, state_index, &mut state_dup);
                     if state_dup.op_result.contains(OpResult::JUMPED) {
                         self.data.set_position(state_dup.current_address);
                     } else if state_dup.op_result.contains(OpResult::COMPLETE) {
@@ -244,7 +275,7 @@ impl SceneScript {
                 }
             }
 
-            self.script_states[state_index] = state_dup;
+            script_ctx.states[state_index] = state_dup;
         }
     }
 

@@ -12,4 +12,5 @@ mod world;
 mod strings;
 mod text_decoder;
 mod resourcesbin;
+mod ui;
 

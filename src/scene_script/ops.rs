@@ -1,6 +1,7 @@
 use crate::actor::{ActorFlags, DrawMode};
+use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
-use crate::scene_script::decoder::ops_dialogue::{DialogueInput, DialoguePosition, DialogueSpecialType};
+use crate::scene_script::decoder::ops_textbox::{TextBoxInput, DialogueSpecialType};
 use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::decoder::ops_palette::{ColorMathMode, SubPalette};
@@ -283,15 +284,17 @@ pub enum Op {
         rhs: DataSource,
     },
 
-    // Dialogue.
-    DialogueSetTable {
+    // Textboxes.
+    TextSetTable {
         address: usize,
     },
-    DialogueShow {
+    TextBoxShow {
         index: usize,
-        position: DialoguePosition,
-        input: DialogueInput,
+        position: TextBoxPosition,
+        input: TextBoxInput,
     },
+
+    // Special dialogues.
     DialogueSpecial {
         dialogue_type: DialogueSpecialType,
     },

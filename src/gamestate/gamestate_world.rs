@@ -7,7 +7,7 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::renderer::{TextFlags, TextRenderable};
+use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::clip::Rect;
 use crate::software_renderer::text::TextDrawFlags;
@@ -259,11 +259,12 @@ impl GameStateTrait for GameStateWorld {
         let index = self.get_exit_at(self.mouse_pos);
         if index.is_some() {
             let exit = &self.world.exits[index.unwrap()];
-            let text = exit.destination.info(&ctx);
+            let text = exit.destination.title(&ctx);
 
             self.debug_text = Some(TextRenderable::new(
                 text,
-                [223, 223, 223, 255],
+                TextFont::Regular,
+                [231, 231, 231, 255],
                 TextDrawFlags::SHADOW,
                 0,
             ));

@@ -1,12 +1,13 @@
 use std::f64::consts::PI;
-use crate::actor::{Actor, ActorFlags, ActorTask, DebugSprite};
+use crate::actor::{ActorFlags, ActorTask, DebugSprite};
 use crate::Context;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
+use crate::scene_script::scene_script_exec::SceneScriptContext;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
-pub fn exec_movement_to_tile(ctx: &mut Context, state: &mut ActorScriptState, actor_index: usize, actors: &mut Vec<Actor>, tile_dest_pos: Vec2Di32, cycle_count: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
-    let actor = actors.get_mut(actor_index).unwrap();
+pub fn exec_movement_to_tile(ctx: &mut Context, script_ctx: &mut SceneScriptContext, state: &mut ActorScriptState, actor_index: usize, tile_dest_pos: Vec2Di32, cycle_count: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
+    let actor = script_ctx.actors.get_mut(actor_index).unwrap();
     let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match tile movements.
@@ -99,8 +100,8 @@ pub fn exec_movement_to_tile(ctx: &mut Context, state: &mut ActorScriptState, ac
     OpResult::YIELD
 }
 
-pub fn exec_movement_by_vector(ctx: &mut Context, actor_index: usize, actors: &mut Vec<Actor>, angle: f64, cycle_count: u32, update_facing: bool, animated: bool) -> OpResult {
-    let actor = actors.get_mut(actor_index).unwrap();
+pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptContext, actor_index: usize, angle: f64, cycle_count: u32, update_facing: bool, animated: bool) -> OpResult {
+    let actor = script_ctx.actors.get_mut(actor_index).unwrap();
     let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match angle movement tasks.
@@ -146,16 +147,16 @@ pub fn exec_movement_by_vector(ctx: &mut Context, actor_index: usize, actors: &m
     OpResult::YIELD
 }
 
-pub fn exec_movement_to_actor(ctx: &mut Context, state: &mut ActorScriptState, actor_index: usize, actors: &mut Vec<Actor>, target_actor_index: usize, cycle_count: Option<u32>, update_facing: bool, animated: bool, into_battle_range: bool) -> OpResult {
+pub fn exec_movement_to_actor(ctx: &mut Context, script_ctx: &mut SceneScriptContext, state: &mut ActorScriptState, actor_index: usize, target_actor_index: usize, cycle_count: Option<u32>, update_facing: bool, animated: bool, into_battle_range: bool) -> OpResult {
 
     // Ignore dead target actor.
-    if actors[target_actor_index].flags.contains(ActorFlags::DEAD) {
+    if script_ctx.actors[target_actor_index].flags.contains(ActorFlags::DEAD) {
         ctx.sprites_states.get_state_mut(actor_index).reset_animation();
         return OpResult::COMPLETE;
     }
 
-    let target_pos = actors[target_actor_index].pos;
-    let actor = actors.get_mut(actor_index).unwrap();
+    let target_pos = script_ctx.actors[target_actor_index].pos;
+    let actor = script_ctx.actors.get_mut(actor_index).unwrap();
     let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match actor movements.

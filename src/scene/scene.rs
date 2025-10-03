@@ -6,6 +6,7 @@ use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::map::Map;
 use crate::palette_anim::PaletteAnimSet;
+use crate::scene::textbox::TextBox;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::SceneScript;
 use crate::tileset::TileSet;
@@ -78,7 +79,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn init(&mut self, ctx: &mut Context) {
+    pub fn init(&mut self, ctx: &mut Context, textbox: &mut TextBox) {
 
         // Create actors and related state.
         for actor_script_index in 0..self.script.actor_scripts.len() {
@@ -93,10 +94,10 @@ impl Scene {
         }
 
         // Run first actor script until it yields (first return op).
-        self.script.run_object_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
+        self.script.run_object_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map, textbox);
 
         // Run actor 0 script 1.
-        self.script.run_scene_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
+        self.script.run_scene_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map, textbox);
 
         // Update sprite state after script init.
         for (actor_index, actor) in self.actors.iter_mut().enumerate() {
@@ -155,10 +156,10 @@ impl Scene {
         self.tileset_l3.render_tiles_to_surface(&self.palette.palette).write_to_bmp(Path::new("debug_output/scene_tiles_l3.bmp"));
     }
 
-    pub fn tick(&mut self, ctx: &mut Context, delta: f64) {
+    pub fn tick(&mut self, ctx: &mut Context, textbox: &mut TextBox, delta: f64) {
         self.map.tick(delta);
 
-        self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map);
+        self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map, textbox);
 
         for (index, actor) in self.actors.iter_mut().enumerate() {
             actor.tick(delta, &self.scene_map);

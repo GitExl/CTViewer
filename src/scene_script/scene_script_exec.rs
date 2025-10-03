@@ -2,6 +2,7 @@ use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, DrawMode};
 use crate::Context;
 use crate::facing::Facing;
 use crate::map::Map;
+use crate::scene::textbox::TextBox;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
 use crate::scene_script::exec::call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
@@ -17,7 +18,17 @@ use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
-pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptState, states: &mut Vec<ActorScriptState>, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, memory: &mut SceneScriptMemory, mut dialogue: &mut Vec<String>) -> OpResult {
+pub struct SceneScriptContext<'a> {
+    pub states: &'a mut Vec<ActorScriptState>,
+    pub actors: &'a mut Vec<Actor>,
+    pub map: &'a mut Map,
+    pub scene_map: &'a mut SceneMap,
+    pub memory: &'a mut SceneScriptMemory,
+    pub textbox_strings: &'a mut Vec<String>,
+    pub textbox: &'a mut TextBox,
+}
+
+pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_actor: usize, state: &mut ActorScriptState) -> OpResult {
     let op = match state.current_op {
         Some(op) => op,
         None => return OpResult::YIELD | OpResult::COMPLETE,
@@ -40,37 +51,37 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         },
         Op::Call { actor, priority, function } => {
             let target_index = actor.deref(this_actor);
-            let target_actor = &mut actors[target_index];
-            let target_state = &mut states[target_index];
+            let target_actor = &mut script_ctx.actors[target_index];
+            let target_state = &mut script_ctx.states[target_index];
 
             exec_call(target_actor, target_state, function, priority)
         },
         Op::CallWaitCompletion { actor, priority, function } => {
             let target_index = actor.deref(this_actor);
-            let target_actor = &mut actors[target_index];
-            let target_state = &mut states[target_index];
+            let target_actor = &mut script_ctx.actors[target_index];
+            let target_state = &mut script_ctx.states[target_index];
 
             exec_call_wait_completion(target_actor, target_state, function, priority)
         },
         Op::CallWaitReturn { actor, priority, function } => {
             let target_index = actor.deref(this_actor);
-            let target_actor = &mut actors[target_index];
-            let target_state = &mut states[target_index];
+            let target_actor = &mut script_ctx.actors[target_index];
+            let target_state = &mut script_ctx.states[target_index];
 
             exec_call_wait_return(state, target_actor, target_state, function, priority)
         },
 
         // Copy.
         Op::Copy8 { source, dest } => {
-            dest.put_u8(memory, source.get_u8(memory, &actors, this_actor));
+            dest.put_u8(script_ctx, source.get_u8(script_ctx, this_actor));
             OpResult::COMPLETE
         },
         Op::Copy16 { source, dest } => {
-            dest.put_u16(memory, source.get_u16(memory, &actors, this_actor));
+            dest.put_u16(script_ctx, source.get_u16(script_ctx, this_actor));
             OpResult::COMPLETE
         },
         Op::CopyBytes { dest, bytes, length } => {
-            dest.put_bytes(memory, bytes, length);
+            dest.put_bytes(script_ctx, bytes, length);
             OpResult::COMPLETE
         },
 
@@ -80,8 +91,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             OpResult::COMPLETE | OpResult::JUMPED
         },
         Op::JumpConditional8 { lhs, cmp, rhs, offset } => {
-            let lhs_value = lhs.get_u8(memory, &actors, this_actor);
-            let rhs_value = rhs.get_u8(memory, &actors, this_actor);
+            let lhs_value = lhs.get_u8(script_ctx, this_actor);
+            let rhs_value = rhs.get_u8(script_ctx, this_actor);
             let result = match cmp {
                 CompareOp::Eq => lhs_value == rhs_value,
                 CompareOp::NotEq => lhs_value != rhs_value,
@@ -102,7 +113,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         Op::JumpConditionalDrawMode { actor, draw_mode, offset } => {
             let actor_index = actor.deref(this_actor);
 
-            if actors[actor_index].draw_mode == draw_mode {
+            if script_ctx.actors[actor_index].draw_mode == draw_mode {
                 state.current_address = (state.current_address as i64 + offset) as u64;
                 return OpResult::COMPLETE | OpResult::JUMPED;
             }
@@ -112,32 +123,32 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         // Math.
         Op::ByteMath8 { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u8(memory, &actors, this_actor);
-            let rhs_value = rhs.get_u8(memory, &actors, this_actor);
+            let lhs_value = lhs.get_u8(script_ctx, this_actor);
+            let rhs_value = rhs.get_u8(script_ctx, this_actor);
 
             let result = match op {
                 ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
                 ByteMathOp::Subtract => lhs_value.overflowing_sub(rhs_value).0,
             };
-            dest.put_u8(memory, result);
+            dest.put_u8(script_ctx, result);
 
             OpResult::COMPLETE
         },
         Op::ByteMath16 { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u16(memory, &actors, this_actor);
-            let rhs_value = rhs.get_u16(memory, &actors, this_actor);
+            let lhs_value = lhs.get_u16(script_ctx, this_actor);
+            let rhs_value = rhs.get_u16(script_ctx, this_actor);
 
             let result = match op {
                 ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
                 ByteMathOp::Subtract => lhs_value.overflowing_sub(rhs_value).0,
             };
-            dest.put_u16(memory, result);
+            dest.put_u16(script_ctx, result);
 
             OpResult::COMPLETE
         },
         Op::BitMath { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u8(memory, &actors, this_actor);
-            let rhs_value = rhs.get_u8(memory, &actors, this_actor);
+            let lhs_value = lhs.get_u8(script_ctx, this_actor);
+            let rhs_value = rhs.get_u8(script_ctx, this_actor);
 
             let result = match op {
                 BitMathOp::And => lhs_value & rhs_value,
@@ -146,7 +157,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
                 BitMathOp::ShiftLeft => lhs_value << rhs_value,
                 BitMathOp::ShiftRight => lhs_value >> rhs_value,
             };
-            dest.put_u8(memory, result);
+            dest.put_u8(script_ctx, result);
 
             OpResult::COMPLETE
         },
@@ -160,7 +171,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
                 CharacterType::Enemy => index + 256,
             };
 
-            let actor = actors.get_mut(this_actor).unwrap();
+            let actor = script_ctx.actors.get_mut(this_actor).unwrap();
 
             actor.battle_index = battle_index;
             actor.flags |= ActorFlags::SOLID;
@@ -200,10 +211,10 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorCoordinatesSet { actor, tile_x: x, tile_y: y } => {
             let actor_index = actor.deref(this_actor);
-            let x = x.get_u8(memory, &actors, this_actor) as f64;
-            let y = y.get_u8(memory, &actors, this_actor) as f64;
+            let x = x.get_u8(script_ctx, this_actor) as f64;
+            let y = y.get_u8(script_ctx, this_actor) as f64;
 
-            actors[actor_index].move_to(Vec2Df64::new(x * 16.0 + 8.0, y * 16.0 + 16.0), true, &scene_map);
+            script_ctx.actors[actor_index].move_to(Vec2Df64::new(x * 16.0 + 8.0, y * 16.0 + 16.0), true, &script_ctx.scene_map);
 
             OpResult::COMPLETE
         },
@@ -211,15 +222,15 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         Op::ActorUpdateFlags { actor, set, remove } => {
             let actor_index = actor.deref(this_actor);
 
-            actors[actor_index].flags.insert(set);
-            actors[actor_index].flags.remove(remove);
+            script_ctx.actors[actor_index].flags.insert(set);
+            script_ctx.actors[actor_index].flags.remove(remove);
 
             OpResult::COMPLETE
         },
 
         Op::ActorSetDrawMode { actor, draw_mode } => {
             let actor_index = actor.deref(this_actor);
-            actors[actor_index].draw_mode = draw_mode;
+            script_ctx.actors[actor_index].draw_mode = draw_mode;
 
             OpResult::COMPLETE | OpResult::YIELD
         },
@@ -227,8 +238,8 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         Op::ActorRemove { actor } => {
             let actor_index = actor.deref(this_actor);
 
-            actors[actor_index].flags |= ActorFlags::DEAD;
-            actors[actor_index].draw_mode = DrawMode::Hidden;
+            script_ctx.actors[actor_index].flags |= ActorFlags::DEAD;
+            script_ctx.actors[actor_index].draw_mode = DrawMode::Hidden;
 
             OpResult::COMPLETE
         },
@@ -236,11 +247,11 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         Op::ActorCoordinatesSetPrecise { actor, x, y } => {
             let actor_index = actor.deref(this_actor);
             let pos = Vec2Df64::new(
-                x.get_u16(memory, &actors, this_actor) as f64,
-                y.get_u16(memory, &actors, this_actor) as f64,
+                x.get_u16(script_ctx, this_actor) as f64,
+                y.get_u16(script_ctx, this_actor) as f64,
             );
 
-            actors[actor_index].move_to(pos, true, &scene_map);
+            script_ctx.actors[actor_index].move_to(pos, true, &script_ctx.scene_map);
 
             OpResult::COMPLETE
         },
@@ -248,10 +259,10 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         // Actor facing.
         Op::ActorFacingSet { actor, facing } => {
             let actor_index = actor.deref(this_actor);
-            let facing = Facing::from_index(facing.get_u8(memory, &actors, this_actor) as usize);
+            let facing = Facing::from_index(facing.get_u8(script_ctx, this_actor) as usize);
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
-            actors[actor_index].facing = facing;
+            script_ctx.actors[actor_index].facing = facing;
             state.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE
@@ -262,12 +273,12 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let actor_to_index = to.deref(this_actor);
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
-            let other_actor = &actors[actor_to_index];
+            let other_actor = &script_ctx.actors[actor_to_index];
             if other_actor.flags.contains(ActorFlags::DEAD) {
                 return OpResult::COMPLETE;
             }
             let other_pos = other_actor.pos;
-            actors[actor_index].face_towards(other_pos);
+            script_ctx.actors[actor_index].face_towards(other_pos);
             state.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE
@@ -278,12 +289,12 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
             let actor_index = actor.deref(this_actor);
 
             if set_and_lock {
-                actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, true);
-                actors[actor_index].sprite_priority_top = top;
-                actors[actor_index].sprite_priority_bottom = bottom;
+                script_ctx.actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, true);
+                script_ctx.actors[actor_index].sprite_priority_top = top;
+                script_ctx.actors[actor_index].sprite_priority_bottom = bottom;
             } else {
-                actors[actor_index].update_sprite_priority(&scene_map);
-                actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, false);
+                script_ctx.actors[actor_index].update_sprite_priority(&script_ctx.scene_map);
+                script_ctx.actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, false);
             }
 
             OpResult::COMPLETE
@@ -291,14 +302,14 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorSetSpeed { actor, speed } => {
             let actor_index = actor.deref(this_actor);
-            actors[actor_index].move_speed = speed.get_u8(memory, &actors, this_actor) as f64 / 16.0;
+            script_ctx.actors[actor_index].move_speed = speed.get_u8(script_ctx, this_actor) as f64 / 16.0;
             OpResult::COMPLETE
         },
 
         // Animation ops.
         Op::Animation { actor, animation } => {
             let actor_index = actor.deref(this_actor);
-            let anim_index = animation.get_u8(memory, &actors, this_actor) as usize;
+            let anim_index = animation.get_u8(script_ctx, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation(state, anim_index)
@@ -306,11 +317,11 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::AnimationLoopCount { actor, animation, loops } => {
             let actor_index = actor.deref(this_actor);
-            let anim_index = animation.get_u8(memory, &actors, this_actor) as usize;
-            let loop_count = loops.get_u8(memory, &actors, this_actor) as u32;
+            let anim_index = animation.get_u8(script_ctx, this_actor) as usize;
+            let loop_count = loops.get_u8(script_ctx, this_actor) as u32;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
-            exec_animation_loop_count(state, &mut actors[actor_index], anim_index, loop_count)
+            exec_animation_loop_count(state, &mut script_ctx.actors[actor_index], anim_index, loop_count)
         },
 
         Op::AnimationReset { actor } => {
@@ -322,7 +333,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::AnimationStaticFrame { actor, frame} => {
             let actor_index = actor.deref(this_actor);
-            let frame_index = frame.get_u8(memory, &actors, this_actor) as usize;
+            let frame_index = frame.get_u8(script_ctx, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation_static_frame(state, frame_index)
@@ -331,17 +342,17 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         // Movement ops.
         Op::ActorMoveAtAngle { actor, angle, steps, update_facing, animated } => {
             let actor_index = actor.deref(this_actor);
-            let angle = angle.get_u8(memory, &actors, this_actor) as f64 * 1.40625;
-            let steps = steps.get_u8(memory, &actors, this_actor) as u32;
+            let angle = angle.get_u8(script_ctx, this_actor) as f64 * 1.40625;
+            let steps = steps.get_u8(script_ctx, this_actor) as u32;
 
-            exec_movement_by_vector(ctx, actor_index, actors, angle, steps, update_facing, animated)
+            exec_movement_by_vector(ctx, script_ctx, actor_index, angle, steps, update_facing, animated)
         },
 
         Op::ActorMoveToActor { actor, to_actor, script_cycle_count, update_facing, animated, forever, into_battle_range } => {
             let actor_index = actor.deref(this_actor);
             let target_actor_index = to_actor.deref(this_actor);
 
-            let result = exec_movement_to_actor(ctx, state, actor_index, actors, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
+            let result = exec_movement_to_actor(ctx, script_ctx, state, actor_index, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
             if forever {
                 OpResult::YIELD
             } else {
@@ -351,15 +362,15 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::ActorMoveToTile { actor, x, y, steps, update_facing, animated } => {
             let actor_index = actor.deref(this_actor);
-            let dest_tile_x = x.get_u8(memory, &actors, this_actor) as i32;
-            let dest_tile_y = y.get_u8(memory, &actors, this_actor) as i32;
-            let steps = if let Some(steps) = steps { Some(steps.get_u8(memory, &actors, this_actor) as u32) } else { None };
+            let dest_tile_x = x.get_u8(script_ctx, this_actor) as i32;
+            let dest_tile_y = y.get_u8(script_ctx, this_actor) as i32;
+            let steps = if let Some(steps) = steps { Some(steps.get_u8(script_ctx, this_actor) as u32) } else { None };
 
-            exec_movement_to_tile(ctx, state, actor_index, actors, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
+            exec_movement_to_tile(ctx, script_ctx, state, actor_index, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
 
         Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags, delayed } => {
-            exec_tile_copy(left, top, right, bottom, dest_x, dest_y, flags, delayed, map, scene_map)
+            exec_tile_copy(script_ctx, left, top, right, bottom, dest_x, dest_y, flags, delayed)
         },
 
         Op::SetScriptDelay { delay } => {
@@ -371,9 +382,9 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         Op::SetScriptProcessing { actor, enabled } => {
             let actor_index = actor.deref(this_actor);
             if enabled {
-                actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, false);
+                script_ctx.actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, false);
             } else {
-                actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, true);
+                script_ctx.actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, true);
                 if actor_index == this_actor {
                     return OpResult::COMPLETE | OpResult::YIELD;
                 }
@@ -384,7 +395,7 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
 
         Op::Wait { actor, ticks } => {
             let actor_index = actor.deref(this_actor);
-            let actor = actors.get_mut(actor_index).unwrap();
+            let actor = script_ctx.actors.get_mut(actor_index).unwrap();
 
             // Start counting.
             if state.pause_counter == 0 {
@@ -413,22 +424,28 @@ pub fn op_execute(ctx: &mut Context, this_actor: usize, state: &mut ActorScriptS
         },
 
         Op::Random { dest } => {
-            dest.put_u8(memory, ctx.random.get_u8());
+            dest.put_u8(script_ctx, ctx.random.get_u8());
             OpResult::COMPLETE
         },
 
-        Op::DialogueSetTable { address } => {
-            ctx.fs.read_dialogue_table(address, &mut dialogue);
+        Op::TextSetTable { address } => {
+            ctx.fs.read_textbox_string_table(address, &mut script_ctx.textbox_strings);
 
             OpResult::COMPLETE
         },
 
-        Op::DialogueShow { index, position, .. } => {
-            if index < dialogue.len() {
-                println!(">>>> @ {:?}: {}", position, dialogue[index]);
-            } else {
-                println!(">>>> @{:?}: {}", position, index);
+        Op::TextBoxShow { index, position, .. } => {
+            if script_ctx.textbox.is_busy() {
+                return OpResult::YIELD;
             }
+
+            if index < script_ctx.textbox_strings.len() {
+                script_ctx.textbox.show(script_ctx.textbox_strings[index].clone(), position);
+            } else {
+                script_ctx.textbox.show(format!("UNLOADED STRING {}", index), position);
+            }
+
+            // todo auto position?
 
             OpResult::COMPLETE
         },

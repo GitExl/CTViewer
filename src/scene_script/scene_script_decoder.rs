@@ -9,7 +9,7 @@ use crate::scene_script::decoder::ops_audio::op_decode_audio;
 use crate::scene_script::decoder::ops_call::op_decode_call;
 use crate::scene_script::decoder::ops_char_load::op_decode_char_load;
 use crate::scene_script::decoder::ops_copy::op_decode_copy;
-use crate::scene_script::decoder::ops_dialogue::op_decode_dialogue;
+use crate::scene_script::decoder::ops_textbox::op_decode_textbox;
 use crate::scene_script::decoder::ops_facing::op_decode_facing;
 use crate::scene_script::decoder::ops_jump::op_decode_jump;
 use crate::scene_script::decoder::ops_location::op_decode_location;
@@ -148,8 +148,8 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0x31 | 0x34 | 0x35 | 0x36 | 0x37 | 0x38 | 0x39 | 0x3B | 0x3C | 0x3F | 0x40 | 0x41 | 0x42 |
         0x43 | 0x44 | 0xC9 | 0xCC | 0xCF | 0xD2 | 0x6E => op_decode_jump(op_byte, data),
 
-        // Dialogue.
-        0xB8 | 0xBB | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xC8 => op_decode_dialogue(op_byte, data, mode),
+        // Textboxes.
+        0xB8 | 0xBB | 0xC0 | 0xC1 | 0xC2 | 0xC3 | 0xC4 | 0xC8 => op_decode_textbox(op_byte, data, mode),
 
         // Animation.
         0xAA | 0xAB | 0xAC | 0xAE | 0xB3 | 0xB4 | 0xB7 | 0x47 => op_decode_animation(op_byte, data),

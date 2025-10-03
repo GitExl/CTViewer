@@ -44,7 +44,7 @@ fn text_sdl_surface_to_surface(sdl_surface: SDLSurface, color: Color, flags: Tex
     if flags.contains(TextDrawFlags::SHADOW) {
 
         // Simulate the Chrono Trigger SNES character shadow colors.
-        // 47 and 23 if the color is 223.
+        // 47 and 23 if the color is 231.
         let color_mid = [
             (color[0] as f64 * 0.214) as u8,
             (color[1] as f64 * 0.214) as u8,
@@ -62,22 +62,27 @@ fn text_sdl_surface_to_surface(sdl_surface: SDLSurface, color: Color, flags: Tex
         for y in 0..text.height - 1 {
             for x in 0..text.width - 1 {
                 let src = ((y * text.width + x) * 4) as usize;
+
+                // Skip blank pixels.
                 if text.data[src + 3] == 0 {
                     continue;
                 }
 
+                // Set pixel to the side.
                 let mut dest = src + 4;
-                if text.data[dest + 3] == 0 {
+                if text.data[dest + 3] < 0x80 {
                     shadow.data[dest..dest + 4].copy_from_slice(&color_side);
                 }
 
+                // Set pixel to the side and below.
                 dest += text.width as usize * 4;
-                if text.data[dest + 3] == 0 {
+                if text.data[dest + 3] < 0x80 {
                     shadow.data[dest..dest + 4].copy_from_slice(&color_mid);
                 }
 
+                // Set pixel below.
                 dest -= 4;
-                if text.data[dest + 3] == 0 {
+                if text.data[dest + 3] < 0x80 {
                     shadow.data[dest..dest + 4].copy_from_slice(&color_side);
                 }
             }

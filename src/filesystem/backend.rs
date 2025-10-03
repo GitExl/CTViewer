@@ -1,4 +1,5 @@
 use std::io::{BufRead, Cursor};
+use crate::software_renderer::bitmap::Bitmap;
 use crate::software_renderer::palette::Palette;
 
 pub trait FileSystemBackendTrait {
@@ -56,5 +57,8 @@ pub trait FileSystemBackendTrait {
 
     fn get_item_names(&self, language: &str) -> Vec<String>;
 
-    fn get_dialogue_table(&self, address: usize) -> Vec<String>;
+    fn get_textbox_string_table(&self, address: usize) -> Vec<String>;
+
+    fn get_ui_theme_cursor_graphics(&self, ui_theme_index: usize) -> (Bitmap, Palette);
+    fn get_ui_theme_window_graphics(&self, ui_theme_index: usize) -> (Bitmap, Palette);
 }

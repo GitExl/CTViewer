@@ -56,10 +56,8 @@ impl TextDecoder {
                 break;
 
             } else if value == 1 {
-                //parts.push(parse_character(0x100 + data.read_u8().unwrap()));
                 parts.push(parse_character(data.read_u8().unwrap()));
             } else if value == 2 {
-                //parts.push(parse_character(0x200 + data.read_u8().unwrap()));
                 parts.push(parse_character(data.read_u8().unwrap()));
 
 
@@ -104,10 +102,8 @@ fn read_word(data: &mut Cursor<Vec<u8>>, len: usize) -> String {
         if value == 0 {
             break;
         } else if value == 1 {
-            //parts.push(parse_character(0x100 + data.read_u8().unwrap() as u16));
             parts.push(parse_character(data.read_u8().unwrap()));
         } else if value == 2 {
-            //parts.push(parse_character(0x200 + data.read_u8().unwrap() as u16));
             parts.push(parse_character(data.read_u8().unwrap()));
 
         // A delay of 0 (infinite) ends the string.
@@ -171,7 +167,7 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
 
     match code {
         0x05 => " ",
-        0x06 => "\\",
+        0x06 => "\n",
         0x07 => "<stop>",
         0x08 => "<stop line break>",
         0x09 => "<instant line break>",

@@ -1,7 +1,7 @@
 use bitflags::bitflags;
-
+use crate::software_renderer::draw::blend_pixel;
 use super::bitmap::Bitmap;
-use super::palette::Palette;
+use super::palette::{Color, Palette};
 use super::surface::Surface;
 
 bitflags! {
@@ -19,6 +19,8 @@ pub enum SurfaceBlendOps {
     CopyAlpha,
     Blend,
     CopyAlphaGreyscale,
+    Add,
+    Subtract,
 }
 
 pub fn blit_bitmap_to_surface_and_source(bitmap: &Bitmap, surface: &mut Surface, dest_bitmap: &mut Bitmap, src_x: i32, src_y: i32, src_width: i32, src_height: i32, dest_x: i32, dest_y: i32, palette: &Palette, color_offset: usize, source_value: u8, flags: BitmapBlitFlags) {
@@ -113,6 +115,7 @@ pub fn blit_bitmap_to_surface(bitmap: &Bitmap, surface: &mut Surface, src_x: i32
 
             for x in dest_x..dest_x + src_width {
                 if !(x < surface.clip.left || x >= surface.clip.right) {
+
                     let src_color = bitmap.data[src as usize] as usize;
                     if src_color != 0 || !skip_0 {
                         let col = palette.colors[src_color + color_offset];
@@ -155,54 +158,63 @@ pub fn blit_surface_to_surface(src_surface: &Surface, dest_surface: &mut Surface
         return;
     }
 
+    let mut src_color: Color = [0u8; 4];
+
     for y in 0..height {
         let mut src = (src_x + ((src_y + y) * src_surface.width as i32)) as usize * 4;
         let mut dest = (dest_x + ((dest_y + y) * dest_surface.width as i32)) as usize * 4;
 
         for _ in 0..width {
-            let src_color = &src_surface.data[src..src + 4];
+            src_color.copy_from_slice(&src_surface.data[src..src + 4]);
             let dest_color = &mut dest_surface.data[dest..dest + 4];
             src += 4;
             dest += 4;
 
-            match blend_op {
-                SurfaceBlendOps::Blend => {
-                    if src_color[3] == 0 {
-                        continue;
-                    } else if src_color[3] == 255 {
-                        dest_color[0] = src_color[0];
-                        dest_color[1] = src_color[1];
-                        dest_color[2] = src_color[2];
-                        dest_color[3] = 0xFF;
-                    } else {
-                        dest_color[0] = ((src_color[3] as i32 * src_color[0] as i32 + (255 - src_color[3] as i32) * dest_color[0] as i32 + 127) / 255) as u8;
-                        dest_color[1] = ((src_color[3] as i32 * src_color[1] as i32 + (255 - src_color[3] as i32) * dest_color[1] as i32 + 127) / 255) as u8;
-                        dest_color[2] = ((src_color[3] as i32 * src_color[2] as i32 + (255 - src_color[3] as i32) * dest_color[2] as i32 + 127) / 255) as u8;
-                        dest_color[3] = 0xFF;
+            blend_pixel(dest_color, src_color, blend_op);
+        }
+    }
+}
+
+pub fn blit_bitmap_to_bitmap(bitmap: &Bitmap, dest_bitmap: &mut Bitmap, src_x: i32, src_y: i32, src_width: i32, src_height: i32, dest_x: i32, dest_y: i32, flags: BitmapBlitFlags) {
+    let delta_x;
+    let start_cx;
+    if flags.contains(BitmapBlitFlags::FLIP_X) {
+        delta_x = -1;
+        start_cx = src_width - 1;
+    } else {
+        delta_x = 1;
+        start_cx = 0;
+    }
+
+    let delta_y;
+    let mut cy;
+    if flags.contains(BitmapBlitFlags::FLIP_Y) {
+        delta_y = -1;
+        cy = src_height - 1;
+    } else {
+        delta_y = 1;
+        cy = 0;
+    }
+
+    let skip_0 = flags.contains(BitmapBlitFlags::SKIP_0);
+    for y in dest_y..dest_y + src_height {
+        if !(y < dest_bitmap.clip.top || y >= dest_bitmap.clip.bottom) {
+            let mut src = src_x + start_cx + ((src_y + cy) * bitmap.width as i32);
+            let mut dest = dest_x + (y * dest_bitmap.width as i32);
+
+            for x in dest_x..dest_x + src_width {
+                if !(x < dest_bitmap.clip.left || x >= dest_bitmap.clip.right) {
+                    let src_color = bitmap.data[src as usize];
+                    if src_color != 0 || !skip_0 {
+                        dest_bitmap.data[dest as usize] = src_color;
                     }
-                },
-                SurfaceBlendOps::CopyAlpha => {
-                    if src_color[3] == 0 {
-                        continue;
-                    }
-                    dest_color[0] = src_color[0];
-                    dest_color[1] = src_color[1];
-                    dest_color[2] = src_color[2];
-                    dest_color[3] = 0xFF;
                 }
-                SurfaceBlendOps::Copy => {
-                    dest_color[0] = src_color[0];
-                    dest_color[1] = src_color[1];
-                    dest_color[2] = src_color[2];
-                    dest_color[3] = 0xFF;
-                },
-                SurfaceBlendOps::CopyAlphaGreyscale => {
-                    dest_color[0] = src_color[3];
-                    dest_color[1] = src_color[3];
-                    dest_color[2] = src_color[3];
-                    dest_color[3] = 0xFF;
-                }
+
+                src += delta_x;
+                dest += 1;
             }
         }
+
+        cy += delta_y;
     }
 }
