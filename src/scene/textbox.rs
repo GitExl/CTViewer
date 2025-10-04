@@ -50,6 +50,7 @@ pub struct TextBox {
     pages: Vec<TextPage>,
     current_page: usize,
     position: TextBoxPosition,
+    actor_index: Option<usize>,
 
     window_surface: Surface,
 }
@@ -66,6 +67,7 @@ impl TextBox {
             current_page: 0,
             state: TextBoxState::Disabled,
             position: TextBoxPosition::Bottom,
+            actor_index: None,
 
             window_surface,
         }
@@ -113,6 +115,7 @@ impl TextBox {
                 *last_visibility = *visibility;
                 *visibility -= delta * TEXTBOX_ANIMATE_PIXELS_PER_SECOND;
                 if *visibility <= 0.0 {
+                    self.actor_index = None;
                     self.state = TextBoxState::Disabled;
                 }
             },
@@ -127,7 +130,13 @@ impl TextBox {
         }
     }
 
-    pub fn show(&mut self, text: String, position: TextBoxPosition) {
+    pub fn get_actor_index(&self) -> Option<usize> {
+        self.actor_index
+    }
+
+    pub fn show(&mut self, text: String, position: TextBoxPosition, actor_index: usize) {
+
+        // todo regexp replacement of <stuff> tags
 
         // Split the text into pages, and the pages into lines.
         self.pages.clear();
@@ -163,6 +172,7 @@ impl TextBox {
         };
         self.position = position;
         self.current_page = 0;
+        self.actor_index = Some(actor_index);
     }
 
     pub fn progress(&mut self) {

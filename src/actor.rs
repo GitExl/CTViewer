@@ -73,6 +73,9 @@ bitflags! {
 
         /// Sprite priority does not change from movement.
         const SPRITE_PRIORITY_LOCKED = 0x0800;
+
+        /// Actor is outputting lines into a textbox.
+        const TEXTBOX_ACTIVE = 0x1000;
     }
 }
 

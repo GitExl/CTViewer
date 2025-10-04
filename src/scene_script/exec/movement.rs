@@ -116,6 +116,7 @@ pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptCo
         if animated {
             ctx.sprites_states.get_state_mut(actor_index).reset_animation();
         }
+        actor.pos = actor.pos.floor();
         actor.task = ActorTask::None;
         actor.debug_sprite = DebugSprite::None;
         return OpResult::COMPLETE;

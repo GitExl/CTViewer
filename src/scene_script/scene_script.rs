@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use bitflags::bitflags;
 use crate::actor::{Actor, ActorFlags};
+use crate::camera::Camera;
 use crate::Context;
 use crate::map::Map;
 use crate::scene::textbox::TextBox;
@@ -141,7 +142,7 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox) {
+    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, camera: &mut Camera) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -150,6 +151,7 @@ impl SceneScript {
             textbox_strings: &mut self.textbox_strings,
             textbox,
             states: &mut self.script_states,
+            camera,
         };
 
         for state_index in 0..script_ctx.states.len() {
@@ -185,7 +187,7 @@ impl SceneScript {
         }
     }
 
-    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox) {
+    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, camera: &mut Camera) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -194,6 +196,7 @@ impl SceneScript {
             textbox_strings: &mut self.textbox_strings,
             textbox,
             states: &mut self.script_states,
+            camera,
         };
 
         let mut state_dup = script_ctx.states[0].clone();
@@ -224,7 +227,7 @@ impl SceneScript {
         }
     }
 
-    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox) {
+    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, camera: &mut Camera) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -233,6 +236,7 @@ impl SceneScript {
             textbox_strings: &mut self.textbox_strings,
             textbox,
             states: &mut self.script_states,
+            camera,
         };
 
         for state_index in 0..script_ctx.states.len() {

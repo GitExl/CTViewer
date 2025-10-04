@@ -62,7 +62,7 @@ impl GameStateScene {
         camera.center_to(camera_center);
 
         let mut textbox = TextBox::new(ctx);
-        scene.init(ctx, &mut textbox);
+        scene.init(ctx, &mut textbox, &mut camera);
 
         println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
@@ -110,7 +110,7 @@ impl GameStateTrait for GameStateScene {
         }
         self.camera.clamp();
 
-        self.scene.tick(ctx, &mut self.textbox, delta);
+        self.scene.tick(ctx, &mut self.textbox, &mut self.camera, delta);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;

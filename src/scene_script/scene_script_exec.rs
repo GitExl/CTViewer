@@ -1,8 +1,9 @@
 use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, DrawMode};
+use crate::camera::Camera;
 use crate::Context;
 use crate::facing::Facing;
 use crate::map::Map;
-use crate::scene::textbox::TextBox;
+use crate::scene::textbox::{TextBox, TextBoxPosition};
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
 use crate::scene_script::exec::call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
@@ -13,6 +14,7 @@ use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
+use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
@@ -26,6 +28,7 @@ pub struct SceneScriptContext<'a> {
     pub memory: &'a mut SceneScriptMemory,
     pub textbox_strings: &'a mut Vec<String>,
     pub textbox: &'a mut TextBox,
+    pub camera: &'a mut Camera,
 }
 
 pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_actor: usize, state: &mut ActorScriptState) -> OpResult {
@@ -209,16 +212,6 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             OpResult::COMPLETE
         },
 
-        Op::ActorCoordinatesSet { actor, tile_x: x, tile_y: y } => {
-            let actor_index = actor.deref(this_actor);
-            let x = x.get_u8(script_ctx, this_actor) as f64;
-            let y = y.get_u8(script_ctx, this_actor) as f64;
-
-            script_ctx.actors[actor_index].move_to(Vec2Df64::new(x * 16.0 + 8.0, y * 16.0 + 16.0), true, &script_ctx.scene_map);
-
-            OpResult::COMPLETE
-        },
-
         Op::ActorUpdateFlags { actor, set, remove } => {
             let actor_index = actor.deref(this_actor);
 
@@ -240,6 +233,16 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
 
             script_ctx.actors[actor_index].flags |= ActorFlags::DEAD;
             script_ctx.actors[actor_index].draw_mode = DrawMode::Hidden;
+
+            OpResult::COMPLETE
+        },
+
+        Op::ActorCoordinatesSet { actor, tile_x: x, tile_y: y } => {
+            let actor_index = actor.deref(this_actor);
+            let x = x.get_u8(script_ctx, this_actor) as f64;
+            let y = y.get_u8(script_ctx, this_actor) as f64;
+
+            script_ctx.actors[actor_index].move_to(Vec2Df64::new(x * 16.0 + 8.0, y * 16.0 + 16.0), true, &script_ctx.scene_map);
 
             OpResult::COMPLETE
         },
@@ -435,19 +438,41 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
         },
 
         Op::TextBoxShow { index, position, .. } => {
+            if script_ctx.textbox_strings.is_empty() {
+                println!("Attempted to show a textbox without a loaded string table.");
+                return OpResult::COMPLETE;
+            }
+
             if script_ctx.textbox.is_busy() {
                 return OpResult::YIELD;
             }
 
-            if index < script_ctx.textbox_strings.len() {
-                script_ctx.textbox.show(script_ctx.textbox_strings[index].clone(), position);
+            let actor = &mut script_ctx.actors[this_actor];
+            if actor.flags.contains(ActorFlags::TEXTBOX_ACTIVE) {
+                actor.flags.remove(ActorFlags::TEXTBOX_ACTIVE);
+                return OpResult::COMPLETE;
+            }
+            actor.flags.insert(ActorFlags::TEXTBOX_ACTIVE);
+
+            // Determine position of player character vs camera top or bottom half to position
+            // the textbox in auto mode.
+            let real_position = if position == TextBoxPosition::Auto {
+                if ((actor.pos.y - script_ctx.camera.pos.y) as i32) < 130 {
+                    TextBoxPosition::Bottom
+                } else {
+                    TextBoxPosition::Top
+                }
             } else {
-                script_ctx.textbox.show(format!("UNLOADED STRING {}", index), position);
+                position
+            };
+
+            if index < script_ctx.textbox_strings.len() {
+                script_ctx.textbox.show(script_ctx.textbox_strings[index].clone(), real_position, this_actor);
+            } else {
+                script_ctx.textbox.show(format!("STRING INDEX {}", index), real_position, this_actor);
             }
 
-            // todo auto position?
-
-            OpResult::COMPLETE
+            OpResult::YIELD
         },
 
         Op::DialogueSpecial { dialogue_type } => {
