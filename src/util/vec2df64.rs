@@ -62,7 +62,7 @@ impl Vec2Df64 {
 
 impl fmt::Display for Vec2Df64 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:.02} x {:.02}", self.x, self.y)
+        write!(f, "{:.1} x {:.1}", self.x, self.y)
     }
 }
 

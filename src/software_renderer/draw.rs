@@ -1,9 +1,9 @@
-use crate::software_renderer::clip::Rect;
+use crate::util::rect::Rect;
 use super::blit::SurfaceBlendOps;
 use super::palette::Color;
 use super::surface::Surface;
 
-pub fn draw_box(surface: &mut Surface, rect: Rect, color: Color, blend_op: SurfaceBlendOps) {
+pub fn draw_box_filled(surface: &mut Surface, rect: Rect, color: Color, blend_op: SurfaceBlendOps) {
     let draw = rect.clip_to(&surface.clip);
 
     for y in draw.top..draw.bottom {

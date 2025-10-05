@@ -1,5 +1,5 @@
 use std::ptr::write_bytes;
-use crate::software_renderer::clip::Rect;
+use crate::util::rect::Rect;
 
 pub struct Bitmap {
     pub width: u32,

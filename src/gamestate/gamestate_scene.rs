@@ -12,7 +12,7 @@ use crate::scene::textbox::TextBox;
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
 use crate::software_renderer::blit::SurfaceBlendOps;
-use crate::software_renderer::clip::Rect;
+use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
@@ -38,6 +38,7 @@ pub struct GameStateScene {
     debug_text_x: i32,
     debug_text_y: i32,
     debug_box: Option<Rect>,
+    debug_actor: Option<usize>,
 
     next_game_event: Option<GameEvent>,
 }
@@ -87,6 +88,7 @@ impl GameStateScene {
             debug_text_x: 0,
             debug_text_y: 0,
             debug_box: None,
+            debug_actor: None,
 
             next_game_event: None,
         }
@@ -95,30 +97,35 @@ impl GameStateScene {
 
 impl GameStateTrait for GameStateScene {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
-        self.camera.tick(delta);
-        if self.key_up {
-            self.camera.pos.y -= 300.0 * delta;
-        }
-        else if self.key_down {
-            self.camera.pos.y += 300.0 * delta;
-        }
-        if self.key_left {
-            self.camera.pos.x -= 300.0 * delta;
-        }
-        else if self.key_right {
-            self.camera.pos.x += 300.0 * delta;
-        }
-        self.camera.clamp();
-
         self.scene.tick(ctx, &mut self.textbox, &mut self.camera, delta);
+
+        self.camera.tick(delta);
+        if let Some(debug_actor) = self.debug_actor {
+            self.camera.pos = self.scene.actors[debug_actor].pos - Vec2Df64::new(self.camera.size.x - 64.0, self.camera.size.y / 2.0);
+            self.camera.clamp();
+        } else {
+            if self.key_up {
+                self.camera.pos.y -= 300.0 * delta;
+            }
+            else if self.key_down {
+                self.camera.pos.y += 300.0 * delta;
+            }
+            if self.key_left {
+                self.camera.pos.x -= 300.0 * delta;
+            }
+            else if self.key_right {
+                self.camera.pos.x += 300.0 * delta;
+            }
+            self.camera.clamp();
+        }
+
+        self.textbox.tick(delta);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
             self.next_game_event = None;
             return event;
         }
-
-        self.textbox.tick(delta);
 
         None
     }
@@ -145,19 +152,73 @@ impl GameStateTrait for GameStateScene {
             &mut ctx.render.target,
         );
 
-        if self.debug_text.is_some() {
+        if let Some(debug_text) = &mut self.debug_text {
             ctx.render.render_text(
-                &mut self.debug_text.as_mut().unwrap(),
+                debug_text,
                 self.debug_text_x - self.camera.pos_lerp.x as i32, self.debug_text_y - self.camera.pos_lerp.y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
-        if self.debug_box.is_some() {
-            ctx.render.render_box(
-                self.debug_box.as_mut().unwrap().moved_by(-self.camera.pos_lerp.x as i32, -self.camera.pos_lerp.y as i32),
+
+        if let Some(debug_box) = self.debug_box {
+            ctx.render.render_box_filled(
+                debug_box.moved_by(-self.camera.pos_lerp.x as i32, -self.camera.pos_lerp.y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
             );
+        }
+
+        if let Some(debug_actor) = self.debug_actor {
+            let actor = &self.scene.actors[debug_actor];
+            let pos = (actor.pos_lerp.floor() - self.camera.pos_lerp.floor()).as_vec2d_i32();
+            ctx.render.render_box_filled(
+                Rect::new(pos.x - 8, pos.y - 16, pos.x + 8, pos.y),
+                [0, 255, 0, 127],
+                SurfaceBlendOps::Blend,
+            );
+
+            ctx.render.render_box_filled(
+                Rect::new(0, 0, 128, 224),
+                [0, 0, 0, 191],
+                SurfaceBlendOps::Blend,
+            );
+
+            let sprite_state = ctx.sprites_states.get_state(debug_actor);
+            let script_state = &self.scene.script.script_states[debug_actor];
+            let op: String = if let Some(current_op) = script_state.current_op {
+                format!("{:?}", current_op)
+            } else {
+                "None".to_string()
+            };
+
+            // Spit out a bunch of internal state.
+            let text_actor = format!(
+                "Actor {}: {:?}\n{} {:.1} {:?}\nDrawMode::{:?}\n{:?}",
+                debug_actor, actor.class,
+                actor.pos, actor.move_speed, actor.facing,
+                actor.draw_mode,
+                actor.flags,
+            );
+            let text_sprite = format!(
+                "Sprite {}, frame {}\nPalette {}\nTop: {:?}\nBottom: {:?}\nAnim {} frame {} delay {}\nAnimationMode::{:?}\nLoop anim {}, {} loops",
+                sprite_state.sprite_index, sprite_state.sprite_frame,
+                sprite_state.palette_offset,
+                sprite_state.priority_top,
+                sprite_state.priority_bottom,
+                sprite_state.anim_index, sprite_state.anim_frame, sprite_state.anim_delay,
+                sprite_state.anim_mode,
+                sprite_state.anim_index_looped, sprite_state.anim_loops_remaining,
+            );
+            let text_script = format!(
+                "0x{:04X}, d {} / {}, p {}\nPrio {}, waiting: {}\n{:04X?}\n\n{}",
+                script_state.current_address, script_state.delay_counter, script_state.delay, script_state.pause_counter,
+                script_state.current_priority, script_state.call_waiting,
+                script_state.priority_return_ptrs,
+                op,
+            );
+
+            let mut header = TextRenderable::new(format!("{}\n\n{}\n\n{}", text_actor, text_sprite, text_script), TextFont::Small, [255, 255, 255, 255], TextDrawFlags::empty(), 124);
+            ctx.render.render_text(&mut header, 2, 2, TextFlags::empty());
         }
 
         self.textbox.render(ctx, lerp);
@@ -167,7 +228,7 @@ impl GameStateTrait for GameStateScene {
         format!("{} - {}", self.scene.index, ctx.l10n.get_indexed(IndexedType::Scene, self.scene.index))
     }
 
-    fn event(&mut self, ctx: &mut Context, event: &Event) {
+    fn event(&mut self, _ctx: &mut Context, event: &Event) {
         match event {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
@@ -263,8 +324,9 @@ impl GameStateTrait for GameStateScene {
                 if *mouse_btn == MouseButton::Left {
                     let index = self.get_actor_at(self.mouse_pos);
                     if let Some(index) = index {
-                        let actor = &self.scene.actors[index];
-                        actor.dump(ctx, &self.scene.script.script_states[index]);
+                        self.debug_actor = Some(index);
+                    } else {
+                        self.debug_actor = None;
                     }
 
                     if index.is_none() {

@@ -9,8 +9,8 @@ use crate::scene::scene_map::SceneTileCollision;
 use crate::scene::scene_map::SceneTileFlags;
 use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
-use crate::software_renderer::clip::Rect;
-use crate::software_renderer::draw::{draw_box, draw_line};
+use crate::util::rect::Rect;
+use crate::software_renderer::draw::{draw_box_filled, draw_line};
 use crate::software_renderer::palette::render_palette;
 use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_renderer::SpritePriority;
@@ -67,14 +67,14 @@ impl SceneRenderer {
     fn render_debug_exits(&mut self, exits: &Vec<SceneExit>, camera: &Camera, surface: &mut Surface) {
         for exit in exits {
             let pos = exit.pos - camera.pos_lerp.as_vec2d_i32();
-            draw_box(surface, Rect::new(pos.x, pos.y, pos.x + exit.size.x, pos.y + exit.size.y), [255, 0, 255, 127], SurfaceBlendOps::Blend);
+            draw_box_filled(surface, Rect::new(pos.x, pos.y, pos.x + exit.size.x, pos.y + exit.size.y), [255, 0, 255, 127], SurfaceBlendOps::Blend);
         }
     }
 
     fn render_debug_treasure(&mut self, treasure: &Vec<SceneTreasure>, camera: &Camera, surface: &mut Surface) {
         for item in treasure {
             let pos = item.tile_pos * 16 - camera.pos_lerp.as_vec2d_i32();
-            draw_box(surface, Rect::new(pos.x, pos.y, pos.x + 16, pos.y + 16), [0, 255, 0, 127], SurfaceBlendOps::Blend);
+            draw_box_filled(surface, Rect::new(pos.x, pos.y, pos.x + 16, pos.y + 16), [0, 255, 0, 127], SurfaceBlendOps::Blend);
         }
     }
 
@@ -83,7 +83,7 @@ impl SceneRenderer {
             let x = (actor.pos_lerp.x.floor() - camera.pos_lerp.x.floor()) as i32;
             let y = (actor.pos_lerp.y.floor() - camera.pos_lerp.y.floor()) as i32;
 
-            draw_box(surface, Rect::new(x - 8, y - 16, x + 8, y), [0, 255, 255, 127], SurfaceBlendOps::Blend);
+            draw_box_filled(surface, Rect::new(x - 8, y - 16, x + 8, y), [0, 255, 255, 127], SurfaceBlendOps::Blend);
 
             // If the actor is moving, draw the movement data.
             match actor.task {

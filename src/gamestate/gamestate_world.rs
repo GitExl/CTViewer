@@ -9,7 +9,7 @@ use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
 use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
-use crate::software_renderer::clip::Rect;
+use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
@@ -161,7 +161,7 @@ impl GameStateTrait for GameStateWorld {
             );
         }
         if self.debug_box.is_some() {
-            ctx.render.render_box(
+            ctx.render.render_box_filled(
                 self.debug_box.as_mut().unwrap().moved_by(-self.camera.pos_lerp.x as i32, -self.camera.pos_lerp.y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,

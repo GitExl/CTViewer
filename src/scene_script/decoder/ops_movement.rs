@@ -21,7 +21,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         0x8F => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: true,
@@ -30,14 +29,12 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0x92 => Op::ActorMoveAtAngle {
-            actor: ActorRef::This,
             angle: DataSource::Immediate(data.read_u8().unwrap() as i32),
             steps: DataSource::Immediate(data.read_u8().unwrap() as i32),
             update_facing: true,
             animated: true,
         },
         0x94 => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             script_cycle_count: None,
             update_facing: true,
@@ -46,7 +43,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0x95 => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: true,
@@ -55,7 +51,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0x96 => Op::ActorMoveToTile {
-            actor: ActorRef::This,
             x: DataSource::Immediate(data.read_u8().unwrap() as i32),
             y: DataSource::Immediate(data.read_u8().unwrap() as i32),
             steps: None,
@@ -63,7 +58,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             animated: true,
         },
         0x97 => Op::ActorMoveToTile {
-            actor: ActorRef::This,
             x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             steps: None,
@@ -71,7 +65,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             animated: true,
         },
         0x98 => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             script_cycle_count: Some(data.read_u8().unwrap() as u32),
             update_facing: true,
@@ -80,7 +73,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0x99 => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
             script_cycle_count: Some(data.read_u8().unwrap() as u32),
             update_facing: true,
@@ -89,7 +81,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0x9A => Op::ActorMoveToTile {
-            actor: ActorRef::This,
             x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             steps: Some(DataSource::Immediate(data.read_u8().unwrap() as i32)),
@@ -98,7 +89,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // Same as 0x92, but different in some unknown way?
         0x9C => Op::ActorMoveAtAngle {
-            actor: ActorRef::This,
             angle: DataSource::Immediate(data.read_u8().unwrap() as i32),
             steps: DataSource::Immediate(data.read_u8().unwrap() as i32),
             update_facing: false,
@@ -106,14 +96,12 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // Same as 0x9C, but different in some unknown way?
         0x9D => Op::ActorMoveAtAngle {
-            actor: ActorRef::This,
             angle: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             steps: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             update_facing: false,
             animated: true,
         },
         0x9E => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             script_cycle_count: None,
             update_facing: false,
@@ -123,7 +111,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // Same as 0x9E, but different in some unknown way?
         0x9F => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: false,
@@ -132,7 +119,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0xA0 => Op::ActorMoveToTile {
-            actor: ActorRef::This,
             x: DataSource::Immediate(data.read_u8().unwrap() as i32),
             y: DataSource::Immediate(data.read_u8().unwrap() as i32),
             steps: None,
@@ -140,7 +126,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             animated: true,
         },
         0xA1 => Op::ActorMoveToTile {
-            actor: ActorRef::This,
             x: DataSource::for_local_memory(data.read_u8().unwrap() as usize),
             y: DataSource::for_local_memory(data.read_u8().unwrap() as usize),
             steps: None,
@@ -148,7 +133,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             animated: true,
         },
         0xB5 => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             script_cycle_count: None,
             update_facing: true,
@@ -157,7 +141,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: true,
         },
         0xB6 => Op::ActorMoveToActor {
-            actor: ActorRef::This,
             to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: true,

@@ -20,6 +20,8 @@ during scene initialization.
 
 | Name                   | SNES address          | Purpose                          | Default value                     |
 |------------------------|-----------------------|----------------------------------|-----------------------------------|
+| ?                      | `$7E0A00`             | Screen X coordinate              |                                   |
+| ?                      | `$7E0A80`             | Screen Y coordinate              |                                   |
 | ?                      | `$7E0B00`             |                                  | `$00`                             |
 | ?                      | `$7E0B01`             |                                  | `$00`                             |
 | ?                      | `$7E0B80`             |                                  | `$FFFF`                           |

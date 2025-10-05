@@ -1,6 +1,6 @@
 use crate::software_renderer::bitmap::Bitmap;
 use crate::software_renderer::blit::{blit_bitmap_to_surface, BitmapBlitFlags, SurfaceBlendOps};
-use crate::software_renderer::clip::Rect;
+use crate::util::rect::Rect;
 use crate::software_renderer::draw::draw_box_gradient_vertical;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;

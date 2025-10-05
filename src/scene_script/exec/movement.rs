@@ -59,9 +59,11 @@ pub fn exec_movement_to_tile(ctx: &mut Context, script_ctx: &mut SceneScriptCont
         // Move towards the destination tile.
         let angle_rads = Vec2Di32::angle_rad_between(actor_tile_pos, tile_dest_pos);
         move_by = Vec2Df64::new(
-            (actor.move_speed / 2.0) * angle_rads.cos(),
-            (actor.move_speed / 2.0) * angle_rads.sin(),
+            (actor.move_speed * 0.5) * angle_rads.cos(),
+            (actor.move_speed * 0.5) * angle_rads.sin(),
         );
+
+        actor.update_sprite_priority(script_ctx.scene_map);
 
         // Script speed is the number of movement steps, or an immediate value if set.
         move_cycle_count = if let Some(cycle_count) = cycle_count {
@@ -125,9 +127,11 @@ pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptCo
     // Calculate the movement vector.
     let angle_rads = angle * (PI / 180.0);
     let move_by = Vec2Df64::new(
-        (actor.move_speed / 2.0) * angle_rads.cos(),
-        (actor.move_speed / 2.0) * angle_rads.sin(),
+        (actor.move_speed * 0.5) * angle_rads.cos(),
+        (actor.move_speed * 0.5) * angle_rads.sin(),
     );
+
+    actor.update_sprite_priority(script_ctx.scene_map);
 
     // Set new movement task.
     actor.task = ActorTask::MoveByAngle {
@@ -220,9 +224,11 @@ pub fn exec_movement_to_actor(ctx: &mut Context, script_ctx: &mut SceneScriptCon
         // Move towards the destination tile.
         let angle_rads = Vec2Di32::angle_rad_between(tile_pos, target_tile_pos);
         move_by = Vec2Df64::new(
-            (actor.move_speed / 2.0) * angle_rads.cos(),
-            (actor.move_speed / 2.0) * angle_rads.sin(),
+            (actor.move_speed * 0.5) * angle_rads.cos(),
+            (actor.move_speed * 0.5) * angle_rads.sin(),
         );
+
+        actor.update_sprite_priority(script_ctx.scene_map);
 
         // Script speed is the number of movement steps, or an immediate value if set.
         move_cycles = if let Some(cycle_count) = cycle_count {

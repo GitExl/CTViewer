@@ -1,3 +1,5 @@
+use crate::util::vec2di32::Vec2Di32;
+
 #[derive(Copy, Clone)]
 pub struct Rect {
     pub left: i32,
@@ -32,5 +34,9 @@ impl Rect {
             left: other.left.max(self.left),
             right: other.right.min(self.right),
         }
+    }
+
+    pub fn contains_vec2(&self, other: &Vec2Di32) -> bool {
+        !(self.left > other.x || self.top > other.y || self.right < other.x || self.bottom < other.y)
     }
 }

@@ -23,8 +23,8 @@ pub enum ActorClass {
     PC3,
     PCOutOfParty,
     NPC,
-    Monster,
-    MonsterPeaceful,
+    Enemy,
+    EnemyPeaceful,
     Undefined,
 }
 

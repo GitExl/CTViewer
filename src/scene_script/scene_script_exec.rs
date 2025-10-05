@@ -14,8 +14,8 @@ use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
-use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
+use crate::util::rect::Rect;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
@@ -194,7 +194,7 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
                 actor.class = ActorClass::NPC;
             }
             if char_type == CharacterType::Enemy {
-                actor.class = ActorClass::Monster;
+                actor.class = ActorClass::Enemy;
             }
 
             actor.facing = Facing::Down;
@@ -309,6 +309,18 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             OpResult::COMPLETE
         },
 
+        Op::ActorSetResult8 { actor, result } => {
+            let actor_index = actor.deref(this_actor);
+            script_ctx.actors[actor_index].result = result.get_u8(script_ctx, this_actor) as u32;
+            OpResult::COMPLETE
+        },
+
+        Op::ActorSetResult16 { actor, result } => {
+            let actor_index = actor.deref(this_actor);
+            script_ctx.actors[actor_index].result = result.get_u16(script_ctx, this_actor) as u32;
+            OpResult::COMPLETE
+        },
+
         // Animation ops.
         Op::Animation { actor, animation } => {
             let actor_index = actor.deref(this_actor);
@@ -343,19 +355,17 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
         },
 
         // Movement ops.
-        Op::ActorMoveAtAngle { actor, angle, steps, update_facing, animated } => {
-            let actor_index = actor.deref(this_actor);
+        Op::ActorMoveAtAngle { angle, steps, update_facing, animated } => {
             let angle = angle.get_u8(script_ctx, this_actor) as f64 * 1.40625;
             let steps = steps.get_u8(script_ctx, this_actor) as u32;
 
-            exec_movement_by_vector(ctx, script_ctx, actor_index, angle, steps, update_facing, animated)
+            exec_movement_by_vector(ctx, script_ctx, this_actor, angle, steps, update_facing, animated)
         },
 
-        Op::ActorMoveToActor { actor, to_actor, script_cycle_count, update_facing, animated, forever, into_battle_range } => {
-            let actor_index = actor.deref(this_actor);
+        Op::ActorMoveToActor { to_actor, script_cycle_count, update_facing, animated, forever, into_battle_range } => {
             let target_actor_index = to_actor.deref(this_actor);
 
-            let result = exec_movement_to_actor(ctx, script_ctx, state, actor_index, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
+            let result = exec_movement_to_actor(ctx, script_ctx, state, this_actor, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
             if forever {
                 OpResult::YIELD
             } else {
@@ -363,13 +373,12 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             }
         },
 
-        Op::ActorMoveToTile { actor, x, y, steps, update_facing, animated } => {
-            let actor_index = actor.deref(this_actor);
+        Op::ActorMoveToTile { x, y, steps, update_facing, animated } => {
             let dest_tile_x = x.get_u8(script_ctx, this_actor) as i32;
             let dest_tile_y = y.get_u8(script_ctx, this_actor) as i32;
             let steps = if let Some(steps) = steps { Some(steps.get_u8(script_ctx, this_actor) as u32) } else { None };
 
-            exec_movement_to_tile(ctx, script_ctx, state, actor_index, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
+            exec_movement_to_tile(ctx, script_ctx, state, this_actor, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
 
         Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags, delayed } => {
@@ -396,9 +405,8 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             OpResult::COMPLETE
         },
 
-        Op::Wait { actor, ticks } => {
-            let actor_index = actor.deref(this_actor);
-            let actor = script_ctx.actors.get_mut(actor_index).unwrap();
+        Op::Wait { ticks } => {
+            let actor = script_ctx.actors.get_mut(this_actor).unwrap();
 
             // Start counting.
             if state.pause_counter == 0 {
@@ -429,6 +437,36 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
         Op::Random { dest } => {
             dest.put_u8(script_ctx, ctx.random.get_u8());
             OpResult::COMPLETE
+        },
+
+        Op::Battle { .. } => {
+
+            // For now, kill all valid enemies in "battle range".
+            let battle_range = Rect::new(
+                script_ctx.camera.pos.x as i32, script_ctx.camera.pos.y as i32,
+                (script_ctx.camera.pos.x + script_ctx.camera.size.x) as i32, (script_ctx.camera.pos.y + script_ctx.camera.size.y) as i32,
+            );
+            for actor in script_ctx.actors.iter_mut() {
+                if actor.class != ActorClass::Enemy {
+                    continue;
+                }
+                if actor.flags.contains(ActorFlags::DEAD) || actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                    continue;
+                }
+                if actor.draw_mode != DrawMode::Draw {
+                    continue;
+                }
+                if !battle_range.contains_vec2(&actor.pos.as_vec2d_i32()) {
+                    continue;
+                }
+
+                actor.flags.insert(ActorFlags::DEAD | ActorFlags::SCRIPT_DISABLED);
+                actor.draw_mode = DrawMode::Removed;
+
+                println!("Actor {} was killed in a very real battle!", actor.index);
+            }
+
+            OpResult::YIELD | OpResult::COMPLETE
         },
 
         Op::TextSetTable { address } => {

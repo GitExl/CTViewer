@@ -321,7 +321,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
 fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, camera: &Camera, sprite_assets: &SpriteAssets) {
 
-    // Sort sprites by Y coordinate.
+    // Sort enabled sprites by Y coordinate.
     let mut sorted: Vec<&SpriteState> = Vec::new();
     for sprite_state in sprite_states.get_all().iter() {
         if !sprite_state.enabled {

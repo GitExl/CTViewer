@@ -7,7 +7,7 @@ use byteorder::LittleEndian;
 use byteorder::WriteBytesExt;
 use png::ColorType;
 use png::Decoder;
-use crate::software_renderer::clip::Rect;
+use crate::util::rect::Rect;
 use super::palette::Color;
 
 pub struct Surface {

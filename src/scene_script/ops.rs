@@ -23,7 +23,6 @@ pub enum Op {
         delay: u32,
     },
     Wait {
-        actor: ActorRef,
         ticks: u32,
     },
     Control {
@@ -105,7 +104,6 @@ pub enum Op {
 
     // Actor movement.
     ActorMoveToTile {
-        actor: ActorRef,
         x: DataSource,
         y: DataSource,
         steps: Option<DataSource>,
@@ -113,7 +111,6 @@ pub enum Op {
         animated: bool,
     },
     ActorMoveToActor {
-        actor: ActorRef,
         to_actor: ActorRef,
         script_cycle_count: Option<u32>,
         update_facing: bool,
@@ -122,7 +119,6 @@ pub enum Op {
         forever: bool,
     },
     ActorMoveAtAngle {
-        actor: ActorRef,
         angle: DataSource,
         steps: DataSource,
         update_facing: bool,
