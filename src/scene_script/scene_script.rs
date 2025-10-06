@@ -11,6 +11,7 @@ use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::op_decode;
 use crate::scene_script::scene_script_exec::{op_execute, SceneScriptContext};
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
+use crate::screen_fade::ScreenFade;
 
 bitflags! {
     #[derive(Clone, Copy, Debug, PartialEq)]
@@ -142,7 +143,7 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, camera: &mut Camera) {
+    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -150,6 +151,7 @@ impl SceneScript {
             map,
             textbox_strings: &mut self.textbox_strings,
             textbox,
+            screen_fade,
             states: &mut self.script_states,
             camera,
         };
@@ -187,7 +189,7 @@ impl SceneScript {
         }
     }
 
-    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, camera: &mut Camera) {
+    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -195,6 +197,7 @@ impl SceneScript {
             map,
             textbox_strings: &mut self.textbox_strings,
             textbox,
+            screen_fade,
             states: &mut self.script_states,
             camera,
         };
@@ -227,7 +230,7 @@ impl SceneScript {
         }
     }
 
-    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, camera: &mut Camera) {
+    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -235,6 +238,7 @@ impl SceneScript {
             map,
             textbox_strings: &mut self.textbox_strings,
             textbox,
+            screen_fade,
             states: &mut self.script_states,
             camera,
         };

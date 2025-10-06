@@ -170,8 +170,12 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0xE8 | 0xEA | 0xEB | 0xEC | 0xED | 0xEE => op_decode_audio(op_byte, data),
 
         // Screen effects.
-        0xF0 => Op::ScreenDarken {
-            duration: data.read_u8().unwrap() as f64 / (1.0 / 60.0),
+        0xF0 => {
+            let value = data.read_u8().unwrap();
+            Op::ScreenFade {
+                target: ((value & 0xF0) >> 4) as f64 * (1.0 / 15.0),
+                speed: (value as usize & 0x0F) as f64 * (1.0 / 60.0),
+            }
         },
         0xF1 => {
             let bits = data.read_u8().unwrap();
@@ -183,23 +187,25 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
                     intensity: 0.0,
                     duration: 0.0,
                     mode: ColorMathMode::Additive,
-                };
-            }
+                }
+            } else {
+                let b = if bits & 0x80 > 0 { 255 } else { 0 };
+                let g = if bits & 0x40 > 0 { 255 } else { 0 };
+                let r = if bits & 0x20 > 0 { 255 } else { 0 };
+                let intensity = (bits & 0x1F) as f64 * (1.0 / 32.0);
 
-            let b = if bits & 0x80 > 0 { 255 } else { 0 };
-            let g = if bits & 0x40 > 0 { 255 } else { 0 };
-            let r = if bits & 0x20 > 0 { 255 } else { 0 };
-            let intensity = (bits & 0x1F) as f64 * (1.0 / 32.0);
+                let params = data.read_u8().unwrap();
+                let mode = if params & 0x80 > 0 { ColorMathMode::Additive } else { ColorMathMode::Subtractive };
+                let duration = (params & 0x7F) as f64 * (1.0 / 60.0);
 
-            let params = data.read_u8().unwrap();
-            let mode = if params & 0x80 > 0 { ColorMathMode::Additive } else { ColorMathMode::Subtractive };
-            let duration = (params & 0x7F) as f64 * (1.0 / 60.0);
-
-            Op::ScreenColorMath {
-                r, g, b,
-                intensity,
-                mode,
-                duration,
+                Op::ScreenColorMath {
+                    r,
+                    g,
+                    b,
+                    intensity,
+                    mode,
+                    duration,
+                }
             }
         },
         0xF2 => Op::ScreenFadeOut,

@@ -3,7 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::{ActorFlags, DrawMode};
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
-use crate::scene_script::scene_script_memory::DataSource;
+use crate::scene_script::scene_script_memory::{DataDest, DataSource};
 use crate::sprites::sprite_renderer::SpritePriority;
 
 pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
@@ -145,15 +145,15 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // Coordinates from actor.
         0x21 => Op::ActorCoordinatesGet {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            tile_x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            tile_y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_x: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_y: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Coordinates from party member actor.
         0x22 => Op::ActorCoordinatesGet {
             actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            tile_x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            tile_y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_x: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            tile_y: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Set coordinates.

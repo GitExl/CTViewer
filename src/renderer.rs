@@ -1,6 +1,6 @@
 use bitflags::bitflags;
-use sdl3::pixels::PixelFormat;
-use sdl3::render::{Texture, TextureCreator, WindowCanvas};
+use sdl3::pixels::{Color as SDLColor, PixelFormat};
+use sdl3::render::{BlendMode, Texture, TextureCreator, WindowCanvas};
 use sdl3::{sys, Sdl};
 use sdl3::sys::everything::SDL_ScaleMode;
 use sdl3::ttf::Font;
@@ -35,6 +35,8 @@ pub struct Renderer<'a> {
 
     pub font: Font<'a>,
     pub font_small: Font<'a>,
+
+    fade_color: SDLColor,
 
     pub target: Surface,
     pub canvas: WindowCanvas,
@@ -181,11 +183,22 @@ impl<'a> Renderer<'a> {
 
             target,
             canvas,
+            fade_color: SDLColor::RGBA(0, 0, 0, 0)
         }
     }
 
     pub fn set_title(&mut self, title: &str) {
         self.canvas.window_mut().set_title(title).unwrap();
+    }
+
+    pub fn set_fade_color(&mut self, r: u8, g: u8, b: u8) {
+        self.fade_color.r = r;
+        self.fade_color.g = g;
+        self.fade_color.b = b;
+    }
+
+    pub fn set_fade_alpha(&mut self, a: u8) {
+        self.fade_color.a = a;
     }
 
     pub fn copy_to_canvas(&mut self) {
@@ -207,6 +220,12 @@ impl<'a> Renderer<'a> {
                 texture_canvas.copy(&self.texture, None, None).unwrap();
             }).unwrap();
             self.canvas.copy(&self.scaled_texture, None, None).unwrap();
+        }
+
+        if self.fade_color.a > 0 {
+            self.canvas.set_blend_mode(BlendMode::Blend);
+            self.canvas.set_draw_color(self.fade_color);
+            self.canvas.fill_rect(None).unwrap();
         }
     }
 

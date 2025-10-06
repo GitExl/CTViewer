@@ -58,6 +58,13 @@ impl Vec2Df64 {
     pub fn as_vec2d_i32(&self) -> Vec2Di32 {
         Vec2Di32::new(self.x as i32, self.y as i32)
     }
+
+    pub fn signum(&self) -> Vec2Df64 {
+        Vec2Df64::new(
+            self.x.signum(),
+            self.y.signum(),
+        )
+    }
 }
 
 impl fmt::Display for Vec2Df64 {

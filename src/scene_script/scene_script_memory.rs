@@ -32,6 +32,8 @@ impl SceneScriptMemory {
             println!("Menu {}.", if value == 0 { "enabled" } else { "disabled" });
         } else if address == 0x111 {
             println!("Pause {}.", if value == 0 { "enabled" } else { "disabled" });
+        } else if address == 0x7E29AE {
+            println!("Set currently playing music to {}.", value);
         } else {
             println!("Unhandled scene script u8 memory write of 0x{:02X} to 0x{:06X}.", value, address)
         }

@@ -1,10 +1,20 @@
 use crate::util::vec2df64::Vec2Df64;
 
+#[derive(PartialEq, Debug)]
+pub enum CameraMoveTo {
+    Disabled,
+    Enabled,
+    Complete,
+}
+
 pub struct Camera {
     pub pos: Vec2Df64,
     pos_last: Vec2Df64,
     pub pos_lerp: Vec2Df64,
     pub size: Vec2Df64,
+
+    pub move_to: Vec2Df64,
+    pub move_to_state: CameraMoveTo,
 
     x1: f64,
     y1: f64,
@@ -19,6 +29,8 @@ impl Camera {
             pos_last: Vec2Df64::new(x, y),
             pos_lerp: Vec2Df64::new(x, y),
             size: Vec2Df64::new(width, height),
+            move_to: Vec2Df64::new(0.0, 0.0),
+            move_to_state: CameraMoveTo::Disabled,
             x1, y1, x2, y2,
         };
         camera.clamp();
@@ -36,6 +48,15 @@ impl Camera {
 
     pub fn tick(&mut self, _: f64) {
         self.pos_last = self.pos;
+
+        if self.move_to_state == CameraMoveTo::Enabled {
+            if self.pos.x.floor() == self.move_to.x.floor() && self.pos.y.floor() == self.move_to.y.floor() {
+                self.move_to_state = CameraMoveTo::Complete;
+            } else {
+                let distance = self.move_to - self.pos;
+                self.pos = self.pos + distance.signum();
+            }
+        }
     }
 
     pub fn lerp(&mut self, lerp: f64) {

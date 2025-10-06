@@ -62,8 +62,8 @@ pub enum Op {
     },
     ActorCoordinatesGet {
         actor: ActorRef,
-        tile_x: DataSource,
-        tile_y: DataSource,
+        tile_x: DataDest,
+        tile_y: DataDest,
     },
     ActorCoordinatesSet {
         actor: ActorRef,
@@ -408,8 +408,9 @@ pub enum Op {
     MusicWaitEnd,
 
     // Screen effects.
-    ScreenDarken {
-        duration: f64,
+    ScreenFade {
+        target: f64,
+        speed: f64,
     },
     ScreenColorMath {
         r: u8,

@@ -11,6 +11,7 @@ use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::scene::textbox::TextBox;
 use crate::scene::scene::Scene;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
+use crate::screen_fade::ScreenFade;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
@@ -25,6 +26,7 @@ pub struct GameStateScene {
     scene_renderer: SceneRenderer,
 
     textbox: TextBox,
+    screen_fade: ScreenFade,
 
     key_up: bool,
     key_down: bool,
@@ -63,7 +65,9 @@ impl GameStateScene {
         camera.center_to(camera_center);
 
         let mut textbox = TextBox::new(ctx);
-        scene.init(ctx, &mut textbox, &mut camera);
+        let mut screen_fade = ScreenFade::new();
+
+        scene.init(ctx, &mut textbox, &mut screen_fade, &mut camera);
 
         println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
@@ -75,6 +79,7 @@ impl GameStateScene {
             map_renderer,
 
             textbox,
+            screen_fade,
 
             key_down: false,
             key_left: false,
@@ -97,7 +102,7 @@ impl GameStateScene {
 
 impl GameStateTrait for GameStateScene {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
-        self.scene.tick(ctx, &mut self.textbox, &mut self.camera, delta);
+        self.scene.tick(ctx, &mut self.textbox, &mut self.screen_fade, &mut self.camera, delta);
 
         self.camera.tick(delta);
         if let Some(debug_actor) = self.debug_actor {
@@ -120,6 +125,7 @@ impl GameStateTrait for GameStateScene {
         }
 
         self.textbox.tick(delta);
+        self.screen_fade.tick(delta);
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
@@ -222,6 +228,7 @@ impl GameStateTrait for GameStateScene {
         }
 
         self.textbox.render(ctx, lerp);
+        self.screen_fade.render(ctx, lerp);
     }
 
     fn get_title(&self, ctx: &Context) -> String {

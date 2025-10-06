@@ -1,5 +1,5 @@
 use crate::actor::{Actor, ActorClass, ActorFlags, DebugSprite, DrawMode};
-use crate::camera::Camera;
+use crate::camera::{Camera, CameraMoveTo};
 use crate::Context;
 use crate::facing::Facing;
 use crate::map::Map;
@@ -15,6 +15,7 @@ use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 use crate::scene_script::scene_script_memory::SceneScriptMemory;
+use crate::screen_fade::ScreenFade;
 use crate::util::rect::Rect;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
@@ -28,6 +29,7 @@ pub struct SceneScriptContext<'a> {
     pub memory: &'a mut SceneScriptMemory,
     pub textbox_strings: &'a mut Vec<String>,
     pub textbox: &'a mut TextBox,
+    pub screen_fade: &'a mut ScreenFade,
     pub camera: &'a mut Camera,
 }
 
@@ -255,6 +257,18 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             );
 
             script_ctx.actors[actor_index].move_to(pos, true, &script_ctx.scene_map);
+
+            OpResult::COMPLETE
+        },
+
+        Op::ActorCoordinatesGet { actor, tile_x, tile_y } => {
+            let actor_index = actor.deref(this_actor);
+            let actor = &script_ctx.actors[actor_index];
+
+            let tile_pos_x = (actor.pos.x / 16.0) as u8;
+            let tile_pos_y = (actor.pos.y / 16.0) as u8;
+            tile_x.put_u8(script_ctx, tile_pos_x);
+            tile_y.put_u8(script_ctx, tile_pos_y);
 
             OpResult::COMPLETE
         },
@@ -514,11 +528,48 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
         },
 
         Op::DialogueSpecial { dialogue_type } => {
-            println!(">>>> {:?}", dialogue_type);
+            println!("Show special dialogue {:?}", dialogue_type);
 
             OpResult::COMPLETE
         },
 
-        _ => OpResult::COMPLETE,
+        Op::ScrollLayers { x, y, flags, duration } => {
+            OpResult::COMPLETE
+        },
+
+        Op::ScreenFade { target, speed } => {
+            if speed == 0.0 {
+                script_ctx.screen_fade.set(target);
+            } else {
+                script_ctx.screen_fade.start(target, speed);
+            }
+
+            OpResult::COMPLETE
+        },
+
+        Op::MoveCameraTo { x, y } => {
+            if script_ctx.camera.move_to_state == CameraMoveTo::Enabled {
+                return OpResult::YIELD;
+            }
+            if script_ctx.camera.move_to_state == CameraMoveTo::Complete {
+                script_ctx.camera.move_to_state = CameraMoveTo::Disabled;
+                return OpResult::COMPLETE;
+            }
+
+            script_ctx.camera.move_to_state = CameraMoveTo::Enabled;
+            script_ctx.camera.move_to.x = x as f64 * 16.0;
+            script_ctx.camera.move_to.y = y as f64 * 16.0;
+
+            OpResult::YIELD
+        },
+
+        Op::PaletteSetImmediate { sub_palette, color_index, data, length } => {
+            OpResult::COMPLETE
+        },
+
+        _ => {
+            // println!("Unimplemented {:?}", op);
+            OpResult::COMPLETE
+        },
     }
 }
