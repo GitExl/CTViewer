@@ -4,6 +4,7 @@ use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::surface::Surface;
 use crate::software_renderer::text::TextDrawFlags;
+use crate::text_processor::process_text;
 
 const TEXTBOX_TEXT_COLOR: Color = [231, 231, 231, 255];
 const TEXTBOX_CHIP_WIDTH: i32 = 32;
@@ -136,12 +137,12 @@ impl TextBox {
 
     pub fn show(&mut self, text: String, position: TextBoxPosition, actor_index: usize) {
 
-        // todo regexp replacement of <stuff> tags
+        process_text(text.as_str());
 
         // Split the text into pages, and the pages into lines.
         self.pages.clear();
         for text_page in text.split("<PAGE>") {
-            let text_lines: Vec<String> = text_page.split("\n").map(str::to_string).collect();
+            let text_lines: Vec<String> = text_page.split("<BR>").map(str::to_string).collect();
 
             let mut text_page_lines = Vec::<TextPageLine>::new();
             for text in text_lines {

@@ -11,7 +11,7 @@ const FONT_8_MAP: [&str; 256] = [
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "<LEFT>", "<RIGHT>", "(", ")", ":",
     "<HAND1>", "<HAND2>", "<HAND3>", "<HAND4>", "<H>", "<M>", "<P>", "<HP0>", "<HP1>", "<HP2>", "<HP3>", "<HP4>", "<HP5>", "<HP6>", "<HP7>", "<HP8>",
-    "¶", "¶", "°", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "{D}", "{Z}", "{UP}",
+    "¶", "¶", "°", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "<D>", "<Z>", "<UP>",
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
     "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
@@ -19,7 +19,7 @@ const FONT_8_MAP: [&str; 256] = [
     "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",
     "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?",
     "/", "“", "”", ":", "&", "(", ")", "'", ".", ",", "=", "-", "+", "%", "#", " ",
-    "°", "{A}", "#", "#", "{L}", "{R}", "{H}", "{M}", "{P}", "̖", "{CORNER}", "(", ")", "¶", "¶", " "
+    "°", "<A>", "#", "#", "<L>", "<R>", "<H>", "<M>", "<P>", "̖", "<CORNER>", "(", ")", "¶", "¶", " "
 ];
 
 pub struct TextDecoder {
@@ -167,30 +167,30 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
 
     match code {
         0x05 => " ",
-        0x06 => "\n",
-        0x07 => "<stop>",
-        0x08 => "<stop line break>",
-        0x09 => "<instant line break>",
+        0x06 => "<BR>",
+        0x07 => "<STOP>",
+        0x08 => "<STOP LINE BREAK>",
+        0x09 => "<INSTANT LINE BREAK>",
         0x0A => "<AUTO_PAGE>",
         0x0B => "<AUTO_END>",
         0x0C => "<PAGE>",
-        0x0D => "<NUMBER>", // 8 bits
-        0x0E => "<NUMBER>", // 16 bits
-        0x0F => "<NUMBER>", // 24 bits
-        0x11 => "<spch 11>",  // TODO displays previous substring
+        0x0D => "<NUMBER 8>", // 8 bits
+        0x0E => "<NUMBER 16>", // 16 bits
+        0x0F => "<NUMBER> 24", // 24 bits
+        0x11 => "<SPCH 11>",  // TODO displays previous substring
         0x13 => "<NAME_CRO>",
         0x14 => "<NAME_MAR>",
         0x15 => "<NAME_LUC>",
-        0x16 => "<NAME_FRO>",
-        0x17 => "<NAME_ROB>",
+        0x16 => "<NAME_ROB>",
+        0x17 => "<NAME_FRO>",
         0x18 => "<NAME_AYL>",
         0x19 => "<NAME_MAG>",
         0x1A => "<NICK_CRO>",
         0x1B => "<NAME_PT1>",
         0x1C => "<NAME_PT2>",
         0x1D => "<NAME_PT3>",
-        0x1E => "<queen name>",
-        0x1F => "<result item>",
+        0x1E => "<NAME_LEENE>",
+        0x1F => "<RESULT ITEM>",
         0x20 => "<NAME_SIL>",
         _ => "<UNKNOWN_SPEC>",
     }.to_string()

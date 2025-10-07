@@ -41,6 +41,8 @@ mod destination;
 mod scene_script;
 mod facing;
 mod ui_theme;
+mod text_processor;
+mod screen_fade;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
