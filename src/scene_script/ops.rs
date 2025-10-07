@@ -410,7 +410,7 @@ pub enum Op {
     // Screen effects.
     ScreenFade {
         target: f64,
-        speed: f64,
+        delay: usize,
     },
     ScreenColorMath {
         r: u8,
@@ -420,7 +420,7 @@ pub enum Op {
         mode: ColorMathMode,
         duration: f64,
     },
-    ScreenFadeOut,
+    ScreenWaitForFade,
     ScreenWaitForColorMath,
     ScreenShake {
         enabled: bool,

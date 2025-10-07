@@ -5,7 +5,8 @@ pub struct ScreenFade {
     current: f64,
     last: f64,
     target: f64,
-    speed: f64,
+    delay: usize,
+    delay_counter: usize,
 }
 
 impl ScreenFade {
@@ -15,13 +16,15 @@ impl ScreenFade {
             current: 0.0,
             last: 0.0,
             target: 0.0,
-            speed: 0.0,
+            delay: 0,
+            delay_counter: 0,
         }
     }
 
-    pub fn start(&mut self, target: f64, speed: f64) {
+    pub fn start(&mut self, target: f64, delay: usize) {
         self.target = target;
-        self.speed = speed;
+        self.delay = delay - 1;
+        self.delay_counter = delay - 1;
         self.active = true;
     }
 
@@ -29,6 +32,10 @@ impl ScreenFade {
         self.target = to;
         self.current = to;
         self.active = true;
+    }
+
+    pub fn is_active(&self) -> bool {
+        self.active
     }
 
     pub fn tick(&mut self, _delta: f64) {
@@ -42,12 +49,18 @@ impl ScreenFade {
 
         self.last = self.current;
 
-        let step = (self.target - self.current).signum() * self.speed;
-        self.current += step;
+        if self.delay_counter == 0 {
+            self.delay_counter = self.delay;
 
-        // End fade, but leave disabling until after another render has happened.
-        if (step > 0.0 && self.current >= self.target) || (step < 0.0 && self.current <= self.target) {
-            self.current = self.target;
+            let step = (self.target - self.current).signum() * (1.0 / 16.0);
+            self.current += step;
+
+            // End fade, but leave disabling until after another render has happened.
+            if (step > 0.0 && self.current >= self.target) || (step < 0.0 && self.current <= self.target) {
+                self.current = self.target;
+            }
+        } else {
+            self.delay_counter -= 1;
         }
     }
 

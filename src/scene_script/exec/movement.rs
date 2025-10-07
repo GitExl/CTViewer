@@ -102,7 +102,7 @@ pub fn exec_movement_to_tile(ctx: &mut Context, script_ctx: &mut SceneScriptCont
     OpResult::YIELD
 }
 
-pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptContext, actor_index: usize, angle: f64, cycle_count: u32, update_facing: bool, animated: bool) -> OpResult {
+pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptContext, actor_index: usize, angle: f64, cycles: u32, update_facing: bool, animated: bool) -> OpResult {
     let actor = script_ctx.actors.get_mut(actor_index).unwrap();
     let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
@@ -137,10 +137,11 @@ pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptCo
     actor.task = ActorTask::MoveByAngle {
         angle,
         move_by,
-        cycles: cycle_count,
+        cycles,
     };
+    println!("{} {} {}", angle, move_by, cycles);
     actor.debug_sprite = DebugSprite::Moving;
-    sprite_state.anim_loops_remaining = cycle_count;
+    sprite_state.anim_loops_remaining = cycles;
 
     if update_facing {
         actor.face_towards(actor.pos + move_by);

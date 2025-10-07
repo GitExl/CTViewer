@@ -199,7 +199,7 @@ impl GameStateTrait for GameStateScene {
 
             // Spit out a bunch of internal state.
             let text_actor = format!(
-                "Actor {}: {:?}\n{} {:.1} {:?}\nDrawMode::{:?}\n{:?}",
+                "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}",
                 debug_actor, actor.class,
                 actor.pos, actor.move_speed, actor.facing,
                 actor.draw_mode,

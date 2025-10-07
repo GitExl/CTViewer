@@ -319,7 +319,7 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
 
         Op::ActorSetSpeed { actor, speed } => {
             let actor_index = actor.deref(this_actor);
-            script_ctx.actors[actor_index].move_speed = speed.get_u8(script_ctx, this_actor) as f64 / 16.0;
+            script_ctx.actors[actor_index].move_speed = speed.get_u8(script_ctx, this_actor) as f64 / 17.0;
             OpResult::COMPLETE
         },
 
@@ -537,14 +537,21 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             OpResult::COMPLETE
         },
 
-        Op::ScreenFade { target, speed } => {
-            if speed == 0.0 {
+        Op::ScreenFade { target, delay } => {
+            if delay == 0 {
                 script_ctx.screen_fade.set(target);
             } else {
-                script_ctx.screen_fade.start(target, speed);
+                script_ctx.screen_fade.start(target, delay);
             }
 
             OpResult::COMPLETE
+        },
+        Op::ScreenWaitForFade => {
+          if script_ctx.screen_fade.is_active() {
+              OpResult::YIELD
+          } else {
+              OpResult::COMPLETE | OpResult::YIELD
+          }
         },
 
         Op::MoveCameraTo { x, y } => {

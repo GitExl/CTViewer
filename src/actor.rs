@@ -155,7 +155,7 @@ impl Actor {
             class: ActorClass::Undefined,
             player_index: None,
             facing: Facing::default(),
-            move_speed: 1.0,
+            move_speed: (1.0 / 16.0) * 15.0,
             flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::DEAD,
             draw_mode: DrawMode::Draw,
             battle_index: 0,
@@ -205,30 +205,30 @@ impl Actor {
 
     fn run_task(&mut self, scene_map: &SceneMap) {
         match self.task {
-            ActorTask::MoveToTile { move_by, cycles: ref mut steps, .. } => {
-                if *steps == 0 {
+            ActorTask::MoveToTile { move_by, ref mut cycles, .. } => {
+                if *cycles == 0 {
                     return;
                 }
 
-                *steps -= 1;
+                *cycles -= 1;
                 self.pos = self.pos + move_by;
                 self.update_sprite_priority(scene_map);
             },
-            ActorTask::MoveToActor { move_by, cycles: ref mut steps, .. } => {
-                if *steps == 0 {
+            ActorTask::MoveToActor { move_by, ref mut cycles, .. } => {
+                if *cycles == 0 {
                     return;
                 }
 
-                *steps -= 1;
+                *cycles -= 1;
                 self.pos = self.pos + move_by;
                 self.update_sprite_priority(scene_map);
             },
-            ActorTask::MoveByAngle { move_by, cycles: ref mut steps, .. } => {
-                if *steps == 0 {
+            ActorTask::MoveByAngle { move_by, ref mut cycles, .. } => {
+                if *cycles == 0 {
                     return;
                 }
 
-                *steps -= 1;
+                *cycles -= 1;
                 self.pos = self.pos + move_by;
                 self.update_sprite_priority(scene_map);
             },

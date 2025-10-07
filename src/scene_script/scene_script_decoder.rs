@@ -174,7 +174,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             let value = data.read_u8().unwrap();
             Op::ScreenFade {
                 target: ((value & 0xF0) >> 4) as f64 * (1.0 / 15.0),
-                speed: (value as usize & 0x0F) as f64 * (1.0 / 60.0),
+                delay: value as usize & 0x0F,
             }
         },
         0xF1 => {
@@ -208,7 +208,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
                 }
             }
         },
-        0xF2 => Op::ScreenFadeOut,
+        0xF2 => Op::ScreenWaitForFade,
         0xF3 => Op::ScreenWaitForColorMath,
         0xF4 => Op::ScreenShake {
             enabled: data.read_u8().unwrap() == 1,
