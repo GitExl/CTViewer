@@ -41,21 +41,21 @@ during scene initialization.
 | ?                      | `$7E1080`             | Script is ready to run           | `$80`                             |
 | ?                      | `$7E1081`             |                                  | `$00`                             |
 | `type_status`          | `$7E1100`             | Actor type                       | `$80` or `$07` if it has a script |
-| `player_index`         | `$7E1101`             | Index of player owner            | ?                                 |
+| `player_index`         | `$7E1101`             | Index of player owner            |                                   |
 | `current_address`      | `$7E1180`             | Pointer to next op               | `$0000`                           |
-| ?                      | `$7E1200`             | Sprite graphics bank?            | ?                                 |
-| ?                      | `$7E1280`             | Sprite graphics pointer?         | ?                                 |
-| ?                      | `$7E1300`             |                                  | ?                                 |
-| `sprite_frame`         | `$7E1301`             | Static sprite frame              | ?                                 |
+| ?                      | `$7E1200`             | Sprite graphics bank?            |                                   |
+| ?                      | `$7E1280`             | Sprite graphics pointer?         |                                   |
+| ?                      | `$7E1300`             |                                  |                                   |
+| `sprite_frame`         | `$7E1301`             | Static sprite frame              |                                   |
 | ?                      | `$7E1380`             | Sprite info pointer?             |                                   |
 | ?                      | `$7E1400`             | Palette pointers                 |                                   |
-| ?                      | `$7E1480`             |                                  | ?                                 |
-| ?                      | `$7E1500`             |                                  | ?                                 |
-| `anim_set_pointer`     | `$7E1580`             | Animation set pointer            | ?                                 |
-| ?                      | `$7E1600`             | Actor facing                     | ?                                 |
-| `anim_delay`           | `$7E1601`             | Animation frame delay            | ?                                 |
-| `anim_index`           | `$7E1680`             | Current animation                | ?                                 |
-| `anim_frame`           | `$7E1681`             | Current animation frame          | ?                                 |
+| ?                      | `$7E1480`             |                                  |                                   |
+| ?                      | `$7E1500`             |                                  |                                   |
+| `anim_set_pointer`     | `$7E1580`             | Animation set pointer            |                                   |
+| ?                      | `$7E1600`             | Actor facing                     |                                   |
+| `anim_delay`           | `$7E1601`             | Animation frame delay            |                                   |
+| `anim_index`           | `$7E1680`             | Current animation                |                                   |
+| `anim_frame`           | `$7E1681`             | Current animation frame          |                                   |
 | ?                      | `$7E1700`             |                                  |                                   |
 | `anim_mode`            | `$7E1780`             | Animation mode                   | `$00`                             |
 | `anim_index_loop`      | `$7E1781`             | Current loop tracked animation   | `$00`                             |
@@ -66,7 +66,7 @@ during scene initialization.
 | `move_speed`           | `$7E1A00`             | Movement speed                   | `$0010`                           |
 | `is_moving`            | `$7E1A80`             | Is currently moving?             | `$00`                             |
 | ?                      | `$7E1A81`             | Actor drawing mode               | `$01`                             |
-| ?                      | `$7E1B00`             |                                  | ?                                 |
+| ?                      | `$7E1B00`             |                                  |                                   |
 | `solidity_flags`       | `$7E1B01`             | Collision flags                  | `$00`                             |
 | ?                      | `$7E1B80`             | Actor is jumping                 | `$00`                             |
 | ?                      | `$7E1B81`             |                                  | `$00`                             |
@@ -80,4 +80,4 @@ during scene initialization.
 | ?                      | `$7F0A80`             | Text dialog choice result        |                                   |
 | ?                      | `$7F0B00`             |                                  |                                   |
 | `anim_loops_remaining` | `$7F0B01`             | Number of animation loops left   |                                   |
-| ?                      | `$7F0B80`             | Related to op 88, palette cycle? | ?                                 |
+| ?                      | `$7F0B80`             | Related to op 88, palette cycle? |                                   |

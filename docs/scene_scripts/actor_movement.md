@@ -67,3 +67,5 @@ viewport. So it will only move to walk into view of the current camera position 
 If bit `$02` of `move_dest_flags` is set, actors will try to detect other solid actors during movent updates. These have
 bit `$01` of `solidity_flags` set. If one is found in front of where the actor is facing, the calculated movement angle
 is offset by 67.5 degrees clockwise.
+
+## Animation during movement
