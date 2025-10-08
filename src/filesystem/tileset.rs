@@ -78,7 +78,7 @@ impl FileSystem {
 
     // Read a tileset for a scene map layer 1 or 2.
     pub fn read_scene_tileset_layer12 (&self, tileset_index: usize, index_assembly: usize, chip_anims_index: usize) -> TileSet {
-        let mut bitmap_data = vec![0u8; 0xE000];
+        let mut bitmap_data = vec![0u8; 0x10000];
         let mut animated_bitmap_data = vec![0u8; 0x8000];
 
         let mut chip_bitmaps = Vec::<Bitmap>::new();
@@ -102,15 +102,11 @@ impl FileSystem {
                 // Load layer 1/2 chip graphics data referenced by the tileset.
                 let mut chipset_data = self.backend.get_scene_tileset12_graphics(*chipset as usize);
 
-                // Set 0 to 5 contain regular chips. Set 6 contains animated chips. Set 7 contains
-                // regular chips again; are these unique to the PC version?
+                // Set 6 contains animated chips, so Store a separate copy of them.
                 if chipset_index == 6 {
                     set_chip_bitmap_data(&mut animated_bitmap_data, &mut chipset_data, 0);
-                } else if chipset_index == 7 {
-                    set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, 0xC000);
-                } else {
-                    set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, chipset_index * 0x2000);
                 }
+                set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, chipset_index * 0x2000);
             }
 
             chip_bitmaps.extend(split_chip_graphics(&bitmap_data, bitmap_data.len() / 64));
@@ -194,13 +190,13 @@ fn parse_chip_anims(reader: &mut Cursor<Vec<u8>>, parse_mode: ParseMode) -> Vec<
 
         // Frame durations are listed first, then the source animated chip indices.
         for _ in 0..frame_count {
-            let duration_bits = (reader.read_u8().unwrap() as usize) >> 4;
+            let duration_bits = reader.read_u8().unwrap() as usize;
             let duration = match duration_bits {
-                1 => 16.0,
-                2 => 12.0,
-                4 => 8.0,
-                8 => 4.0,
-                _ => 0.0,
+                16  => 16.0,
+                32  => 12.0,
+                64  => 8.0,
+                128 => 4.0,
+                _   => 0.0,
             };
             let frame = ChipAnimFrame {
                 duration: duration * (1.0 / 60.0),

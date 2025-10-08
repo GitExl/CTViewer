@@ -15,9 +15,7 @@
     - Maps
     - Exits
     - Music transitions
-  - Tilesets
-    - Graphics
-    - Animation
+  - [Tilesets](data/tilesets.md)
   - Palettes
   - Sprites
     - Graphics
