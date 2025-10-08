@@ -191,7 +191,7 @@ fn parse_chip_anims(reader: &mut Cursor<Vec<u8>>, parse_mode: ParseMode) -> Vec<
         // Frame durations are listed first, then the source animated chip indices.
         for _ in 0..frame_count {
             let duration_bits = reader.read_u8().unwrap() as usize;
-            let duration = match duration_bits {
+            let duration = match duration_bits & 0xF0 {
                 16  => 16.0,
                 32  => 12.0,
                 64  => 8.0,

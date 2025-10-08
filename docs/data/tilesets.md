@@ -79,18 +79,19 @@ animations.
 with:
     - SNES: `(offset - 0x2000) / 16`
     - PC: `offset / 32`
-- 1 byte per frame that indicates how many ticks to display the animation frame for.
-    - 16 = 16 ticks
-    - 32 = 12 ticks
-    - 64 = 8 ticks
-    - 128 = 4 ticks
+- 1 byte per frame that indicates how many ticks to display the animation frame for in the upper nibble. The lower
+nibble sometimes contains data, but the purpose of it is unknown.
+    - `$10` = 16 ticks
+    - `$20` = 12 ticks
+    - `$40` = 8 ticks
+    - `$80` = 4 ticks
 - 2 bytes per frame for the chip data offset of the first of 4 source chips. Convert it to a direct tileset chip index
 with:  
   - SNES: `(offset - 0x6000) / 32`
   - PC: `offset / 32`
 
-An expanded version of this data is loaded into SNES memory at `$7F0400`. This is read during game execution and can be
-directly altered by scene scripts.
+An expanded version of this data (for easier DMA transfer) is loaded into SNES memory at `$7F0400` to `$7F0580`. This
+is read during game execution and can be directly altered by scene scripts.
 
 ## World tilesets
 
