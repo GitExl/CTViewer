@@ -65,7 +65,10 @@ When viewing scenes, the following keys are available:
 - `/` render actor data
 
 Information about exits, treasure and actors is displayed when the mouse is over them. You can move to another scene
-or world by clicking on exits. Clicking on an actor will dump debug information about them to `stdout`.
+or world by clicking on exits.
+
+Left-clicking on an actor will activate it. Right-clicking will "touch" it. Clicking with the middle button will
+display debug information about them until somewhere else is middle-clicked.
 
 ## Examples
 
@@ -89,6 +92,8 @@ These are some screenshots from various scenes. They have been scaled to a 4/3 a
 - Scanline animation effects (usually on layer 3) are not present. This requires a different tilemap rendering approach.
 - World palette animations are hardcoded. It is unknown where this information is stored.
 - World camera wrapping works, but not smoothly.
+- There are many scripting features not implemented, and plenty of bugs or incompatibilities left to resolve in the ones
+that are.
 
 ### PC version
 

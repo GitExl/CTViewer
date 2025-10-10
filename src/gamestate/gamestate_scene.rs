@@ -3,6 +3,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
+use crate::actor::{ActorFlags, ActorTask, DrawMode};
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
@@ -328,15 +329,36 @@ impl GameStateTrait for GameStateScene {
             },
 
             Event::MouseButtonDown { mouse_btn, .. } => {
-                if *mouse_btn == MouseButton::Left {
+                if *mouse_btn == MouseButton::Middle {
                     let index = self.get_actor_at(self.mouse_pos);
                     if let Some(index) = index {
                         self.debug_actor = Some(index);
                     } else {
                         self.debug_actor = None;
                     }
+                }
 
-                    if index.is_none() {
+                if *mouse_btn == MouseButton::Left {
+                    let index = self.get_actor_at(self.mouse_pos);
+
+                    // Attempt to activate actor.
+                    // 0xC05AC5
+                    if let Some(index) = index {
+                        let actor = &mut self.scene.actors[index];
+                        let script_state = &mut self.scene.script.script_states[index];
+                        if actor.draw_mode == DrawMode::Draw &&
+                         !actor.flags.contains(ActorFlags::SCRIPT_DISABLED) &&
+                         !actor.flags.contains(ActorFlags::DEAD) &&
+                         !actor.flags.contains(ActorFlags::CALLS_DISABLED) {
+                            if script_state.current_priority >= 2 {
+                                script_state.priority_return_ptrs[script_state.current_priority] = script_state.current_address;
+                                script_state.current_address = script_state.function_ptrs[1];
+                                script_state.current_priority = 1;
+                                script_state.delay_counter = 0;
+                                actor.task = ActorTask::None;
+                            }
+                        }
+                    } else {
                         let index = self.get_exit_at(self.mouse_pos);
                         if let Some(index) = index {
                             let exit = &self.scene.exits[index];
@@ -345,6 +367,29 @@ impl GameStateTrait for GameStateScene {
                             });
                         }
 
+                    }
+                }
+
+                if *mouse_btn == MouseButton::Right {
+                    let index = self.get_actor_at(self.mouse_pos);
+
+                    // Attempt to touch actor.
+                    // 0xC03154
+                    if let Some(index) = index {
+                        let actor = &mut self.scene.actors[index];
+                        let script_state = &mut self.scene.script.script_states[index];
+                        if actor.draw_mode == DrawMode::Draw &&
+                            !actor.flags.contains(ActorFlags::SCRIPT_DISABLED) &&
+                            !actor.flags.contains(ActorFlags::DEAD) &&
+                            !actor.flags.contains(ActorFlags::CALLS_DISABLED) {
+                            if script_state.current_priority >= 3 {
+                                script_state.priority_return_ptrs[script_state.current_priority] = script_state.current_address;
+                                script_state.current_address = script_state.function_ptrs[2];
+                                script_state.current_priority = 2;
+                                script_state.delay_counter = 0;
+                                actor.task = ActorTask::None;
+                            }
+                        }
                     }
                 }
             },
