@@ -10,14 +10,14 @@ pub struct ScreenFade {
 }
 
 impl ScreenFade {
-    pub fn new() -> ScreenFade {
+    pub fn new(current: f64) -> ScreenFade {
         ScreenFade {
             active: false,
-            current: 0.0,
-            last: 0.0,
-            target: 0.0,
-            delay: 0,
-            delay_counter: 0,
+            current,
+            last: current,
+            target: current,
+            delay: 2,
+            delay_counter: 2,
         }
     }
 

@@ -218,7 +218,7 @@ pub enum Op {
     },
     CopyBytes {
         dest: DataDest,
-        bytes: [u8; 32],
+        bytes: [u8; 64],
         length: usize,
     },
 
@@ -239,7 +239,7 @@ pub enum Op {
     PaletteSetImmediate {
         sub_palette: SubPalette,
         color_index: usize,
-        data: [u8; 32],
+        data: [u8; 64],
         length: usize,
     },
     PaletteSet {

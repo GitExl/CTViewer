@@ -426,16 +426,16 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
     Some(op)
 }
 
-pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> ([u8; 32], usize) {
+pub fn read_script_blob(data: &mut Cursor<Vec<u8>>) -> ([u8; 64], usize) {
     let data_len = data.read_u16::<LittleEndian>().unwrap() as usize - 2;
-    if data_len > 32 {
-        panic!("Blob data of {} bytes is larger than the supported 32 bytes.", data_len);
+    if data_len > 64 {
+        panic!("Blob data of {} bytes is larger than the supported 64 bytes.", data_len);
     }
 
     let mut blob = vec![0u8; data_len];
     data.read_exact(&mut blob).unwrap();
 
-    let mut blob_out = [0u8; 32];
+    let mut blob_out = [0u8; 64];
     for i in 0..data_len {
         blob_out[i] = blob[i];
     }

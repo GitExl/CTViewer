@@ -8,6 +8,7 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
+use crate::next_destination::NextDestination;
 use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::scene::textbox::TextBox;
 use crate::scene::scene::Scene;
@@ -28,6 +29,7 @@ pub struct GameStateScene {
 
     textbox: TextBox,
     screen_fade: ScreenFade,
+    next_destination: NextDestination,
 
     key_up: bool,
     key_down: bool,
@@ -66,9 +68,12 @@ impl GameStateScene {
         camera.center_to(camera_center);
 
         let mut textbox = TextBox::new(ctx);
-        let mut screen_fade = ScreenFade::new();
+        let mut next_destination = NextDestination::new();
 
-        scene.init(ctx, &mut textbox, &mut screen_fade, &mut camera);
+        let mut screen_fade = ScreenFade::new(0.0);
+        screen_fade.start(1.0, 2);
+
+        scene.init(ctx, &mut textbox, &mut screen_fade, &mut camera, &mut next_destination);
 
         println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
@@ -81,6 +86,7 @@ impl GameStateScene {
 
             textbox,
             screen_fade,
+            next_destination,
 
             key_down: false,
             key_left: false,
@@ -103,7 +109,7 @@ impl GameStateScene {
 
 impl GameStateTrait for GameStateScene {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
-        self.scene.tick(ctx, &mut self.textbox, &mut self.screen_fade, &mut self.camera, delta);
+        self.scene.tick(ctx, &mut self.textbox, &mut self.screen_fade, &mut self.camera, &mut self.next_destination, delta);
 
         self.camera.tick(delta);
         if let Some(debug_actor) = self.debug_actor {
@@ -127,6 +133,13 @@ impl GameStateTrait for GameStateScene {
 
         self.textbox.tick(delta);
         self.screen_fade.tick(delta);
+
+        if let Some(next_destination) = self.next_destination.destination {
+            if !self.screen_fade.is_active() {
+                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination });
+                self.next_destination.clear();
+            }
+        }
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
@@ -358,15 +371,15 @@ impl GameStateTrait for GameStateScene {
                                 actor.task = ActorTask::None;
                             }
                         }
+
+                    // Trigger an exit.
                     } else {
                         let index = self.get_exit_at(self.mouse_pos);
                         if let Some(index) = index {
                             let exit = &self.scene.exits[index];
-                            self.next_game_event = Some(GameEvent::GotoDestination {
-                                destination: exit.destination,
-                            });
+                            self.next_destination.set(exit.destination, true);
+                            self.screen_fade.start(0.0, 2);
                         }
-
                     }
                 }
 

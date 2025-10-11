@@ -517,6 +517,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
 
     fn get_textbox_string_table(&self, address: usize) -> Vec<String> {
         let page_start = address & 0xFF0000;
+        const MAX_STR_LEN: usize = 384;
 
         let mut strings = Vec::<String>::new();
         for index in 0..256 {
@@ -526,13 +527,12 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
             let ptr_start = address + index * 2;
             let ptr = self.data[ptr_start] as usize | ((self.data[ptr_start + 1] as usize) << 8);
             let ptr_next = self.data[ptr_start + 2] as usize | ((self.data[ptr_start + 3] as usize) << 8);
-            if ptr_next <= ptr || ptr_next - ptr > 300 {
+            if ptr_next < ptr || ptr_next - ptr > MAX_STR_LEN {
                 break;
             }
 
             // Decode the string.
-            let len = ptr_next - ptr;
-            let mut data = self.get_bytes_cursor(page_start + ptr, len);
+            let mut data = self.get_bytes_cursor(page_start + ptr, MAX_STR_LEN);
             let str = self.text_decoder.decode_huffman_string(&mut data);
             strings.push(str);
         }

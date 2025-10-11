@@ -7,7 +7,9 @@ use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
+use crate::next_destination::NextDestination;
 use crate::renderer::{TextFlags, TextFont, TextRenderable};
+use crate::screen_fade::ScreenFade;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
@@ -22,6 +24,9 @@ pub struct GameStateWorld {
     pub camera: Camera,
     map_renderer: MapRenderer,
     world_renderer: WorldRenderer,
+
+    screen_fade: ScreenFade,
+    next_destination: NextDestination,
 
     key_up: bool,
     key_down: bool,
@@ -78,6 +83,11 @@ impl GameStateWorld {
 
         camera.center_to(camera_center);
 
+        let next_destination = NextDestination::new();
+
+        let mut screen_fade = ScreenFade::new(0.0);
+        screen_fade.start(1.0, 2);
+
         println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));
 
         GameStateWorld {
@@ -86,6 +96,9 @@ impl GameStateWorld {
             camera,
             world_renderer,
             map_renderer,
+
+            screen_fade,
+            next_destination,
 
             key_down: false,
             key_left: false,
@@ -106,6 +119,8 @@ impl GameStateWorld {
 
 impl GameStateTrait for GameStateWorld {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
+        self.world.tick(ctx, delta);
+
         self.camera.tick(delta);
         if self.key_up {
             self.camera.pos.y -= 300.0 * delta;
@@ -121,7 +136,14 @@ impl GameStateTrait for GameStateWorld {
         }
         self.camera.wrap();
 
-        self.world.tick(ctx, delta);
+        self.screen_fade.tick(delta);
+
+        if let Some(next_destination) = self.next_destination.destination {
+            if !self.screen_fade.is_active() {
+                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination });
+                self.next_destination.clear();
+            }
+        }
 
         if self.next_game_event.is_some() {
             let event = self.next_game_event;
@@ -167,6 +189,8 @@ impl GameStateTrait for GameStateWorld {
                 SurfaceBlendOps::Blend,
             );
         }
+
+        self.screen_fade.render(ctx, lerp);
     }
 
     fn get_title(&self, ctx: &Context) -> String {
@@ -238,9 +262,8 @@ impl GameStateTrait for GameStateWorld {
                     let index = self.get_exit_at(self.mouse_pos);
                     if index.is_some() {
                         let exit = &self.world.exits[index.unwrap()];
-                        self.next_game_event = Some(GameEvent::GotoDestination {
-                            destination: exit.destination,
-                        });
+                        self.next_destination.set(exit.destination, true);
+                        self.screen_fade.start(0.0, 2);
                     }
                 }
             },

@@ -57,8 +57,8 @@ fn read_destination(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Destin
             let index = index_facing & 0x01FF;
             let facing = index_facing & 0x0600;
 
-            let x = data.read_u8().unwrap() as i32;
-            let y = data.read_u8().unwrap() as i32;
+            let x = data.read_u8().unwrap() as i32 * 16;
+            let y = data.read_u8().unwrap() as i32 * 16;
             let pos = Vec2Di32 { x, y };
 
             if index >= 0x1F0 && index <= 0x1FF {
@@ -78,8 +78,8 @@ fn read_destination(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Destin
             let index = data.read_u16::<LittleEndian>().unwrap() as usize;
             let facing = data.read_u8().unwrap() as usize;
 
-            let x = data.read_u8().unwrap() as i32;
-            let y = data.read_u8().unwrap() as i32;
+            let x = data.read_u8().unwrap() as i32 * 16;
+            let y = data.read_u8().unwrap() as i32 * 16;
             let pos = Vec2Di32 { x, y };
 
             if index >= 0x1F0 && index <= 0x1FF {

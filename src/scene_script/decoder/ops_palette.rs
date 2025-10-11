@@ -68,7 +68,12 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                         Op::PaletteSetImmediate {
                             color_index,
                             sub_palette: SubPalette::Index(sub_palette),
-                            data: [data.read_u8().unwrap(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            data: [
+                                data.read_u8().unwrap(),
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                            ],
                             length: 0,
                         }
                     },
@@ -119,7 +124,12 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                         Op::PaletteSetImmediate {
                             color_index: cmd as usize & 0x0F,
                             sub_palette: SubPalette::This,
-                            data: [data.read_u8().unwrap(), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                            data: [
+                                data.read_u8().unwrap(),
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                            ],
                             length: 0,
                         }
                     },

@@ -234,7 +234,7 @@ impl DataDest {
         }
     }
 
-    pub fn put_bytes(&self, script_ctx: &mut SceneScriptContext, bytes: [u8; 32], length: usize) {
+    pub fn put_bytes(&self, script_ctx: &mut SceneScriptContext, bytes: [u8; 64], length: usize) {
         match self {
             DataDest::Memory(address) => script_ctx.memory.write_bytes(*address, &bytes[0..length]),
         }

@@ -3,6 +3,7 @@ use crate::camera::{Camera, CameraMoveTo};
 use crate::Context;
 use crate::facing::Facing;
 use crate::map::Map;
+use crate::next_destination::NextDestination;
 use crate::scene::textbox::{TextBox, TextBoxPosition};
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
@@ -31,6 +32,7 @@ pub struct SceneScriptContext<'a> {
     pub textbox: &'a mut TextBox,
     pub screen_fade: &'a mut ScreenFade,
     pub camera: &'a mut Camera,
+    pub next_destination: &'a mut NextDestination,
 }
 
 pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_actor: usize, state: &mut ActorScriptState) -> OpResult {
@@ -453,13 +455,16 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             OpResult::COMPLETE
         },
 
-        Op::Battle { .. } => {
+        Op::Battle { flags } => {
 
             // For now, kill all valid enemies in "battle range".
             let battle_range = Rect::new(
                 script_ctx.camera.pos.x as i32, script_ctx.camera.pos.y as i32,
                 (script_ctx.camera.pos.x + script_ctx.camera.size.x) as i32, (script_ctx.camera.pos.y + script_ctx.camera.size.y) as i32,
             );
+
+            println!("Battle time! {:?}", flags);
+
             for actor in script_ctx.actors.iter_mut() {
                 if actor.class != ActorClass::Enemy {
                     continue;
@@ -473,11 +478,14 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
                 if !battle_range.contains_vec2(&actor.pos.as_vec2d_i32()) {
                     continue;
                 }
+                if actor.flags.contains(ActorFlags::BATTLE_STATIC) {
+                    continue;
+                }
 
                 actor.flags.insert(ActorFlags::DEAD | ActorFlags::SCRIPT_DISABLED);
                 actor.draw_mode = DrawMode::Removed;
 
-                println!("Actor {} was killed in a very real battle!", actor.index);
+                println!("Actor {} was killed in a very real battle.", actor.index);
             }
 
             OpResult::YIELD | OpResult::COMPLETE
@@ -565,14 +573,17 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
         },
 
         Op::ChangeLocation { destination, instant, queue_different_unknown } => {
-            // todo spit out change location event
-
             println!("Change location to {:?}, instant? {}, queued unknown? {}", destination.info(ctx), instant, queue_different_unknown);
+
+            script_ctx.next_destination.set(destination, true);
+            if !instant {
+                script_ctx.screen_fade.start(0.0, 2);
+            }
 
             OpResult::YIELD | OpResult::COMPLETE
         },
 
-        Op::ChangeLocationFromMemory { _byte1, _byte2, _byte3, _byte4 } => {
+        Op::ChangeLocationFromMemory { .. } => {
             // todo what about PC version?
 
             println!("Change location from memory");

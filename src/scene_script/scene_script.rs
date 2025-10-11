@@ -5,6 +5,7 @@ use crate::actor::{Actor, ActorFlags};
 use crate::camera::Camera;
 use crate::Context;
 use crate::map::Map;
+use crate::next_destination::NextDestination;
 use crate::scene::textbox::TextBox;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::ops::Op;
@@ -143,7 +144,7 @@ impl SceneScript {
         self.script_states.get(actor_index).unwrap()
     }
 
-    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera) {
+    pub fn run_object_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera, next_destination: &mut NextDestination) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -154,6 +155,7 @@ impl SceneScript {
             screen_fade,
             states: &mut self.script_states,
             camera,
+            next_destination,
         };
 
         for state_index in 0..script_ctx.states.len() {
@@ -189,7 +191,7 @@ impl SceneScript {
         }
     }
 
-    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera) {
+    pub fn run_scene_initialization(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera, next_destination: &mut NextDestination) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -200,6 +202,7 @@ impl SceneScript {
             screen_fade,
             states: &mut self.script_states,
             camera,
+            next_destination,
         };
 
         let mut state_dup = script_ctx.states[0].clone();
@@ -230,7 +233,7 @@ impl SceneScript {
         }
     }
 
-    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera) {
+    pub fn run(&mut self, ctx: &mut Context, actors: &mut Vec<Actor>, map: &mut Map, scene_map: &mut SceneMap, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera, next_destination: &mut NextDestination) {
         let mut script_ctx = SceneScriptContext {
             memory: &mut self.memory,
             scene_map,
@@ -241,6 +244,7 @@ impl SceneScript {
             screen_fade,
             states: &mut self.script_states,
             camera,
+            next_destination,
         };
 
         for state_index in 0..script_ctx.states.len() {
