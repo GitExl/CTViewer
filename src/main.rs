@@ -44,6 +44,7 @@ mod ui_theme;
 mod text_processor;
 mod screen_fade;
 mod next_destination;
+mod memory;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;

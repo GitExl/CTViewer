@@ -127,15 +127,13 @@ impl FileSystem {
         header.scroll_mask.right *= 16;
         header.scroll_mask.bottom *= 16;
 
-        Scene {
-            index: scene_index,
-
-            music_index: header.music_index,
-            unknown: header.unknown,
-
+        Scene::new(
+            scene_index,
+            header.music_index,
+            header.unknown,
             map,
             scene_map,
-            scroll_mask: header.scroll_mask,
+            header.scroll_mask,
             tileset_l12,
             tileset_l3,
             palette,
@@ -143,8 +141,7 @@ impl FileSystem {
             exits,
             treasure,
             script,
-            actors: Vec::new(),
-        }
+        )
     }
 
     pub fn read_scene_script(&self, script_index: usize, mode: SceneScriptMode) -> SceneScript {

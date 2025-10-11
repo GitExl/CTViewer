@@ -1,15 +1,15 @@
+use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene::scene_map::SceneTileFlags;
 use crate::scene_script::scene_script::OpResult;
 use crate::scene_script::scene_script_decoder::CopyTilesFlags;
-use crate::scene_script::scene_script_exec::SceneScriptContext;
 
-pub fn exec_tile_copy(script_ctx: &mut SceneScriptContext, left: u32, top: u32, right: u32, bottom: u32, dest_x: u32, dest_y: u32, flags: CopyTilesFlags, _delayed: bool) -> OpResult {
+pub fn exec_tile_copy(scene_state: &mut SceneState, left: u32, top: u32, right: u32, bottom: u32, dest_x: u32, dest_y: u32, flags: CopyTilesFlags, _delayed: bool) -> OpResult {
     // todo the delay option is unclear. op E5 will delay the actual tile copy until some later
     //  point, possibly when there is time for it, or when the player is not moving?
 
     // Copy tile indexes.
     if flags.contains(CopyTilesFlags::LAYER1) || flags.contains(CopyTilesFlags::LAYER2) || flags.contains(CopyTilesFlags::LAYER3) {
-        for (layer_index, layer) in script_ctx.map.layers.iter_mut().enumerate() {
+        for (layer_index, layer) in scene_state.map.layers.iter_mut().enumerate() {
             if layer_index == 0 && !flags.contains(CopyTilesFlags::LAYER1) {
                 continue;
             }
@@ -66,7 +66,7 @@ pub fn exec_tile_copy(script_ctx: &mut SceneScriptContext, left: u32, top: u32, 
             flag_mask |= SceneTileFlags::COLLISION_IGNORE_Z | SceneTileFlags::COLLISION_INVERTED | SceneTileFlags::UNKNOWN_2 | SceneTileFlags::Z_NEUTRAL | SceneTileFlags::NPC_COLLISION;
         }
 
-        let scene_map = &mut script_ctx.scene_map;
+        let scene_map = &mut scene_state.scene_map;
         for y in 0..bottom - top {
             for x in 0..right - left {
                 let src_index = (x + y * scene_map.props.width) as usize;

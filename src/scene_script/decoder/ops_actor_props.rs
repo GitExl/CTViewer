@@ -3,7 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::{ActorFlags, DrawMode};
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
-use crate::scene_script::scene_script_memory::{DataDest, DataSource};
+use crate::memory::{DataDest, DataSource};
 use crate::sprites::sprite_renderer::SpritePriority;
 
 pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {

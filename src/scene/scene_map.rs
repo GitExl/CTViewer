@@ -76,7 +76,7 @@ pub enum SceneMoveDirection {
     East,
 }
 
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Default)]
 pub struct SceneTileProps {
     pub flags: SceneTileFlags,
     pub collision: SceneTileCollision,
@@ -87,12 +87,14 @@ pub struct SceneTileProps {
     pub move_speed: u32,
 }
 
+#[derive(Clone)]
 pub struct ScenePropLayer {
     pub width: u32,
     pub height: u32,
     pub props: Vec<SceneTileProps>,
 }
 
+#[derive(Clone)]
 pub struct SceneMap {
     pub index: usize,
     pub props: ScenePropLayer,

@@ -7,7 +7,7 @@ use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::decoder::ops_palette::{ColorMathMode, SubPalette};
 use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, ScrollLayerFlags, SpecialEffect};
-use crate::scene_script::scene_script_memory::{DataDest, DataSource};
+use crate::memory::{DataDest, DataSource};
 use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(Copy, Clone, PartialEq, Debug)]

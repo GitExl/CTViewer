@@ -18,7 +18,7 @@ use crate::scene_script::decoder::ops_movement::ops_decode_movement;
 use crate::scene_script::decoder::ops_palette::{op_decode_palette, ColorMathMode};
 use crate::scene_script::decoder::ops_party::op_decode_party;
 use crate::scene_script::scene_script::SceneScriptMode;
-use crate::scene_script::scene_script_memory::DataDest;
+use crate::memory::DataDest;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SpecialEffect {

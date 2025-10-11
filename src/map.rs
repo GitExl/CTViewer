@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use crate::util::vec2df64::Vec2Df64;
 
+#[derive(Clone)]
 pub enum LayerScrollMode {
     Normal,
     IgnoreCamera,
@@ -18,6 +19,7 @@ impl LayerScrollMode {
 }
 
 bitflags! {
+    #[derive(Clone)]
     pub struct ScreenFlags: u32 {
         const SCREEN_L1_MAIN  = 0x01;
         const SCREEN_L2_MAIN  = 0x02;
@@ -32,6 +34,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Clone)]
     pub struct EffectFlags: u32 {
         const EFFECT_L1 = 0x01;
         const EFFECT_L2 = 0x02;
@@ -60,6 +63,7 @@ pub struct MapChip {
     pub palette: usize,
 }
 
+#[derive(Clone)]
 pub struct MapLayer {
     pub chip_width: u32,
     pub chip_height: u32,
@@ -107,6 +111,7 @@ impl MapLayer {
     }
 }
 
+#[derive(Clone)]
 pub struct Map {
     pub index: usize,
 

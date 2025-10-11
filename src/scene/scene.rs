@@ -1,17 +1,12 @@
 use std::path::Path;
-use crate::actor::{Actor, ActorClass, ActorFlags, DrawMode};
-use crate::camera::Camera;
 use crate::Context;
 use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::map::Map;
-use crate::next_destination::NextDestination;
 use crate::palette_anim::PaletteAnimSet;
-use crate::scene::textbox::TextBox;
 use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::SceneScript;
-use crate::screen_fade::ScreenFade;
 use crate::tileset::TileSet;
 use crate::util::vec2di32::Vec2Di32;
 
@@ -67,8 +62,9 @@ pub struct Scene {
     pub music_index: usize,
     pub unknown: u32,
 
-    pub scene_map: SceneMap,
-    pub map: Map,
+    scene_map: SceneMap,
+    map: Map,
+
     pub scroll_mask: ScrollMask,
     pub tileset_l12: TileSet,
     pub tileset_l3: TileSet,
@@ -77,36 +73,48 @@ pub struct Scene {
     pub exits: Vec<SceneExit>,
     pub treasure: Vec<SceneTreasure>,
     pub script: SceneScript,
-
-    pub actors: Vec<Actor>,
 }
 
 impl Scene {
-    pub fn init(&mut self, ctx: &mut Context, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera, next_destination: &mut NextDestination) {
 
-        // Create actors and related state.
-        for actor_script_index in 0..self.script.actor_scripts.len() {
-            let mut actor = Actor::new(actor_script_index);
-            actor.flags.remove(ActorFlags::DEAD);
-            actor.class = ActorClass::Undefined;
-
-            self.script.add_initial_state(actor_script_index);
-            ctx.sprites_states.add_state();
-
-            self.actors.push(actor);
+    pub fn new(
+        index: usize,
+        music_index: usize,
+        unknown: u32,
+        map: Map,
+        scene_map: SceneMap,
+        scroll_mask: ScrollMask,
+        tileset_l12: TileSet,
+        tileset_l3: TileSet,
+        palette: GamePalette,
+        palette_anims: PaletteAnimSet,
+        exits: Vec<SceneExit>,
+        treasure: Vec<SceneTreasure>,
+        script: SceneScript,
+    ) -> Scene {
+        Scene {
+            index,
+            music_index,
+            unknown,
+            map,
+            scene_map,
+            scroll_mask,
+            tileset_l12,
+            tileset_l3,
+            palette,
+            palette_anims,
+            exits,
+            treasure,
+            script,
         }
+    }
 
-        // Run first actor script until it yields (first return op).
-        self.script.run_object_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map, textbox, screen_fade, camera, next_destination);
+    pub fn get_scene_map(&self) -> &SceneMap {
+        &self.scene_map
+    }
 
-        // Run actor 0 script 1.
-        self.script.run_scene_initialization(ctx, &mut self.actors, &mut self.map, &mut self.scene_map, textbox, screen_fade, camera, next_destination);
-
-        // Update sprite state after script init.
-        for (actor_index, actor) in self.actors.iter_mut().enumerate() {
-            let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
-            actor.update_sprite_state(sprite_state);
-        }
+    pub fn get_map(&self) -> &Map {
+        &self.map
     }
 
     pub fn dump(&self, ctx: &Context) {
@@ -141,7 +149,6 @@ impl Scene {
         self.tileset_l3.dump();
         self.palette.dump();
         self.palette_anims.dump();
-        self.script.dump();
 
         for exit in &self.exits {
             exit.dump(ctx);
@@ -157,37 +164,5 @@ impl Scene {
 
         self.tileset_l12.render_tiles_to_surface(&self.palette.palette).write_to_bmp(Path::new("debug_output/scene_tiles_l12.bmp"));
         self.tileset_l3.render_tiles_to_surface(&self.palette.palette).write_to_bmp(Path::new("debug_output/scene_tiles_l3.bmp"));
-    }
-
-    pub fn tick(&mut self, ctx: &mut Context, textbox: &mut TextBox, screen_fade: &mut ScreenFade, camera: &mut Camera, next_destination: &mut NextDestination, delta: f64) {
-        self.map.tick(delta);
-
-        self.script.run(ctx, &mut self.actors, &mut self.map, &mut self.scene_map, textbox, screen_fade, camera, next_destination);
-
-        for (index, actor) in self.actors.iter_mut().enumerate() {
-            actor.tick(delta, &self.scene_map);
-
-            let state = ctx.sprites_states.get_state_mut(index);
-            actor.update_sprite_state(state);
-            ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
-        }
-
-        self.tileset_l12.tick(delta);
-        self.palette_anims.tick(delta, &mut self.palette.palette);
-    }
-
-    pub fn lerp(&mut self, ctx: &mut Context, lerp: f64) {
-        self.map.lerp(lerp);
-
-        for (actor_index, actor) in self.actors.iter_mut().enumerate() {
-            if actor.draw_mode != DrawMode::Draw {
-                continue;
-            }
-
-            actor.lerp(lerp);
-
-            let state = ctx.sprites_states.get_state_mut(actor_index);
-            state.pos = actor.pos_lerp;
-        }
     }
 }

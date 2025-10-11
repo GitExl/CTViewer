@@ -1,7 +1,7 @@
 use std::path::Path;
 use crate::actor::{Actor, DebugSprite, ActorTask, ActorFlags};
 use crate::camera::Camera;
-use crate::scene::scene::{Scene, SceneTreasure};
+use crate::scene::scene::SceneTreasure;
 use crate::scene::scene::SceneExit;
 use crate::scene::scene_map::SceneMap;
 use crate::scene::scene_map::SceneMoveDirection;
@@ -11,7 +11,7 @@ use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::draw::{draw_box_filled, draw_line};
-use crate::software_renderer::palette::render_palette;
+use crate::software_renderer::palette::{render_palette, Palette};
 use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_renderer::SpritePriority;
 
@@ -46,21 +46,21 @@ impl SceneRenderer {
         }
     }
 
-    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene: &mut Scene, surface: &mut Surface) {
+    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene_map: &SceneMap, exits: &Vec<SceneExit>, treasure: &Vec<SceneTreasure>, actors: &Vec<Actor>, palette: &Palette, surface: &mut Surface) {
         if self.debug_layer != SceneDebugLayer::Disabled {
-            self.render_debug_layer(&scene.scene_map, &camera, surface);
+            self.render_debug_layer(&scene_map, &camera, surface);
         }
 
         if self.debug_layer == SceneDebugLayer::Exits {
-            self.render_debug_exits(&scene.exits, &camera, surface);
+            self.render_debug_exits(&exits, &camera, surface);
         } else if self.debug_layer == SceneDebugLayer::Treasure {
-            self.render_debug_treasure(&scene.treasure, &camera, surface);
+            self.render_debug_treasure(&treasure, &camera, surface);
         } else if self.debug_layer == SceneDebugLayer::Actors {
-            self.render_debug_actors(&scene.actors, &camera, surface);
+            self.render_debug_actors(&actors, &camera, surface);
         }
 
         if self.debug_palette {
-            render_palette(&scene.palette.palette, surface, 8);
+            render_palette(&palette, surface, 8);
         }
     }
 

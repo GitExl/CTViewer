@@ -3,7 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::DrawMode;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
-use crate::scene_script::scene_script_memory::DataSource;
+use crate::memory::DataSource;
 
 /// Conditionals for comparisons.
 #[derive(Copy, Clone, PartialEq, Debug)]

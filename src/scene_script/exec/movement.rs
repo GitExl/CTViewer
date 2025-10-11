@@ -1,13 +1,13 @@
 use std::f64::consts::PI;
 use crate::actor::{ActorFlags, ActorTask, DebugSprite};
 use crate::Context;
+use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
-use crate::scene_script::scene_script_exec::SceneScriptContext;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
-pub fn exec_movement_to_tile(ctx: &mut Context, script_ctx: &mut SceneScriptContext, state: &mut ActorScriptState, actor_index: usize, tile_dest_pos: Vec2Di32, cycle_count: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
-    let actor = script_ctx.actors.get_mut(actor_index).unwrap();
+pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, tile_dest_pos: Vec2Di32, cycle_count: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
+    let actor = scene_state.actors.get_mut(actor_index).unwrap();
     let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match tile movements.
@@ -63,13 +63,13 @@ pub fn exec_movement_to_tile(ctx: &mut Context, script_ctx: &mut SceneScriptCont
             (actor.move_speed * 0.5) * angle_rads.sin(),
         );
 
-        actor.update_sprite_priority(script_ctx.scene_map);
+        actor.update_sprite_priority(&scene_state.scene_map);
 
         // Script speed is the number of movement steps, or an immediate value if set.
         move_cycle_count = if let Some(cycle_count) = cycle_count {
             cycle_count
         } else {
-            state.delay
+            script_state.delay
         };
     }
 
@@ -102,8 +102,8 @@ pub fn exec_movement_to_tile(ctx: &mut Context, script_ctx: &mut SceneScriptCont
     OpResult::YIELD
 }
 
-pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptContext, actor_index: usize, angle: f64, cycles: u32, update_facing: bool, animated: bool) -> OpResult {
-    let actor = script_ctx.actors.get_mut(actor_index).unwrap();
+pub fn exec_movement_by_vector(ctx: &mut Context, scene_state: &mut SceneState, actor_index: usize, angle: f64, cycles: u32, update_facing: bool, animated: bool) -> OpResult {
+    let actor = scene_state.actors.get_mut(actor_index).unwrap();
     let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match angle movement tasks.
@@ -131,7 +131,7 @@ pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptCo
         (actor.move_speed * 0.5) * angle_rads.sin(),
     );
 
-    actor.update_sprite_priority(script_ctx.scene_map);
+    actor.update_sprite_priority(&scene_state.scene_map);
 
     // Set new movement task.
     actor.task = ActorTask::MoveByAngle {
@@ -152,16 +152,16 @@ pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptCo
     OpResult::YIELD
 }
 
-pub fn exec_movement_to_actor(ctx: &mut Context, script_ctx: &mut SceneScriptContext, state: &mut ActorScriptState, actor_index: usize, target_actor_index: usize, cycle_count: Option<u32>, update_facing: bool, animated: bool, into_battle_range: bool) -> OpResult {
+pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, target_actor_index: usize, cycle_count: Option<u32>, update_facing: bool, animated: bool, into_battle_range: bool) -> OpResult {
 
     // Ignore dead target actor.
-    if script_ctx.actors[target_actor_index].flags.contains(ActorFlags::DEAD) {
+    if scene_state.actors[target_actor_index].flags.contains(ActorFlags::DEAD) {
         ctx.sprites_states.get_state_mut(actor_index).reset_animation();
         return OpResult::COMPLETE;
     }
 
-    let target_pos = script_ctx.actors[target_actor_index].pos;
-    let actor = script_ctx.actors.get_mut(actor_index).unwrap();
+    let target_pos = scene_state.actors[target_actor_index].pos;
+    let actor = scene_state.actors.get_mut(actor_index).unwrap();
     let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match actor movements.
@@ -228,13 +228,13 @@ pub fn exec_movement_to_actor(ctx: &mut Context, script_ctx: &mut SceneScriptCon
             (actor.move_speed * 0.5) * angle_rads.sin(),
         );
 
-        actor.update_sprite_priority(script_ctx.scene_map);
+        actor.update_sprite_priority(&scene_state.scene_map);
 
         // Script speed is the number of movement steps, or an immediate value if set.
         move_cycles = if let Some(cycle_count) = cycle_count {
             cycle_count
         } else {
-            state.delay
+            script_state.delay
         };
     }
 

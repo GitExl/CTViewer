@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_memory::{DataDest, DataSource};
+use crate::memory::{DataDest, DataSource};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BitMathOp {

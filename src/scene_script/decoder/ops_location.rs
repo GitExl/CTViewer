@@ -4,7 +4,7 @@ use crate::destination::Destination;
 use crate::facing::Facing;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script::SceneScriptMode;
-use crate::scene_script::scene_script_memory::DataSource;
+use crate::memory::DataSource;
 use crate::util::vec2di32::Vec2Di32;
 
 pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {

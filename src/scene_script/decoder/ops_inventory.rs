@@ -3,7 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::ActorRef;
-use crate::scene_script::scene_script_memory::DataSource;
+use crate::memory::DataSource;
 
 pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {

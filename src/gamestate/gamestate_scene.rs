@@ -1,18 +1,23 @@
+use std::io::Cursor;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
-use crate::actor::{ActorFlags, ActorTask, DrawMode};
+use crate::actor::{Actor, ActorClass, ActorFlags, ActorTask, DrawMode};
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
+use crate::map::Map;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
+use crate::memory::Memory;
 use crate::next_destination::NextDestination;
 use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::scene::textbox::TextBox;
 use crate::scene::scene::Scene;
+use crate::scene::scene_map::SceneMap;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
+use crate::scene_script::scene_script::ActorScriptState;
 use crate::screen_fade::ScreenFade;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
@@ -20,16 +25,28 @@ use crate::software_renderer::text::TextDrawFlags;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
-pub struct GameStateScene {
-    pub scene: Scene,
-
+/// Mutable state for a scene.
+pub struct SceneState {
+    pub script_data: Cursor<Vec<u8>>,
+    pub script_states: Vec<ActorScriptState>,
+    pub textbox: TextBox,
+    pub textbox_strings: Vec<String>,
+    pub actors: Vec<Actor>,
+    pub screen_fade: ScreenFade,
+    pub next_destination: NextDestination,
     pub camera: Camera,
+    pub memory: Memory,
+    pub scene_map: SceneMap,
+    pub map: Map,
+}
+
+/// Data for updating and rendering a scene.
+pub struct GameStateScene {
+    scene: Scene,
+    state: SceneState,
+
     map_renderer: MapRenderer,
     scene_renderer: SceneRenderer,
-
-    textbox: TextBox,
-    screen_fade: ScreenFade,
-    next_destination: NextDestination,
 
     key_up: bool,
     key_down: bool,
@@ -50,43 +67,73 @@ pub struct GameStateScene {
 
 impl GameStateScene {
     pub fn new(ctx: &mut Context, scene_index: usize, camera_center: Vec2Df64) -> GameStateScene {
+        let scene = ctx.fs.read_scene(scene_index);
+        println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
+
+        // Create new shared scene state.
+        let mut state = SceneState {
+            next_destination: NextDestination::new(),
+            screen_fade: ScreenFade::new(0.0),
+            camera: Camera::new(
+                scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
+                ctx.render.target.width as f64, ctx.render.target.height as f64,
+                scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
+                scene.scroll_mask.right as f64, scene.scroll_mask.bottom as f64,
+            ),
+            textbox: TextBox::new(ctx),
+            textbox_strings: Vec::new(),
+            actors: Vec::new(),
+            memory: Memory::new(),
+            script_data: Cursor::new(scene.script.get_data().clone()),
+            script_states: Vec::new(),
+            scene_map: scene.get_scene_map().clone(),
+            map: scene.get_map().clone(),
+        };
+
+        // Cats!
+        state.memory.write_u8(0x7F0053, 0x7F);
+        state.memory.write_u8(0x7F005F, 0x7F);
+
+        // Initialize rendering.
         ctx.sprites_states.clear();
-
-        let mut scene = ctx.fs.read_scene(scene_index);
-
-        let mut camera = Camera::new(
-            scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
-            ctx.render.target.width as f64, ctx.render.target.height as f64,
-            scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
-            scene.scroll_mask.right as f64, scene.scroll_mask.bottom as f64,
-        );
-
         let scene_renderer = SceneRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
-        map_renderer.setup_for_map(&mut scene.map);
+        map_renderer.setup_for_map(&mut state.map);
 
-        camera.center_to(camera_center);
+        // Initialize state.
+        state.screen_fade.start(1.0, 2);
+        state.camera.center_to(camera_center);
 
-        let mut textbox = TextBox::new(ctx);
-        let mut next_destination = NextDestination::new();
+        // Create actors and setup their state.
+        for (actor_index, actor_script) in scene.script.get_actor_scripts().iter().enumerate() {
+            let mut actor = Actor::new(actor_index);
+            actor.flags.remove(ActorFlags::DEAD);
+            actor.class = ActorClass::Undefined;
 
-        let mut screen_fade = ScreenFade::new(0.0);
-        screen_fade.start(1.0, 2);
+            let script_state = actor_script.get_initial_state();
+            state.script_states.push(script_state);
+            ctx.sprites_states.add_state();
 
-        scene.init(ctx, &mut textbox, &mut screen_fade, &mut camera, &mut next_destination);
+            state.actors.push(actor);
+        }
 
-        println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
+        // Run first actor script until it yields (first return op).
+        scene.script.run_object_initialization(ctx, &mut state);
+        // Run actor 0 script 1.
+        scene.script.run_scene_initialization(ctx, &mut state);
+
+        // Update sprite state after script init.
+        for (actor_index, actor) in state.actors.iter_mut().enumerate() {
+            let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
+            actor.update_sprite_state(sprite_state);
+        }
 
         GameStateScene {
             scene,
+            state,
 
-            camera,
             scene_renderer,
             map_renderer,
-
-            textbox,
-            screen_fade,
-            next_destination,
 
             key_down: false,
             key_left: false,
@@ -109,35 +156,51 @@ impl GameStateScene {
 
 impl GameStateTrait for GameStateScene {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
-        self.scene.tick(ctx, &mut self.textbox, &mut self.screen_fade, &mut self.camera, &mut self.next_destination, delta);
 
-        self.camera.tick(delta);
-        if let Some(debug_actor) = self.debug_actor {
-            self.camera.pos = self.scene.actors[debug_actor].pos - Vec2Df64::new(self.camera.size.x - 64.0, self.camera.size.y / 2.0);
-            self.camera.clamp();
-        } else {
-            if self.key_up {
-                self.camera.pos.y -= 300.0 * delta;
-            }
-            else if self.key_down {
-                self.camera.pos.y += 300.0 * delta;
-            }
-            if self.key_left {
-                self.camera.pos.x -= 300.0 * delta;
-            }
-            else if self.key_right {
-                self.camera.pos.x += 300.0 * delta;
-            }
-            self.camera.clamp();
+        // Tick map.
+        self.state.map.tick(delta);
+
+        // Tick script.
+        self.scene.script.run(ctx, &mut self.state);
+
+        // Tick actors.
+        for (index, actor) in self.state.actors.iter_mut().enumerate() {
+            actor.tick(delta, &self.state.scene_map);
+            let state = ctx.sprites_states.get_state_mut(index);
+            actor.update_sprite_state(state);
+            ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
         }
 
-        self.textbox.tick(delta);
-        self.screen_fade.tick(delta);
+        self.scene.tileset_l12.tick(delta);
+        self.scene.palette_anims.tick(delta, &mut self.scene.palette.palette);
 
-        if let Some(next_destination) = self.next_destination.destination {
-            if !self.screen_fade.is_active() {
+        self.state.camera.tick(delta);
+        if let Some(debug_actor) = self.debug_actor {
+            self.state.camera.pos = self.state.actors[debug_actor].pos - Vec2Df64::new(self.state.camera.size.x - 64.0, self.state.camera.size.y / 2.0);
+            self.state.camera.clamp();
+        } else {
+            if self.key_up {
+                self.state.camera.pos.y -= 300.0 * delta;
+            }
+            else if self.key_down {
+                self.state.camera.pos.y += 300.0 * delta;
+            }
+            if self.key_left {
+                self.state.camera.pos.x -= 300.0 * delta;
+            }
+            else if self.key_right {
+                self.state.camera.pos.x += 300.0 * delta;
+            }
+            self.state.camera.clamp();
+        }
+
+        self.state.textbox.tick(delta);
+        self.state.screen_fade.tick(delta);
+
+        if let Some(next_destination) = self.state.next_destination.destination {
+            if !self.state.screen_fade.is_active() {
                 self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination });
-                self.next_destination.clear();
+                self.state.next_destination.clear();
             }
         }
 
@@ -151,46 +214,66 @@ impl GameStateTrait for GameStateScene {
     }
 
     fn render(&mut self, ctx: &mut Context, lerp: f64) {
-        self.scene.lerp(ctx, lerp);
-        self.camera.lerp(lerp);
 
+        // Interpolate movement.
+        self.state.map.lerp(lerp);
+
+        for (actor_index, actor) in self.state.actors.iter_mut().enumerate() {
+            if actor.draw_mode != DrawMode::Draw {
+                continue;
+            }
+
+            actor.lerp(lerp);
+
+            let state = ctx.sprites_states.get_state_mut(actor_index);
+            state.pos = actor.pos_lerp;
+        }
+
+        self.state.camera.lerp(lerp);
+
+        // Start rendering.
         self.map_renderer.render(
             lerp,
-            &self.camera,
+            &self.state.camera,
             &mut ctx.render.target,
-            &self.scene.map,
+            &self.state.map,
             &self.scene.tileset_l12,
             &self.scene.tileset_l3,
             &self.scene.palette,
             &ctx.sprites_states,
             &ctx.sprite_assets,
         );
+
         self.scene_renderer.render(
             lerp,
-            &self.camera,
-            &mut self.scene,
+            &self.state.camera,
+            &self.state.scene_map,
+            &self.scene.exits,
+            &self.scene.treasure,
+            &self.state.actors,
+            &self.scene.palette.palette,
             &mut ctx.render.target,
         );
 
         if let Some(debug_text) = &mut self.debug_text {
             ctx.render.render_text(
                 debug_text,
-                self.debug_text_x - self.camera.pos_lerp.x as i32, self.debug_text_y - self.camera.pos_lerp.y as i32,
+                self.debug_text_x - self.state.camera.pos_lerp.x as i32, self.debug_text_y - self.state.camera.pos_lerp.y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
 
         if let Some(debug_box) = self.debug_box {
             ctx.render.render_box_filled(
-                debug_box.moved_by(-self.camera.pos_lerp.x as i32, -self.camera.pos_lerp.y as i32),
+                debug_box.moved_by(-self.state.camera.pos_lerp.x as i32, -self.state.camera.pos_lerp.y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
             );
         }
 
         if let Some(debug_actor) = self.debug_actor {
-            let actor = &self.scene.actors[debug_actor];
-            let pos = (actor.pos_lerp.floor() - self.camera.pos_lerp.floor()).as_vec2d_i32();
+            let actor = &self.state.actors[debug_actor];
+            let pos = (actor.pos_lerp.floor() - self.state.camera.pos_lerp.floor()).as_vec2d_i32();
             ctx.render.render_box_filled(
                 Rect::new(pos.x - 8, pos.y - 16, pos.x + 8, pos.y),
                 [0, 255, 0, 127],
@@ -204,14 +287,14 @@ impl GameStateTrait for GameStateScene {
             );
 
             let sprite_state = ctx.sprites_states.get_state(debug_actor);
-            let script_state = &self.scene.script.script_states[debug_actor];
+            let script_state = &self.state.script_states[debug_actor];
             let op: String = if let Some(current_op) = script_state.current_op {
                 format!("{:?}", current_op)
             } else {
                 "None".to_string()
             };
 
-            // Spit out a bunch of internal state.
+            // Spit out a bunch of internal actor state.
             let text_actor = format!(
                 "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}",
                 debug_actor, actor.class,
@@ -241,8 +324,8 @@ impl GameStateTrait for GameStateScene {
             ctx.render.render_text(&mut header, 2, 2, TextFlags::empty());
         }
 
-        self.textbox.render(ctx, lerp);
-        self.screen_fade.render(ctx, lerp);
+        self.state.textbox.render(ctx, lerp);
+        self.state.screen_fade.render(ctx, lerp);
     }
 
     fn get_title(&self, ctx: &Context) -> String {
@@ -260,7 +343,7 @@ impl GameStateTrait for GameStateScene {
 
                     Some(Keycode::F) => {
                         self.key_activate = true;
-                        self.textbox.progress();
+                        self.state.textbox.progress();
                     },
 
                     Some(Keycode::_1) => {
@@ -357,8 +440,8 @@ impl GameStateTrait for GameStateScene {
                     // Attempt to activate actor.
                     // 0xC05AC5
                     if let Some(index) = index {
-                        let actor = &mut self.scene.actors[index];
-                        let script_state = &mut self.scene.script.script_states[index];
+                        let actor = &mut self.state.actors[index];
+                        let script_state = &mut self.state.script_states[index];
                         if actor.draw_mode == DrawMode::Draw &&
                          !actor.flags.contains(ActorFlags::SCRIPT_DISABLED) &&
                          !actor.flags.contains(ActorFlags::DEAD) &&
@@ -377,8 +460,8 @@ impl GameStateTrait for GameStateScene {
                         let index = self.get_exit_at(self.mouse_pos);
                         if let Some(index) = index {
                             let exit = &self.scene.exits[index];
-                            self.next_destination.set(exit.destination, true);
-                            self.screen_fade.start(0.0, 2);
+                            self.state.next_destination.set(exit.destination, true);
+                            self.state.screen_fade.start(0.0, 2);
                         }
                     }
                 }
@@ -389,8 +472,8 @@ impl GameStateTrait for GameStateScene {
                     // Attempt to touch actor.
                     // 0xC03154
                     if let Some(index) = index {
-                        let actor = &mut self.scene.actors[index];
-                        let script_state = &mut self.scene.script.script_states[index];
+                        let actor = &mut self.state.actors[index];
+                        let script_state = &mut self.state.script_states[index];
                         if actor.draw_mode == DrawMode::Draw &&
                             !actor.flags.contains(ActorFlags::SCRIPT_DISABLED) &&
                             !actor.flags.contains(ActorFlags::DEAD) &&
@@ -415,13 +498,13 @@ impl GameStateTrait for GameStateScene {
 
         // Keep world coordinate mouse position.
         self.mouse_pos = Vec2Di32::new(
-            (x as f64 + self.camera.pos.x) as i32,
-            (y as f64 + self.camera.pos.y) as i32,
+            (x as f64 + self.state.camera.pos.x) as i32,
+            (y as f64 + self.state.camera.pos.y) as i32,
         );
 
         let mut index = self.get_actor_at(self.mouse_pos);
         if let Some(index) = index {
-            let actor = &self.scene.actors[index];
+            let actor = &self.state.actors[index];
             let text = format!("Actor {}", index);
             self.debug_text = Some(TextRenderable::new(
                 text,
@@ -497,10 +580,6 @@ impl GameStateTrait for GameStateScene {
 
     fn dump(&mut self, ctx: &Context) {
         self.scene.dump(ctx);
-
-        // for (_, set) in sprites.anim_sets.iter() {
-        //     set.dump();
-        // }
     }
 }
 
@@ -531,7 +610,7 @@ impl GameStateScene {
     }
 
     fn get_actor_at(&self, pos: Vec2Di32) -> Option<usize> {
-        for (index, actor) in self.scene.actors.iter().enumerate() {
+        for (index, actor) in self.state.actors.iter().enumerate() {
             if pos.x < actor.pos.x as i32 - 8 || pos.x >= actor.pos.x as i32 + 8 ||
                pos.y < actor.pos.y as i32 - 16 || pos.y >= actor.pos.y as i32 {
                 continue;
