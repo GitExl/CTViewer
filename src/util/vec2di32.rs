@@ -2,7 +2,7 @@ use std::f64::consts::PI;
 use std::{fmt, ops};
 use crate::util::vec2df64::Vec2Df64;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Vec2Di32 {
     pub x: i32,
     pub y: i32,

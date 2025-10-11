@@ -50,13 +50,29 @@ impl Camera {
         self.pos_last = self.pos;
 
         if self.move_to_state == CameraMoveTo::Enabled {
-            if self.pos.x.floor() == self.move_to.x.floor() && self.pos.y.floor() == self.move_to.y.floor() {
+            if self.pos.x as i32 == self.move_to.x as i32 && self.pos.y as i32 == self.move_to.y as i32 {
+                self.pos = self.move_to;
                 self.move_to_state = CameraMoveTo::Complete;
             } else {
-                let distance = self.move_to - self.pos;
-                self.pos = self.pos + distance.signum();
+                let distance = (self.move_to - self.pos).as_vec2d_i32();
+                if distance.x != 0 {
+                    self.pos.x += distance.x.signum() as f64;
+                }
+                if distance.y != 0 {
+                    self.pos.y += distance.y.signum() as f64;
+                }
             }
         }
+    }
+
+    pub fn move_to(&mut self, move_to: Vec2Df64) {
+        self.move_to = move_to;
+
+        // Clamp destination to camera size, otherwise the movement will never complete.
+        self.move_to.x = self.move_to.x.min(self.x2 - self.size.x).max(self.x1);
+        self.move_to.y = self.move_to.y.min(self.y2 - self.size.y).max(self.y1);
+
+        self.move_to_state = CameraMoveTo::Enabled;
     }
 
     pub fn lerp(&mut self, lerp: f64) {

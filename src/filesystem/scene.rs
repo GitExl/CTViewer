@@ -1,7 +1,8 @@
 use std::io::{Read, Seek, SeekFrom};
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
-use crate::destination::{Destination, Facing};
+use crate::destination::Destination;
+use crate::facing::Facing;
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
 use crate::scene_script::scene_script::{SceneActorScript, SceneScript, SceneScriptMode};

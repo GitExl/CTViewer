@@ -1,16 +1,9 @@
 use crate::Context;
+use crate::facing::Facing;
 use crate::l10n::IndexedType;
 use crate::util::vec2di32::Vec2Di32;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Facing {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Destination {
     Scene {
         index: usize,

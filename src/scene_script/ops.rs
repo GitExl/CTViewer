@@ -1,4 +1,5 @@
 use crate::actor::{ActorFlags, DrawMode};
+use crate::destination::Destination;
 use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
 use crate::scene_script::decoder::ops_textbox::{TextBoxInput, DialogueSpecialType};
@@ -347,10 +348,15 @@ pub enum Op {
 
     // Change location.
     ChangeLocation {
-        index_facing: DataSource,
-        x: DataSource,
-        y: DataSource,
-        variant: u8,
+        destination: Destination,
+        instant: bool,
+        queue_different_unknown: bool,
+    },
+    ChangeLocationFromMemory {
+        byte1: DataSource,
+        byte2: DataSource,
+        byte3: DataSource,
+        byte4: DataSource,
     },
 
     // Start a battle.

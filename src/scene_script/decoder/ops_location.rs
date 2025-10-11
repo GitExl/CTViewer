@@ -1,83 +1,99 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::destination::Destination;
+use crate::facing::Facing;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_memory::DataSource;
+use crate::util::vec2di32::Vec2Di32;
 
 pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
-
-        // These are all the same except for the last one that reads parameters from memory.
-        // The differences are not at all documented.
-        0xDC => {
-            Op::ChangeLocation {
-                index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                    DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
-                } else {
-                    DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
-                },
-                x: DataSource::Immediate(data.read_u8().unwrap() as i32),
-                y: DataSource::Immediate(data.read_u8().unwrap() as i32),
-                variant: 0xDC,
-            }
+        0xDC => Op::ChangeLocation {
+            destination: read_destination(data, mode),
+            instant: false,
+            queue_different_unknown: true,
         },
         0xDD => Op::ChangeLocation {
-            index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
-            } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
-            },
-            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            variant: 0xDD,
+            destination: read_destination(data, mode),
+            instant: true,
+            queue_different_unknown: false,
         },
         0xDE => Op::ChangeLocation {
-            index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
-            } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
-            },
-            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            variant: 0xDE,
+            destination: read_destination(data, mode),
+            instant: true,
+            queue_different_unknown: false,
         },
         0xDF => Op::ChangeLocation {
-            index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
-            } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
-            },
-            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            variant: 0xDF,
+            destination: read_destination(data, mode),
+            instant: true,
+            queue_different_unknown: false,
         },
         0xE0 => Op::ChangeLocation {
-            index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
-            } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
-            },
-            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            variant: 0xDE,
+            destination: read_destination(data, mode),
+            instant: false,
+            queue_different_unknown: false,
         },
         0xE1 => Op::ChangeLocation {
-            index_facing: if matches!(mode, SceneScriptMode::Snes) {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32)
-            } else {
-                DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 | data.read_u8().unwrap() as i32 >> 16)
-            },
-            x: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            y: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            variant: 0xE1,
+            destination: read_destination(data, mode),
+            instant: true,
+            queue_different_unknown: false,
         },
-        0xE2 => Op::ChangeLocation {
-            index_facing: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
-            variant: 0xE2,
+        0xE2 => Op::ChangeLocationFromMemory {
+            byte1: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            byte2: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            byte3: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            byte4: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         _ => panic!("Unknown location op."),
+    }
+}
+
+fn read_destination(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Destination {
+    match mode {
+        SceneScriptMode::Snes => {
+            let index_facing = data.read_u16::<LittleEndian>().unwrap() as usize;
+            let index = index_facing & 0x01FF;
+            let facing = index_facing & 0x0600;
+
+            let x = data.read_u8().unwrap() as i32;
+            let y = data.read_u8().unwrap() as i32;
+            let pos = Vec2Di32 { x, y };
+
+            if index >= 0x1F0 && index <= 0x1FF {
+                Destination::World {
+                    index: index - 0x1F0,
+                    pos,
+                }
+            } else {
+                Destination::Scene {
+                    index,
+                    facing: Facing::from_index(facing),
+                    pos,
+                }
+            }
+        },
+        SceneScriptMode::Pc => {
+            let index = data.read_u16::<LittleEndian>().unwrap() as usize;
+            let facing = data.read_u8().unwrap() as usize;
+
+            let x = data.read_u8().unwrap() as i32;
+            let y = data.read_u8().unwrap() as i32;
+            let pos = Vec2Di32 { x, y };
+
+            if index >= 0x1F0 && index <= 0x1FF {
+                Destination::World {
+                    index: index - 0x1F0,
+                    pos,
+                }
+            } else {
+                Destination::Scene {
+                    index,
+                    facing: Facing::from_index(facing),
+                    pos,
+                }
+            }
+        }
     }
 }

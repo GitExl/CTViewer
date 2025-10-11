@@ -533,10 +533,6 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
             OpResult::COMPLETE
         },
 
-        Op::ScrollLayers { x, y, flags, duration } => {
-            OpResult::COMPLETE
-        },
-
         Op::ScreenFade { target, delay } => {
             if delay == 0 {
                 script_ctx.screen_fade.set(target);
@@ -563,15 +559,25 @@ pub fn op_execute(ctx: &mut Context, script_ctx: &mut SceneScriptContext, this_a
                 return OpResult::COMPLETE;
             }
 
-            script_ctx.camera.move_to_state = CameraMoveTo::Enabled;
-            script_ctx.camera.move_to.x = x as f64 * 16.0;
-            script_ctx.camera.move_to.y = y as f64 * 16.0;
+            script_ctx.camera.move_to(Vec2Df64::new(x as f64 * 16.0, y as f64 * 16.0));
 
             OpResult::YIELD
         },
 
-        Op::PaletteSetImmediate { sub_palette, color_index, data, length } => {
-            OpResult::COMPLETE
+        Op::ChangeLocation { destination, instant, queue_different_unknown } => {
+            // todo spit out change location event
+
+            println!("Change location to {:?}, instant? {}, queued unknown? {}", destination.info(ctx), instant, queue_different_unknown);
+
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+
+        Op::ChangeLocationFromMemory { _byte1, _byte2, _byte3, _byte4 } => {
+            // todo what about PC version?
+
+            println!("Change location from memory");
+
+            OpResult::YIELD | OpResult::COMPLETE
         },
 
         _ => {

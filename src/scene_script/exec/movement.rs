@@ -139,7 +139,6 @@ pub fn exec_movement_by_vector(ctx: &mut Context, script_ctx: &mut SceneScriptCo
         move_by,
         cycles,
     };
-    println!("{} {} {}", angle, move_by, cycles);
     actor.debug_sprite = DebugSprite::Moving;
     sprite_state.anim_loops_remaining = cycles;
 

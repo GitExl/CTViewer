@@ -3,7 +3,8 @@ use std::io::SeekFrom;
 
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
-use crate::destination::{Destination, Facing};
+use crate::destination::Destination;
+use crate::facing::Facing;
 use crate::filesystem::filesystem::{FileSystem, ParseMode};
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::WorldExit;
@@ -169,13 +170,13 @@ impl FileSystem {
             match self.parse_mode {
                 ParseMode::Pc => {
                     scene_index = exit_data.scene_index as usize;
-                    facing = (exit_data.scene_facing & 0x6) >> 1;
+                    facing = ((exit_data.scene_facing & 0x6) >> 1) as usize;
                     shift_left = exit_data.scene_facing & 0x8 > 0;
                     shift_up = exit_data.scene_facing & 0x10 > 0;
                 },
                 ParseMode::Snes => {
                     scene_index = (exit_data.scene_index & 0x1FF) as usize;
-                    facing = ((exit_data.scene_index & 0x600) >> 9) as u8;
+                    facing = ((exit_data.scene_index & 0x600) >> 9) as usize;
                     shift_left = exit_data.scene_index & 0x800 > 0;
                     shift_up = exit_data.scene_index & 0x1000 > 0;
                 },
@@ -187,13 +188,7 @@ impl FileSystem {
                  (exit_data.scene_tile_x as i32 * 16) - if shift_left { 8 } else { 0 },
                  (exit_data.scene_tile_y as i32 * 16) - if shift_up { 8 } else { 0 },
                 ),
-                facing: match facing {
-                    0 => Facing::Up,
-                    1 => Facing::Down,
-                    2 => Facing::Left,
-                    3 => Facing::Right,
-                    _ => panic!("Unknown world exit facing."),
-                },
+                facing: Facing::from_index(facing),
             };
 
             exits.push(WorldExit {
