@@ -1,7 +1,9 @@
 use crate::actor::ActorFlags;
+use crate::Context;
 use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 
+#[derive(Clone)]
 pub struct Memory {
     pub temp: [u8; 0x200],
     pub global: [u8; 0x200],
@@ -161,10 +163,10 @@ impl DataSource {
         DataSource::Memory(address + 0x9F0000)
     }
 
-    pub fn get_u8(self, scene_state: &SceneState, current_actor: usize) -> u8 {
+    pub fn get_u8(self, ctx: &Context, scene_state: &SceneState, current_actor: usize) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
-            DataSource::Memory(address) => scene_state.memory.read_u8(address),
+            DataSource::Memory(address) => ctx.memory.read_u8(address),
             DataSource::ActorResult(actor) => scene_state.actors[actor.deref(current_actor)].result as u8,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
@@ -177,10 +179,10 @@ impl DataSource {
         }
     }
 
-    pub fn get_u16(self, scene_state: &SceneState, current_actor: usize) -> u16 {
+    pub fn get_u16(self, ctx: &Context, scene_state: &SceneState, current_actor: usize) -> u16 {
         match self {
             DataSource::Immediate(value) => value as u16,
-            DataSource::Memory(address) => scene_state.memory.read_u16(address),
+            DataSource::Memory(address) => ctx.memory.read_u16(address),
             DataSource::ActorResult(actor) => scene_state.actors[actor.deref(current_actor)].result as u16,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
@@ -222,21 +224,21 @@ impl DataDest {
         DataDest::Memory(address + 0x9F0000)
     }
 
-    pub fn put_u8(&self, scene_state: &mut SceneState, value: u8) {
+    pub fn put_u8(&self, ctx: &mut Context, _scene_state: &mut SceneState, value: u8) {
         match self {
-            DataDest::Memory(address) => scene_state.memory.write_u8(*address, value),
+            DataDest::Memory(address) => ctx.memory.write_u8(*address, value),
         }
     }
 
-    pub fn put_u16(&self, scene_state: &mut SceneState, value: u16) {
+    pub fn put_u16(&self, ctx: &mut Context, _scene_state: &mut SceneState, value: u16) {
         match self {
-            DataDest::Memory(address) => scene_state.memory.write_u16(*address, value),
+            DataDest::Memory(address) => ctx.memory.write_u16(*address, value),
         }
     }
 
-    pub fn put_bytes(&self, scene_state: &mut SceneState, bytes: [u8; 64], length: usize) {
+    pub fn put_bytes(&self, ctx: &mut Context, _scene_state: &mut SceneState, bytes: [u8; 64], length: usize) {
         match self {
-            DataDest::Memory(address) => scene_state.memory.write_bytes(*address, &bytes[0..length]),
+            DataDest::Memory(address) => ctx.memory.write_bytes(*address, &bytes[0..length]),
         }
     }
 }

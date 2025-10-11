@@ -14,6 +14,7 @@ use clap::Parser;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use crate::destination::Destination;
+use crate::memory::Memory;
 use crate::renderer::Renderer;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state_list::SpriteStateList;
@@ -96,6 +97,7 @@ pub struct Context<'a> {
     render: Renderer<'a>,
     random: Random,
     ui_theme: UiTheme,
+    memory: Memory,
 }
 
 fn main() -> Result<(), String> {
@@ -111,6 +113,7 @@ fn main() -> Result<(), String> {
     let sprites = SpriteStateList::new();
     let random = Random::new();
     let ui_theme = fs.read_ui_theme(0);
+    let memory = Memory::new();
 
     let mut ctx = Context {
         fs,
@@ -120,6 +123,7 @@ fn main() -> Result<(), String> {
         render,
         random,
         ui_theme,
+        memory,
     };
 
     let mut gamestate: Box<dyn GameStateTrait>;

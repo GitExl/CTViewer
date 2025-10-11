@@ -10,7 +10,6 @@ use crate::l10n::IndexedType;
 use crate::map::Map;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
-use crate::memory::Memory;
 use crate::next_destination::NextDestination;
 use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::scene::textbox::TextBox;
@@ -35,7 +34,6 @@ pub struct SceneState {
     pub screen_fade: ScreenFade,
     pub next_destination: NextDestination,
     pub camera: Camera,
-    pub memory: Memory,
     pub scene_map: SceneMap,
     pub map: Map,
 }
@@ -83,16 +81,11 @@ impl GameStateScene {
             textbox: TextBox::new(ctx),
             textbox_strings: Vec::new(),
             actors: Vec::new(),
-            memory: Memory::new(),
             script_data: Cursor::new(scene.script.get_data().clone()),
             script_states: Vec::new(),
             scene_map: scene.get_scene_map().clone(),
             map: scene.get_map().clone(),
         };
-
-        // Cats!
-        state.memory.write_u8(0x7F0053, 0x7F);
-        state.memory.write_u8(0x7F005F, 0x7F);
 
         // Initialize rendering.
         ctx.sprites_states.clear();

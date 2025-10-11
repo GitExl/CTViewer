@@ -25,9 +25,10 @@ pub struct PaletteAnim {
     pub color_index: usize,
     pub color_count: usize,
     pub delay: f64,
-
     pub frames: Vec<usize>,
     pub colors: Vec<Color>,
+
+    // todo move into PaletteAnimState into SceneState
     pub current_frame: usize,
     pub timer: f64,
 }

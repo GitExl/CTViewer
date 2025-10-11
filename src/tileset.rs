@@ -22,6 +22,7 @@ pub struct ChipAnim {
     pub dest_chip: usize,
     pub frames: Vec<ChipAnimFrame>,
 
+    // todo move into ChipAnimState into SceneState
     pub frame: usize,
     pub timer: f64,
 }
