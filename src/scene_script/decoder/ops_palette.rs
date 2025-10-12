@@ -37,7 +37,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 // todo what unit is this in? Assuming 60 Hz frames for now.
                 let duration = data.read_u8().unwrap() as f64 * (1.0 / 60.0);
 
-                Op::ColorMath {
+                Op::ColorMathPalette {
                     mode: if cmd_mode & 0x50 > 0 { ColorMathMode::Additive } else { ColorMathMode::Subtractive },
                     r, g, b,
                     color_start, color_count,
@@ -80,11 +80,10 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 }
 
             } else {
-                println!("Mode for op 0x2E is unknown.");
-                Op::NOP
+                panic!("Mode for op 0x2E is unknown.");
             }
         },
-        0x33 => Op::PaletteSet {
+        0x33 => Op::PaletteSetIndex {
             palette: data.read_u8().unwrap() as usize,
         },
 

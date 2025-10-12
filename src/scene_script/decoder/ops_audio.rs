@@ -13,8 +13,8 @@ pub fn op_decode_audio(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             interrupt: true,
         },
         0xEB => Op::SoundVolumeSlide {
-            left: data.read_u8().unwrap() as f64 * (1.0 / 256.0),
-            right: data.read_u8().unwrap() as f64 * (1.0 / 256.0),
+            left: data.read_u8().unwrap() as f64 * (1.0 / 255.0),
+            right: data.read_u8().unwrap() as f64 * (1.0 / 255.0),
             duration: 0.0,
         },
         0xEC => {
@@ -34,12 +34,12 @@ pub fn op_decode_audio(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             } else if mode == 0x18 || mode == 0x19 {
                 Op::SoundPlay {
                     sound: data1 as usize,
-                    panning: data2 as f64 * (1.0 / 256.0),
+                    panning: data2 as f64 * (1.0 / 255.0),
                 }
             } else if mode == 0x82 {
                 Op::MusicVolumeSlide {
                     duration: data1 as f64 * (1.0 / 60.0),
-                    volume: data2 as f64 / (1.0 / 256.0),
+                    volume: data2 as f64 / (1.0 / 255.0),
                 }
             } else if mode == 0x85 || mode == 0x86 {
                 Op::MusicTempoSlide {

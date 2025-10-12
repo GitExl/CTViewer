@@ -2,7 +2,7 @@ use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
-use crate::memory::DataSource;
+use crate::memory::{DataDest, DataSource};
 
 pub fn op_decode_facing(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
@@ -40,11 +40,11 @@ pub fn op_decode_facing(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0x23 => Op::ActorFacingGet {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
-            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x24 => Op::ActorFacingGet {
             actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
-            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0xA6 => Op::ActorFacingSet {
             actor: ActorRef::This,

@@ -100,6 +100,26 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             OpResult::COMPLETE
         },
+        Op::JumpConditional16 { lhs, cmp, rhs, offset } => {
+            let lhs_value = lhs.get_u16(ctx, scene_state, this_actor);
+            let rhs_value = rhs.get_u16(ctx, scene_state, this_actor);
+            let result = match cmp {
+                CompareOp::Eq => lhs_value == rhs_value,
+                CompareOp::NotEq => lhs_value != rhs_value,
+                CompareOp::Gt => lhs_value > rhs_value,
+                CompareOp::GtEq => lhs_value >= rhs_value,
+                CompareOp::Lt => lhs_value < rhs_value,
+                CompareOp::LtEq => lhs_value <= rhs_value,
+                CompareOp::And => lhs_value & rhs_value > 0,
+                CompareOp::Or => lhs_value | rhs_value > 0,
+            };
+            if !result {
+                state.current_address = (state.current_address as i64 + offset) as u64;
+                return OpResult::COMPLETE | OpResult::JUMPED;
+            }
+
+            OpResult::COMPLETE
+        },
         Op::JumpConditionalDrawMode { actor, draw_mode, offset } => {
             let actor_index = actor.deref(this_actor);
 
@@ -269,6 +289,12 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             OpResult::YIELD | OpResult::COMPLETE
         },
+        Op::ActorFacingGet { actor, dest } => {
+            let actor_index = actor.deref(this_actor);
+            dest.put_u8(ctx, scene_state, scene_state.actors[actor_index].facing.to_index() as u8);
+
+            OpResult::YIELD | OpResult::COMPLETE
+        },
 
         Op::ActorSetFacingTowards { actor, to } => {
             let actor_index = actor.deref(this_actor);
@@ -360,7 +386,6 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             exec_movement_by_vector(ctx, scene_state, this_actor, angle, steps, update_facing, animated)
         },
-
         Op::ActorMoveToActor { to_actor, script_cycle_count, update_facing, animated, forever, into_battle_range } => {
             let target_actor_index = to_actor.deref(this_actor);
 
@@ -371,7 +396,6 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 result
             }
         },
-
         Op::ActorMoveToTile { x, y, steps, update_facing, animated } => {
             let dest_tile_x = x.get_u8(ctx, scene_state, this_actor) as i32;
             let dest_tile_y = y.get_u8(ctx, scene_state, this_actor) as i32;
@@ -379,6 +403,10 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             exec_movement_to_tile(ctx, scene_state, state, this_actor, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
+        Op::MovePartyTo { .. } => {
+            println!("Unimplemented: move party");
+            OpResult::YIELD | OpResult::COMPLETE
+        },
 
         Op::CopyTiles { left, top, right, bottom, dest_x, dest_y, flags, delayed } => {
             exec_tile_copy(scene_state, left, top, right, bottom, dest_x, dest_y, flags, delayed)
@@ -475,16 +503,15 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD | OpResult::COMPLETE
         },
 
+        // Textbox ops.
         Op::TextSetTable { address } => {
             ctx.fs.read_textbox_string_table(address, ctx.l10n.get_language(), &mut scene_state.textbox_strings);
 
             OpResult::COMPLETE
         },
-
         Op::TextBoxShow { index, position, .. } => {
             if scene_state.textbox_strings.is_empty() {
-                println!("Attempted to show a textbox without a loaded string table.");
-                return OpResult::COMPLETE;
+                panic!("Attempted to show a textbox without a loaded string table.");
             }
 
             if scene_state.textbox.is_busy() {
@@ -518,20 +545,18 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             OpResult::YIELD
         },
-
         Op::DialogueSpecial { dialogue_type } => {
-            println!("Show special dialogue {:?}", dialogue_type);
-
+            println!("Unimplemented: show special dialogue {:?}", dialogue_type);
             OpResult::COMPLETE
         },
 
+        // Screen effects.
         Op::ScreenFade { target, delay } => {
             if delay == 0 {
                 scene_state.screen_fade.set(target);
             } else {
                 scene_state.screen_fade.start(target, delay);
             }
-
             OpResult::COMPLETE
         },
         Op::ScreenWaitForFade => {
@@ -541,7 +566,32 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
               OpResult::COMPLETE | OpResult::YIELD
           }
         },
+        Op::ScreenShake { enabled } => {
+            println!("Unimplemented: screen shake enabled? {}", enabled);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::ColorMathScreen { r, g, b, duration, intensity, mode } => {
+            println!("Unimplemented: screen {:?} color math with {} {} {}, for {} seconds at {} intensity", mode, r, g, b, duration, intensity);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::ColorMathGeometry { .. } => {
+            println!("Unimplemented: screen color math geometry");
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::ColorMathPalette { mode, r, g, b, duration, color_start, color_count, intensity_start, intensity_end } => {
+            println!("Unimplemented: palette colors {} count {} {:?} color math with {} {} {}, for {} seconds from {} to {} instensity", color_start, color_count, mode, r, g, b, duration, intensity_start, intensity_end);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::WaitForColorMath => {
+            println!("Unimplemented: wait for color math");
+            OpResult::YIELD | OpResult::COMPLETE
+        },
 
+        // Layer/camera ops.
+        Op::ScrollLayers { x, y, duration, flags } => {
+            println!("Unimplemented: scroll layers to {}x{} for {} seconds with {:?}", x, y, duration, flags);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
         Op::MoveCameraTo { x, y } => {
             if scene_state.camera.move_to_state == CameraMoveTo::Enabled {
                 return OpResult::YIELD;
@@ -556,9 +606,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD
         },
 
-        Op::ChangeLocation { destination, instant, queue_different_unknown } => {
-            println!("Change location to {:?}, instant? {}, queued unknown? {}", destination.info(ctx), instant, queue_different_unknown);
-
+        // Changing location.
+        Op::ChangeLocation { destination, instant, .. } => {
             scene_state.next_destination.set(destination, true);
             if !instant {
                 scene_state.screen_fade.start(0.0, 2);
@@ -566,17 +615,133 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             OpResult::YIELD | OpResult::COMPLETE
         },
+        Op::ChangeLocationFromMemory { byte1, byte2, byte3, byte4 } => {
+            println!("Unimplemented: location change from memory {:?} {:?} {:?} {:?}", byte1, byte2, byte3, byte4);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
 
-        Op::ChangeLocationFromMemory { .. } => {
-            // todo what about PC version?
+        // Dummied inventory ops.
+        Op::ItemGive { actor, item, category } => {
+            println!("Unimplemented: give item {:?}, category {} to {:?}", item, category, actor);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::ItemTake { actor, item, category } => {
+            println!("Unimplemented: take item {:?}, category {} from {:?}", item, category, actor);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::ItemGetAmount { item, category, dest } => {
+            println!("Unimplemented: get item {:?}, category {} amount, to {:?}", item, category, dest);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::GoldGive { actor, amount } => {
+            println!("Unimplemented: give {:?} gold to {:?}", amount, actor);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::GoldTake { actor, amount } => {
+            println!("Unimplemented: take {:?} gold from {:?}", amount, actor);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::ActorHeal { actor, hp, mp } => {
+            println!("Unimplemented: restore {} HP, {} MP to {:?}", hp, mp, actor);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
 
-            println!("Change location from memory");
+        // Palette changes.
+        Op::PaletteSetImmediate { sub_palette, color_index, data, length } => {
+            println!("Unimplemented: set subpalette {:?}, color {} to {:?}", sub_palette, color_index, data[0..length].to_vec());
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PaletteRestore => {
+            println!("Unimplemented: restore subpalette");
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PaletteSetIndex { palette } => {
+            println!("Unimplemented: set subpalette to palette {}", palette);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
 
+        // Party management.
+        Op::PartyExploreMode { value } => {
+            println!("Unimplemented: party explore mode {}", value);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyFollow => {
+            println!("Unimplemented: party follow");
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberEquip { pc, item, category } => {
+            println!("Unimplemented: party member {} equip item {} category {}", pc, item, category);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberAddToReserve { pc } => {
+            println!("Unimplemented: add party member {} to reserve", pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberRemove { pc } => {
+            println!("Unimplemented: remove party member {}", pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberMakeActive { pc } => {
+            println!("Unimplemented: activate party member {}", pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberToReserve { pc } => {
+            println!("Unimplemented: move party member {} to reserve", pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberRemoveFromActive { pc } => {
+            println!("Unimplemented: deactivate party member {}", pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+
+        // Sound playback.
+        Op::SoundPlay { sound, panning } => {
+            println!("Unimplemented: play sound {}, pan {}", sound, panning);
+            OpResult::YIELD | OpResult::COMPLETE
+        }
+        Op::SoundVolumeSlide { left, right, duration } => {
+            println!("Unimplemented: sound volume slide left {}, right {}, in {} seconds", left, right, duration);
+            OpResult::YIELD | OpResult::COMPLETE
+        }
+        Op::SoundWaitEnd => {
+            println!("Unimplemented: wait for sound to end.");
+            OpResult::YIELD | OpResult::COMPLETE
+        }
+
+        // Music playback.
+        Op::MusicPlay { music, interrupt } => {
+            println!("Unimplemented: play music {}, interrupt? {}", music, interrupt);
+            OpResult::YIELD | OpResult::COMPLETE
+        }
+        Op::MusicTempoSlide { tempo, duration } => {
+            println!("Unimplemented: music tempo slide to {} in {} seconds", tempo, duration);
+            OpResult::YIELD | OpResult::COMPLETE
+        }
+        Op::MusicVolumeSlide { volume, duration } => {
+            println!("Unimplemented: music volume slide to {} in {} seconds", volume, duration);
+            OpResult::YIELD | OpResult::COMPLETE
+        }
+        Op::MusicWaitEnd => {
+            println!("Unimplemented: wait for music to end.");
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+
+        // Special scenes and effects.
+        Op::SpecialScene { scene, flags } => {
+            println!("Unimplemented: special scene {} with flags {:?}", scene, flags);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::SpecialOpenPortal { value1, value2, value3 } => {
+            println!("Unimplemented: open portal: {} {} {}", value1, value2, value3);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::SpecialEffect { effect } => {
+            println!("Unimplemented: special effect {:?}", effect);
             OpResult::YIELD | OpResult::COMPLETE
         },
 
         _ => {
-            // println!("Unimplemented {:?}", op);
+            println!("Unimplemented {:?}", op);
             OpResult::COMPLETE
         },
     }

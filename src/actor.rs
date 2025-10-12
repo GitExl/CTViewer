@@ -28,6 +28,21 @@ pub enum ActorClass {
     Undefined,
 }
 
+impl ActorClass {
+    pub fn to_index(&self) -> u8 {
+        match self {
+            ActorClass::PC1 => 0,
+            ActorClass::PC2 => 1,
+            ActorClass::PC3 => 2,
+            ActorClass::PCOutOfParty => 3,
+            ActorClass::NPC => 4,
+            ActorClass::Enemy => 5,
+            ActorClass::EnemyPeaceful => 6,
+            ActorClass::Undefined => 7,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum DrawMode {
     Hidden,  // 0x00

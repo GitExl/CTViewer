@@ -30,18 +30,33 @@ impl Memory {
             self.local[address - 0x7F0200] = value;
         } else if address >= 0x9F0200 && address < 0x9F0400 {
             self.extended[address - 0x9F0200] = value;
+
+        } else if address == 0x0001FA {
+            println!("Unimplemented: Set battle music track to {}", value);
+
+        } else if address == 0x7E0BD7 {
+            println!("Unimplemented: Set main screen enable flags 0x{:02X}", value);
+        } else if address == 0x7E0BD8 {
+            println!("Unimplemented: Set sub screen enable flags 0x{:02X}", value);
+        } else if address == 0x7F1520 {
+            println!("Unimplemented: Set main screen enable flags 0x{:02X} / 0x7F1520", value);
+        } else if address == 0x7F1521 {
+            println!("Unimplemented: Set sub screen enable flags 0x{:02X} / 0x7F1521", value);
+
         } else if address == 0x110 {
-            println!("Menu {}.", if value == 0 { "enabled" } else { "disabled" });
+            println!("Unimplemented: Menu {}.", if value == 0 { "enabled" } else { "disabled" });
         } else if address == 0x111 {
-            println!("Pause {}.", if value == 0 { "enabled" } else { "disabled" });
+            println!("Unimplemented: Pause {}.", if value == 0 { "enabled" } else { "disabled" });
+
         } else if address == 0x7E29AE {
-            println!("Set currently playing music to {}.", value);
+            println!("Unimplemented: Set currently playing music to {}.", value);
+
         } else {
             println!("Unhandled scene script u8 memory write of 0x{:02X} to 0x{:06X}.", value, address)
         }
     }
 
-    pub fn read_u8(&self, address: usize) -> u8 {
+    pub fn read_u8(&self, address: usize, scene_state: &SceneState) -> u8 {
         if address >= 0x7E0000 && address < 0x7E0200 {
             return self.temp[address - 0x7E0000];
         } else if address >= 0x7F0000 && address < 0x7F0200 {
@@ -51,15 +66,20 @@ impl Memory {
         } else if address >= 0x9F0200 && address < 0x9F0400 {
             return self.extended[address - 0x9F0200];
 
-        // PC1
+        // Actor type value.
+        } else if address >= 0x7E1100 && address < 0x7E1180 {
+            let actor = &scene_state.actors[(address - 0x7E1100) / 2];
+            let class = actor.class.to_index();
+            let dead = if actor.flags.contains(ActorFlags::DEAD) { 0x80 } else { 0 };
+            return class & dead;
+
+        // Player character actor index.
         } else if address == 0x7E2980 {
             return 1;
-        // PC2
         } else if address == 0x7E2981 {
-            return 0;
-        // PC2
+            return 2;
         } else if address == 0x7E2982 {
-            return 0;
+            return 3;
         }
 
         println!("Unhandled scene script u8 memory read at 0x{:06X}.", address);
@@ -166,7 +186,7 @@ impl DataSource {
     pub fn get_u8(self, ctx: &Context, scene_state: &SceneState, current_actor: usize) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
-            DataSource::Memory(address) => ctx.memory.read_u8(address),
+            DataSource::Memory(address) => ctx.memory.read_u8(address, scene_state),
             DataSource::ActorResult(actor) => scene_state.actors[actor.deref(current_actor)].result as u8,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,

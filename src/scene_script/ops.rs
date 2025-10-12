@@ -78,7 +78,7 @@ pub enum Op {
     },
     ActorFacingGet {
         actor: ActorRef,
-        source: DataSource,
+        dest: DataDest,
     },
     ActorSetSpritePriority {
         actor: ActorRef,
@@ -145,12 +145,6 @@ pub enum Op {
         move_y: i32,
         steps: u32,
         unknown: u32,
-    },
-
-    ActorHeal {
-        actor: ActorRef,
-        hp: bool,
-        mp: bool,
     },
 
     // Actor facing.
@@ -222,19 +216,6 @@ pub enum Op {
         length: usize,
     },
 
-    // Color math.
-    ColorMath {
-        mode: ColorMathMode,
-        r: bool,
-        g: bool,
-        b: bool,
-        color_start: u8,
-        color_count: u8,
-        intensity_start: f64,
-        intensity_end: f64,
-        duration: f64,
-    },
-
     // Palettes.
     PaletteSetImmediate {
         sub_palette: SubPalette,
@@ -242,7 +223,7 @@ pub enum Op {
         data: [u8; 64],
         length: usize,
     },
-    PaletteSet {
+    PaletteSetIndex {
         palette: usize,
     },
     PaletteRestore,
@@ -320,6 +301,11 @@ pub enum Op {
         category: usize,
         dest: DataSource,
     },
+    ActorHeal {
+        actor: ActorRef,
+        hp: bool,
+        mp: bool,
+    },
 
     // Party management.
     PartyMemberMakeActive {
@@ -340,6 +326,7 @@ pub enum Op {
     PartyMemberEquip {
         pc: usize,
         item: usize,
+        category: usize,
     },
     PartyFollow,
     PartyExploreMode {
@@ -414,11 +401,22 @@ pub enum Op {
     MusicWaitEnd,
 
     // Screen effects.
+    ColorMathPalette {
+        mode: ColorMathMode,
+        r: bool,
+        g: bool,
+        b: bool,
+        color_start: u8,
+        color_count: u8,
+        intensity_start: f64,
+        intensity_end: f64,
+        duration: f64,
+    },
     ScreenFade {
         target: f64,
         delay: usize,
     },
-    ScreenColorMath {
+    ColorMathScreen {
         r: u8,
         g: u8,
         b: u8,
@@ -427,11 +425,11 @@ pub enum Op {
         duration: f64,
     },
     ScreenWaitForFade,
-    ScreenWaitForColorMath,
+    WaitForColorMath,
     ScreenShake {
         enabled: bool,
     },
-    ScreenColorMathGeometry {
+    ColorMathGeometry {
         unknown: u8,
 
         x1_src: u8,
@@ -465,7 +463,9 @@ pub enum Op {
         value2: u8,
         value3: u8,
     },
-    SpecialEffect(SpecialEffect),
+    SpecialEffect {
+        effect: SpecialEffect,
+    },
 
     // Unknown.
     Unknown {

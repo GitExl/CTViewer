@@ -51,6 +51,8 @@ pub fn exec_tile_copy(scene_state: &mut SceneState, left: u32, top: u32, right: 
     }
 
     // Copy property bytes.
+    // The tile indices are already changed during map loading so handling L1_TILE_ADD and
+    // L2_TILE_ADD is not actually necessary.
     if flags.contains(CopyTilesFlags::PROPS1) || flags.contains(CopyTilesFlags::PROPS2) || flags.contains(CopyTilesFlags::PROPS3) {
 
         // Since we do not store properties as bytes, we have to do some extra work to copy the
@@ -99,12 +101,6 @@ pub fn exec_tile_copy(scene_state: &mut SceneState, left: u32, top: u32, right: 
                 }
             }
         }
-    }
-
-    // The tile index is already changed with these flags in mind during map loading, so are
-    // these necessary at all?
-    if flags.contains(CopyTilesFlags::L1_TILE_ADD) || flags.contains(CopyTilesFlags::L2_TILE_ADD) {
-        println!("CopyTiles with L1_TILE_ADD or L2_TILE_ADD not implemented.");
     }
 
     OpResult::COMPLETE | OpResult::YIELD

@@ -155,7 +155,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0xAA | 0xAB | 0xAC | 0xAE | 0xB3 | 0xB4 | 0xB7 | 0x47 => op_decode_animation(op_byte, data),
 
         // Party management.
-        0xD0 | 0xD1 | 0xD3 | 0xD4 | 0xD6 | 0xD5 | 0xDA | 0xE3 => op_decode_party(op_byte, data),
+        0xD0 | 0xD1 | 0xD3 | 0xD4 | 0xD6 | 0xD5 | 0xDA | 0xE3 => op_decode_party(op_byte, data, mode),
 
         // Palettes.
         0x2E | 0x33 | 0x88 => op_decode_palette(op_byte, data, mode),
@@ -180,7 +180,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0xF1 => {
             let bits = data.read_u8().unwrap();
             if bits == 0 {
-                Op::ScreenColorMath {
+                Op::ColorMathScreen {
                     r: 0,
                     g: 0,
                     b: 0,
@@ -198,7 +198,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
                 let mode = if params & 0x80 > 0 { ColorMathMode::Additive } else { ColorMathMode::Subtractive };
                 let duration = (params & 0x7F) as f64 * (1.0 / 60.0);
 
-                Op::ScreenColorMath {
+                Op::ColorMathScreen {
                     r,
                     g,
                     b,
@@ -209,11 +209,11 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             }
         },
         0xF2 => Op::ScreenWaitForFade,
-        0xF3 => Op::ScreenWaitForColorMath,
+        0xF3 => Op::WaitForColorMath,
         0xF4 => Op::ScreenShake {
             enabled: data.read_u8().unwrap() == 1,
         },
-        0xFE => Op::ScreenColorMathGeometry {
+        0xFE => Op::ColorMathGeometry {
             unknown: data.read_u8().unwrap(),
 
             x1_src: data.read_u8().unwrap(),
@@ -256,37 +256,39 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
                     value3: data.read_u8().unwrap(),
                 }
             } else if mode == 0x92 {
-                Op::SpecialEffect(SpecialEffect::ScreenOpenLeftRight)
+                Op::SpecialEffect { effect: SpecialEffect::ScreenOpenLeftRight }
             } else if mode == 0x93 {
-                Op::SpecialEffect(SpecialEffect::ScreenOpenRightLeft)
+                Op::SpecialEffect { effect: SpecialEffect::ScreenOpenRightLeft }
             } else if mode == 0x94 {
-                Op::SpecialEffect(SpecialEffect::ScreenCloseLeftRight)
+                Op::SpecialEffect { effect: SpecialEffect::ScreenCloseLeftRight }
             } else if mode == 0x95 {
-                Op::SpecialEffect(SpecialEffect::ScreenCloseRightLeft)
+                Op::SpecialEffect { effect: SpecialEffect::ScreenCloseRightLeft }
             } else if mode == 0x96 {
-                Op::SpecialEffect(SpecialEffect::Reset)
+                Op::SpecialEffect { effect: SpecialEffect::Reset }
             } else if mode == 0x97 {
-                Op::SpecialEffect(
-                    SpecialEffect::Unknown(
+                Op::SpecialEffect {
+                    effect: SpecialEffect::Unknown(
                         mode,
-                        [data.read_u8().unwrap(), data.read_u8().unwrap(), data.read_u8().unwrap()],
+                        [data.read_u8().unwrap(),
+                        data.read_u8().unwrap(),
+                        data.read_u8().unwrap()],
                     ),
-                )
+                }
             } else if mode == 0x9B {
-                Op::SpecialEffect(SpecialEffect::PortalHuge)
+                Op::SpecialEffect { effect: SpecialEffect::PortalHuge }
             } else if mode == 0x9D {
-                Op::SpecialEffect(SpecialEffect::ResetMemBits)
+                Op::SpecialEffect { effect: SpecialEffect::ResetMemBits }
             } else if mode == 0x9E {
-                Op::SpecialEffect(SpecialEffect::RealityDistortion)
+                Op::SpecialEffect { effect: SpecialEffect::RealityDistortion }
             } else if mode == 0x9F {
-                Op::SpecialEffect(SpecialEffect::NewGamePlus)
+                Op::SpecialEffect { effect: SpecialEffect::NewGamePlus }
             } else {
-                Op::SpecialEffect(
-                    SpecialEffect::Unknown(
+                Op::SpecialEffect {
+                    effect: SpecialEffect::Unknown(
                         mode,
                         [0, 0, 0],
                     ),
-                )
+                }
             }
         },
 
