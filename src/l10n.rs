@@ -16,13 +16,14 @@ static INDEXED_ITER: [IndexedType; 4] = [
     IndexedType::Item,
 ];
 
-pub struct L10n {
+pub struct L10n<'a> {
+    language: &'a str,
     indexed_strings: Vec<Vec<String>>,
     strings: HashMap<String, String>,
 }
 
-impl L10n {
-    pub fn new(language: &str, fs: &FileSystem) -> L10n {
+impl L10n<'_> {
+    pub fn new<'a>(language: &'a str, fs: &FileSystem) -> L10n<'a> {
         let mut indexed_strings = Vec::new();
         for index_type in &INDEXED_ITER {
             indexed_strings.push(match index_type {
@@ -36,9 +37,14 @@ impl L10n {
         let strings: HashMap<String, String> = HashMap::new();
 
         L10n {
+            language,
             indexed_strings,
             strings,
         }
+    }
+
+    pub fn get_language(&self) -> &str {
+        self.language
     }
 
     pub fn get_indexed(&self, indexed_type: IndexedType, index: usize) -> String {

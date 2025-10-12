@@ -26,9 +26,10 @@ impl FileSystem {
             }
 
             // Load layer 1/2 chip graphics data referenced by the tileset.
-            let chips_data = self.backend.get_world_tileset12_graphics(*chipset);
-            if chips_data.is_some() {
-                set_chip_bitmap_data(&mut bitmap_data, &mut chips_data.unwrap(), index * 0x2000);
+            let mut chips_data = self.backend.get_world_tileset12_graphics(*chipset);
+            if let Some(chips_data) = &mut chips_data {
+                let data_len = chips_data.len();
+                set_chip_bitmap_data(&mut bitmap_data, chips_data, index * 0x2000, data_len);
             }
         }
 
@@ -78,7 +79,7 @@ impl FileSystem {
 
     // Read a tileset for a scene map layer 1 or 2.
     pub fn read_scene_tileset_layer12 (&self, tileset_index: usize, index_assembly: usize, chip_anims_index: usize) -> TileSet {
-        let mut bitmap_data = vec![0u8; 0x10000];
+        let mut bitmap_data = vec![0u8; 0x14000];
         let mut animated_bitmap_data = vec![0u8; 0x8000];
 
         let mut chip_bitmaps = Vec::<Bitmap>::new();
@@ -101,12 +102,13 @@ impl FileSystem {
 
                 // Load layer 1/2 chip graphics data referenced by the tileset.
                 let mut chipset_data = self.backend.get_scene_tileset12_graphics(*chipset as usize);
+                let data_len = chipset_data.len();
 
                 // Set 6 contains animated chips, so Store a separate copy of them.
                 if chipset_index == 6 {
-                    set_chip_bitmap_data(&mut animated_bitmap_data, &mut chipset_data, 0);
+                    set_chip_bitmap_data(&mut animated_bitmap_data, &mut chipset_data, 0, data_len);
                 }
-                set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, chipset_index * 0x2000);
+                set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, chipset_index * 0x2000, data_len);
             }
 
             chip_bitmaps.extend(split_chip_graphics(&bitmap_data, bitmap_data.len() / 64));
@@ -221,8 +223,8 @@ fn parse_chip_anims(reader: &mut Cursor<Vec<u8>>, parse_mode: ParseMode) -> Vec<
 // Read and copy chip bitmap graphics data.
 //
 // The number of chips is listed first, then the bitmap data.
-fn set_chip_bitmap_data(bitmap_data: &mut Vec<u8>, data: &mut Vec<u8>, offset: usize) {
-    bitmap_data[offset..offset + data.len()].copy_from_slice(&data);
+fn set_chip_bitmap_data(bitmap_data: &mut Vec<u8>, data: &mut Vec<u8>, offset: usize, len: usize) {
+    bitmap_data[offset..offset + len].copy_from_slice(&data[0..len]);
 }
 
 // Reads tile assembly data for a scene tileset.

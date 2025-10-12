@@ -4,6 +4,7 @@ use crate::actor::DrawMode;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::memory::DataSource;
+use crate::scene_script::scene_script::SceneScriptMode;
 
 /// Conditionals for comparisons.
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -30,14 +31,13 @@ impl CompareOp {
             6 => CompareOp::And,
             7 => CompareOp::Or,
             other => {
-                println!("Unknown conditional op {:?}", other);
-                CompareOp::Eq
+                panic!("Unknown conditional op {:?}", other);
             },
         }
     }
 }
 
-pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
+pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
 
         // Relative unconditional jumps.
@@ -227,7 +227,10 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Inventory-based jumps
         0xC9 => Op::JumpConditional8 {
-            lhs: DataSource::ItemCount(data.read_u8().unwrap() as usize),
+            lhs: match mode {
+                SceneScriptMode::Snes => DataSource::ItemCount(data.read_u8().unwrap() as usize),
+                SceneScriptMode::Pc => DataSource::ItemCount(data.read_u16::<LittleEndian>().unwrap() as usize),
+            },
             rhs: DataSource::Immediate(1),
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as i64 + 2,

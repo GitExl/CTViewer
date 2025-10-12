@@ -57,7 +57,7 @@ pub trait FileSystemBackendTrait {
 
     fn get_item_names(&self, language: &str) -> Vec<String>;
 
-    fn get_textbox_string_table(&self, address: usize) -> Vec<String>;
+    fn get_textbox_string_table(&self, address: usize, language: &str) -> Vec<String>;
 
     fn get_ui_theme_cursor_graphics(&self, ui_theme_index: usize) -> (Bitmap, Palette);
     fn get_ui_theme_window_graphics(&self, ui_theme_index: usize) -> (Bitmap, Palette);

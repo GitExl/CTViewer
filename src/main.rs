@@ -91,7 +91,7 @@ struct Args {
 
 pub struct Context<'a> {
     fs: FileSystem,
-    l10n: L10n,
+    l10n: L10n<'a>,
     sprites_states: SpriteStateList,
     sprite_assets: SpriteAssets,
     render: Renderer<'a>,
@@ -166,6 +166,7 @@ fn main() -> Result<(), String> {
                         Some(Keycode::Escape) => break 'running,
                         Some(Keycode::Backspace) => {
                             ctx.sprite_assets.dump();
+                            ctx.ui_theme.dump();
                             gamestate.dump(&ctx)
                         },
                         Some(Keycode::Backslash) => {

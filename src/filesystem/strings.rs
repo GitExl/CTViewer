@@ -29,8 +29,8 @@ impl FileSystem {
         self.backend.get_item_names(language)
     }
 
-    pub fn read_textbox_string_table(&self, address: usize, strings: &mut Vec<String>) {
+    pub fn read_textbox_string_table(&self, address: usize, language: &str, strings: &mut Vec<String>) {
         strings.clear();
-        strings.extend(self.backend.get_textbox_string_table(address));
+        strings.extend(self.backend.get_textbox_string_table(address, language));
     }
 }

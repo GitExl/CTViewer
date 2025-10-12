@@ -476,7 +476,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::TextSetTable { address } => {
-            ctx.fs.read_textbox_string_table(address, &mut scene_state.textbox_strings);
+            ctx.fs.read_textbox_string_table(address, ctx.l10n.get_language(), &mut scene_state.textbox_strings);
 
             OpResult::COMPLETE
         },

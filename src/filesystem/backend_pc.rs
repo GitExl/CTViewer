@@ -489,10 +489,45 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.read_text_string_list(data, None, None)
     }
 
-    fn get_textbox_string_table(&self, _address: usize) -> Vec<String> {
-        // todo: map to one of the localization files, but how?
+    fn get_textbox_string_table(&self, address: usize, language: &str) -> Vec<String> {
+        let message_file = match address {
+            0 => "cmes0.txt",
+            1 => "cmes1.txt",
+            2 => "cmes2.txt",
+            3 => "cmes3.txt",
+            4 => "cmes4.txt",
+            5 => "cmes5.txt",
+            6 => "kmes0.txt",
+            7 => "kmes1.txt",
+            8 => "kmes2.txt",
+            9 => "mesi0.txt",
+            10 => "mesk0.txt",
+            11 => "mesk1.txt",
+            12 => "mesk2.txt",
+            13 => "mesk3.txt",
+            14 => "mesk4.txt",
+            15 => "mess0.txt",
+            16 => "mest0.txt",
+            17 => "mest1.txt",
+            18 => "mest2.txt",
+            19 => "mest3.txt",
+            20 => "mest4.txt",
+            21 => "mest5.txt",
+            22 => "msg01.txt",
+            23 => "msg02.txt",
+            24 => "msg03.txt",
+            25 => "msg04.txt",
+            26 => "exms0.txt",
+            27 => "exms1.txt",
+            28 => "exms2.txt",
+            29 => "exms3.txt",
+            30 => "wireless1.txt",
+            31 => "wireless2.txt",
+            _ => panic!("Unknown PC string table index {}", address),
+        };
 
-        Vec::new()
+        let data = self.get_file_cursor(&format!("Localize/{}/msg/{}", language, message_file), None, None);
+        self.remove_string_list_keys(self.read_text_string_list(data, None, None))
     }
 
     fn get_ui_theme_cursor_graphics(&self, _ui_theme_index: usize) -> (Bitmap, Palette) {

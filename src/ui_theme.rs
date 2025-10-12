@@ -1,3 +1,4 @@
+use std::path::Path;
 use crate::software_renderer::bitmap::Bitmap;
 use crate::software_renderer::blit::{blit_bitmap_to_surface, BitmapBlitFlags, SurfaceBlendOps};
 use crate::util::rect::Rect;
@@ -86,13 +87,13 @@ impl UiTheme {
         draw_box_gradient_vertical(surface, Rect::new(x, y + pixel_height / 2, x + pixel_width, y + pixel_height), [0, 0, 0, 255], [66, 66, 66, 255], 5, SurfaceBlendOps::Subtract);
     }
 
-    pub fn render_to_surface(&self) -> Surface {
+    pub fn dump(&self) {
         let mut surface = Surface::new(32, 64);
         surface.fill(self.cursor_palette.colors[0]);
 
         blit_bitmap_to_surface(&self.window_bitmap, &mut surface, 0, 0, 32, 48, 0, 0, &self.window_palette, 0, BitmapBlitFlags::empty());
         blit_bitmap_to_surface(&self.cursor_bitmap, &mut surface, 0, 0, 32, 16, 0, 48, &self.cursor_palette, 0, BitmapBlitFlags::empty());
 
-        surface
+        surface.write_to_bmp(Path::new("debug_output/ui_theme.bmp"));
     }
 }

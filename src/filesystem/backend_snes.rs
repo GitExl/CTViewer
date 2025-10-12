@@ -515,7 +515,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         strings
     }
 
-    fn get_textbox_string_table(&self, address: usize) -> Vec<String> {
+    fn get_textbox_string_table(&self, address: usize, _language: &str) -> Vec<String> {
         let page_start = address & 0xFF0000;
         const MAX_STR_LEN: usize = 384;
 
