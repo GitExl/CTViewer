@@ -75,11 +75,11 @@ impl Memory {
 
         // Player character actor index.
         } else if address == 0x7E2980 {
-            return 1;
+            return *scene_state.player_actors.get(&0).unwrap_or(&0) as u8;
         } else if address == 0x7E2981 {
-            return 2;
+            return *scene_state.player_actors.get(&1).unwrap_or(&0) as u8;
         } else if address == 0x7E2982 {
-            return 3;
+            return *scene_state.player_actors.get(&2).unwrap_or(&0) as u8;
         }
 
         println!("Unhandled scene script u8 memory read at 0x{:06X}.", address);
@@ -158,7 +158,7 @@ pub enum DataSource {
     GoldCount,
 
     // Player character is recruited/active.
-    PCIsRecruited,
+    PCIsActiveOrReserve,
     PCIsActive,
 }
 
@@ -187,15 +187,15 @@ impl DataSource {
         match self {
             DataSource::Immediate(value) => value as u8,
             DataSource::Memory(address) => ctx.memory.read_u8(address, scene_state),
-            DataSource::ActorResult(actor) => scene_state.actors[actor.deref(current_actor)].result as u8,
+            DataSource::ActorResult(actor) => scene_state.actors[actor.deref(scene_state, current_actor)].result as u8,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
-            DataSource::ActorFlag(actor, flags) => (scene_state.actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u8,
-            DataSource::PartyCharacter(..) => 0,
+            DataSource::ActorFlag(actor, flags) => (scene_state.actors[actor.deref(scene_state, current_actor)].flags.bits() & flags.bits()) as u8,
+            DataSource::PartyCharacter(index) => *scene_state.player_actors.get(&index).unwrap_or(&0) as u8,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u8,
             DataSource::PCIsActive => 0,
-            DataSource::PCIsRecruited => 0,
+            DataSource::PCIsActiveOrReserve => 0,
         }
     }
 
@@ -203,15 +203,15 @@ impl DataSource {
         match self {
             DataSource::Immediate(value) => value as u16,
             DataSource::Memory(address) => ctx.memory.read_u16(address),
-            DataSource::ActorResult(actor) => scene_state.actors[actor.deref(current_actor)].result as u16,
+            DataSource::ActorResult(actor) => scene_state.actors[actor.deref(scene_state, current_actor)].result as u16,
             DataSource::GoldCount => 0,
             DataSource::ItemCount(..) => 0,
-            DataSource::ActorFlag(actor, flags) => (scene_state.actors[actor.deref(current_actor)].flags.bits() & flags.bits()) as u16,
-            DataSource::PartyCharacter(..) => 0,
+            DataSource::ActorFlag(actor, flags) => (scene_state.actors[actor.deref(scene_state, current_actor)].flags.bits() & flags.bits()) as u16,
+            DataSource::PartyCharacter(index) => *scene_state.player_actors.get(&index).unwrap_or(&0) as u16,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u16,
             DataSource::PCIsActive => 0,
-            DataSource::PCIsRecruited => 0,
+            DataSource::PCIsActiveOrReserve => 0,
         }
     }
 }

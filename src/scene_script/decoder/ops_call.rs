@@ -52,7 +52,7 @@ pub fn op_decode_call(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let party_member_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
             Op::Call {
-                actor: ActorRef::PartyMember(party_member_index),
+                actor: ActorRef::ActivePartyIndex(party_member_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
             }
@@ -61,7 +61,7 @@ pub fn op_decode_call(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let party_member_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
             Op::CallWaitCompletion {
-                actor: ActorRef::PartyMember(party_member_index),
+                actor: ActorRef::ActivePartyIndex(party_member_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
             }
@@ -70,7 +70,7 @@ pub fn op_decode_call(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let party_member_index = data.read_u8().unwrap() as usize / 2;
             let bits = data.read_u8().unwrap();
             Op::CallWaitReturn {
-                actor: ActorRef::PartyMember(party_member_index),
+                actor: ActorRef::ActivePartyIndex(party_member_index),
                 function: (bits & 0x0F) as usize,
                 priority: (bits & 0xF0) as usize >> 4,
             }

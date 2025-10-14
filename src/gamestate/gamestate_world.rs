@@ -44,7 +44,7 @@ pub struct GameStateWorld {
 }
 
 impl GameStateWorld {
-    pub fn new(ctx: &mut Context, world_index: usize, camera_center: Vec2Df64) -> GameStateWorld {
+    pub fn new(ctx: &mut Context, world_index: usize, pos: Vec2Df64) -> GameStateWorld {
         ctx.sprites_states.clear();
 
         let mut world = ctx.fs.read_world(world_index);
@@ -81,7 +81,7 @@ impl GameStateWorld {
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut world.map);
 
-        camera.center_to(camera_center);
+        camera.center_to(pos);
 
         let next_destination = NextDestination::new();
 

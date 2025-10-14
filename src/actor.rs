@@ -170,7 +170,7 @@ impl Actor {
             class: ActorClass::Undefined,
             player_index: None,
             facing: Facing::default(),
-            move_speed: (1.0 / 16.0) * 15.0,
+            move_speed: (1.0 / 18.0) * 16.0,
             flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::DEAD,
             draw_mode: DrawMode::Draw,
             battle_index: 0,

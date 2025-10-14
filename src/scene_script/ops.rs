@@ -1,4 +1,5 @@
 use crate::actor::{ActorFlags, DrawMode};
+use crate::character::CharacterId;
 use crate::destination::Destination;
 use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
@@ -237,7 +238,7 @@ pub enum Op {
     LoadCharacter {
         char_type: CharacterType,
         index: usize,
-        must_be_in_party: bool,
+        pc_must_be_active: bool,
         is_static: bool,
         battle_index: usize,
     },
@@ -308,23 +309,23 @@ pub enum Op {
     },
 
     // Party management.
-    PartyMemberMakeActive {
-        pc: usize,
+    PartyMemberAddToActive {
+        pc: CharacterId,
     },
     PartyMemberAddToReserve {
-        pc: usize,
-    },
-    PartyMemberRemove {
-        pc: usize,
+        pc: CharacterId,
     },
     PartyMemberRemoveFromActive {
-        pc: usize,
+        pc: CharacterId,
     },
-    PartyMemberToReserve {
-        pc: usize,
+    PartyMemberMoveOutOfParty {
+        pc: CharacterId,
+    },
+    PartyMemberMoveToReserve {
+        pc: CharacterId,
     },
     PartyMemberEquip {
-        pc: usize,
+        pc: CharacterId,
         item: usize,
         category: usize,
     },

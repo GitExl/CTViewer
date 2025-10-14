@@ -58,8 +58,8 @@ struct ExitData {
 
     // Where in the scene the player starts.
     pub scene_facing: u8,
-    pub scene_tile_x: u8,
-    pub scene_tile_y: u8,
+    pub scene_tile_x: i32,
+    pub scene_tile_y: i32,
 }
 
 impl FileSystem {
@@ -135,7 +135,6 @@ impl FileSystem {
         for exit_index in 0..exit_count {
             let mut exit_data = ExitData::default();
 
-
             // The full 16 bits are used by the PC version. The SNES version has facing
             // data in the last 7 bits.
             match self.parse_mode {
@@ -144,8 +143,8 @@ impl FileSystem {
                     exit_data.y = data.read_u8().unwrap();
                     exit_data.name_index = data.read_u8().unwrap();
                     exit_data.scene_index = data.read_u16::<LittleEndian>().unwrap();
-                    exit_data.scene_tile_x = data.read_u8().unwrap();
-                    exit_data.scene_tile_y = data.read_u8().unwrap();
+                    exit_data.scene_tile_x = data.read_u8().unwrap() as i32;
+                    exit_data.scene_tile_y = data.read_u8().unwrap() as i32;
                 },
                 ParseMode::Pc => {
                     exit_data.x = data.read_u8().unwrap();
@@ -153,8 +152,8 @@ impl FileSystem {
                     exit_data.name_index = data.read_u8().unwrap();
                     exit_data.scene_index = data.read_u16::<LittleEndian>().unwrap();
                     exit_data.scene_facing = data.read_u8().unwrap();
-                    exit_data.scene_tile_x = data.read_u8().unwrap();
-                    exit_data.scene_tile_y = data.read_u8().unwrap();
+                    exit_data.scene_tile_x = data.read_u8().unwrap() as i32;
+                    exit_data.scene_tile_y = data.read_u8().unwrap() as i32;
                 }
             }
 
@@ -182,14 +181,9 @@ impl FileSystem {
                 },
             };
 
-            let destination = Destination::Scene {
-                index: scene_index,
-                pos: Vec2Di32::new(
-                 (exit_data.scene_tile_x as i32 * 16) - if shift_left { 8 } else { 0 },
-                 (exit_data.scene_tile_y as i32 * 16) - if shift_up { 8 } else { 0 },
-                ),
-                facing: Facing::from_index(facing),
-            };
+            let shift_x = if shift_left { -8 } else { 0 };
+            let shift_y = if shift_up { -8 } else { 0 };
+            let destination = Destination::from_data(scene_index, Facing::from_index(facing), exit_data.scene_tile_x, exit_data.scene_tile_y, shift_x, shift_y);
 
             exits.push(WorldExit {
                 index: exit_index,

@@ -242,9 +242,9 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
             offset: data.read_u8().unwrap() as i64 + 3,
         },
 
-        // Party member has been recruited.
+        // Party member is active or in reserve.
         0xCF => Op::JumpConditional8 {
-            lhs: DataSource::PCIsRecruited,
+            lhs: DataSource::PCIsActiveOrReserve,
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as i64 + 2,

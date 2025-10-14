@@ -151,7 +151,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
 
         // Coordinates from party member actor.
         0x22 => Op::ActorCoordinatesGet {
-            actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             tile_x: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
             tile_y: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },

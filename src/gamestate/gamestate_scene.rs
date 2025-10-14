@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::Cursor;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
@@ -5,6 +6,8 @@ use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
 use crate::actor::{Actor, ActorClass, ActorFlags, ActorTask, DrawMode};
+use crate::character::CharacterId;
+use crate::facing::Facing;
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map::Map;
@@ -31,11 +34,15 @@ pub struct SceneState {
     pub textbox: TextBox,
     pub textbox_strings: Vec<String>,
     pub actors: Vec<Actor>,
+    pub player_actors: HashMap<CharacterId, usize>,
     pub screen_fade: ScreenFade,
     pub next_destination: NextDestination,
     pub camera: Camera,
     pub scene_map: SceneMap,
     pub map: Map,
+
+    pub enter_position: Vec2Df64,
+    pub enter_facing: Facing,
 }
 
 /// Data for updating and rendering a scene.
@@ -64,7 +71,7 @@ pub struct GameStateScene {
 }
 
 impl GameStateScene {
-    pub fn new(ctx: &mut Context, scene_index: usize, camera_center: Vec2Df64) -> GameStateScene {
+    pub fn new(ctx: &mut Context, scene_index: usize, pos: Vec2Df64, facing: Facing) -> GameStateScene {
         let scene = ctx.fs.read_scene(scene_index);
         println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
@@ -81,10 +88,13 @@ impl GameStateScene {
             textbox: TextBox::new(ctx),
             textbox_strings: Vec::new(),
             actors: Vec::new(),
+            player_actors: HashMap::new(),
             script_data: Cursor::new(scene.script.get_data().clone()),
             script_states: Vec::new(),
             scene_map: scene.get_scene_map().clone(),
             map: scene.get_map().clone(),
+            enter_position: pos,
+            enter_facing: facing,
         };
 
         // Initialize rendering.
@@ -95,7 +105,7 @@ impl GameStateScene {
 
         // Initialize state.
         state.screen_fade.start(1.0, 2);
-        state.camera.center_to(camera_center);
+        state.camera.center_to(pos);
 
         // Create actors and setup their state.
         for (actor_index, actor_script) in scene.script.get_actor_scripts().iter().enumerate() {

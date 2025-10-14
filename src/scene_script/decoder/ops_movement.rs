@@ -21,7 +21,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         0x8F => Op::ActorMoveToActor {
-            to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            to_actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: true,
             animated: true,
@@ -43,7 +43,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0x95 => Op::ActorMoveToActor {
-            to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            to_actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: true,
             animated: true,
@@ -73,7 +73,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: false,
         },
         0x99 => Op::ActorMoveToActor {
-            to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            to_actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             script_cycle_count: Some(data.read_u8().unwrap() as u32),
             update_facing: true,
             animated: true,
@@ -111,7 +111,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         // Same as 0x9E, but different in some unknown way?
         0x9F => Op::ActorMoveToActor {
-            to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            to_actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: false,
             animated: false,
@@ -141,7 +141,7 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             forever: true,
         },
         0xB6 => Op::ActorMoveToActor {
-            to_actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            to_actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             script_cycle_count: None,
             update_facing: true,
             animated: true,

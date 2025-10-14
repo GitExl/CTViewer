@@ -43,7 +43,7 @@ pub fn op_decode_facing(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0x24 => Op::ActorFacingGet {
-            actor: ActorRef::PartyMember(data.read_u8().unwrap() as usize),
+            actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         0xA6 => Op::ActorFacingSet {

@@ -179,9 +179,12 @@ impl FileSystem {
         for exit_index in 0..count {
             let pos;
             let size;
-            let facing;
-            let mut dest_pos;
             let dest_index;
+            let facing;
+            let tile_x;
+            let tile_y;
+            let shift_x;
+            let shift_y;
 
             match self.parse_mode {
                 ParseMode::Pc => {
@@ -192,18 +195,9 @@ impl FileSystem {
                     let size_bits = data.read_u8().unwrap() as u32;
                     let facing_shift = data.read_u8().unwrap();
                     dest_index = data.read_u16::<LittleEndian>().unwrap() as usize;
-                    dest_pos = Vec2Di32::new(
-                        data.read_u8().unwrap() as i32,
-                        data.read_u8().unwrap() as i32,
-                    );
-
-                    facing = match facing_shift & 0x3 {
-                        0 => Facing::Up,
-                        1 => Facing::Down,
-                        2 => Facing::Left,
-                        3 => Facing::Right,
-                        _ => panic!(),
-                    };
+                    tile_x = data.read_u8().unwrap() as i32;
+                    tile_y = data.read_u8().unwrap() as i32;
+                    facing = Facing::from_index(facing_shift as usize & 0x3);
 
                     let side = (((size_bits & 0x7F) + 1) * 16) as i32;
                     size = if size_bits & 0x80 > 0 {
@@ -212,19 +206,9 @@ impl FileSystem {
                         Vec2Di32::new(side, 16)
                     };
 
-                    if dest_index >= 0x1F0 && dest_index <= 0x1FF {
-                        dest_pos = dest_pos * 8;
-                    } else {
-                        dest_pos = dest_pos * 16;
-                    }
-
                     // Shift destination if flags are set.
-                    if facing_shift & 0x4 > 0 {
-                        dest_pos.x -= 8;
-                    }
-                    if facing_shift & 0x8 > 0 {
-                        dest_pos.y -= 8;
-                    }
+                    shift_x = if facing_shift & 0x4 > 0 { -8 } else { 0 };
+                    shift_y = if facing_shift & 0x8 > 0 { -8 } else { 0 };
                 },
 
                 // The SNES uses 7 bytes and packs the facing and destination offset
@@ -236,19 +220,11 @@ impl FileSystem {
                     );
                     let size_bits = data.read_u8().unwrap() as u32;
                     let dest_index_facing = data.read_u16::<LittleEndian>().unwrap() as usize;
-                    dest_pos = Vec2Di32::new(
-                        data.read_u8().unwrap() as i32,
-                        data.read_u8().unwrap() as i32,
-                    );
+                    tile_x = data.read_u8().unwrap() as i32;
+                    tile_y = data.read_u8().unwrap() as i32;
 
                     dest_index = dest_index_facing & 0x1FF;
-                    facing = match (dest_index_facing & 0x600) >> 9 {
-                        0 => Facing::Up,
-                        1 => Facing::Down,
-                        2 => Facing::Left,
-                        3 => Facing::Right,
-                        _ => panic!(),
-                    };
+                    facing = Facing::from_index((dest_index_facing & 0x600) >> 9);
 
                     let side = (((size_bits & 0x7F) + 1) * 16) as i32;
                     size = if size_bits & 0x80 > 0 {
@@ -257,34 +233,13 @@ impl FileSystem {
                         Vec2Di32::new(side, 16)
                     };
 
-                    if dest_index >= 0x1F0 && dest_index <= 0x1FF {
-                        dest_pos = dest_pos * 8;
-                    } else {
-                        dest_pos = dest_pos * 16;
-                    }
-
                     // Shift destination if flags are set.
-                    if dest_index_facing & 0x800 > 0 {
-                        dest_pos.x -= 8;
-                    }
-                    if dest_index_facing & 0x1000 > 0 {
-                        dest_pos.y -= 8;
-                    }
+                    shift_x = if dest_index_facing & 0x0800 > 0 { -8 } else { 0 };
+                    shift_y = if dest_index_facing & 0x1000 > 0 { -8 } else { 0 };
                 },
             };
 
-            let destination = if dest_index >= 0x1F0 && dest_index <= 0x1FF {
-                Destination::World {
-                    index: dest_index - 0x1F0,
-                    pos: dest_pos,
-                }
-            } else {
-                Destination::Scene {
-                    index: dest_index,
-                    pos: dest_pos,
-                    facing,
-                }
-            };
+            let destination = Destination::from_data(dest_index, facing, tile_x, tile_y, shift_x, shift_y);
 
             exits.push(SceneExit {
                 index: exit_index,

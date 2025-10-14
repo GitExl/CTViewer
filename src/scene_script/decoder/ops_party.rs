@@ -5,19 +5,19 @@ use crate::scene_script::scene_script::SceneScriptMode;
 
 pub fn op_decode_party(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
-        0xD0 => Op::PartyMemberMakeActive {
+        0xD0 => Op::PartyMemberAddToReserve {
             pc: data.read_u8().unwrap() as usize,
         },
-        0xD1 => Op::PartyMemberAddToReserve {
+        0xD1 => Op::PartyMemberRemoveFromActive {
             pc: data.read_u8().unwrap() as usize,
         },
-        0xD3 => Op::PartyMemberRemove {
+        0xD3 => Op::PartyMemberAddToActive {
             pc: data.read_u8().unwrap() as usize,
         },
-        0xD4 => Op::PartyMemberRemoveFromActive {
+        0xD4 => Op::PartyMemberMoveToReserve {
             pc: data.read_u8().unwrap() as usize,
         },
-        0xD6 => Op::PartyMemberToReserve {
+        0xD6 => Op::PartyMemberMoveOutOfParty {
             pc: data.read_u8().unwrap() as usize,
         },
         0xD5 => Op::PartyMemberEquip {

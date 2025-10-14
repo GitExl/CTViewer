@@ -49,4 +49,25 @@ impl Destination {
             },
         }
     }
+
+    pub fn from_data(index: usize, facing: Facing, tile_x: i32, tile_y: i32, shift_x: i32, shift_y: i32) -> Destination {
+        if index >= 0x1F0 && index <= 0x1FF {
+            Destination::World {
+                index: index - 0x1F0,
+                pos: Vec2Di32::new(
+                    tile_x * 8 + shift_x,
+                    tile_y * 8 + shift_y,
+                ),
+            }
+        } else {
+            Destination::Scene {
+                index,
+                facing,
+                pos: Vec2Di32::new(
+                    tile_x * 16 + 8 + shift_x,
+                    tile_y * 16 + 15 + shift_y,
+                ),
+            }
+        }
+    }
 }

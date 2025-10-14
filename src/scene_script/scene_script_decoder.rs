@@ -1,6 +1,7 @@
 use std::io::{Cursor, Read};
 use bitflags::bitflags;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::decoder::ops_inventory::op_decode_inventory;
 use crate::scene_script::ops::Op;
 use crate::scene_script::decoder::ops_actor_props::op_decode_actor_props;
@@ -78,15 +79,17 @@ pub enum ActorRef {
     This,
     ScriptActor(usize),
     ScriptActorStoredUpper(usize),
-    PartyMember(usize),
+    ActivePartyIndex(usize),
 }
 
 impl ActorRef {
-    pub fn deref(self, current_actor_index: usize) -> usize {
+    pub fn deref(self, scene_state: &SceneState, current_actor_index: usize) -> usize {
         match self {
             ActorRef::This => current_actor_index,
             ActorRef::ScriptActor(index) => index,
-            ActorRef::PartyMember(index) => index,  // todo
+            ActorRef::ActivePartyIndex(index) => {
+                *scene_state.player_actors.get(&index).unwrap_or(&0)
+            },
             ActorRef::ScriptActorStoredUpper(_address) => 0,  // todo
         }
     }

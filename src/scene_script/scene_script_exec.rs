@@ -40,21 +40,21 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             exec_call_return(state)
         },
         Op::Call { actor, priority, function } => {
-            let target_index = actor.deref(this_actor);
+            let target_index = actor.deref(scene_state, this_actor);
             let target_actor = &mut scene_state.actors[target_index];
             let target_state = &mut scene_state.script_states[target_index];
 
             exec_call(target_actor, target_state, function, priority)
         },
         Op::CallWaitCompletion { actor, priority, function } => {
-            let target_index = actor.deref(this_actor);
+            let target_index = actor.deref(scene_state, this_actor);
             let target_actor = &mut scene_state.actors[target_index];
             let target_state = &mut scene_state.script_states[target_index];
 
             exec_call_wait_completion(target_actor, target_state, function, priority)
         },
         Op::CallWaitReturn { actor, priority, function } => {
-            let target_index = actor.deref(this_actor);
+            let target_index = actor.deref(scene_state, this_actor);
             let target_actor = &mut scene_state.actors[target_index];
             let target_state = &mut scene_state.script_states[target_index];
 
@@ -121,7 +121,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::COMPLETE
         },
         Op::JumpConditionalDrawMode { actor, draw_mode, offset } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
 
             if scene_state.actors[actor_index].draw_mode == draw_mode {
                 state.current_address = (state.current_address as i64 + offset) as u64;
@@ -173,7 +173,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         // todo must_be_in_party
-        Op::LoadCharacter { char_type, index, is_static, battle_index, .. } => {
+        Op::LoadCharacter { char_type, index, is_static, battle_index, pc_must_be_active } => {
             let sprite_index = match char_type {
                 CharacterType::PC => index,
                 CharacterType::PCAsNPC => index,
@@ -183,17 +183,13 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             let actor = scene_state.actors.get_mut(this_actor).unwrap();
 
-            actor.battle_index = battle_index;
-            actor.flags |= ActorFlags::SOLID;
-            actor.flags.remove(ActorFlags::PUSHABLE);
-            if is_static {
-                actor.flags |= ActorFlags::BATTLE_STATIC;
-            }
-
+            // Player characters that are not active are considered dead.
             if char_type == CharacterType::PC {
-                actor.player_index = Some(index);
-                // todo set actual pc index
-                actor.class = ActorClass::PC1;
+                let is_recruited = ctx.party.reserve.contains(&index) || ctx.party.active.contains(&index);
+                if !is_recruited || (pc_must_be_active && !ctx.party.active.contains(&index)) {
+                    actor.flags.insert(ActorFlags::DEAD);
+                    return OpResult::COMPLETE;
+                }
             }
 
             // todo: set remaining actor classes
@@ -204,10 +200,19 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 actor.class = ActorClass::Enemy;
             }
 
+            // Defaults.
             actor.facing = Facing::Down;
             actor.sprite_priority_top = SpritePriority::BelowL2AboveL1;
             actor.sprite_priority_bottom = SpritePriority::BelowL2AboveL1;
+            actor.draw_mode = DrawMode::Draw;
+            actor.battle_index = battle_index;
+            actor.flags |= ActorFlags::SOLID;
+            actor.flags.remove(ActorFlags::PUSHABLE);
+            if is_static {
+                actor.flags |= ActorFlags::BATTLE_STATIC;
+            }
 
+            // Sprite and animation defaults.
             let state = &mut ctx.sprites_states.get_state_mut(this_actor);
             let sprite_asset = ctx.sprite_assets.load(&ctx.fs, sprite_index);
             state.sprite_index = sprite_index;
@@ -216,11 +221,26 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             state.anim_index = 0;
             state.anim_frame = 0;
 
+            // Player character overrides.
+            if char_type == CharacterType::PC {
+                actor.player_index = Some(index);
+                // todo set actual pc index from party active order
+                actor.class = match index {
+                    0 => ActorClass::PC1,
+                    1 => ActorClass::PC2,
+                    2 => ActorClass::PC3,
+                    _ => ActorClass::PC1
+                };
+                actor.pos = scene_state.enter_position;
+                actor.facing = scene_state.enter_facing;
+                scene_state.player_actors.insert(index, this_actor);
+            }
+
             OpResult::COMPLETE
         },
 
         Op::ActorUpdateFlags { actor, set, remove } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
 
             scene_state.actors[actor_index].flags.insert(set);
             scene_state.actors[actor_index].flags.remove(remove);
@@ -229,14 +249,14 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::ActorSetDrawMode { actor, draw_mode } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             scene_state.actors[actor_index].draw_mode = draw_mode;
 
             OpResult::COMPLETE | OpResult::YIELD
         },
 
         Op::ActorRemove { actor } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
 
             scene_state.actors[actor_index].flags |= ActorFlags::DEAD;
             scene_state.actors[actor_index].draw_mode = DrawMode::Hidden;
@@ -245,7 +265,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::ActorCoordinatesSet { actor, tile_x: x, tile_y: y } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let x = x.get_u8(ctx, scene_state, this_actor) as f64;
             let y = y.get_u8(ctx, scene_state, this_actor) as f64;
 
@@ -255,7 +275,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::ActorCoordinatesSetPrecise { actor, x, y } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let pos = Vec2Df64::new(
                 x.get_u16(ctx, scene_state, this_actor) as f64,
                 y.get_u16(ctx, scene_state, this_actor) as f64,
@@ -267,7 +287,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::ActorCoordinatesGet { actor, tile_x, tile_y } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let actor = &scene_state.actors[actor_index];
 
             let tile_pos_x = (actor.pos.x / 16.0) as u8;
@@ -280,7 +300,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Actor facing.
         Op::ActorFacingSet { actor, facing } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let facing = Facing::from_index(facing.get_u8(ctx, scene_state, this_actor) as usize);
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
@@ -290,15 +310,15 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::ActorFacingGet { actor, dest } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             dest.put_u8(ctx, scene_state, scene_state.actors[actor_index].facing.to_index() as u8);
 
             OpResult::YIELD | OpResult::COMPLETE
         },
 
         Op::ActorSetFacingTowards { actor, to } => {
-            let actor_index = actor.deref(this_actor);
-            let actor_to_index = to.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
+            let actor_to_index = to.deref(scene_state, this_actor);
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             let other_actor = &scene_state.actors[actor_to_index];
@@ -314,7 +334,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // todo rest of bits
         Op::ActorSetSpritePriority { actor, top, bottom, set_and_lock, .. } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
 
             if set_and_lock {
                 scene_state.actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, true);
@@ -329,26 +349,26 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::ActorSetSpeed { actor, speed } => {
-            let actor_index = actor.deref(this_actor);
-            scene_state.actors[actor_index].move_speed = speed.get_u8(ctx, scene_state, this_actor) as f64 / 17.0;
+            let actor_index = actor.deref(scene_state, this_actor);
+            scene_state.actors[actor_index].move_speed = speed.get_u8(ctx, scene_state, this_actor) as f64 * (1.0 / 18.0);
             OpResult::COMPLETE
         },
 
         Op::ActorSetResult8 { actor, result } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             scene_state.actors[actor_index].result = result.get_u8(ctx, scene_state, this_actor) as u32;
             OpResult::COMPLETE
         },
 
         Op::ActorSetResult16 { actor, result } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             scene_state.actors[actor_index].result = result.get_u16(ctx, scene_state, this_actor) as u32;
             OpResult::COMPLETE
         },
 
         // Animation ops.
         Op::Animation { actor, animation } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let anim_index = animation.get_u8(ctx, scene_state, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
@@ -356,7 +376,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::AnimationLoopCount { actor, animation, loops } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let anim_index = animation.get_u8(ctx, scene_state, this_actor) as usize;
             let loop_count = loops.get_u8(ctx, scene_state, this_actor) as u32;
             let state = ctx.sprites_states.get_state_mut(actor_index);
@@ -365,14 +385,14 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::AnimationReset { actor } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation_reset(state)
         },
 
         Op::AnimationStaticFrame { actor, frame} => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             let frame_index = frame.get_u8(ctx, scene_state, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
@@ -387,7 +407,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             exec_movement_by_vector(ctx, scene_state, this_actor, angle, steps, update_facing, animated)
         },
         Op::ActorMoveToActor { to_actor, script_cycle_count, update_facing, animated, forever, into_battle_range } => {
-            let target_actor_index = to_actor.deref(this_actor);
+            let target_actor_index = to_actor.deref(scene_state, this_actor);
 
             let result = exec_movement_to_actor(ctx, scene_state, state, this_actor, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
             if forever {
@@ -419,7 +439,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         Op::SetScriptProcessing { actor, enabled } => {
-            let actor_index = actor.deref(this_actor);
+            let actor_index = actor.deref(scene_state, this_actor);
             if enabled {
                 scene_state.actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, false);
             } else {
@@ -674,23 +694,26 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PartyMemberAddToReserve { pc } => {
-            println!("Unimplemented: add party member {} to reserve", pc);
-            OpResult::YIELD | OpResult::COMPLETE
-        },
-        Op::PartyMemberRemove { pc } => {
-            println!("Unimplemented: remove party member {}", pc);
-            OpResult::YIELD | OpResult::COMPLETE
-        },
-        Op::PartyMemberMakeActive { pc } => {
-            println!("Unimplemented: activate party member {}", pc);
-            OpResult::YIELD | OpResult::COMPLETE
-        },
-        Op::PartyMemberToReserve { pc } => {
-            println!("Unimplemented: move party member {} to reserve", pc);
+            ctx.party.character_add_to_reserve(pc);
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PartyMemberRemoveFromActive { pc } => {
-            println!("Unimplemented: deactivate party member {}", pc);
+            ctx.party.character_remove_from_active(pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberAddToActive { pc } => {
+            ctx.party.character_add_to_active(pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberMoveToReserve { pc } => {
+            ctx.party.character_move_to_reserve(pc);
+            OpResult::YIELD | OpResult::COMPLETE
+        },
+        Op::PartyMemberMoveOutOfParty { pc } => {
+            ctx.party.character_remove_from_active(pc);
+            let pc_actor_index = scene_state.player_actors.get(&pc).unwrap();
+            let pc_actor = &mut scene_state.actors[*pc_actor_index];
+            pc_actor.class = ActorClass::PCOutOfParty;
             OpResult::YIELD | OpResult::COMPLETE
         },
 

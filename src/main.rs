@@ -14,7 +14,9 @@ use clap::Parser;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use crate::destination::Destination;
+use crate::facing::Facing;
 use crate::memory::Memory;
+use crate::party::Party;
 use crate::renderer::Renderer;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state_list::SpriteStateList;
@@ -46,6 +48,9 @@ mod text_processor;
 mod screen_fade;
 mod next_destination;
 mod memory;
+mod party;
+mod items;
+mod character;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
@@ -98,6 +103,7 @@ pub struct Context<'a> {
     random: Random,
     ui_theme: UiTheme,
     memory: Memory,
+    party: Party,
 }
 
 fn main() -> Result<(), String> {
@@ -115,6 +121,11 @@ fn main() -> Result<(), String> {
     let ui_theme = fs.read_ui_theme(0);
     let memory = Memory::new();
 
+    let mut party = Party::new();
+    party.character_add_to_active(0);
+    party.character_add_to_active(1);
+    party.character_add_to_active(2);
+
     let mut ctx = Context {
         fs,
         l10n,
@@ -124,16 +135,17 @@ fn main() -> Result<(), String> {
         random,
         ui_theme,
         memory,
+        party,
     };
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {
-        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(0.0, 0.0)));
+        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(0.0, 0.0), Facing::Up));
     } else if args.world > -1 {
         gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(768.0, 512.0)));
     } else {
-        println!("No scene or world specified, loading scene 0x1.");
-        gamestate = Box::new(GameStateScene::new(&mut ctx, 1, Vec2Df64::new(0.0, 0.0)));
+        println!("No scene or world specified, loading world 0.");
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(768.0, 512.0)));
     }
 
     let title = format!("Chrono Trigger - {}", gamestate.get_title(&ctx));
@@ -198,8 +210,8 @@ fn main() -> Result<(), String> {
                 match game_event.unwrap() {
                     GameEvent::GotoDestination { destination } => {
                         match destination {
-                            Destination::Scene { index, pos, .. } => {
-                                gamestate = Box::new(GameStateScene::new(&mut ctx, index, pos.as_vec2d_f64()));
+                            Destination::Scene { index, pos, facing } => {
+                                gamestate = Box::new(GameStateScene::new(&mut ctx, index, pos.as_vec2d_f64(), facing));
                             },
                             Destination::World { index, pos } => {
                                 gamestate = Box::new(GameStateWorld::new(&mut ctx, index, pos.as_vec2d_f64()));

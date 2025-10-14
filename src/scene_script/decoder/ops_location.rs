@@ -5,7 +5,6 @@ use crate::facing::Facing;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script::SceneScriptMode;
 use crate::memory::DataSource;
-use crate::util::vec2di32::Vec2Di32;
 
 pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
@@ -56,44 +55,18 @@ fn read_destination(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Destin
             let index_facing = data.read_u16::<LittleEndian>().unwrap() as usize;
             let index = index_facing & 0x01FF;
             let facing = index_facing & 0x0600;
+            let tile_x = data.read_u8().unwrap() as i32;
+            let tile_y = data.read_u8().unwrap() as i32;
 
-            let x = data.read_u8().unwrap() as i32 * 16;
-            let y = data.read_u8().unwrap() as i32 * 16;
-            let pos = Vec2Di32 { x, y };
-
-            if index >= 0x1F0 && index <= 0x1FF {
-                Destination::World {
-                    index: index - 0x1F0,
-                    pos,
-                }
-            } else {
-                Destination::Scene {
-                    index,
-                    facing: Facing::from_index(facing),
-                    pos,
-                }
-            }
+            Destination::from_data(index, Facing::from_index(facing), tile_x, tile_y, 0, 0)
         },
         SceneScriptMode::Pc => {
             let index = data.read_u16::<LittleEndian>().unwrap() as usize;
             let facing = data.read_u8().unwrap() as usize;
+            let tile_x = data.read_u8().unwrap() as i32;
+            let tile_y = data.read_u8().unwrap() as i32;
 
-            let x = data.read_u8().unwrap() as i32 * 16;
-            let y = data.read_u8().unwrap() as i32 * 16;
-            let pos = Vec2Di32 { x, y };
-
-            if index >= 0x1F0 && index <= 0x1FF {
-                Destination::World {
-                    index: index - 0x1F0,
-                    pos,
-                }
-            } else {
-                Destination::Scene {
-                    index,
-                    facing: Facing::from_index(facing),
-                    pos,
-                }
-            }
+            Destination::from_data(index, Facing::from_index(facing), tile_x, tile_y, 0, 0)
         }
     }
 }
