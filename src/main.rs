@@ -119,12 +119,14 @@ fn main() -> Result<(), String> {
     let sprites = SpriteStateList::new();
     let random = Random::new();
     let ui_theme = fs.read_ui_theme(0);
-    let memory = Memory::new();
 
-    let mut party = Party::new();
-    party.character_add_to_active(0);
-    party.character_add_to_active(1);
-    party.character_add_to_active(2);
+    // Init some of the same variables that scene 0 does.
+    let mut memory = Memory::new();
+    // memory.write_bytes(0x7E028F, &[0x00, 0xA0, 0x00, 0xA0, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+    memory.write_u16(0x7F01CD, 0x0100);
+    memory.write_u8(0x7F0054, 0x80);
+
+    let party = Party::new();
 
     let mut ctx = Context {
         fs,

@@ -125,8 +125,8 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
 
         // Write to storyline counter.
         0x55 => Op::Copy8 {
-            source: DataSource::for_global_memory(data.read_u8().unwrap() as usize * 2),
-            dest: DataDest::for_local_memory(0x00),
+            source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
+            dest: DataDest::for_global_memory(0x00),
         },
         0x5A => Op::Copy8 {
             source: DataSource::Immediate(data.read_u8().unwrap() as i32),

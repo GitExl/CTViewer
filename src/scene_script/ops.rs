@@ -238,8 +238,12 @@ pub enum Op {
     LoadCharacter {
         char_type: CharacterType,
         index: usize,
-        pc_must_be_active: bool,
         is_static: bool,
+        battle_index: usize,
+    },
+    LoadCharacterPlayer {
+        character_index: usize,
+        must_be_active: bool,
         battle_index: usize,
     },
 

@@ -1,6 +1,7 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::DrawMode;
+use crate::character::CharacterId;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::memory::DataSource;
@@ -80,14 +81,14 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
         // 1 byte direct compare with 0x7F0000 or 0x7F0100.
         0x16 => {
             let mut lhs = data.read_u8().unwrap() as usize;
-            let value = data.read_u8().unwrap();
+            let rhs = data.read_u8().unwrap() as i32;
             let op_value = data.read_u8().unwrap();
             if op_value & 0x80 > 0 {
                 lhs += 0x100;
             }
             Op::JumpConditional8 {
                 lhs: DataSource::for_global_memory(lhs),
-                rhs: DataSource::Immediate((value & 0x7F) as i32),
+                rhs: DataSource::Immediate(rhs),
                 cmp: CompareOp::from_value(op_value as usize & 0x7F),
                 offset: data.read_u8().unwrap() as i64 + 4,
             }
@@ -244,15 +245,15 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
 
         // Party member is active or in reserve.
         0xCF => Op::JumpConditional8 {
-            lhs: DataSource::PCIsActiveOrReserve,
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            lhs: DataSource::PCIsActiveOrReserve(data.read_u8().unwrap() as CharacterId),
+            rhs: DataSource::Immediate(1),
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
         // Party member is in active party.
         0xD2 => Op::JumpConditional8 {
-            lhs: DataSource::PCIsActive,
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
+            lhs: DataSource::PCIsActive(data.read_u8().unwrap() as CharacterId),
+            rhs: DataSource::Immediate(1),
             cmp: CompareOp::GtEq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },

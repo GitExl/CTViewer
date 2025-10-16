@@ -150,8 +150,10 @@ pub struct Actor {
     pub move_speed: f64,
     pub flags: ActorFlags,
     pub draw_mode: DrawMode,
-    pub battle_index: usize,
     pub result: u32,
+
+    pub battle_index: usize,
+    pub movement_unknown: u32,
 }
 
 impl Actor {
@@ -173,8 +175,10 @@ impl Actor {
             move_speed: (1.0 / 18.0) * 16.0,
             flags: ActorFlags::COLLISION_WITH_TILES | ActorFlags::COLLISION_AVOID_PC | ActorFlags::DEAD,
             draw_mode: DrawMode::Draw,
-            battle_index: 0,
             result: 0,
+
+            battle_index: 0,
+            movement_unknown: 0,
         }
     }
 

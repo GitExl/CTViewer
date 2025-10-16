@@ -8,7 +8,6 @@ use crate::util::vec2di32::Vec2Di32;
 
 pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, tile_dest_pos: Vec2Di32, cycle_count: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
     let actor = scene_state.actors.get_mut(actor_index).unwrap();
-    let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match tile movements.
     if let ActorTask::MoveToTile { cycles, .. } = actor.task {
@@ -90,7 +89,7 @@ pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, sc
         cycles: move_cycle_count,
     };
     actor.debug_sprite = DebugSprite::Moving;
-    sprite_state.anim_loops_remaining = move_cycle_count;
+    actor.movement_unknown = move_cycle_count;
 
     if update_facing {
         actor.face_towards(actor.pos + move_by);
@@ -104,7 +103,6 @@ pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, sc
 
 pub fn exec_movement_by_vector(ctx: &mut Context, scene_state: &mut SceneState, actor_index: usize, angle: f64, cycles: u32, update_facing: bool, animated: bool) -> OpResult {
     let actor = scene_state.actors.get_mut(actor_index).unwrap();
-    let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match angle movement tasks.
     if let ActorTask::MoveByAngle { cycles, .. } = actor.task {
@@ -140,7 +138,7 @@ pub fn exec_movement_by_vector(ctx: &mut Context, scene_state: &mut SceneState, 
         cycles,
     };
     actor.debug_sprite = DebugSprite::Moving;
-    sprite_state.anim_loops_remaining = cycles;
+    actor.movement_unknown = cycles;
 
     if update_facing {
         actor.face_towards(actor.pos + move_by);
@@ -162,7 +160,6 @@ pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, s
 
     let target_pos = scene_state.actors[target_actor_index].pos;
     let actor = scene_state.actors.get_mut(actor_index).unwrap();
-    let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
 
     // Only match actor movements.
     if let ActorTask::MoveToActor { cycles, .. } = actor.task {
@@ -201,7 +198,7 @@ pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, s
                     0.0,
                 );
                 move_cycles = 1;
-                sprite_state.anim_loops_remaining = 1;
+                // sprite_state.anim_loops_remaining = 1;
 
             // Move on y-axis last.
             } else if actor_pos.y != dest_pos.y {
@@ -210,7 +207,7 @@ pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, s
                     (dest_pos.y - actor_pos.y).signum() as f64 * 1.0,
                 );
                 move_cycles = 1;
-                sprite_state.anim_loops_remaining = 1;
+                actor.movement_unknown = 1;
 
             // Destination reached, snap to target coordinate.
             } else {
@@ -254,7 +251,7 @@ pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, s
         move_by,
         cycles: move_cycles,
     };
-    sprite_state.anim_loops_remaining = move_cycles;
+    actor.movement_unknown = move_cycles;
     actor.debug_sprite = DebugSprite::Moving;
 
     if update_facing {

@@ -68,7 +68,8 @@ Information about exits, treasure and actors is displayed when the mouse is over
 or world by clicking on exits.
 
 Left-clicking on an actor will activate it. Right-clicking will "touch" it. Clicking with the middle button will
-display debug information about them until somewhere else is middle-clicked.
+display debug information about them until somewhere else is middle-clicked. In that mode use the spacebar to advance
+the actor script execution one step.
 
 ## Examples
 
@@ -114,4 +115,5 @@ look wrong.
 - Micheal Springer for Temporal Flux.
 - rivernyxx for CTExplore.
 - Mauron for help with some scene script specifics.
+- The Mesen emulator and its contributors
 - ...many other people who documented (small) parts of Chrono Trigger over the past decades.

@@ -200,6 +200,12 @@ impl GameStateTrait for GameStateScene {
         self.state.textbox.tick(delta);
         self.state.screen_fade.tick(delta);
 
+        // Freeze debug actor script state.
+        if let Some(debug_actor) = self.debug_actor {
+            let state = self.state.script_states.get_mut(debug_actor).unwrap();
+            state.delay_counter = state.delay;
+        }
+
         if let Some(next_destination) = self.state.next_destination.destination {
             if !self.state.screen_fade.is_active() {
                 self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination });
@@ -410,6 +416,13 @@ impl GameStateTrait for GameStateScene {
                     Some(Keycode::Slash) => {
                         self.scene_renderer.debug_layer = SceneDebugLayer::Actors;
                         println!("Debug layer for actors.");
+                    },
+
+                    Some(Keycode::Space) => {
+                        if let Some(debug_actor) = self.debug_actor {
+                            let state = self.state.script_states.get_mut(debug_actor).unwrap();
+                            state.delay_counter = 0;
+                        }
                     },
 
                     _ => {},

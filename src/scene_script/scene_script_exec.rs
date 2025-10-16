@@ -8,13 +8,12 @@ use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_c
 use crate::scene_script::exec::call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
 use crate::scene_script::exec::movement::{exec_movement_to_tile, exec_movement_by_vector, exec_movement_to_actor};
 use crate::scene_script::ops::Op;
-use crate::scene_script::decoder::ops_char_load::CharacterType;
 use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
+use crate::scene_script::exec::load_character::{exec_load_character, exec_load_character_player};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 use crate::util::rect::Rect;
-use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
@@ -90,8 +89,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 CompareOp::GtEq => lhs_value >= rhs_value,
                 CompareOp::Lt => lhs_value < rhs_value,
                 CompareOp::LtEq => lhs_value <= rhs_value,
-                CompareOp::And => lhs_value & rhs_value > 0,
-                CompareOp::Or => lhs_value | rhs_value > 0,
+                CompareOp::And => (lhs_value & rhs_value) > 0,
+                CompareOp::Or => (lhs_value | rhs_value) > 0,
             };
             if !result {
                 state.current_address = (state.current_address as i64 + offset) as u64;
@@ -110,8 +109,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 CompareOp::GtEq => lhs_value >= rhs_value,
                 CompareOp::Lt => lhs_value < rhs_value,
                 CompareOp::LtEq => lhs_value <= rhs_value,
-                CompareOp::And => lhs_value & rhs_value > 0,
-                CompareOp::Or => lhs_value | rhs_value > 0,
+                CompareOp::And => (lhs_value & rhs_value) > 0,
+                CompareOp::Or => (lhs_value | rhs_value) > 0,
             };
             if !result {
                 state.current_address = (state.current_address as i64 + offset) as u64;
@@ -172,71 +171,13 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::COMPLETE
         },
 
-        // todo must_be_in_party
-        Op::LoadCharacter { char_type, index, is_static, battle_index, pc_must_be_active } => {
-            let sprite_index = match char_type {
-                CharacterType::PC => index,
-                CharacterType::PCAsNPC => index,
-                CharacterType::NPC => index + 7,
-                CharacterType::Enemy => index + 256,
-            };
-
-            let actor = scene_state.actors.get_mut(this_actor).unwrap();
-
-            // Player characters that are not active are considered dead.
-            if char_type == CharacterType::PC {
-                let is_recruited = ctx.party.reserve.contains(&index) || ctx.party.active.contains(&index);
-                if !is_recruited || (pc_must_be_active && !ctx.party.active.contains(&index)) {
-                    actor.flags.insert(ActorFlags::DEAD);
-                    return OpResult::COMPLETE;
-                }
-            }
-
-            // todo: set remaining actor classes
-            if char_type == CharacterType::PCAsNPC || char_type == CharacterType::NPC {
-                actor.class = ActorClass::NPC;
-            }
-            if char_type == CharacterType::Enemy {
-                actor.class = ActorClass::Enemy;
-            }
-
-            // Defaults.
-            actor.facing = Facing::Down;
-            actor.sprite_priority_top = SpritePriority::BelowL2AboveL1;
-            actor.sprite_priority_bottom = SpritePriority::BelowL2AboveL1;
-            actor.draw_mode = DrawMode::Draw;
-            actor.battle_index = battle_index;
-            actor.flags |= ActorFlags::SOLID;
-            actor.flags.remove(ActorFlags::PUSHABLE);
-            if is_static {
-                actor.flags |= ActorFlags::BATTLE_STATIC;
-            }
-
-            // Sprite and animation defaults.
-            let state = &mut ctx.sprites_states.get_state_mut(this_actor);
-            let sprite_asset = ctx.sprite_assets.load(&ctx.fs, sprite_index);
-            state.sprite_index = sprite_index;
-            state.anim_set_index = sprite_asset.anim_set_index;
-            state.palette_offset = 0;
-            state.anim_index = 0;
-            state.anim_frame = 0;
-
-            // Player character overrides.
-            if char_type == CharacterType::PC {
-                actor.player_index = Some(index);
-                // todo set actual pc index from party active order
-                actor.class = match index {
-                    0 => ActorClass::PC1,
-                    1 => ActorClass::PC2,
-                    2 => ActorClass::PC3,
-                    _ => ActorClass::PC1
-                };
-                actor.pos = scene_state.enter_position;
-                actor.facing = scene_state.enter_facing;
-                scene_state.player_actors.insert(index, this_actor);
-            }
-
-            OpResult::COMPLETE
+        // Load characters.
+        Op::LoadCharacter { char_type, index, is_static, battle_index } => {
+            // todo split up into rest of load types
+            exec_load_character(ctx, scene_state, this_actor, char_type, index, is_static, battle_index)
+        },
+        Op::LoadCharacterPlayer { character_index, battle_index, must_be_active } => {
+            exec_load_character_player(ctx, scene_state, this_actor, character_index, battle_index, must_be_active)
         },
 
         Op::ActorUpdateFlags { actor, set, remove } => {
@@ -319,14 +260,16 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         Op::ActorSetFacingTowards { actor, to } => {
             let actor_index = actor.deref(scene_state, this_actor);
             let actor_to_index = to.deref(scene_state, this_actor);
-            let state = ctx.sprites_states.get_state_mut(actor_index);
 
-            let other_actor = &scene_state.actors[actor_to_index];
-            if other_actor.flags.contains(ActorFlags::DEAD) {
+            let actor_to = &scene_state.actors[actor_to_index];
+            if actor_to.flags.contains(ActorFlags::DEAD) {
                 return OpResult::COMPLETE;
             }
-            let other_pos = other_actor.pos;
+
+            let other_pos = actor_to.pos;
             scene_state.actors[actor_index].face_towards(other_pos);
+
+            let state = ctx.sprites_states.get_state_mut(actor_index);
             state.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE

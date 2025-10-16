@@ -60,7 +60,7 @@ pub fn op_decode_facing(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
         0xA9 => Op::ActorSetFacingTowards {
             actor: ActorRef::This,
-            to: ActorRef::ScriptActorStoredUpper(data.read_u8().unwrap() as usize * 2),
+            to: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
         },
 
         _ => panic!("Unknown facing op."),

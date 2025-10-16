@@ -149,32 +149,34 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(rhs),
             }
         },
+
         0x65 => {
-            let bit = data.read_u8().unwrap();
+            let bit = data.read_u8().unwrap() as u32;
             let mut lhs = data.read_u8().unwrap() as usize;
             if bit & 0x80 > 0 {
                 lhs += 0x100;
             }
             Op::BitMath {
                 dest: DataDest::for_global_memory(lhs),
-                rhs: DataSource::Immediate(1 << (bit & 0x7F) as u32),
+                rhs: DataSource::Immediate(1 << (bit & 0xF)),
                 lhs: DataSource::for_global_memory(lhs),
                 op: BitMathOp::Or,
             }
         },
         0x66 => {
-            let bit = data.read_u8().unwrap();
+            let bit = data.read_u8().unwrap() as u32;
             let mut lhs = data.read_u8().unwrap() as usize;
             if bit & 0x80 > 0 {
                 lhs += 0x100;
             }
             Op::BitMath {
                 dest: DataDest::for_global_memory(lhs),
-                rhs: DataSource::Immediate(1 << (bit & 0x7F)),
+                rhs: DataSource::Immediate(!(1 << (bit & 0xF))),
                 lhs: DataSource::for_global_memory(lhs),
                 op: BitMathOp::And,
             }
         },
+
         0x67 => {
             let rhs = data.read_u8().unwrap() as i32;
             let lhs = data.read_u8().unwrap() as usize * 2;

@@ -116,11 +116,11 @@ impl SpriteState {
 
     pub fn animate_for_movement(&mut self, actor_class: ActorClass, move_by: Vec2Df64) {
         if self.anim_mode == AnimationMode::Static {
-            if self.anim_index != 0xFF {
+            if self.anim_index == 0xFF {
+                self.anim_mode = AnimationMode::None;
+            } else {
                 self.anim_mode = AnimationMode::Loop;
                 return;
-            } else {
-                self.anim_mode = AnimationMode::None;
             }
         }
 
@@ -140,7 +140,6 @@ impl SpriteState {
             self.anim_index = anim_index;
             self.anim_frame = 0;
             self.anim_delay = 0;
-            return;
         }
     }
 

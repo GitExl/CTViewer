@@ -323,7 +323,7 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
 
     // Sort enabled sprites by Y coordinate.
     let mut sorted: Vec<&SpriteState> = Vec::new();
-    for sprite_state in sprite_states.get_all().iter() {
+    for sprite_state in sprite_states.get_all().iter().rev() {
         if !sprite_state.enabled {
             continue;
         }

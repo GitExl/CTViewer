@@ -1,6 +1,8 @@
 use crate::actor::ActorFlags;
+use crate::character::CharacterId;
 use crate::Context;
 use crate::gamestate::gamestate_scene::SceneState;
+use crate::party::CharacterPartyState;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 
 #[derive(Clone)]
@@ -158,8 +160,8 @@ pub enum DataSource {
     GoldCount,
 
     // Player character is recruited/active.
-    PCIsActiveOrReserve,
-    PCIsActive,
+    PCIsActiveOrReserve(CharacterId),
+    PCIsActive(CharacterId),
 }
 
 impl DataSource {
@@ -194,8 +196,8 @@ impl DataSource {
             DataSource::PartyCharacter(index) => *scene_state.player_actors.get(&index).unwrap_or(&0) as u8,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u8,
-            DataSource::PCIsActive => 0,
-            DataSource::PCIsActiveOrReserve => 0,
+            DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Active) as u8,
+            DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u8,
         }
     }
 
@@ -210,8 +212,8 @@ impl DataSource {
             DataSource::PartyCharacter(index) => *scene_state.player_actors.get(&index).unwrap_or(&0) as u16,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u16,
-            DataSource::PCIsActive => 0,
-            DataSource::PCIsActiveOrReserve => 0,
+            DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Active) as u16,
+            DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u16,
         }
     }
 }
