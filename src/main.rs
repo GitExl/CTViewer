@@ -142,9 +142,9 @@ fn main() -> Result<(), String> {
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {
-        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(0.0, 0.0), Facing::Up));
+        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(128.0, 112.0), Facing::Up));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(768.0, 512.0)));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(384.0, 288.0)));
     } else {
         println!("No scene or world specified, loading world 0.");
         gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(768.0, 512.0)));
@@ -211,6 +211,10 @@ fn main() -> Result<(), String> {
             if game_event.is_some() {
                 match game_event.unwrap() {
                     GameEvent::GotoDestination { destination } => {
+
+                        // Store previous location.
+                        ctx.memory.write_u16(0x7E0105, destination.get_index() as u16);
+
                         match destination {
                             Destination::Scene { index, pos, facing } => {
                                 gamestate = Box::new(GameStateScene::new(&mut ctx, index, pos.as_vec2d_f64(), facing));

@@ -258,11 +258,17 @@ impl Party {
     }
 
     pub fn is_character_recruited(&self, character_id: CharacterId) -> bool {
+        if !self.characters.contains_key(&character_id) {
+            return false;
+        }
         let character = self.characters.get(&character_id).unwrap();
         character.party_state != CharacterPartyState::Unavailable
     }
 
     pub fn is_character_active(&self, character_id: CharacterId) -> bool {
+        if !self.characters.contains_key(&character_id) {
+            return false;
+        }
         let character = self.characters.get(&character_id).unwrap();
         character.party_state == CharacterPartyState::Active
     }

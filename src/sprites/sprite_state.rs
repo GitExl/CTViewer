@@ -30,6 +30,7 @@ pub struct SpriteState {
     pub anim_frame_static: usize,
     pub anim_mode: AnimationMode,
     pub anim_loops_remaining: u32,
+    pub anim_enabled: bool,
 }
 
 impl SpriteState {
@@ -52,11 +53,12 @@ impl SpriteState {
             anim_frame_static: 0,
             anim_mode: AnimationMode::None,
             anim_loops_remaining: 0,
+            anim_enabled: true,
         }
     }
 
     pub fn tick_animation(&mut self, anim: &SpriteAnim) {
-        // todo: only do this for sprites that are visible
+        // todo: only do this for sprites that are "visible", C0A88D
 
         if self.anim_delay > 0 {
             self.anim_delay -= 1;
@@ -65,10 +67,10 @@ impl SpriteState {
             return;
         }
 
-        // todo: dead actors should stop here
-        // if actor.is_dead {
-        //     return
-        // }
+        // Process delay, but don't animate.
+        if !self.anim_enabled {
+            return;
+        }
 
         self.anim_frame += 1;
 

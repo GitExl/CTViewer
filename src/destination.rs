@@ -70,4 +70,11 @@ impl Destination {
             }
         }
     }
+
+    pub fn get_index(&self) -> usize {
+        match self {
+            Destination::World { index, .. } => *index + 0x1FF,
+            Destination::Scene { index, .. } => *index,
+        }
+    }
 }

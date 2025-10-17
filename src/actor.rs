@@ -197,6 +197,7 @@ impl Actor {
         sprite_state.priority_top = self.sprite_priority_top;
         sprite_state.priority_bottom = self.sprite_priority_bottom;
         sprite_state.enabled = self.draw_mode == DrawMode::Draw && !self.flags.contains(ActorFlags::DEAD) && self.class != ActorClass::Undefined;
+        sprite_state.anim_enabled = !self.flags.contains(ActorFlags::DEAD);
     }
 
     pub fn face_towards(&mut self, pos: Vec2Df64) {
