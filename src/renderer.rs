@@ -10,7 +10,7 @@ use crate::util::rect::Rect;
 use crate::software_renderer::draw::draw_box_filled;
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::surface::Surface;
-use crate::software_renderer::text::{text_draw_to_surface, text_draw_to_surface_wrapped, TextDrawFlags};
+use crate::software_renderer::text::{text_draw_to_surface, text_draw_to_surface_wrapped, text_measure, TextDrawFlags};
 
 pub enum TextFont {
     Regular,
@@ -281,6 +281,15 @@ impl<'a> Renderer<'a> {
         }
 
         blit_surface_to_surface(&surface, &mut self.target, 0, 0, surface.width as i32, surface.height as i32, dest_x, dest_y, SurfaceBlendOps::Blend);
+    }
+
+    pub fn measure_text(&self, text: &str, font: TextFont) -> (u32, u32) {
+        let font_data = match font {
+            TextFont::Regular => &self.font,
+            TextFont::Small => &self.font_small,
+        };
+
+        text_measure(text, font_data)
     }
 
     pub fn render_box_filled(&mut self, rect: Rect, color: Color, blend_op: SurfaceBlendOps) {

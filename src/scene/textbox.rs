@@ -4,7 +4,6 @@ use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::surface::Surface;
 use crate::software_renderer::text::TextDrawFlags;
-use crate::text_processor::process_text;
 
 const TEXTBOX_TEXT_COLOR: Color = [231, 231, 231, 255];
 const TEXTBOX_CHIP_WIDTH: i32 = 32;
@@ -135,9 +134,8 @@ impl TextBox {
         self.actor_index
     }
 
-    pub fn show(&mut self, text: String, position: TextBoxPosition, actor_index: usize) {
-
-        process_text(text.as_str());
+    pub fn show(&mut self, ctx: &Context, text: String, position: TextBoxPosition, actor_index: usize) {
+        let pages = ctx.text_processor.process_dialog_text(ctx, text.as_str());
 
         // Split the text into pages, and the pages into lines.
         self.pages.clear();

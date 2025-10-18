@@ -13,6 +13,10 @@ bitflags! {
     }
 }
 
+pub fn text_measure(text: &str, sdl_font: &Font) -> (u32, u32) {
+    sdl_font.size_of(&text).unwrap()
+}
+
 pub fn text_draw_to_surface(text: &str, sdl_font: &Font, color: Color, flags: TextDrawFlags) -> Surface {
     let sdl_surface = sdl_font
         .render(&text)

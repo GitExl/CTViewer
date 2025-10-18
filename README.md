@@ -36,6 +36,7 @@ When viewing scenes or worlds, the following keys are available:
 
 - `wasd` to move around
 - `esc` to exit
+- `f` to advance dialog text
 - `1` toggle rendering of layer 1
 - `2` toggle rendering of layer 2
 - `3` toggle rendering of layer 3

@@ -20,6 +20,7 @@ use crate::party::Party;
 use crate::renderer::Renderer;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state_list::SpriteStateList;
+use crate::text_processor::TextProcessor;
 use crate::ui_theme::UiTheme;
 use crate::util::random::Random;
 use crate::util::vec2df64::Vec2Df64;
@@ -104,6 +105,7 @@ pub struct Context<'a> {
     ui_theme: UiTheme,
     memory: Memory,
     party: Party,
+    text_processor: TextProcessor,
 }
 
 fn main() -> Result<(), String> {
@@ -126,7 +128,9 @@ fn main() -> Result<(), String> {
     memory.write_u16(0x7F01CD, 0x0100);
     memory.write_u8(0x7F0054, 0x80);
 
+    let mut text_processor = TextProcessor::new();
     let party = Party::new();
+    text_processor.update_party_names(&party);
 
     let mut ctx = Context {
         fs,
@@ -138,6 +142,7 @@ fn main() -> Result<(), String> {
         ui_theme,
         memory,
         party,
+        text_processor,
     };
 
     let mut gamestate: Box<dyn GameStateTrait>;
