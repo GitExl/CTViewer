@@ -25,6 +25,7 @@ pub struct SpriteAsset {
     pub tiles: Bitmap,
     pub assembly: SpriteAssembly,
     pub palette: Palette,
+    pub palette_index: usize,
     pub anim_set_index: usize,
 }
 
@@ -59,7 +60,7 @@ impl SpriteAssets {
         if !self.assets.contains_key(&sprite_index) {
             let info = fs.read_sprite_header(sprite_index);
             let assembly = fs.read_sprite_assembly(info.assembly_index, &info);
-            let palette = fs.read_sprite_palette(info.palette_index).unwrap();
+            let palette = fs.read_sprite_palette(info.palette_index, 0).unwrap();
             let tiles = fs.read_sprite_tiles(info.bitmap_index, assembly.chip_max);
 
             let sprite = SpriteAsset {
@@ -67,6 +68,7 @@ impl SpriteAssets {
                 tiles,
                 assembly,
                 palette,
+                palette_index: info.palette_index,
                 anim_set_index: info.anim_index,
             };
             self.assets.insert(sprite_index, sprite);
@@ -91,6 +93,7 @@ impl SpriteAssets {
             tiles,
             assembly,
             palette: palette.clone(),
+            palette_index: 0,
             anim_set_index: WORLD_ANIM_SET_INDEX,
         });
     }
@@ -179,6 +182,7 @@ fn generate_null_sprite_asset() -> SpriteAsset {
         anim_set_index: NULL_ANIM_SET_INDEX,
         tiles: null_sprite_bitmap,
         palette: Palette::from_colors(&null_palette),
+        palette_index: 0,
         assembly: SpriteAssembly {
             index: NULL_ASSEMBLY_SET_INDEX,
             frames: vec![

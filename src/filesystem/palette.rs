@@ -164,11 +164,6 @@ impl FileSystem {
     // Read an SNES 5 bits per component color value.
     pub fn read_color(reader: &mut Cursor<Vec<u8>>) -> Color {
         let data = reader.read_u16::<LittleEndian>().unwrap();
-        [
-            (((data >> 0)  & 0x1F) as f64 * (255.0 / 31.0)).round() as u8,
-            (((data >> 5)  & 0x1F) as f64 * (255.0 / 31.0)).round() as u8,
-            (((data >> 10) & 0x1F) as f64 * (255.0 / 31.0)).round() as u8,
-            0xFF
-        ]
+        Palette::decode_snes_color(data)
     }
 }

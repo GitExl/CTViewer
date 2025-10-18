@@ -23,6 +23,15 @@ impl Palette {
             colors: colors.clone(),
         }
     }
+
+    pub fn decode_snes_color(data: u16) -> Color {
+        [
+            (((data >> 0)  & 0x1F) as f64 * (255.0 / 31.0)).round() as u8,
+            (((data >> 5)  & 0x1F) as f64 * (255.0 / 31.0)).round() as u8,
+            (((data >> 10) & 0x1F) as f64 * (255.0 / 31.0)).round() as u8,
+            0xFF
+        ]
+    }
 }
 
 pub fn render_palette(palette: &Palette, surface: &mut Surface, scale: i32) {
@@ -36,5 +45,4 @@ pub fn render_palette(palette: &Palette, surface: &mut Surface, scale: i32) {
             y += scale;
         }
     }
-
 }

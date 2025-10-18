@@ -1,4 +1,5 @@
 use crate::actor::ActorClass;
+use crate::software_renderer::palette::Palette;
 use crate::sprites::sprite_anim::SpriteAnim;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
@@ -17,10 +18,13 @@ pub struct SpriteState {
 
     pub sprite_index: usize,
     pub sprite_frame: usize,
-    pub palette_offset: usize,
     pub priority_top: SpritePriority,
     pub priority_bottom: SpritePriority,
     pub enabled: bool,
+
+    pub palette: Palette,
+    pub palette_index: usize,
+    pub palette_offset: usize,
 
     pub anim_set_index: usize,
     pub anim_delay: u32,
@@ -40,10 +44,13 @@ impl SpriteState {
 
             sprite_index: 0,
             sprite_frame: 0,
-            palette_offset: 0,
             priority_top: SpritePriority::default(),
             priority_bottom: SpritePriority::default(),
             enabled: false,
+
+            palette: Palette::new(16),
+            palette_index: 0,
+            palette_offset: 0,
 
             anim_set_index: 0,
             anim_delay: 0,

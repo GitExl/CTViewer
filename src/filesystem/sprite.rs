@@ -145,17 +145,20 @@ impl FileSystem {
     }
 
     // Read a sprite palette.
-    pub fn read_sprite_palette(&self, index: usize) -> Option<Palette> {
+    pub fn read_sprite_palette(&self, index: usize, offset: usize) -> Option<Palette> {
         let palette_wrap = self.backend.get_sprite_palette(index);
         if palette_wrap.is_none() {
             return None;
         }
-        let mut palette = palette_wrap.unwrap();
+        let source_palette = palette_wrap.unwrap();
+        let mut palette = Palette::new(0);
 
-        // Extend the palette up to 16 colors if needed.
-        let missing_colors = 16 - palette.colors.len();
-        for _ in 0..missing_colors {
-            palette.colors.push([0, 0, 0, 0xFF]);
+        for i in 0..16 {
+            if i < source_palette.colors.len() {
+                palette.colors.push(source_palette.colors[i + offset]);
+            } else {
+                palette.colors.push([0, 0, 0, 0xFF]);
+            }
         }
 
         Some(palette)

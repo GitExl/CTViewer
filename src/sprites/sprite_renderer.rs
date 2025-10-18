@@ -1,6 +1,7 @@
 use crate::software_renderer::bitmap::Bitmap;
 use crate::software_renderer::blit::blit_bitmap_to_surface_and_source;
 use crate::software_renderer::blit::BitmapBlitFlags;
+use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_assets::SpriteAsset;
 use super::sprite_assembly::SpriteAssemblyChipFlags;
@@ -26,7 +27,7 @@ impl SpritePriority {
     }
 }
 
-pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, render_top: bool, render_bottom: bool, sprite: &SpriteAsset, frame: usize, x: i32, y: i32, palette_offset: usize) {
+pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, render_top: bool, render_bottom: bool, sprite: &SpriteAsset, frame: usize, x: i32, y: i32, palette: &Palette, palette_offset: usize) {
     let frame = &sprite.assembly.frames[frame];
 
     for tile in frame.chips.iter().rev() {
@@ -58,7 +59,7 @@ pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_va
             tile.src_x, tile.src_y,
             tile.width, tile.height,
             x + tile.x, y + tile.y,
-            &sprite.palette, palette_offset,
+            palette, palette_offset,
             source_value,
             flags,
         );

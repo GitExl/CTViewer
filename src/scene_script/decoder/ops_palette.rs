@@ -65,16 +65,10 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                         let color_index = bits & 0xF;
                         let sub_palette = (bits & 0xF0) >> 4;
 
-                        Op::PaletteSetImmediate {
+                        Op::PaletteSetImmediateIndex {
                             color_index,
                             sub_palette: SubPalette::Index(sub_palette),
-                            data: [
-                                data.read_u8().unwrap(),
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            ],
-                            length: 0,
+                            palette_index: data.read_u8().unwrap() as usize,
                         }
                     },
                 }
@@ -84,7 +78,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
             }
         },
         0x33 => Op::PaletteSetIndex {
-            palette: data.read_u8().unwrap() as usize,
+            palette_index: data.read_u8().unwrap() as usize,
         },
 
         // 0x88 sub ops.
@@ -119,17 +113,10 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                         }
                     },
                     SceneScriptMode::Pc => {
-                        // todo what is this exactly? maybe the value is a palette from the bitmap.
-                        Op::PaletteSetImmediate {
+                        Op::PaletteSetImmediateIndex {
                             color_index: cmd as usize & 0x0F,
                             sub_palette: SubPalette::This,
-                            data: [
-                                data.read_u8().unwrap(),
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                            ],
-                            length: 0,
+                            palette_index: data.read_u8().unwrap() as usize,
                         }
                     },
                 }

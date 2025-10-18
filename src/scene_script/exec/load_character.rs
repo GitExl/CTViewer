@@ -42,6 +42,7 @@ pub fn exec_load_character(ctx: &mut Context, scene_state: &mut SceneState, acto
     sprite_state.sprite_index = sprite_index;
     sprite_state.anim_set_index = sprite_asset.anim_set_index;
     sprite_state.palette_offset = 0;
+    sprite_state.palette = sprite_asset.palette.clone();
     sprite_state.anim_index = 0;
     sprite_state.anim_frame = 0;
 
@@ -77,8 +78,10 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     let sprite_state = &mut ctx.sprites_states.get_state_mut(actor_index);
     let sprite_asset = ctx.sprite_assets.load(&ctx.fs, character_index);
     sprite_state.sprite_index = character_index;
-    sprite_state.anim_set_index = sprite_asset.anim_set_index;
+    sprite_state.palette = sprite_asset.palette.clone();
+    sprite_state.palette_index = sprite_asset.palette_index;
     sprite_state.palette_offset = 0;
+    sprite_state.anim_set_index = sprite_asset.anim_set_index;
     sprite_state.anim_index = 0;
     sprite_state.anim_frame = 0;
     sprite_state.anim_delay = 0;

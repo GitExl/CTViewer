@@ -10,9 +10,11 @@ use crate::scene_script::exec::movement::{exec_movement_to_tile, exec_movement_b
 use crate::scene_script::ops::Op;
 use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
+use crate::scene_script::decoder::ops_palette::SubPalette;
 use crate::scene_script::exec::load_character::{exec_load_character, exec_load_character_player};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
+use crate::software_renderer::palette::Palette;
 use crate::util::rect::Rect;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
@@ -501,9 +503,9 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             };
 
             if index < scene_state.textbox_strings.len() {
-                scene_state.textbox.show(scene_state.textbox_strings[index].clone(), real_position, this_actor);
+                scene_state.textbox.show(ctx, scene_state.textbox_strings[index].clone(), real_position, this_actor);
             } else {
-                scene_state.textbox.show(format!("STRING INDEX {}", index), real_position, this_actor);
+                scene_state.textbox.show(ctx, format!("STRING INDEX {}", index), real_position, this_actor);
             }
 
             OpResult::YIELD
@@ -611,16 +613,43 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Palette changes.
         Op::PaletteSetImmediate { sub_palette, color_index, data, length } => {
-            println!("Unimplemented: set subpalette {:?}, color {} to {:?}", sub_palette, color_index, data[0..length].to_vec());
+            let sprite_state = ctx.sprites_states.get_state_mut(this_actor);
+            match sub_palette {
+                SubPalette::This => {
+                    for i in 0..length / 2 {
+                        let color = (data[i * 2 + 1] as u16) << 8 | data[i * 2] as u16;
+                        sprite_state.palette.colors[color_index + i] = Palette::decode_snes_color(color);
+                    }
+                },
+                SubPalette::Index(sub_palette) => {
+                    println!("Unimplemented: set subpalette {:?}, color {} to {:?}", sub_palette, color_index, data[0..length].to_vec());
+                },
+            }
+
+            OpResult::COMPLETE
+        },
+        Op::PaletteSetImmediateIndex { sub_palette, color_index, palette_index } => {
+            println!("Unimplemented: set palette immediate index {:?}, color {} to {}", sub_palette, color_index, palette_index);
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PaletteRestore => {
-            println!("Unimplemented: restore subpalette");
-            OpResult::YIELD | OpResult::COMPLETE
+            let sprite_state = ctx.sprites_states.get_state_mut(this_actor);
+            let palette = ctx.fs.read_sprite_palette(sprite_state.palette_index, 0);
+            if let Some(palette) = palette {
+                sprite_state.palette = palette;
+            }
+
+            OpResult::COMPLETE
         },
-        Op::PaletteSetIndex { palette } => {
-            println!("Unimplemented: set subpalette to palette {}", palette);
-            OpResult::YIELD | OpResult::COMPLETE
+        Op::PaletteSetIndex { palette_index } => {
+            let palette = ctx.fs.read_sprite_palette(palette_index, 0);
+            if let Some(palette) = palette {
+                let sprite_state = ctx.sprites_states.get_state_mut(this_actor);
+                sprite_state.palette = palette;
+                sprite_state.palette_index = palette_index;
+            }
+
+            OpResult::COMPLETE
         },
 
         // Party management.

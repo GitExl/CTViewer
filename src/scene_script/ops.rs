@@ -224,8 +224,13 @@ pub enum Op {
         data: [u8; 64],
         length: usize,
     },
+    PaletteSetImmediateIndex {
+        sub_palette: SubPalette,
+        color_index: usize,
+        palette_index: usize,
+    },
     PaletteSetIndex {
-        palette: usize,
+        palette_index: usize,
     },
     PaletteRestore,
 
