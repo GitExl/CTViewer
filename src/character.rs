@@ -70,6 +70,7 @@ pub struct CharacterStats {
 pub struct Character {
     pub id: CharacterId,
     pub name: String,
+    pub text_key: String,
     pub party_state: CharacterPartyState,
     pub hp: u32,
     pub mp: u32,
