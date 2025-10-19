@@ -4,6 +4,8 @@ use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::surface::Surface;
 use crate::software_renderer::text::TextDrawFlags;
+use crate::text_processor::{TextPage, TextPart};
+use crate::util::vec2di32::Vec2Di32;
 
 const TEXTBOX_TEXT_COLOR: Color = [231, 231, 231, 255];
 const TEXTBOX_CHIP_WIDTH: i32 = 32;
@@ -26,7 +28,7 @@ pub enum TextBoxState {
         visibility: f64,
     },
     Typing {
-        current_line: usize,
+        current_item: usize,
         current_character: f64,
     },
     Waiting,
@@ -36,19 +38,19 @@ pub enum TextBoxState {
     },
 }
 
-struct TextPageLine {
-    text: String,
+struct LayoutItem {
     renderable: TextRenderable,
-}
-
-struct TextPage {
-    lines: Vec<TextPageLine>,
+    pos: Vec2Di32,
 }
 
 pub struct TextBox {
     state: TextBoxState,
+
     pages: Vec<TextPage>,
     current_page: usize,
+
+    layout_items: Vec<LayoutItem>,
+
     position: TextBoxPosition,
     actor_index: Option<usize>,
 
@@ -63,9 +65,13 @@ impl TextBox {
         ctx.ui_theme.render_window(&mut window_surface, 0, 0, TEXTBOX_CHIP_WIDTH, TEXTBOX_CHIP_HEIGHT);
 
         TextBox {
+            state: TextBoxState::Disabled,
+
             pages: Vec::new(),
             current_page: 0,
-            state: TextBoxState::Disabled,
+
+            layout_items: Vec::new(),
+
             position: TextBoxPosition::Bottom,
             actor_index: None,
 
@@ -87,25 +93,24 @@ impl TextBox {
                 if *visibility >= 1.0 {
                     *visibility = 1.0;
                     self.state = TextBoxState::Typing {
-                        current_line: 0,
+                        current_item: 0,
                         current_character: 0.0,
                     };
                 }
             },
 
             // Type out one character per tick.
-            TextBoxState::Typing { current_line: line, current_character: character } => {
-                *character += delta * TEXTBOX_SHOW_CHARS_PER_SECOND;
+            TextBoxState::Typing { current_item, current_character } => {
+                *current_character += delta * TEXTBOX_SHOW_CHARS_PER_SECOND;
+                let renderable = &mut self.layout_items[*current_item].renderable;
 
-                // End of line.
-                if *character as usize >= self.pages[self.current_page].lines[*line].renderable.get_char_count() {
-                    *line += 1;
-
-                    // End of page.
-                    if *line >= self.pages[self.current_page].lines.len() {
-                        self.state = TextBoxState::Waiting;
+                // End of item.
+                if *current_character as usize >= renderable.get_char_count() {
+                    if *current_item < self.layout_items.len() - 1 {
+                        *current_item += 1;
+                        *current_character = 0.0;
                     } else {
-                        *character = 0.0;
+                        self.state = TextBoxState::Waiting;
                     }
                 }
             },
@@ -135,46 +140,21 @@ impl TextBox {
     }
 
     pub fn show(&mut self, ctx: &Context, text: String, position: TextBoxPosition, actor_index: usize) {
-        let pages = ctx.text_processor.process_dialog_text(ctx, text.as_str());
-
-        // Split the text into pages, and the pages into lines.
-        self.pages.clear();
-        for text_page in text.split("<PAGE>") {
-            let text_lines: Vec<String> = text_page.split("<BR>").map(str::to_string).collect();
-
-            let mut text_page_lines = Vec::<TextPageLine>::new();
-            for text in text_lines {
-
-                // Prepare the line's text for rendering.
-                let renderable = TextRenderable::new(
-                    text.clone(),
-                    TextFont::Regular,
-                    TEXTBOX_TEXT_COLOR,
-                    TextDrawFlags::SHADOW,
-                    0,
-                );
-
-                text_page_lines.push(TextPageLine {
-                    renderable,
-                    text,
-                });
-            }
-
-            self.pages.push(TextPage {
-                lines: text_page_lines,
-            });
-        }
-
         self.state = TextBoxState::Showing {
             visibility: 0.0,
             last_visibility: 0.0,
         };
         self.position = position;
+
+        self.pages = ctx.text_processor.process_dialog_text(ctx, text.as_str());
         self.current_page = 0;
+
+        self.layout_items = self.layout_page(ctx, &self.pages[0]);
+
         self.actor_index = Some(actor_index);
     }
 
-    pub fn progress(&mut self) {
+    pub fn progress(&mut self, ctx: &mut Context) {
         if self.state == TextBoxState::Disabled {
             return;
         }
@@ -184,8 +164,11 @@ impl TextBox {
             // Advance to next page.
             if self.current_page < self.pages.len() - 1 {
                 self.current_page += 1;
+
+                self.layout_items = self.layout_page(ctx, &self.pages[self.current_page]);
+
                 self.state = TextBoxState::Typing {
-                    current_line: 0,
+                    current_item: 0,
                     current_character: 0.0,
                 };
 
@@ -232,37 +215,73 @@ impl TextBox {
         match self.state {
 
             // While typing, draw all lines up to the current one and set a character limit for the current one.
-            TextBoxState::Typing { current_line: line, current_character: character } => {
-                let current_page = &mut self.pages[self.current_page];
-                for (line_index, page_line) in current_page.lines.iter_mut().enumerate() {
-                    let x = if line_index == 0 { 8 } else { 20 };
-                    let y = dest_y + 9 + line_index as i32 * 16;
-
-                    // Limit character count for the current line.
-                    let char_count = character as usize;
-                    if line_index == line {
-                        page_line.renderable.set_char_count_to_show(char_count);
-                    }
-
-                    ctx.render.render_text(&mut page_line.renderable, x, y, TextFlags::AlignHStart | TextFlags::AlignVStart);
-
-                    // Skip future lines.
-                    if line_index >= line {
+            TextBoxState::Typing { current_character, current_item } => {
+                for (index, item) in self.layout_items.iter_mut().enumerate() {
+                    if index > current_item {
                         break;
+                    } else if index == current_item {
+                        item.renderable.set_char_count_to_show(current_character.ceil() as usize);
+                    } else {
+                        item.renderable.set_char_count_to_show(item.renderable.get_char_count());
                     }
+
+                    let x = 8 + item.pos.x;
+                    let y = dest_y + 9 + item.pos.y;
+                    ctx.render.render_text(&mut item.renderable, x, y, TextFlags::empty());
                 }
             },
 
             // While waiting, draw all lines.
             TextBoxState::Waiting => {
-                let current_page = &mut self.pages[self.current_page];
-                for (line_index, page_line) in current_page.lines.iter_mut().enumerate() {
-                    let x = if line_index == 0 { 8 } else { 20 };
-                    let y = dest_y + 9 + line_index as i32 * 16;
-                    ctx.render.render_text(&mut page_line.renderable, x, y, TextFlags::AlignHStart | TextFlags::AlignVStart);
+                for item in self.layout_items.iter_mut() {
+                    let x = 8 + item.pos.x;
+                    let y = dest_y + 9 + item.pos.y;
+                    ctx.render.render_text(&mut item.renderable, x, y, TextFlags::empty());
                 }
             },
             _ => {},
         };
+    }
+
+    fn layout_page(&self, ctx: &Context, page: &TextPage) -> Vec<LayoutItem> {
+        const WIDTH: u32 = 238;
+        const LINE_HEIGHT: u32 = 16;
+
+        let mut x: u32 = 0;
+        let mut y: u32 = 0;
+        let mut layout = Vec::new();
+
+        for part in page.parts.iter() {
+            let text = match part {
+                TextPart::Word { ref word } => word,
+                TextPart::Whitespace { ref space } => space,
+                TextPart::LineBreak => {
+                    x = 0;
+                    y += LINE_HEIGHT;
+                    continue;
+                },
+                _ => continue,
+            };
+
+            let (width, _height) = ctx.render.measure_text(text, TextFont::Regular);
+
+            // Word wrapping.
+            if x + width > WIDTH {
+                x = 0;
+                y += LINE_HEIGHT;
+            }
+
+            // Store layout data.
+            layout.push(LayoutItem {
+                pos: Vec2Di32::new(x as i32, y as i32),
+                renderable: TextRenderable::new(text.clone(), TextFont::Regular, TEXTBOX_TEXT_COLOR, TextDrawFlags::SHADOW, 0),
+            });
+
+
+            // Move position.
+            x += width;
+        }
+
+        layout
     }
 }

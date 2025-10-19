@@ -341,7 +341,7 @@ impl GameStateTrait for GameStateScene {
         format!("{} - {}", self.scene.index, ctx.l10n.get_indexed(IndexedType::Scene, self.scene.index))
     }
 
-    fn event(&mut self, _ctx: &mut Context, event: &Event) {
+    fn event(&mut self, ctx: &mut Context, event: &Event) {
         match event {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
@@ -352,7 +352,7 @@ impl GameStateTrait for GameStateScene {
 
                     Some(Keycode::F) => {
                         self.key_activate = true;
-                        self.state.textbox.progress();
+                        self.state.textbox.progress(ctx);
                     },
 
                     Some(Keycode::_1) => {

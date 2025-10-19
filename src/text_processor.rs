@@ -3,8 +3,6 @@ use regex::Regex;
 use crate::character::CharacterId;
 use crate::Context;
 use crate::party::Party;
-use crate::renderer::TextFont;
-use crate::util::vec2di32::Vec2Di32;
 
 pub enum TextIcon {
     Blade,
@@ -24,7 +22,7 @@ pub enum TextIcon {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum TextPartContents {
+pub enum TextPart {
     /// A single word.
     Word {
         word: String
@@ -52,15 +50,17 @@ pub enum TextPartContents {
     LineBreak,
 }
 
-pub struct TextPart {
-    size: Vec2Di32,
-    pos: Vec2Di32,
-    contents: TextPartContents,
+#[derive(Debug, PartialEq)]
+enum MatchType {
+    TagOpen,
+    TagClose,
+    Word,
+    Whitespace,
 }
 
 pub struct TextPage {
-    parts: Vec<TextPart>,
-    auto: bool,
+    pub parts: Vec<TextPart>,
+    pub auto: bool,
 }
 
 impl TextPage {
@@ -140,19 +140,24 @@ impl TextPage {
 pub struct TextProcessor {
     replacements: HashMap<String, String>,
     regex_name_pt: Regex,
+    regex_match_parts: Vec<Regex>,
 }
 
 impl TextProcessor {
     pub fn new() -> TextProcessor {
-        let regex_name_pt = Regex::new(r"^<NAME_PT(\d+)>").unwrap();
-
         let mut replacements = HashMap::new();
         replacements.insert("<NAME_SIL>".into(), "Epoch".into());
         replacements.insert("<NAME_LEENE>".into(), "Leene".into());
 
         TextProcessor {
             replacements,
-            regex_name_pt,
+            regex_name_pt: Regex::new(r"^<NAME_PT(\d+)>").unwrap(),
+            regex_match_parts: [
+                Regex::new(r"^<(.+?)>").unwrap(),
+                Regex::new(r"^</(\S+)>").unwrap(),
+                Regex::new(r"^([^[:space:]<]+)").unwrap(),
+                Regex::new(r"^(\s+)").unwrap(),
+            ].to_vec(),
         }
     }
 
@@ -163,53 +168,13 @@ impl TextProcessor {
     }
 
     pub fn process_dialog_text(&self, ctx: &Context, text: &str) -> Vec<TextPage> {
+        println!("{}", text);
         let text = text.replace("\\", "<BR>");
-        let mut pages = self.split_text(ctx, &text);
-        self.layout_pages(ctx, &mut pages);
+        let pages = self.split_text(ctx, &text);
 
         self.dump_pages(&pages);
 
         pages
-    }
-
-    fn layout_pages(&self, ctx: &Context, pages: &mut Vec<TextPage>) {
-        const WIDTH: u32 = 238;
-        const LINE_HEIGHT: u32 = 16;
-
-        for page in pages.iter_mut() {
-            let mut x: u32 = 0;
-            let mut y: u32 = 0;
-
-            for part in page.parts.iter_mut() {
-                let text = match part.contents {
-                    TextPartContents::Word { ref word } => word,
-                    TextPartContents::Whitespace { ref space } => space,
-                    TextPartContents::LineBreak => {
-                        x = 0;
-                        y += LINE_HEIGHT;
-                        continue;
-                    },
-                    _ => continue,
-                };
-
-                let (width, height) = ctx.render.measure_text(text, TextFont::Regular);
-
-                // Word wrapping.
-                if x + width > WIDTH {
-                    x = 0;
-                    y += LINE_HEIGHT;
-                }
-
-                // Store layout data.
-                part.size.x = width as i32;
-                part.size.y = height as i32;
-                part.pos.x = x as i32;
-                part.pos.y = y as i32;
-
-                // Move position.
-                x += width;
-            }
-        }
     }
 
     fn split_text(&self, ctx: &Context, text: &str) -> Vec<TextPage> {
@@ -217,7 +182,7 @@ impl TextProcessor {
         let mut pages: Vec<TextPage> = Vec::new();
         let mut page = TextPage::new();
         loop {
-            let result = match_part(&text, index);
+            let result = self.match_part(&text, index);
             if result.is_none() {
                 break;
             }
@@ -226,14 +191,14 @@ impl TextProcessor {
             index += match_contents.len();
 
             let contents = match match_type {
-                MatchType::Word => Some(TextPartContents::Word { word: String::from(match_contents) }),
-                MatchType::Whitespace => Some(TextPartContents::Whitespace { space: String::from(match_contents) }),
+                MatchType::Word => Some(TextPart::Word { word: String::from(match_contents) }),
+                MatchType::Whitespace => Some(TextPart::Whitespace { space: String::from(match_contents) }),
 
                 MatchType::TagOpen => {
                     if match_contents == "<BR>" {
-                        Some(TextPartContents::LineBreak)
+                        Some(TextPart::LineBreak)
                     } else if match_contents == "<END>" {
-                        Some(TextPartContents::Progress)
+                        Some(TextPart::Progress)
 
                     // Page end. What does AUTO_END mean?
                     } else if match_contents == "<PAGE>" || match_contents == "<AUTO_END>" {
@@ -254,20 +219,20 @@ impl TextProcessor {
 
                     // Match a party member name.
                     // <NAME_PT*>
-                    } else if let Some(captures) = self.regex_name_pt.captures(match_contents) {
+                    } else if let Some(captures) = self.regex_name_pt.captures(&match_contents) {
                         let character_id: CharacterId = captures[0].parse().unwrap();
                         if let Some(character) = ctx.party.characters.get(&character_id) {
-                            Some(TextPartContents::Word { word: character.name.clone() })
+                            Some(TextPart::Word { word: character.name.clone() })
                         } else {
                             None
                         }
 
                     // From replacements map.
-                    } else if let Some(replacement) = self.replacements.get(match_contents) {
-                        Some(TextPartContents::Word { word: replacement.to_string() })
+                    } else if let Some(replacement) = self.replacements.get(&match_contents) {
+                        Some(TextPart::Word { word: replacement.to_string() })
 
                     } else {
-                        Some(TextPartContents::Word { word: String::from(match_contents) })
+                        Some(TextPart::Word { word: String::from(match_contents) })
                     }
                 },
 
@@ -277,11 +242,7 @@ impl TextProcessor {
             };
 
             if let Some(contents) = contents {
-                page.parts.push(TextPart {
-                    contents,
-                    size: Vec2Di32::default(),
-                    pos: Vec2Di32::default(),
-                });
+                page.parts.push(contents);
             }
         }
 
@@ -292,14 +253,33 @@ impl TextProcessor {
         pages
     }
 
+    fn match_part(&self, text: &str, index: usize) -> Option<(MatchType, String)> {
+        for (regex_index, regex) in self.regex_match_parts.iter().enumerate() {
+            let matches = regex.find_at(&text[index..text.len()], 0);
+            if let Some(matches) = matches {
+                let contents = matches.as_str().to_string();
+                let part = match regex_index {
+                    0 => MatchType::TagOpen,
+                    1 => MatchType::TagClose,
+                    2 => MatchType::Word,
+                    3 => MatchType::Whitespace,
+                    _ => panic!("Unknown match type."),
+                };
+                return Some((part, contents));
+            }
+        }
+
+        None
+    }
+
     fn dump_pages(&self, pages: &Vec<TextPage>) {
         for page in pages.iter() {
             println!("-------------------------------------");
             for part in page.parts.iter() {
-                match part.contents {
-                    TextPartContents::Word { ref word } => print!("{}", word),
-                    TextPartContents::LineBreak => println!(),
-                    TextPartContents::Whitespace { ref space } => print!("{}", space),
+                match part {
+                    TextPart::Word { ref word } => print!("{}", word),
+                    TextPart::LineBreak => println!(),
+                    TextPart::Whitespace { ref space } => print!("{}", space),
                     _ => {},
                 }
             }
@@ -309,41 +289,6 @@ impl TextProcessor {
     }
 }
 
-
-
-#[derive(Debug, PartialEq)]
-enum MatchType {
-    TagOpen,
-    TagClose,
-    Word,
-    Whitespace,
-}
-
-fn match_part(text: &str, index: usize) -> Option<(MatchType, &str)> {
-    let parts_regex = [
-        Regex::new(r"^<(.+?)>").unwrap(),
-        Regex::new(r"^</(\S+)>").unwrap(),
-        Regex::new(r"^([^[:space:]<]+)").unwrap(),
-        Regex::new(r"^(\s+)").unwrap(),
-    ];
-
-    for (regex_index, regex) in parts_regex.iter().enumerate() {
-        let matches = regex.find_at(&text[index..text.len()], 0);
-        if let Some(matches) = matches {
-            let contents = matches.as_str();
-            let part = match regex_index {
-                0 => MatchType::TagOpen,
-                1 => MatchType::TagClose,
-                2 => MatchType::Word,
-                3 => MatchType::Whitespace,
-                _ => panic!("Unknown match type."),
-            };
-            return Some((part, contents));
-        }
-    }
-
-    None
-}
 
 fn tag_has_close(text: &str) -> bool {
     match text {
