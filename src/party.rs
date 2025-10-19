@@ -31,7 +31,7 @@ impl Party {
         characters.insert(0, Character {
             id: 0,
             name: "Crono".into(),
-            text_key: "<NAME_CRO>".into(),
+            text_key: "NAME_CRO".into(),
             party_state: CharacterPartyState::Active,
             level: 1,
             xp: 0,
@@ -58,7 +58,7 @@ impl Party {
         characters.insert(1, Character {
             id: 1,
             name: "Marle".into(),
-            text_key: "<NAME_MAR>".into(),
+            text_key: "NAME_MAR".into(),
             party_state: CharacterPartyState::Active,
             level: 1,
             xp: 0,
@@ -85,7 +85,7 @@ impl Party {
         characters.insert(2, Character {
             id: 2,
             name: "Lucca".into(),
-            text_key: "<NAME_LUC>".into(),
+            text_key: "NAME_LUC".into(),
             party_state: CharacterPartyState::Active,
             level: 1,
             xp: 0,
@@ -112,7 +112,7 @@ impl Party {
         characters.insert(3, Character {
             id: 3,
             name: "Frog".into(),
-            text_key: "<NAME_FRO>".into(),
+            text_key: "NAME_FRO".into(),
             party_state: CharacterPartyState::Unavailable,
             level: 1,
             xp: 0,
@@ -139,7 +139,7 @@ impl Party {
         characters.insert(4, Character {
             id: 4,
             name: "Robo".into(),
-            text_key: "<NAME_ROB>".into(),
+            text_key: "NAME_ROB".into(),
             party_state: CharacterPartyState::Unavailable,
             level: 1,
             xp: 0,
@@ -166,7 +166,7 @@ impl Party {
         characters.insert(5, Character {
             id: 5,
             name: "Ayla".into(),
-            text_key: "<NAME_AYL>".into(),
+            text_key: "NAME_AYL".into(),
             party_state: CharacterPartyState::Unavailable,
             level: 1,
             xp: 0,
@@ -193,7 +193,7 @@ impl Party {
         characters.insert(6, Character {
             id: 6,
             name: "Magus".into(),
-            text_key: "<NAME_MAG>".into(),
+            text_key: "NAME_MAG".into(),
             party_state: CharacterPartyState::Unavailable,
             level: 1,
             xp: 0,

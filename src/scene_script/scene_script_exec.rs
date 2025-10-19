@@ -479,7 +479,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 panic!("Attempted to show a textbox without a loaded string table.");
             }
 
-            if scene_state.textbox.is_busy() {
+            if scene_state.textbox.is_active() {
                 return OpResult::YIELD;
             }
 

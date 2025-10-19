@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use regex::Regex;
-use crate::character::CharacterId;
-use crate::Context;
-use crate::party::Party;
+use crate::party::{CharacterPartyState, Party};
 
 pub enum TextIcon {
     Blade,
@@ -30,7 +28,7 @@ pub enum TextPart {
 
     /// Wait for n ticks.
     Delay {
-        ticks: usize,
+        ticks: u32,
     },
 
     /// Whitepace.
@@ -43,6 +41,11 @@ pub enum TextPart {
         icon: usize,
     },
 
+    /// Choice option.
+    Choice {
+        index: usize,
+    },
+
     /// Advance the dialog.
     Progress,
 
@@ -52,10 +55,10 @@ pub enum TextPart {
 
 #[derive(Debug, PartialEq)]
 enum MatchType {
-    TagOpen,
-    TagClose,
-    Word,
-    Whitespace,
+    TagOpen = 0,
+    Word = 1,
+    Whitespace = 2,
+    TagWait = 3,
 }
 
 pub struct TextPage {
@@ -94,7 +97,7 @@ impl TextPage {
 // <AUTO_PAGE> Automatically go to next page after x time?
 // <AUTO_END> ?
 // <PAGE> New dialog page
-// <BR> Hard line break
+// <BR> Hard line break, indent next line?
 // <WAIT>00</WAIT> Wait for 00 ticks
 
 // data
@@ -140,21 +143,25 @@ impl TextPage {
 pub struct TextProcessor {
     replacements: HashMap<String, String>,
     regex_name_pt: Regex,
+    regex_choice: Regex,
+    regex_variable: Regex,
     regex_match_parts: Vec<Regex>,
 }
 
 impl TextProcessor {
     pub fn new() -> TextProcessor {
         let mut replacements = HashMap::new();
-        replacements.insert("<NAME_SIL>".into(), "Epoch".into());
-        replacements.insert("<NAME_LEENE>".into(), "Leene".into());
+        replacements.insert("NAME_SIL".into(), "Epoch".into());
+        replacements.insert("NAME_LEENE".into(), "Leene".into());
 
         TextProcessor {
             replacements,
             regex_name_pt: Regex::new(r"^<NAME_PT(\d+)>").unwrap(),
+            regex_choice: Regex::new(r"^<C(\d{1})>").unwrap(),
+            regex_variable: Regex::new(r"<(.+?)>").unwrap(),
             regex_match_parts: [
+                Regex::new(r"^<WAIT>(.+?)</WAIT>").unwrap(),
                 Regex::new(r"^<(.+?)>").unwrap(),
-                Regex::new(r"^</(\S+)>").unwrap(),
                 Regex::new(r"^([^[:space:]<]+)").unwrap(),
                 Regex::new(r"^(\s+)").unwrap(),
             ].to_vec(),
@@ -164,20 +171,20 @@ impl TextProcessor {
     pub fn update_party_names(&mut self, party: &Party) {
         for (_, character) in party.characters.iter() {
             self.replacements.insert(character.text_key.clone(), character.name.clone());
+            if character.party_state == CharacterPartyState::Active {
+                self.replacements.insert(format!("NAME_PT{}", character.text_key.clone()), character.name.clone());
+            }
         }
     }
 
-    pub fn process_dialog_text(&self, ctx: &Context, text: &str) -> Vec<TextPage> {
+    pub fn process_dialog_text(&self, text: &str) -> Vec<TextPage> {
         println!("{}", text);
+
+        // Change PC line breaks to SNES line breaks.
         let text = text.replace("\\", "<BR>");
-        let pages = self.split_text(ctx, &text);
+        let text = self.replace_variables(text);
 
-        self.dump_pages(&pages);
-
-        pages
-    }
-
-    fn split_text(&self, ctx: &Context, text: &str) -> Vec<TextPage> {
+        // Split text into parts separated by whitespace.
         let mut index = 0;
         let mut pages: Vec<TextPage> = Vec::new();
         let mut page = TextPage::new();
@@ -187,85 +194,106 @@ impl TextProcessor {
                 break;
             }
 
-            let (match_type, match_contents) = result.unwrap();
-            index += match_contents.len();
+            let (match_type, match_contents, match_len) = result.unwrap();
+            index += match_len;
 
-            let contents = match match_type {
-                MatchType::Word => Some(TextPart::Word { word: String::from(match_contents) }),
-                MatchType::Whitespace => Some(TextPart::Whitespace { space: String::from(match_contents) }),
-
+            match match_type {
+                MatchType::Word => {
+                    page.parts.push(TextPart::Word { word: String::from(match_contents) });
+                },
+                MatchType::Whitespace => {
+                    page.parts.push(TextPart::Whitespace { space: String::from(match_contents) });
+                },
                 MatchType::TagOpen => {
-                    if match_contents == "<BR>" {
-                        Some(TextPart::LineBreak)
-                    } else if match_contents == "<END>" {
-                        Some(TextPart::Progress)
+
+                    // Hard line break.
+                    if match_contents == "BR" {
+                        page.parts.push(TextPart::LineBreak);
+
+                    // Auto-progress.
+                    } else if match_contents == "END" {
+                        page.parts.push(TextPart::Progress);
 
                     // Page end. What does AUTO_END mean?
-                    } else if match_contents == "<PAGE>" || match_contents == "<AUTO_END>" {
+                    } else if match_contents == "PAGE" || match_contents == "AUTO_END" {
                         pages.push(page);
                         page = TextPage::new();
-                        None
 
                     // Page end, advance to next page.
-                    } else if match_contents == "<AUTO_PAGE>" {
+                    } else if match_contents == "AUTO_PAGE" {
                         page.auto = true;
                         page = TextPage::new();
-                        None
+
+                    // Whitespace?
+                    } else if match_contents == "S10" {
+                        page.parts.push(TextPart::Whitespace { space: "   ".into() });
 
                     // Match a choice option.
-                    // todo track what part contains the start of the option
-                    } else if match_contents == "<C1>" || match_contents == "<C2>" || match_contents == "<C3>" || match_contents == "<C4>" {
-                        None
+                    } else if let Some(captures) = self.regex_choice.captures(&match_contents) {
+                        let index: usize = captures[0].parse().unwrap();
+                        page.parts.push(TextPart::Choice { index });
 
-                    // Match a party member name.
-                    // <NAME_PT*>
-                    } else if let Some(captures) = self.regex_name_pt.captures(&match_contents) {
-                        let character_id: CharacterId = captures[0].parse().unwrap();
-                        if let Some(character) = ctx.party.characters.get(&character_id) {
-                            Some(TextPart::Word { word: character.name.clone() })
-                        } else {
-                            None
-                        }
-
-                    // From replacements map.
-                    } else if let Some(replacement) = self.replacements.get(&match_contents) {
-                        Some(TextPart::Word { word: replacement.to_string() })
-
+                    // Just the words.
                     } else {
-                        Some(TextPart::Word { word: String::from(match_contents) })
+                        page.parts.push(TextPart::Word { word: String::from(match_contents) });
                     }
                 },
 
-                MatchType::TagClose => {
-                    None
+                // Wait for n ticks.
+                MatchType::TagWait => {
+                    let ticks: u32 = u32::from_str_radix(&match_contents, 16).unwrap();
+                    page.parts.push(TextPart::Delay { ticks });
                 },
             };
-
-            if let Some(contents) = contents {
-                page.parts.push(contents);
-            }
         }
 
         if page.parts.len() > 0 {
             pages.push(page);
         }
 
+        self.dump_pages(&pages);
+
         pages
     }
 
-    fn match_part(&self, text: &str, index: usize) -> Option<(MatchType, String)> {
+    fn replace_variables(&self, text: String) -> String {
+        let mut new_text = String::with_capacity(text.len());
+        let mut last_match = 0;
+        for capture in self.regex_variable.captures_iter(&text) {
+            let variable = capture.get(1).unwrap().as_str();
+            if !self.replacements.contains_key(variable) {
+                continue;
+            }
+
+            let m = capture.get(0).unwrap();
+            let replacement = self.replacements.get(variable).unwrap();
+
+            // Add the text before this match, and the replacement.
+            new_text.push_str(&text[last_match..m.start()]);
+            new_text.push_str(&replacement);
+            last_match = m.end();
+        }
+
+        // Add the last text after the last match.
+        new_text.push_str(&text[last_match..]);
+
+        new_text
+    }
+
+    fn match_part(&self, text: &str, index: usize) -> Option<(MatchType, String, usize)> {
         for (regex_index, regex) in self.regex_match_parts.iter().enumerate() {
-            let matches = regex.find_at(&text[index..text.len()], 0);
-            if let Some(matches) = matches {
-                let contents = matches.as_str().to_string();
+            let captures = regex.captures_at(&text[index..text.len()], 0);
+            if let Some(captures) = captures {
+                let len = captures[0].len();
+                let contents = captures[1].to_string();
                 let part = match regex_index {
-                    0 => MatchType::TagOpen,
-                    1 => MatchType::TagClose,
+                    0 => MatchType::TagWait,
+                    1 => MatchType::TagOpen,
                     2 => MatchType::Word,
                     3 => MatchType::Whitespace,
                     _ => panic!("Unknown match type."),
                 };
-                return Some((part, contents));
+                return Some((part, contents, len));
             }
         }
 
@@ -286,13 +314,5 @@ impl TextProcessor {
             println!();
         }
         println!("-------------------------------------");
-    }
-}
-
-
-fn tag_has_close(text: &str) -> bool {
-    match text {
-        "<WAIT>" => true,
-        _ => false,
     }
 }
