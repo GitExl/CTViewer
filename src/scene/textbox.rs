@@ -1,7 +1,7 @@
 use crate::Context;
 use crate::renderer::TextFlags;
 use crate::scene::textbox_layout::TextBoxLayout;
-use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
+use crate::software_renderer::blit::{blit_bitmap_to_surface, blit_surface_to_surface, BitmapBlitFlags, SurfaceBlendOps};
 use crate::software_renderer::surface::Surface;
 use crate::text_processor::TextPage;
 
@@ -48,6 +48,9 @@ pub struct TextBox {
     source_actor_index: Option<usize>,
     wait: u32,
 
+    choice_lines: Option<[usize; 2]>,
+    current_choice: usize,
+
     window_surface: Surface,
 }
 
@@ -68,6 +71,9 @@ impl TextBox {
             position: TextBoxPosition::Bottom,
             source_actor_index: None,
             wait: 0,
+
+            choice_lines: None,
+            current_choice: 0,
 
             window_surface,
         }
@@ -143,7 +149,7 @@ impl TextBox {
         self.source_actor_index
     }
 
-    pub fn show(&mut self, ctx: &Context, text: String, position: TextBoxPosition, actor_index: usize) {
+    pub fn show(&mut self, ctx: &Context, text: String, position: TextBoxPosition, actor_index: usize, choice_lines: Option<[usize; 2]>) {
         self.state = TextBoxState::Showing {
             visibility: 0.0,
             last_visibility: 0.0,
@@ -153,9 +159,12 @@ impl TextBox {
         self.pages = ctx.text_processor.process_dialog_text(text.as_str());
         self.current_page = 0;
 
-        self.layout = TextBoxLayout::from_page(ctx, &self.pages[0], TEXTBOX_LINE_HEIGHT, TEXTBOX_WRAP_WIDTH);
-
         self.source_actor_index = Some(actor_index);
+
+        self.current_choice = 0;
+        self.choice_lines = choice_lines;
+
+        self.layout_current_page(ctx);
     }
 
     pub fn progress(&mut self, ctx: &mut Context) {
@@ -168,8 +177,8 @@ impl TextBox {
             // Advance to next page.
             if self.current_page < self.pages.len() - 1 {
                 self.current_page += 1;
-
-                self.layout = TextBoxLayout::from_page(ctx, &self.pages[self.current_page], TEXTBOX_LINE_HEIGHT, TEXTBOX_WRAP_WIDTH);
+                self.current_choice = 0;
+                self.layout_current_page(ctx);
 
                 self.state = TextBoxState::Typing {
                     current_item: 0,
@@ -243,8 +252,26 @@ impl TextBox {
                     let y = dest_y + 9 + item.pos.y;
                     ctx.render.render_text(&mut item.renderable, x, y, TextFlags::empty());
                 }
+
+                // Display choice.
+                if self.current_page == self.pages.len() - 1 {
+                    if let Some(choice_lines) = self.choice_lines {
+                        let choice_x = dest_x + 14;
+                        let choice_y = dest_y + 10 + (self.current_choice + choice_lines[0]) as i32 * TEXTBOX_LINE_HEIGHT;
+                        blit_bitmap_to_surface(&ctx.ui_theme.cursor_bitmap, &mut ctx.render.target, 0, 0, 16, 16, choice_x, choice_y, &ctx.ui_theme.cursor_palette, 0, BitmapBlitFlags::SKIP_0);
+                    }
+                }
             },
             _ => {},
         };
+    }
+
+    fn layout_current_page(&mut self, ctx: &Context) {
+        let choice_lines = if self.current_page < self.pages.len() - 1 {
+            None
+        } else {
+            self.choice_lines
+        };
+        self.layout = TextBoxLayout::from_page(ctx, &self.pages[self.current_page], TEXTBOX_LINE_HEIGHT, TEXTBOX_WRAP_WIDTH, choice_lines);
     }
 }

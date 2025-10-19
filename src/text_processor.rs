@@ -142,7 +142,6 @@ impl TextPage {
 
 pub struct TextProcessor {
     replacements: HashMap<String, String>,
-    regex_name_pt: Regex,
     regex_choice: Regex,
     regex_variable: Regex,
     regex_match_parts: Vec<Regex>,
@@ -156,8 +155,7 @@ impl TextProcessor {
 
         TextProcessor {
             replacements,
-            regex_name_pt: Regex::new(r"^<NAME_PT(\d+)>").unwrap(),
-            regex_choice: Regex::new(r"^<C(\d{1})>").unwrap(),
+            regex_choice: Regex::new(r"^C(\d{1})$").unwrap(),
             regex_variable: Regex::new(r"<(.+?)>").unwrap(),
             regex_match_parts: [
                 Regex::new(r"^<WAIT>(.+?)</WAIT>").unwrap(),
@@ -169,10 +167,10 @@ impl TextProcessor {
     }
 
     pub fn update_party_names(&mut self, party: &Party) {
-        for (_, character) in party.characters.iter() {
+        for (index, character) in party.characters.iter() {
             self.replacements.insert(character.text_key.clone(), character.name.clone());
             if character.party_state == CharacterPartyState::Active {
-                self.replacements.insert(format!("NAME_PT{}", character.text_key.clone()), character.name.clone());
+                self.replacements.insert(format!("NAME_PT{}", index + 1), character.name.clone());
             }
         }
     }
@@ -230,12 +228,9 @@ impl TextProcessor {
 
                     // Match a choice option.
                     } else if let Some(captures) = self.regex_choice.captures(&match_contents) {
-                        let index: usize = captures[0].parse().unwrap();
+                        let index: usize = captures[1].parse().unwrap();
                         page.parts.push(TextPart::Choice { index });
 
-                    // Just the words.
-                    } else {
-                        page.parts.push(TextPart::Word { word: String::from(match_contents) });
                     }
                 },
 

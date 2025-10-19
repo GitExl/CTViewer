@@ -1,6 +1,6 @@
 use crate::filesystem::backend::FileSystemBackendTrait;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum ParseMode {
     Snes,
     Pc,

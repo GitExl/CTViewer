@@ -474,7 +474,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             OpResult::COMPLETE
         },
-        Op::TextBoxShow { index, position, .. } => {
+        Op::TextBoxShow { index, position, choice_lines } => {
             if scene_state.textbox_strings.is_empty() {
                 panic!("Attempted to show a textbox without a loaded string table.");
             }
@@ -502,11 +502,12 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 position
             };
 
-            if index < scene_state.textbox_strings.len() {
-                scene_state.textbox.show(ctx, scene_state.textbox_strings[index].clone(), real_position, this_actor);
+            let text = if index < scene_state.textbox_strings.len() {
+                scene_state.textbox_strings[index].clone()
             } else {
-                scene_state.textbox.show(ctx, format!("STRING INDEX {}", index), real_position, this_actor);
-            }
+                format!("STRING INDEX {}", index)
+            };
+            scene_state.textbox.show(ctx, text, real_position, this_actor, choice_lines);
 
             OpResult::YIELD
         },

@@ -3,7 +3,7 @@ use crate::character::CharacterId;
 use crate::destination::Destination;
 use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
-use crate::scene_script::decoder::ops_textbox::{TextBoxInput, DialogueSpecialType};
+use crate::scene_script::decoder::ops_textbox::DialogueSpecialType;
 use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::decoder::ops_palette::{ColorMathMode, SubPalette};
@@ -279,7 +279,7 @@ pub enum Op {
     TextBoxShow {
         index: usize,
         position: TextBoxPosition,
-        input: TextBoxInput,
+        choice_lines: Option<[usize; 2]>,
     },
 
     // Special dialogues.

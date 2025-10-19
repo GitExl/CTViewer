@@ -6,12 +6,6 @@ use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::read_24_bit_address;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum TextBoxInput {
-    None,
-    Line(usize),
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DialogueSpecialType {
     CharacterSwitch,
     Load(bool),
@@ -61,7 +55,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
             position: TextBoxPosition::Auto,
-            input: TextBoxInput::None,
+            choice_lines: None,
         },
         0xC0 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
@@ -70,7 +64,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
             position: TextBoxPosition::Auto,
-            input: TextBoxInput::Line(data.read_u8().unwrap() as usize),
+            choice_lines: Some(get_textbox_choice_lines(data.read_u8().unwrap())),
         },
         0xC1 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
@@ -79,7 +73,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
             position: TextBoxPosition::Top,
-            input: TextBoxInput::None,
+            choice_lines: None,
         },
         0xC2 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
@@ -88,7 +82,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
             position: TextBoxPosition::Bottom,
-            input: TextBoxInput::None,
+            choice_lines: None,
         },
         0xC3 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
@@ -97,7 +91,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
             position: TextBoxPosition::Top,
-            input: TextBoxInput::Line(data.read_u8().unwrap() as usize),
+            choice_lines: Some(get_textbox_choice_lines(data.read_u8().unwrap())),
         },
         0xC4 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
@@ -106,7 +100,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 data.read_u16::<LittleEndian>().unwrap() as usize
             },
             position: TextBoxPosition::Bottom,
-            input: TextBoxInput::Line(data.read_u8().unwrap() as usize),
+            choice_lines: Some(get_textbox_choice_lines(data.read_u8().unwrap())),
         },
 
         // Special dialogues.
@@ -116,4 +110,11 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
 
         _ => panic!("Unknown textbox op."),
     }
+}
+
+fn get_textbox_choice_lines(value: u8) -> [usize; 2] {
+    [
+        (value >> 2) as usize & 0x3,
+        (value >> 0) as usize & 0x3,
+    ]
 }
