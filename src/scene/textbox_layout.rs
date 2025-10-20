@@ -29,10 +29,9 @@ impl TextBoxLayout {
         }
     }
 
-    pub fn from_page(ctx: &Context, page: &TextPage, line_height: i32, wrap_width: i32, choice_lines: Option<[usize; 2]>) -> TextBoxLayout {
-        let mut x: i32 = get_line_indent(0, choice_lines);
+    pub fn from_page(ctx: &Context, page: &TextPage, line_height: i32, wrap_width: i32, _choice_lines: Option<[usize; 2]>) -> TextBoxLayout {
+        let mut x: i32 = 0;
         let mut y: i32 = 0;
-        let mut line = 0;
         let mut layout = TextBoxLayout::empty();
 
         // Disable wrapping in PC mode, its text should not need it.
@@ -51,8 +50,7 @@ impl TextBoxLayout {
                 },
                 TextPart::Whitespace { ref space } => space,
                 TextPart::LineBreak => {
-                    line += 1;
-                    x = get_line_indent(line, choice_lines);
+                    x = 0;
                     y += line_height;
                     continue;
                 },
@@ -71,8 +69,7 @@ impl TextBoxLayout {
 
             // Word wrapping.
             if wrap_width > 0 && wrap && x + width as i32 > wrap_width {
-                line += 1;
-                x = get_line_indent(line, choice_lines);
+                x = 0;
                 y += line_height;
             }
 
@@ -89,14 +86,4 @@ impl TextBoxLayout {
 
         layout
     }
-}
-
-fn get_line_indent(line: usize, choice_lines: Option<[usize; 2]>) -> i32 {
-    if let Some(choice_lines) = choice_lines {
-        if line >= choice_lines[0] && line <= choice_lines[1] {
-            return TEXTBOX_CHOICE_INDENT;
-        }
-    }
-
-    0
 }

@@ -166,8 +166,9 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
     }
 
     match code {
-        0x05 => " ",
-        0x06 => "<BR>",
+        0x04 => "<UNKNOWN1>",
+        0x05 => "<BR>",
+        0x06 => "<BR INDENT>",
         0x07 => "<STOP>",
         0x08 => "<STOP LINE BREAK>",
         0x09 => "<INSTANT LINE BREAK>",
@@ -192,6 +193,6 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
         0x1E => "<NAME_LEENE>",
         0x1F => "<RESULT ITEM>",
         0x20 => "<NAME_SIL>",
-        _ => "<UNKNOWN_SPEC>",
+        _ => "<UNKNOWN2>",
     }.to_string()
 }

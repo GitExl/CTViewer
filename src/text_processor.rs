@@ -208,6 +208,11 @@ impl TextProcessor {
                     if match_contents == "BR" {
                         page.parts.push(TextPart::LineBreak);
 
+                    // Line break and indent.
+                    } else if match_contents == "BR INDENT" {
+                        page.parts.push(TextPart::LineBreak);
+                        page.parts.push(TextPart::Whitespace { space: "   ".into() });
+
                     // Auto-progress.
                     } else if match_contents == "END" {
                         page.parts.push(TextPart::Progress);
