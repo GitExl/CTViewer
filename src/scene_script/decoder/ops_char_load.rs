@@ -29,12 +29,12 @@ pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
             battle_index: 0,
         },
         0x68 => Op::LoadCharacterPlayer {
-            character_index: 3,
+            character_index: 4,
             must_be_active: true,
             battle_index: 0,
         },
         0x6A => Op::LoadCharacterPlayer {
-            character_index: 4,
+            character_index: 3,
             must_be_active: true,
             battle_index: 0,
         },

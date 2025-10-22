@@ -519,14 +519,14 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         // Screen effects.
         Op::ScreenFade { target, delay } => {
             if delay == 0 {
-                scene_state.screen_fade.set(target);
+                ctx.screen_fade.set(target);
             } else {
-                scene_state.screen_fade.start(target, delay);
+                ctx.screen_fade.start(target, delay);
             }
             OpResult::COMPLETE
         },
         Op::ScreenWaitForFade => {
-          if scene_state.screen_fade.is_active() {
+          if ctx.screen_fade.is_active() {
               OpResult::YIELD
           } else {
               OpResult::COMPLETE | OpResult::YIELD
@@ -574,9 +574,12 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Changing location.
         Op::ChangeLocation { destination, instant, .. } => {
-            scene_state.next_destination.set(destination, true);
-            if !instant {
-                scene_state.screen_fade.start(0.0, 2);
+            if instant {
+                ctx.screen_fade.set(0.0);
+                scene_state.next_destination.set(destination, false);
+            } else {
+                ctx.screen_fade.start(0.0, 2);
+                scene_state.next_destination.set(destination, true);
             }
 
             OpResult::YIELD | OpResult::COMPLETE
@@ -692,11 +695,11 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Sound playback.
         Op::SoundPlay { sound, panning } => {
-            println!("Unimplemented: play sound {}, pan {}", sound, panning);
+            println!("Unimplemented: play sound {}, pan {:.2}", sound, panning);
             OpResult::YIELD | OpResult::COMPLETE
         }
         Op::SoundVolumeSlide { left, right, duration } => {
-            println!("Unimplemented: sound volume slide left {}, right {}, in {} seconds", left, right, duration);
+            println!("Unimplemented: sound volume slide left {:.2}, right {:.2}, in {} seconds", left, right, duration);
             OpResult::YIELD | OpResult::COMPLETE
         }
         Op::SoundWaitEnd => {
@@ -710,11 +713,11 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD | OpResult::COMPLETE
         }
         Op::MusicTempoSlide { tempo, duration } => {
-            println!("Unimplemented: music tempo slide to {} in {} seconds", tempo, duration);
+            println!("Unimplemented: music tempo slide to {:.2} in {} seconds", tempo, duration);
             OpResult::YIELD | OpResult::COMPLETE
         }
         Op::MusicVolumeSlide { volume, duration } => {
-            println!("Unimplemented: music volume slide to {} in {} seconds", volume, duration);
+            println!("Unimplemented: music volume slide to {:.2} in {} seconds", volume, duration);
             OpResult::YIELD | OpResult::COMPLETE
         }
         Op::MusicWaitEnd => {

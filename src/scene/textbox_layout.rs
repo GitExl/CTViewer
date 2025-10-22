@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::Context;
-use crate::filesystem::filesystem::ParseMode;
 use crate::renderer::{TextFont, TextRenderable};
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::text::TextDrawFlags;
@@ -29,29 +28,23 @@ impl TextBoxLayout {
         }
     }
 
-    pub fn from_page(ctx: &Context, page: &TextPage, line_height: i32, wrap_width: i32, _choice_lines: Option<[usize; 2]>) -> TextBoxLayout {
+    pub fn from_page(ctx: &Context, page: &TextPage, line_height: i32, choice_lines: Option<[usize; 2]>) -> TextBoxLayout {
         let mut x: i32 = 0;
         let mut y: i32 = 0;
+        let mut line = 0;
         let mut layout = TextBoxLayout::empty();
 
-        // Disable wrapping in PC mode, its text should not need it.
-        let wrap_width = if ctx.fs.parse_mode == ParseMode::Pc {
-            0
-        } else {
-            wrap_width
-        };
+        add_choice_line_choice(choice_lines, line, &mut layout, x, y);
 
         for part in page.parts.iter() {
-            let mut wrap = false;
             let text = match part {
-                TextPart::Word { ref word } => {
-                    wrap = true;
-                    word
-                },
+                TextPart::Word { ref word } => { word },
                 TextPart::Whitespace { ref space } => space,
                 TextPart::LineBreak => {
                     x = 0;
                     y += line_height;
+                    line += 1;
+                    add_choice_line_choice(choice_lines, line, &mut layout, x, y);
                     continue;
                 },
                 TextPart::Delay { ticks } => {
@@ -62,16 +55,9 @@ impl TextBoxLayout {
                     layout.choices.insert(*index, Vec2Di32::new(x, y));
                     continue;
                 },
-                _ => continue,
             };
 
             let (width, _height) = ctx.render.measure_text(text, TextFont::Regular);
-
-            // Word wrapping.
-            if wrap_width > 0 && wrap && x + width as i32 > wrap_width {
-                x = 0;
-                y += line_height;
-            }
 
             // Store layout data.
             layout.items.push(TextBoxLayoutItem {
@@ -85,5 +71,13 @@ impl TextBoxLayout {
         }
 
         layout
+    }
+}
+
+fn add_choice_line_choice(choice_lines: Option<[usize; 2]>, line: usize, layout: &mut TextBoxLayout, x: i32, y: i32) {
+    if let Some(choice_lines) = choice_lines {
+        if line >= choice_lines[0] && line <= choice_lines[1] {
+            layout.choices.insert(line - choice_lines[0], Vec2Di32::new(x + 24, y));
+        }
     }
 }

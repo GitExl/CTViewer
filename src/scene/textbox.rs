@@ -7,7 +7,6 @@ use crate::text_processor::TextPage;
 
 const TEXTBOX_CHIP_WIDTH: i32 = 32;
 const TEXTBOX_CHIP_HEIGHT: i32 = 10;
-const TEXTBOX_WRAP_WIDTH: i32 = 240;
 const TEXTBOX_LINE_HEIGHT: i32 = 16;
 const TEXTBOX_ANIMATE_PIXELS_PER_SECOND: f64 = 6.0;
 const TEXTBOX_SHOW_CHARS_PER_SECOND: f64 = 60.0;
@@ -79,13 +78,16 @@ impl TextBox {
         }
     }
 
-    pub fn tick(&mut self, delta: f64) {
+    pub fn tick(&mut self, ctx: &mut Context, delta: f64) {
         if self.state == TextBoxState::Disabled {
             return;
         }
 
         if self.wait > 0 {
             self.wait -= 1;
+            if self.wait == 0 {
+                self.advance(ctx);
+            }
             return;
         }
 
@@ -107,7 +109,6 @@ impl TextBox {
             // Type out one character per tick.
             TextBoxState::Typing { current_item, current_character } => {
                 let item = &mut self.layout.items[*current_item];
-
                 *current_character += delta * TEXTBOX_SHOW_CHARS_PER_SECOND;
 
                 // End of item.
@@ -172,26 +173,30 @@ impl TextBox {
             return;
         }
 
-        if matches!(self.state, TextBoxState::Waiting) {
+        if matches!(self.state, TextBoxState::Waiting) && self.wait == 0 {
+            self.advance(ctx);
+        }
+    }
 
-            // Advance to next page.
-            if self.current_page < self.pages.len() - 1 {
-                self.current_page += 1;
-                self.current_choice = 0;
-                self.layout_current_page(ctx);
+    fn advance(&mut self, ctx: &mut Context) {
 
-                self.state = TextBoxState::Typing {
-                    current_item: 0,
-                    current_character: 0.0,
-                };
+        // Advance to next page.
+        if self.current_page < self.pages.len() - 1 {
+            self.current_page += 1;
+            self.current_choice = 0;
+            self.layout_current_page(ctx);
 
-            // Reached end of pages, hide.
-            } else {
-                self.state = TextBoxState::Hiding {
-                    visibility: 1.0,
-                    last_visibility: 1.0,
-                };
-            }
+            self.state = TextBoxState::Typing {
+                current_item: 0,
+                current_character: 0.0,
+            };
+
+        // Reached end of pages, hide.
+        } else {
+            self.state = TextBoxState::Hiding {
+                visibility: 1.0,
+                last_visibility: 1.0,
+            };
         }
     }
 
@@ -254,12 +259,11 @@ impl TextBox {
                 }
 
                 // Display choice.
-                if self.current_page == self.pages.len() - 1 {
-                    if let Some(choice_lines) = self.choice_lines {
-                        let choice_x = dest_x + 14;
-                        let choice_y = dest_y + 10 + (self.current_choice + choice_lines[0]) as i32 * TEXTBOX_LINE_HEIGHT;
-                        blit_bitmap_to_surface(&ctx.ui_theme.cursor_bitmap, &mut ctx.render.target, 0, 0, 16, 16, choice_x, choice_y, &ctx.ui_theme.cursor_palette, 0, BitmapBlitFlags::SKIP_0);
-                    }
+                if self.layout.choices.len() > 0 {
+                    let choice = self.layout.choices.get(&self.current_choice).unwrap();
+                    let choice_x = dest_x + 8 + choice.x - 18;
+                    let choice_y = dest_y + 9 + choice.y + 1;
+                    blit_bitmap_to_surface(&ctx.ui_theme.cursor_bitmap, &mut ctx.render.target, 0, 0, 16, 16, choice_x, choice_y, &ctx.ui_theme.cursor_palette, 0, BitmapBlitFlags::SKIP_0);
                 }
             },
             _ => {},
@@ -272,6 +276,6 @@ impl TextBox {
         } else {
             self.choice_lines
         };
-        self.layout = TextBoxLayout::from_page(ctx, &self.pages[self.current_page], TEXTBOX_LINE_HEIGHT, TEXTBOX_WRAP_WIDTH, choice_lines);
+        self.layout = TextBoxLayout::from_page(ctx, &self.pages[self.current_page], TEXTBOX_LINE_HEIGHT, choice_lines);
     }
 }

@@ -9,7 +9,6 @@ use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
 use crate::next_destination::NextDestination;
 use crate::renderer::{TextFlags, TextFont, TextRenderable};
-use crate::screen_fade::ScreenFade;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
@@ -25,7 +24,6 @@ pub struct GameStateWorld {
     map_renderer: MapRenderer,
     world_renderer: WorldRenderer,
 
-    screen_fade: ScreenFade,
     next_destination: NextDestination,
 
     key_up: bool,
@@ -44,7 +42,7 @@ pub struct GameStateWorld {
 }
 
 impl GameStateWorld {
-    pub fn new(ctx: &mut Context, world_index: usize, pos: Vec2Df64) -> GameStateWorld {
+    pub fn new(ctx: &mut Context, world_index: usize, pos: Vec2Df64, fade_in: bool) -> GameStateWorld {
         ctx.sprites_states.clear();
 
         let mut world = ctx.fs.read_world(world_index);
@@ -85,8 +83,9 @@ impl GameStateWorld {
 
         let next_destination = NextDestination::new();
 
-        let mut screen_fade = ScreenFade::new(0.0);
-        screen_fade.start(1.0, 2);
+        if fade_in {
+            ctx.screen_fade.start(1.0, 2);
+        }
 
         println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));
 
@@ -97,7 +96,6 @@ impl GameStateWorld {
             world_renderer,
             map_renderer,
 
-            screen_fade,
             next_destination,
 
             key_down: false,
@@ -136,11 +134,9 @@ impl GameStateTrait for GameStateWorld {
         }
         self.camera.wrap();
 
-        self.screen_fade.tick(delta);
-
         if let Some(next_destination) = self.next_destination.destination {
-            if !self.screen_fade.is_active() {
-                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination });
+            if !ctx.screen_fade.is_active() {
+                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination, fade_in: self.next_destination.fade_in });
                 self.next_destination.clear();
             }
         }
@@ -189,15 +185,13 @@ impl GameStateTrait for GameStateWorld {
                 SurfaceBlendOps::Blend,
             );
         }
-
-        self.screen_fade.render(ctx, lerp);
     }
 
     fn get_title(&self, ctx: &Context) -> String {
         format!("{} - {}", self.world.index, ctx.l10n.get_indexed(IndexedType::World, self.world.index))
     }
 
-    fn event(&mut self, _ctx: &mut Context, event: &Event) {
+    fn event(&mut self, ctx: &mut Context, event: &Event) {
         match event {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
@@ -263,7 +257,7 @@ impl GameStateTrait for GameStateWorld {
                     if index.is_some() {
                         let exit = &self.world.exits[index.unwrap()];
                         self.next_destination.set(exit.destination, true);
-                        self.screen_fade.start(0.0, 2);
+                        ctx.screen_fade.start(0.0, 2);
                     }
                 }
             },

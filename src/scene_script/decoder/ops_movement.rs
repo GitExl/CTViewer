@@ -87,14 +87,12 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             update_facing: true,
             animated: true,
         },
-        // Same as 0x92, but different in some unknown way?
         0x9C => Op::ActorMoveAtAngle {
             angle: DataSource::Immediate(data.read_u8().unwrap() as i32),
             steps: DataSource::Immediate(data.read_u8().unwrap() as i32),
             update_facing: false,
             animated: false,
         },
-        // Same as 0x9C, but different in some unknown way?
         0x9D => Op::ActorMoveAtAngle {
             angle: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             steps: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
@@ -109,7 +107,6 @@ pub fn ops_decode_movement(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             into_battle_range: false,
             forever: false,
         },
-        // Same as 0x9E, but different in some unknown way?
         0x9F => Op::ActorMoveToActor {
             to_actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             script_cycle_count: None,

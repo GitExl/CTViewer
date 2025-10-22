@@ -86,7 +86,7 @@ impl Party {
             id: 2,
             name: "Lucca".into(),
             text_key: "NAME_LUC".into(),
-            party_state: CharacterPartyState::Active,
+            party_state: CharacterPartyState::Unavailable,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -111,33 +111,6 @@ impl Party {
 
         characters.insert(3, Character {
             id: 3,
-            name: "Frog".into(),
-            text_key: "NAME_FRO".into(),
-            party_state: CharacterPartyState::Unavailable,
-            level: 1,
-            xp: 0,
-            status: StatusEffect::None,
-            hp: 80,
-            mp: 9,
-            stats: CharacterStats {
-                evade: 8,
-                hit_chance: 8,
-                magic: 6,
-                magic_defense: 3,
-                power: 4,
-                stamina: 8,
-                speed: 11,
-            },
-            equipment: CharacterEquipment {
-                armor: None,
-                helmet: None,
-                weapon: None,
-                accessory: None,
-            }
-        });
-
-        characters.insert(4, Character {
-            id: 4,
             name: "Robo".into(),
             text_key: "NAME_ROB".into(),
             party_state: CharacterPartyState::Unavailable,
@@ -154,6 +127,33 @@ impl Party {
                 power: 7,
                 stamina: 10,
                 speed: 6,
+            },
+            equipment: CharacterEquipment {
+                armor: None,
+                helmet: None,
+                weapon: None,
+                accessory: None,
+            }
+        });
+
+        characters.insert(4, Character {
+            id: 4,
+            name: "Frog".into(),
+            text_key: "NAME_FRO".into(),
+            party_state: CharacterPartyState::Unavailable,
+            level: 1,
+            xp: 0,
+            status: StatusEffect::None,
+            hp: 80,
+            mp: 9,
+            stats: CharacterStats {
+                evade: 8,
+                hit_chance: 8,
+                magic: 6,
+                magic_defense: 3,
+                power: 4,
+                stamina: 8,
+                speed: 11,
             },
             equipment: CharacterEquipment {
                 armor: None,
@@ -232,26 +232,26 @@ impl Party {
             return;
         }
         character.party_state = CharacterPartyState::InReserve;
-        println!("Added {} to reserve.", character.name);
+        println!("Added {} ({}) to reserve.", character.name, character_id);
     }
 
     pub fn character_remove_from_active(&mut self, character_id: CharacterId) {
         let character = self.characters.get_mut(&character_id).unwrap();
         // todo really removes from active and to out of party
         character.party_state = CharacterPartyState::InReserve;
-        println!("Moved {} to reserve.", character.name);
+        println!("Moved {} ({}) to reserve.", character.name, character_id);
     }
 
     pub fn character_add_to_active(&mut self, character_id: CharacterId) {
         let character = self.characters.get_mut(&character_id).unwrap();
         character.party_state = CharacterPartyState::Active;
-        println!("Moved {} to active.", character.name);
+        println!("Moved {} ({}) to active.", character.name, character_id);
     }
 
     pub fn character_move_to_reserve(&mut self, character_id: CharacterId) {
         let character = self.characters.get_mut(&character_id).unwrap();
         character.party_state = CharacterPartyState::InReserve;
-        println!("Moved {} to reserve.", character.name);
+        println!("Moved {} ({}) to reserve.", character.name, character_id);
     }
 
     pub fn character_equip(&mut self, character_id: CharacterId, slot: EquipmentSlot, item_id: Option<ItemId>) {

@@ -36,18 +36,10 @@ pub enum TextPart {
         space: String,
     },
 
-    /// An icon.
-    Icon {
-        icon: usize,
-    },
-
     /// Choice option.
     Choice {
         index: usize,
     },
-
-    /// Advance the dialog.
-    Progress,
 
     /// Hard line break.
     LineBreak,
@@ -87,18 +79,13 @@ impl TextPage {
 // <D> <Z> <UP> <A> <L> <R>
 // <H> <M> <P>
 // <CORNER>
-//
-// text flow, not found in PC
-// <STOP> ?
-// <STOP LINE BREAK> ?
-// <INSTANT LINE BREAK> ?
 
 // text flow
 // <AUTO_PAGE> Automatically go to next page after x time?
-// <AUTO_END> ?
-// <PAGE> New dialog page
+// <AUTO_END> End, skipping remaining pages
+// <INDENT> 3 space indent
 // <BR> Hard line break, indent next line?
-// <WAIT>00</WAIT> Wait for 00 ticks
+// <WAIT>00</WAIT> Wait for 00 ticks, then auto-progress
 
 // data
 // <NUMBER> number from somewhere, PC
@@ -176,13 +163,15 @@ impl TextProcessor {
     }
 
     pub fn process_dialog_text(&self, text: &str) -> Vec<TextPage> {
-        println!("{}", text);
+        println!(">>> {}", text);
 
         // Change PC line breaks to SNES line breaks.
         let text = text.replace("\\", "<BR>");
         let text = self.replace_variables(text);
 
         // Split text into parts separated by whitespace.
+        // This can be used to do manual word wrapping, but that isn't needed right now.
+        // So this could be simplified a lot...
         let mut index = 0;
         let mut pages: Vec<TextPage> = Vec::new();
         let mut page = TextPage::new();
@@ -197,10 +186,10 @@ impl TextProcessor {
 
             match match_type {
                 MatchType::Word => {
-                    page.parts.push(TextPart::Word { word: String::from(match_contents) });
+                    page.parts.push(TextPart::Word { word: match_contents });
                 },
                 MatchType::Whitespace => {
-                    page.parts.push(TextPart::Whitespace { space: String::from(match_contents) });
+                    page.parts.push(TextPart::Whitespace { space: match_contents });
                 },
                 MatchType::TagOpen => {
 
@@ -208,23 +197,13 @@ impl TextProcessor {
                     if match_contents == "BR" {
                         page.parts.push(TextPart::LineBreak);
 
-                    // Line break and indent.
-                    } else if match_contents == "BR INDENT" {
-                        page.parts.push(TextPart::LineBreak);
+                    // Indentation.
+                    } else if match_contents == "INDENT" {
                         page.parts.push(TextPart::Whitespace { space: "   ".into() });
 
-                    // Auto-progress.
-                    } else if match_contents == "END" {
-                        page.parts.push(TextPart::Progress);
-
-                    // Page end. What does AUTO_END mean?
-                    } else if match_contents == "PAGE" || match_contents == "AUTO_END" {
+                    // New page, auto-progress is actually done by <WAIT>.
+                    } else if match_contents == "PAGE" || match_contents == "AUTO_PAGE" || match_contents == "AUTO_END" {
                         pages.push(page);
-                        page = TextPage::new();
-
-                    // Page end, advance to next page.
-                    } else if match_contents == "AUTO_PAGE" {
-                        page.auto = true;
                         page = TextPage::new();
 
                     // Whitespace?
@@ -232,17 +211,18 @@ impl TextProcessor {
                         page.parts.push(TextPart::Whitespace { space: "   ".into() });
 
                     // Match a choice option.
+                    // <C1>Choice</C1>
                     } else if let Some(captures) = self.regex_choice.captures(&match_contents) {
-                        let index: usize = captures[1].parse().unwrap();
+                        let index: usize = captures[1].parse::<usize>().unwrap() - 1;
                         page.parts.push(TextPart::Choice { index });
 
                     }
                 },
 
-                // Wait for n ticks.
+                // Wait a number of ticks.
                 MatchType::TagWait => {
                     let ticks: u32 = u32::from_str_radix(&match_contents, 16).unwrap();
-                    page.parts.push(TextPart::Delay { ticks });
+                    page.parts.push(TextPart::Delay { ticks: (ticks + 1) * 16 });
                 },
             };
         }

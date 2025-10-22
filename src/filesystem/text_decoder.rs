@@ -67,7 +67,7 @@ impl TextDecoder {
                 if delay == 0 {
                     break;
                 }
-                parts.push(format!("<WAIT>{:02x}</WAIT>", data.read_u8().unwrap()));
+                parts.push(format!("<WAIT>{:02x}</WAIT><AUTO_PAGE>", data.read_u8().unwrap()));
 
             // A word from the dictionary.
             } else if value >= 0x21 && value <= DICTIONARY_LENGTH {
@@ -112,7 +112,7 @@ fn read_word(data: &mut Cursor<Vec<u8>>, len: usize) -> String {
             if delay == 0 {
                 break;
             }
-            parts.push(format!("<WAIT>{:02x}</WAIT>", data.read_u8().unwrap()));
+            parts.push(format!("<WAIT>{:02x}</WAIT><AUTO_PAGE>", data.read_u8().unwrap()));
 
         } else if value >= DICTIONARY_LENGTH {
             parts.push(parse_character(value));
@@ -166,19 +166,20 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
     }
 
     match code {
-        0x04 => "<UNKNOWN1>",
+        0x04 => "<UNKNOWN04>",
         0x05 => "<BR>",
-        0x06 => "<BR INDENT>",
-        0x07 => "<STOP>",
-        0x08 => "<STOP LINE BREAK>",
-        0x09 => "<INSTANT LINE BREAK>",
-        0x0A => "<AUTO_PAGE>",
-        0x0B => "<AUTO_END>",
-        0x0C => "<PAGE>",
-        0x0D => "<NUMBER 8>", // 8 bits
+        0x06 => "<BR><INDENT>",
+        0x07 => "<WAIT>06</WAIT><BR>",         // todo wait for how long?
+        0x08 => "<WAIT>06</WAIT><BR><INDENT>", // todo wait for how long?
+        0x09 => "<AUTO_PAGE>",
+        0x0A => "<AUTO_PAGE><INDENT>",
+        0x0B => "<PAGE>",
+        0x0C => "<PAGE><INDENT>",
+        0x0D => "<NUMBER 8>",  // 8 bits
         0x0E => "<NUMBER 16>", // 16 bits
-        0x0F => "<NUMBER> 24", // 24 bits
-        0x11 => "<SPCH 11>",  // TODO displays previous substring
+        0x0F => "<NUMBER 24>", // 24 bits
+        0x10 => "<UNKNOWN10>",
+        0x11 => "<SPCH 11>",  // TODO displays previous substring?
         0x13 => "<NAME_CRO>",
         0x14 => "<NAME_MAR>",
         0x15 => "<NAME_LUC>",
@@ -193,6 +194,6 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
         0x1E => "<NAME_LEENE>",
         0x1F => "<RESULT ITEM>",
         0x20 => "<NAME_SIL>",
-        _ => "<UNKNOWN2>",
+        _ => "<UNKNOWN>",
     }.to_string()
 }

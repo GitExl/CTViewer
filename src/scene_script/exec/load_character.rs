@@ -1,4 +1,4 @@
-use crate::actor::{ActorClass, ActorFlags, DrawMode};
+use crate::actor::{ActorClass, ActorFlags, ActorTask, DrawMode};
 use crate::Context;
 use crate::facing::Facing;
 use crate::gamestate::gamestate_scene::SceneState;
@@ -92,15 +92,7 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     actor.draw_mode = DrawMode::Draw;
     actor.flags.remove(ActorFlags::MOVE_ONTO_OBJECT | ActorFlags::MOVE_ONTO_TILE | ActorFlags::PUSHABLE);
     actor.flags.insert(ActorFlags::SOLID);
-    actor.move_speed = 0.0;
-
-    // todo set actual pc index from party active order
-    actor.class = match character_index {
-        0 => ActorClass::PC1,
-        1 => ActorClass::PC2,
-        2 => ActorClass::PC3,
-        _ => ActorClass::PC1
-    };
+    actor.task = ActorTask::None;
 
     // Script state defaults.
     let script_state = &mut scene_state.script_states.get_mut(actor_index).unwrap();
@@ -115,7 +107,18 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
         actor.move_to(scene_state.enter_position, true, &scene_state.scene_map);
     }
 
-    scene_state.player_actors.insert(character_index, actor_index);
+    if !must_be_active {
+        scene_state.player_actors.insert(character_index, actor_index);
+        actor.class = ActorClass::PCOutOfParty;
+    } else {
+        // todo set actual pc index from party active order
+        actor.class = match character_index {
+            0 => ActorClass::PC1,
+            1 => ActorClass::PC2,
+            2 => ActorClass::PC3,
+            _ => ActorClass::PC1
+        };
+    }
 
     OpResult::COMPLETE
 }

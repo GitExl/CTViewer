@@ -1,10 +1,10 @@
 0.2.1 alpha
-- PC/SNES textbox choice line identification fix
-- textbox choice input
-- PC version UI graphics
+- Textbox choice input.
+- PC version UI graphics.
+- Basic widescreen support, so that PC dialogue is fully visible.
 
 0.2.2 alpha
-- 16:9 mode option (for PC dialog)
+- PC map extensions for widescreen
 - read item data into structs, indices & arrays per category
 - inventory scene script ops
 - remaining movement ops (jump & party move)

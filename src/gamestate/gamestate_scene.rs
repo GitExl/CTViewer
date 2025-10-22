@@ -20,7 +20,6 @@ use crate::scene::scene::Scene;
 use crate::scene::scene_map::SceneMap;
 use crate::scene::scene_renderer::{SceneDebugLayer, SceneRenderer};
 use crate::scene_script::scene_script::ActorScriptState;
-use crate::screen_fade::ScreenFade;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
@@ -35,7 +34,6 @@ pub struct SceneState {
     pub textbox_strings: Vec<String>,
     pub actors: Vec<Actor>,
     pub player_actors: HashMap<CharacterId, usize>,
-    pub screen_fade: ScreenFade,
     pub next_destination: NextDestination,
     pub camera: Camera,
     pub scene_map: SceneMap,
@@ -71,14 +69,13 @@ pub struct GameStateScene {
 }
 
 impl GameStateScene {
-    pub fn new(ctx: &mut Context, scene_index: usize, pos: Vec2Df64, facing: Facing) -> GameStateScene {
+    pub fn new(ctx: &mut Context, scene_index: usize, pos: Vec2Df64, facing: Facing, fade_in: bool) -> GameStateScene {
         let scene = ctx.fs.read_scene(scene_index);
         println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
         // Create new shared scene state.
         let mut state = SceneState {
             next_destination: NextDestination::new(),
-            screen_fade: ScreenFade::new(0.0),
             camera: Camera::new(
                 scene.scroll_mask.left as f64, scene.scroll_mask.top as f64,
                 ctx.render.target.width as f64, ctx.render.target.height as f64,
@@ -104,7 +101,9 @@ impl GameStateScene {
         map_renderer.setup_for_map(&mut state.map);
 
         // Initialize state.
-        state.screen_fade.start(1.0, 2);
+        if fade_in {
+            ctx.screen_fade.start(1.0, 2);
+        }
         state.camera.center_to(pos);
 
         // Create actors and setup their state.
@@ -197,8 +196,7 @@ impl GameStateTrait for GameStateScene {
             self.state.camera.clamp();
         }
 
-        self.state.textbox.tick(delta);
-        self.state.screen_fade.tick(delta);
+        self.state.textbox.tick(ctx, delta);
 
         // Freeze debug actor script state.
         if let Some(debug_actor) = self.debug_actor {
@@ -207,8 +205,8 @@ impl GameStateTrait for GameStateScene {
         }
 
         if let Some(next_destination) = self.state.next_destination.destination {
-            if !self.state.screen_fade.is_active() {
-                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination });
+            if !ctx.screen_fade.is_active() {
+                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination, fade_in: self.state.next_destination.fade_in });
                 self.state.next_destination.clear();
             }
         }
@@ -334,7 +332,6 @@ impl GameStateTrait for GameStateScene {
         }
 
         self.state.textbox.render(ctx, lerp);
-        self.state.screen_fade.render(ctx, lerp);
     }
 
     fn get_title(&self, ctx: &Context) -> String {
@@ -477,7 +474,7 @@ impl GameStateTrait for GameStateScene {
                         if let Some(index) = index {
                             let exit = &self.scene.exits[index];
                             self.state.next_destination.set(exit.destination, true);
-                            self.state.screen_fade.start(0.0, 2);
+                            ctx.screen_fade.start(0.0, 2);
                         }
                     }
                 }

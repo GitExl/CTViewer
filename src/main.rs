@@ -18,6 +18,7 @@ use crate::facing::Facing;
 use crate::memory::Memory;
 use crate::party::Party;
 use crate::renderer::Renderer;
+use crate::screen_fade::ScreenFade;
 use crate::sprites::sprite_assets::SpriteAssets;
 use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::text_processor::TextProcessor;
@@ -61,6 +62,7 @@ const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
 pub enum GameEvent {
     GotoDestination {
         destination: Destination,
+        fade_in: bool,
     },
 }
 
@@ -106,6 +108,7 @@ pub struct Context<'a> {
     memory: Memory,
     party: Party,
     text_processor: TextProcessor,
+    screen_fade: ScreenFade,
 }
 
 fn main() -> Result<(), String> {
@@ -121,12 +124,14 @@ fn main() -> Result<(), String> {
     let sprites = SpriteStateList::new();
     let random = Random::new();
     let ui_theme = fs.read_ui_theme(0);
+    let screen_fade = ScreenFade::new(0.0);
 
     // Init some of the same variables that scene 0 does.
     let mut memory = Memory::new();
     // memory.write_bytes(0x7E028F, &[0x00, 0xA0, 0x00, 0xA0, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
     memory.write_u16(0x7F01CD, 0x0100);
     memory.write_u8(0x7F0054, 0x80);
+    // memory.write_u8(0x7F0000, 0x85);
 
     let mut text_processor = TextProcessor::new();
     let party = Party::new();
@@ -143,16 +148,17 @@ fn main() -> Result<(), String> {
         memory,
         party,
         text_processor,
+        screen_fade,
     };
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {
-        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(128.0, 112.0), Facing::Up));
+        gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(128.0, 112.0), Facing::Down, true));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(384.0, 288.0)));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(384.0, 288.0), true));
     } else {
         println!("No scene or world specified, loading world 0.");
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(768.0, 512.0)));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(768.0, 512.0), true));
     }
 
     let title = format!("Chrono Trigger - {}", gamestate.get_title(&ctx));
@@ -212,20 +218,21 @@ fn main() -> Result<(), String> {
         while accumulator > UPDATE_INTERVAL {
             timer_update.start();
 
+            ctx.screen_fade.tick(UPDATE_INTERVAL);
             let game_event = gamestate.tick(&mut ctx, UPDATE_INTERVAL);
             if game_event.is_some() {
                 match game_event.unwrap() {
-                    GameEvent::GotoDestination { destination } => {
+                    GameEvent::GotoDestination { destination, fade_in } => {
 
                         // Store previous location.
                         ctx.memory.write_u16(0x7E0105, destination.get_index() as u16);
 
                         match destination {
                             Destination::Scene { index, pos, facing } => {
-                                gamestate = Box::new(GameStateScene::new(&mut ctx, index, pos.as_vec2d_f64(), facing));
+                                gamestate = Box::new(GameStateScene::new(&mut ctx, index, pos.as_vec2d_f64(), facing, fade_in));
                             },
                             Destination::World { index, pos } => {
-                                gamestate = Box::new(GameStateWorld::new(&mut ctx, index, pos.as_vec2d_f64()));
+                                gamestate = Box::new(GameStateWorld::new(&mut ctx, index, pos.as_vec2d_f64(), fade_in));
                             },
                         };
 
@@ -247,6 +254,7 @@ fn main() -> Result<(), String> {
 
         ctx.render.clear();
         gamestate.render(&mut ctx, lerp);
+        ctx.screen_fade.render(&mut ctx.render, lerp);
         ctx.render.copy_to_canvas();
 
         stat_render_time += timer_render.stop();

@@ -1,4 +1,4 @@
-use crate::Context;
+use crate::renderer::Renderer;
 
 pub struct ScreenFade {
     active: bool,
@@ -39,6 +39,8 @@ impl ScreenFade {
     }
 
     pub fn tick(&mut self, _delta: f64) {
+        self.last = self.current;
+
         if !self.active {
             return;
         }
@@ -46,8 +48,6 @@ impl ScreenFade {
             self.active = false;
             return;
         }
-
-        self.last = self.current;
 
         if self.delay_counter == 0 {
             self.delay_counter = self.delay;
@@ -64,12 +64,8 @@ impl ScreenFade {
         }
     }
 
-    pub fn render(&self, ctx: &mut Context, lerp: f64) {
-        if !self.active {
-            return;
-        }
-
+    pub fn render(&self, render: &mut Renderer, lerp: f64) {
         let alpha = self.last + (self.current - self.last) * lerp;
-        ctx.render.set_fade_alpha(255 - (alpha * 255.0) as u8);
+        render.set_fade_alpha(255 - (alpha * 255.0) as u8);
     }
 }
