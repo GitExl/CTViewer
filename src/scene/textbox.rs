@@ -150,14 +150,14 @@ impl TextBox {
         self.source_actor_index
     }
 
-    pub fn show(&mut self, ctx: &Context, text: String, position: TextBoxPosition, actor_index: usize, choice_lines: Option<[usize; 2]>) {
+    pub fn show(&mut self, ctx: &mut Context, text: String, position: TextBoxPosition, actor_index: usize, choice_lines: Option<[usize; 2]>, result_value: u32, result_item: String) {
         self.state = TextBoxState::Showing {
             visibility: 0.0,
             last_visibility: 0.0,
         };
         self.position = position;
 
-        self.pages = ctx.text_processor.process_dialog_text(text.as_str());
+        self.pages = ctx.text_processor.process_dialog_text(text.as_str(), result_value, result_item);
         self.current_page = 0;
 
         self.source_actor_index = Some(actor_index);
@@ -168,6 +168,22 @@ impl TextBox {
         self.layout_current_page(ctx);
     }
 
+    pub fn choice_previous(&mut self) {
+        if self.current_choice == 0 {
+            self.current_choice = self.layout.choices.len() - 1;
+        } else {
+            self.current_choice -= 1;
+        }
+    }
+
+    pub fn choice_next(&mut self) {
+        if self.current_choice == self.layout.choices.len() - 1 {
+            self.current_choice = 0;
+        } else {
+            self.current_choice += 1;
+        }
+    }
+
     pub fn progress(&mut self, ctx: &mut Context) {
         if self.state == TextBoxState::Disabled {
             return;
@@ -176,6 +192,14 @@ impl TextBox {
         if matches!(self.state, TextBoxState::Waiting) && self.wait == 0 {
             self.advance(ctx);
         }
+    }
+
+    pub fn has_choices(&self) -> bool {
+        self.layout.choices.len() > 0
+    }
+
+    pub fn get_choice(&self) -> usize {
+        self.layout.choices[self.current_choice].line
     }
 
     fn advance(&mut self, ctx: &mut Context) {
@@ -260,9 +284,9 @@ impl TextBox {
 
                 // Display choice.
                 if self.layout.choices.len() > 0 {
-                    let choice = self.layout.choices.get(&self.current_choice).unwrap();
-                    let choice_x = dest_x + 8 + choice.x - 18;
-                    let choice_y = dest_y + 9 + choice.y + 1;
+                    let choice = &self.layout.choices[self.current_choice];
+                    let choice_x = dest_x + 8 + choice.pos.x - 18;
+                    let choice_y = dest_y + 9 + choice.pos.y + 1;
                     blit_bitmap_to_surface(&ctx.ui_theme.cursor_bitmap, &mut ctx.render.target, 0, 0, 16, 16, choice_x, choice_y, &ctx.ui_theme.cursor_palette, 0, BitmapBlitFlags::SKIP_0);
                 }
             },

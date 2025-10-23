@@ -3,6 +3,7 @@ use crate::camera::CameraMoveTo;
 use crate::Context;
 use crate::facing::Facing;
 use crate::gamestate::gamestate_scene::SceneState;
+use crate::l10n::IndexedType;
 use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
 use crate::scene_script::exec::call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
@@ -486,6 +487,10 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             let actor = &mut scene_state.actors[this_actor];
             if actor.flags.contains(ActorFlags::TEXTBOX_ACTIVE) {
                 actor.flags.remove(ActorFlags::TEXTBOX_ACTIVE);
+                if scene_state.textbox.has_choices() {
+                    actor.result = scene_state.textbox.get_choice() as u32;
+                    println!("{}", actor.result);
+                }
                 return OpResult::COMPLETE;
             }
             actor.flags.insert(ActorFlags::TEXTBOX_ACTIVE);
@@ -507,7 +512,17 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             } else {
                 format!("STRING INDEX {}", index)
             };
-            scene_state.textbox.show(ctx, text, real_position, this_actor, choice_lines);
+
+            let result_value =
+                ctx.memory.read_u8(0x7E0200, scene_state) as u32 |
+                (ctx.memory.read_u8(0x7E0201, scene_state) as u32) << 8 |
+                (ctx.memory.read_u8(0x7E0202, scene_state) as u32) << 16;
+
+            // todo read proper item index, categorized for PC?
+            let result_item = ctx.memory.read_u8(0x7F0200, scene_state) as usize;
+            let result_item_name = ctx.l10n.get_indexed(IndexedType::Item, result_item);
+
+            scene_state.textbox.show(ctx, text, real_position, this_actor, choice_lines, result_value, result_item_name);
 
             OpResult::YIELD
         },

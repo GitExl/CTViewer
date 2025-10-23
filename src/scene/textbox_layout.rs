@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::Context;
 use crate::renderer::{TextFont, TextRenderable};
 use crate::software_renderer::palette::Color;
@@ -15,16 +14,21 @@ pub struct TextBoxLayoutItem {
     pub wait: u32,
 }
 
+pub struct TextBoxChoice {
+    pub pos: Vec2Di32,
+    pub line: usize,
+}
+
 pub struct TextBoxLayout {
     pub items: Vec<TextBoxLayoutItem>,
-    pub choices: HashMap<usize, Vec2Di32>,
+    pub choices: Vec<TextBoxChoice>,
 }
 
 impl TextBoxLayout {
     pub fn empty() -> TextBoxLayout {
         TextBoxLayout {
             items: Vec::new(),
-            choices: HashMap::new(),
+            choices: Vec::new(),
         }
     }
 
@@ -52,7 +56,10 @@ impl TextBoxLayout {
                     continue;
                 },
                 TextPart::Choice { index } => {
-                    layout.choices.insert(*index, Vec2Di32::new(x, y));
+                    layout.choices.push(TextBoxChoice {
+                        pos: Vec2Di32::new(x, y),
+                        line: *index,
+                    });
                     continue;
                 },
             };
@@ -77,7 +84,10 @@ impl TextBoxLayout {
 fn add_choice_line_choice(choice_lines: Option<[usize; 2]>, line: usize, layout: &mut TextBoxLayout, x: i32, y: i32) {
     if let Some(choice_lines) = choice_lines {
         if line >= choice_lines[0] && line <= choice_lines[1] {
-            layout.choices.insert(line - choice_lines[0], Vec2Di32::new(x + 24, y));
+            layout.choices.push(TextBoxChoice {
+                pos: Vec2Di32::new(x + 24, y),
+                line,
+            });
         }
     }
 }

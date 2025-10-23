@@ -55,22 +55,20 @@ enum MatchType {
 
 pub struct TextPage {
     pub parts: Vec<TextPart>,
-    pub auto: bool,
 }
 
 impl TextPage {
     pub fn new() -> TextPage {
         TextPage {
-            auto: false,
             parts: Vec::new(),
         }
     }
 }
 
-// icons not part of the TTF font, need to handle these separately
+// icons not part of the TTF font, need to handle these separately - todo
 // <BLADE> <BOW> <GUN> <ARM> <SWORD> <FIST> <SCYTHE> <HELM> <ARMOR> <RING>
 //
-// probably no need to implement these, they look like battle texts
+// probably no need to implement these, they look like battle texts - todo
 // <H> <M> <P>
 // <SHIELD> <STAR> <LEFT> <RIGHT>
 // <HAND1> <HAND2> <HAND3> <HAND4>
@@ -88,20 +86,20 @@ impl TextPage {
 // <WAIT>00</WAIT> Wait for 00 ticks, then auto-progress
 
 // data
-// <NUMBER> number from somewhere, PC
-// <NUMBER 8> 8 bit number from somewhere, SNES
-// <NUMBER 16> 16 bit number from somewhere, SNES
-// <NUMBER 24> 24 bit number from somewhere, SNES
-// <RESULT ITEM> item name from result value? SNES?
+// <NUMBER> number from textbox choice result. PC
+// <NUMBER 8> 8 bit number from textbox choice result. SNES, from 0x7E0200
+// <NUMBER 16> 16 bit number from textbox choice result. SNES, from 0x7E0200
+// <NUMBER 24> 24 bit number from textbox choice result. SNES, from 0x7E0200
+// <RESULT ITEM> item name from result value. SNES. from 0x7F0200
 
 // Coliseum related
-// <STR>
-// <NAME_MON>
-// <NAME_TEC> tech name, PC
+// <STR> - todo
+// <NAME_MON> - todo
+// <NAME_TEC> tech name, PC - todo
 
 // other
-// <SPCH 11> from the SNES text decoder, should repeat last substring so should never appear here...
-// <CT> center horizontally
+// <SPCH 11> from the SNES text decoder, should repeat last substring? - todo
+// <CT> center horizontally - todo
 // <UNKNOWN> an unknown character the text decoder didn't understand
 // <UNKNOWN_SPEC> an unknown special character the text decoder didn't understand
 
@@ -113,12 +111,13 @@ impl TextPage {
 // <NAME_ROB> Robo name
 // <NAME_AYL> Ayla name
 // <NAME_MAG> Magus name
-// <NICK_CRO> Crono nickname used by Ayla (what is this again?)
+// <NICK_CRO> Crono nickname used by Ayla in the Japanese version
 // <NAME_PT1> Party member 1 name
 // <NAME_PT2> Party member 2 name
 // <NAME_PT3> Party member 3 name
 // <NAME_LEENE> always replaced by "Leene", SNES
-// <NAME_SIL> name for the Epoch ("Sil Bird")
+// <NAME_SIL> name for the Epoch (from "Sil Bird")
+// <NAME_ITM> item name, PC - todo
 
 // used by choices by the PC version. end tags are ignored, we just want to use the part index
 // <S10> Some sort of indentation?
@@ -131,6 +130,7 @@ pub struct TextProcessor {
     replacements: HashMap<String, String>,
     regex_choice: Regex,
     regex_variable: Regex,
+    regex_number_bits: Regex,
     regex_match_parts: Vec<Regex>,
 }
 
@@ -144,6 +144,7 @@ impl TextProcessor {
             replacements,
             regex_choice: Regex::new(r"^C(\d{1})$").unwrap(),
             regex_variable: Regex::new(r"<(.+?)>").unwrap(),
+            regex_number_bits: Regex::new(r"NUMBER (\d+)").unwrap(),
             regex_match_parts: [
                 Regex::new(r"^<WAIT>(.+?)</WAIT>").unwrap(),
                 Regex::new(r"^<(.+?)>").unwrap(),
@@ -160,9 +161,10 @@ impl TextProcessor {
                 self.replacements.insert(format!("NAME_PT{}", index + 1), character.name.clone());
             }
         }
+        self.replacements.insert("NICK_CRO".into(), party.characters[&0].name.clone());
     }
 
-    pub fn process_dialog_text(&self, text: &str) -> Vec<TextPage> {
+    pub fn process_dialog_text(&self, text: &str, result_value: u32, result_item: String) -> Vec<TextPage> {
         println!(">>> {}", text);
 
         // Change PC line breaks to SNES line breaks.
@@ -216,6 +218,24 @@ impl TextProcessor {
                         let index: usize = captures[1].parse::<usize>().unwrap() - 1;
                         page.parts.push(TextPart::Choice { index });
 
+                    // Match a number result.
+                    } else if match_contents == "NUMBER" {
+                        page.parts.push(TextPart::Word { word: result_value.to_string() });
+
+                    // Match a result item name.
+                    } else if match_contents == "RESULT ITEM" {
+                        page.parts.push(TextPart::Word { word: result_item.clone() });
+
+                    // Match a sized number result.
+                    } else if let Some(captures) = self.regex_number_bits.captures(&match_contents) {
+                        let bits: usize = captures[1].parse::<usize>().unwrap();
+                        let value = match bits {
+                            8 => result_value & 0xFF,
+                            16 => result_value & 0xFFFF,
+                            24 => result_value & 0xFFFFFF,
+                            _ => panic!("Number result bits is {} but must be 8, 16 or 24.", bits),
+                        };
+                        page.parts.push(TextPart::Word { word: value.to_string() });
                     }
                 },
 

@@ -342,14 +342,29 @@ impl GameStateTrait for GameStateScene {
         match event {
             Event::KeyDown { keycode, .. } => {
                 match keycode {
-                    Some(Keycode::W) => self.key_up = true,
+                    Some(Keycode::W) => {
+                        if self.state.textbox.is_active() && self.state.textbox.has_choices() {
+                            self.state.textbox.choice_previous();
+                        } else {
+                            self.key_up = true;
+                        }
+                    },
                     Some(Keycode::A) => self.key_left = true,
-                    Some(Keycode::S) => self.key_down = true,
+                    Some(Keycode::S) => {
+                        if self.state.textbox.is_active() && self.state.textbox.has_choices() {
+                            self.state.textbox.choice_next();
+                        } else {
+                            self.key_down = true;
+                        }
+                    },
                     Some(Keycode::D) => self.key_right = true,
 
                     Some(Keycode::F) => {
-                        self.key_activate = true;
-                        self.state.textbox.progress(ctx);
+                        if self.state.textbox.is_active() {
+                            self.state.textbox.progress(ctx);
+                        } else {
+                            self.key_activate = true;
+                        }
                     },
 
                     Some(Keycode::_1) => {
