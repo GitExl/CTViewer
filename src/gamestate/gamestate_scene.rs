@@ -73,6 +73,8 @@ impl GameStateScene {
         let scene = ctx.fs.read_scene(scene_index);
         println!("Entering scene {}: {}", scene.index, ctx.l10n.get_indexed(IndexedType::Scene, scene.index));
 
+        ctx.memory.clear_local();
+
         // Create new shared scene state.
         let mut state = SceneState {
             next_destination: NextDestination::new(),
