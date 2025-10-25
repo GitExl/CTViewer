@@ -7,7 +7,7 @@ use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 
 #[derive(Clone)]
 pub struct Memory {
-    pub temp: [u8; 0x400],
+    pub system: [u8; 0x400],
     pub global: [u8; 0x200],
     pub local: [u8; 0x200],
     pub extended: [u8; 0x200],
@@ -16,16 +16,20 @@ pub struct Memory {
 impl Memory {
     pub fn new() -> Memory {
         Memory {
-            temp: [0; 0x400],
+            system: [0; 0x400],
             global: [0; 0x200],
             local: [0; 0x200],
             extended: [0; 0x200],
         }
     }
 
+    pub fn clear_local(&mut self) {
+        self.local = [0; 0x200];
+    }
+
     pub fn write_u8(&mut self, address: usize, value: u8) {
         if address >= 0x7E0000 && address < 0x7E0400 {
-            self.temp[address - 0x7E0000] = value;
+            self.system[address - 0x7E0000] = value;
         } else if address >= 0x7F0000 && address < 0x7F0200 {
             self.global[address - 0x7F0000] = value;
         } else if address >= 0x7F0200 && address < 0x7F0400 {
@@ -60,7 +64,7 @@ impl Memory {
 
     pub fn read_u8(&self, address: usize, scene_state: &SceneState) -> u8 {
         if address >= 0x7E0000 && address < 0x7E0400 {
-            return self.temp[address - 0x7E0000];
+            return self.system[address - 0x7E0000];
         } else if address >= 0x7F0000 && address < 0x7F0200 {
             return self.global[address - 0x7F0000];
         } else if address >= 0x7F0200 && address < 0x7F0400 {
@@ -90,8 +94,8 @@ impl Memory {
 
     pub fn write_u16(&mut self, address: usize, value: u16) {
         if address >= 0x7E0000 && address < 0x7E0400 {
-            self.temp[address - 0x7E0000 + 0] = (value >> 8) as u8;
-            self.temp[address - 0x7E0000 + 1] = value as u8;
+            self.system[address - 0x7E0000 + 0] = (value >> 8) as u8;
+            self.system[address - 0x7E0000 + 1] = value as u8;
         } else if address >= 0x7F0000 && address < 0x7F0200 {
             self.global[address - 0x7F0000 + 0] = (value >> 8) as u8;
             self.global[address - 0x7F0000 + 1] = value as u8;
@@ -108,12 +112,12 @@ impl Memory {
 
     pub fn read_u16(&self, address: usize, _scene_state: &SceneState) -> u16 {
         if address >= 0x7E0000 && address < 0x7E0400 {
-            return self.temp[address - 0x7E0000 + 1] as u16 | self.temp[address - 0x7E0000] as u16 >> 8;
+            return self.system[address - 0x7E0000 + 1] as u16 | self.system[address - 0x7E0000] as u16 >> 8;
         } else if address >= 0x7F0000 && address < 0x7F0200 {
             return self.global[address - 0x7F0000 + 1] as u16 | self.global[address - 0x7F0000] as u16 >> 8;
-        } else if address >= 0x7F0200 && address < 0x7F00400 {
+        } else if address >= 0x7F0200 && address < 0x7F0400 {
             return self.local[address - 0x7F0200 + 1] as u16 | self.local[address - 0x7F0200] as u16 >> 8;
-        } else if address >= 0x9F0200 && address < 0x9F00400 {
+        } else if address >= 0x9F0200 && address < 0x9F0400 {
             return self.extended[address - 0x9F0200 + 1] as u16 | self.extended[address - 0x9F0200] as u16 >> 8;
         }
 
@@ -165,7 +169,7 @@ pub enum DataSource {
 }
 
 impl DataSource {
-    pub fn for_temp_memory(address: usize) -> DataSource {
+    pub fn for_system_memory(address: usize) -> DataSource {
         DataSource::Memory(address + 0x7E0000)
     }
 
@@ -226,7 +230,7 @@ pub enum DataDest {
 }
 
 impl DataDest {
-    pub fn for_temp_memory(address: usize) -> DataDest {
+    pub fn for_system_memory(address: usize) -> DataDest {
         DataDest::Memory(address + 0x7E0000)
     }
 
