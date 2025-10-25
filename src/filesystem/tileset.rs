@@ -104,11 +104,14 @@ impl FileSystem {
                 let mut chipset_data = self.backend.get_scene_tileset12_graphics(*chipset as usize);
                 let data_len = chipset_data.len();
 
-                // Set 6 contains animated chips, so Store a separate copy of them.
+                // Set 6 contains animated chips, store them separately.
                 if chipset_index == 6 {
                     set_chip_bitmap_data(&mut animated_bitmap_data, &mut chipset_data, 0, data_len);
+                } else if chipset_index >= 7 {
+                    set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, (chipset_index - 1) * 0x2000, data_len);
+                } else {
+                    set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, chipset_index * 0x2000, data_len);
                 }
-                set_chip_bitmap_data(&mut bitmap_data, &mut chipset_data, chipset_index * 0x2000, data_len);
             }
 
             chip_bitmaps.extend(split_chip_graphics(&bitmap_data, bitmap_data.len() / 64));
