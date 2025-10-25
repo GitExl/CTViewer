@@ -168,6 +168,7 @@ impl TextProcessor {
         println!(">>> {}", text);
 
         // Change PC line breaks to SNES line breaks.
+        let text = text.replace("<PAGE>\\", "<PAGE>");
         let text = text.replace("\\", "<BR>");
         let text = self.replace_variables(text);
 
