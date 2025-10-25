@@ -116,49 +116,48 @@ impl<'a> Renderer<'a> {
         let video = sdl.video().unwrap();
 
         // Calculate display and render size.
-        let display_height = 224;
-        let display_width = (display_height as f64 * display_aspect_ratio) as u32;
-        let render_width = (display_width as f64 / pixel_aspect_ratio) as u32;
+        let display_height = 224.0;
+        let display_width = display_height * display_aspect_ratio;
         let render_height = 224;
+        let render_width = (display_width / pixel_aspect_ratio).floor() as i32;
+        println!("Display size is {:.2}x{:.2}", display_width, display_height);
         println!("Render target size is {}x{}", render_width, render_height);
 
         // Auto-adjust scale to display size.
         let display_scale = if scale < 1 {
             let current_mode = video.displays().unwrap()[0].get_mode().unwrap();
-            let scale_w = (current_mode.w as f64 / display_width as f64).floor();
-            let scale_h = (current_mode.h as f64 / display_height as f64).floor();
-            scale_w.min(scale_h.max(1.0)) as u32
+            let scale_w = (current_mode.w as f64 / display_width).floor();
+            let scale_h = (current_mode.h as f64 / display_height).floor();
+            scale_w.min(scale_h.max(1.0)) as i32
         } else {
-            scale as u32
+            scale
         };
         println!("Display scale is {}x", display_scale);
 
         // Calculate scaled output size.
-        let mut scaled_display_width = display_width * display_scale;
-        let mut scaled_display_height = display_height * display_scale;
-        scaled_display_width += scaled_display_width % 4;
-        scaled_display_height += scaled_display_height % 4;
-        println!("Display size is {}x{}", scaled_display_width, scaled_display_height);
+        let scaled_display_width = (display_width * display_scale as f64).floor() as u32;
+        let scaled_display_height = (display_height * display_scale as f64).floor() as u32;
+        println!("Scaled display size is {}x{}", scaled_display_width, scaled_display_height);
 
         let canvas = video.window_and_renderer("Chrono Trigger", scaled_display_width, scaled_display_height).unwrap();
         unsafe { sys::render::SDL_SetRenderVSync(canvas.raw(), if vsync { 1 } else { 0 }); }
 
         // Internal SNES rendering target.
-        let target = Surface::new(render_width, render_height);
+        let target = Surface::new(render_width as u32, render_height as u32);
 
         let texture_creator = canvas.texture_creator();
 
         // Create a surface to copy the internal output to. This is used as the source for the
         // initial integer scaling.
         let mut texture = texture_creator
-            .create_texture_streaming(PixelFormat::from(PixelFormat::ABGR8888), render_width, render_height)
+            .create_texture_streaming(PixelFormat::from(PixelFormat::ABGR8888), render_width as u32, render_height as u32)
             .unwrap();
         texture.set_scale_mode(if scale_linear { ScaleMode::Linear } else { ScaleMode::Nearest });
 
         // Create a surface to scale the output to. This will be scaled to match the final output size
         // linearly to mask uneven pixel widths.
         let mut scaled_texture = texture_creator
-            .create_texture_target(PixelFormat::from(PixelFormat::ABGR8888), render_width * display_scale, render_height * display_scale)
+            .create_texture_target(PixelFormat::from(PixelFormat::ABGR8888), (render_width * display_scale) as u32, (render_height * display_scale) as u32)
             .unwrap();
         scaled_texture.set_scale_mode(ScaleMode::Linear);
 

@@ -1,11 +1,13 @@
 use crate::Context;
+use crate::filesystem::filesystem::ParseMode;
 use crate::renderer::TextFlags;
 use crate::scene::textbox_layout::TextBoxLayout;
 use crate::software_renderer::blit::{blit_bitmap_to_surface, blit_surface_to_surface, BitmapBlitFlags, SurfaceBlendOps};
 use crate::software_renderer::surface::Surface;
 use crate::text_processor::TextPage;
 
-const TEXTBOX_CHIP_WIDTH: i32 = 32;
+const TEXTBOX_CHIP_WIDTH_SNES: i32 = 32;
+const TEXTBOX_CHIP_WIDTH_PC: i32 = 44;
 const TEXTBOX_CHIP_HEIGHT: i32 = 10;
 const TEXTBOX_LINE_HEIGHT: i32 = 16;
 const TEXTBOX_ANIMATE_PIXELS_PER_SECOND: f64 = 6.0;
@@ -55,10 +57,11 @@ pub struct TextBox {
 
 impl TextBox {
     pub fn new(ctx: &mut Context) -> TextBox {
+        let chip_width = if ctx.fs.parse_mode == ParseMode::Pc { TEXTBOX_CHIP_WIDTH_PC } else { TEXTBOX_CHIP_WIDTH_SNES };
 
         // Render a fresh copy of the window UI background.
-        let mut window_surface = Surface::new(TEXTBOX_CHIP_WIDTH as u32 * 8, TEXTBOX_CHIP_HEIGHT as u32 * 8);
-        ctx.ui_theme.render_window(&mut window_surface, 0, 0, TEXTBOX_CHIP_WIDTH, TEXTBOX_CHIP_HEIGHT);
+        let mut window_surface = Surface::new(chip_width as u32 * 8, TEXTBOX_CHIP_HEIGHT as u32 * 8);
+        ctx.ui_theme.render_window(&mut window_surface, 0, 0, chip_width, TEXTBOX_CHIP_HEIGHT);
 
         TextBox {
             state: TextBoxState::Disabled,

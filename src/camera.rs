@@ -68,9 +68,8 @@ impl Camera {
     pub fn move_to(&mut self, move_to: Vec2Df64) {
         self.move_to = move_to;
 
-        // Clamp destination to camera size, otherwise the movement will never complete.
-        self.move_to.x = self.move_to.x.min(self.x2 - self.size.x).max(self.x1);
-        self.move_to.y = self.move_to.y.min(self.y2 - self.size.y).max(self.y1);
+        // Clamp destination to camera size, otherwise the movement might never complete.
+        self.move_to = self.clamp_pos(self.move_to);
 
         self.move_to_state = CameraMoveTo::Enabled;
     }
@@ -80,17 +79,25 @@ impl Camera {
     }
 
     pub fn clamp(&mut self) {
+        self.pos = self.clamp_pos(self.pos);
+    }
+
+    fn clamp_pos(&self, pos: Vec2Df64) -> Vec2Df64 {
+        let mut new = Vec2Df64::new(pos.x, pos.y);
+
         if self.size.x >= self.x2 - self.x1 {
-            self.pos.x = (self.x1 + (self.x2 - self.x1) / 2.0) - self.size.x / 2.0;
+            new.x = (self.x1 + (self.x2 - self.x1) / 2.0) - self.size.x / 2.0;
         } else {
-            self.pos.x = self.pos.x.min(self.x2 - self.size.x).max(self.x1);
+            new.x = new.x.min(self.x2 - self.size.x).max(self.x1);
         }
 
         if self.size.y >= self.y2 - self.y1 {
-            self.pos.y = (self.y1 + (self.y2 - self.y1) / 2.0) - self.size.y / 2.0;
+            new.y = (self.y1 + (self.y2 - self.y1) / 2.0) - self.size.y / 2.0;
         } else {
-            self.pos.y = self.pos.y.min(self.y2 - self.size.y).max(self.y1);
+            new.y = new.y.min(self.y2 - self.size.y).max(self.y1);
         }
+
+        new
     }
 
     pub fn wrap(&mut self) {

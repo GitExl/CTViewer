@@ -89,7 +89,8 @@ struct Args {
     scale_linear: bool,
 
     /// Set the display aspect ratio.
-    #[arg(short, long, default_value_t = 4.0 / 3.0, value_name = "RATIO")]
+    // As used by Mesen in Auto aspect ratio mode.
+    #[arg(short, long, default_value_t = 1.306122448979592, value_name = "RATIO")]
     display_aspect_ratio: f64,
 
     /// Set the pixel aspect ratio.

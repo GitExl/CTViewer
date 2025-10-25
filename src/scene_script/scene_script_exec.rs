@@ -484,12 +484,12 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 return OpResult::YIELD;
             }
 
+            // End op if the textbox was closed.
             let actor = &mut scene_state.actors[this_actor];
             if actor.flags.contains(ActorFlags::TEXTBOX_ACTIVE) {
                 actor.flags.remove(ActorFlags::TEXTBOX_ACTIVE);
                 if scene_state.textbox.has_choices() {
                     actor.result = scene_state.textbox.get_choice() as u32;
-                    println!("{}", actor.result);
                 }
                 return OpResult::COMPLETE;
             }
