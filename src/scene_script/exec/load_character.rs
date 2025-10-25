@@ -108,7 +108,6 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     }
 
     if !must_be_active {
-        scene_state.player_actors.insert(character_index, actor_index);
         actor.class = ActorClass::PCOutOfParty;
     } else {
         // todo set actual pc index from party active order
@@ -118,6 +117,7 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
             2 => ActorClass::PC3,
             _ => ActorClass::PC1
         };
+        scene_state.player_actors.insert(character_index, actor_index);
     }
 
     OpResult::COMPLETE

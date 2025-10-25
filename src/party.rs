@@ -140,7 +140,7 @@ impl Party {
             id: 4,
             name: "Frog".into(),
             text_key: "NAME_FRO".into(),
-            party_state: CharacterPartyState::Unavailable,
+            party_state: CharacterPartyState::Active,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
