@@ -17,13 +17,14 @@ from the Steam version, or a directory with the extracted contents of that `reso
 Steam version into a directory.
 
 Options:
-- `-w`, `--world <WORLD>`  Index of the world to load [default: -1 / none]
-- `-s`, `--scene <SCENE>`  Index of the scene to load [default: -1 / none]
-- `--scale <SCALE>`        Display scale [default: -1 / auto]
-- `--scale-linear`         Scale output using linear scaling
-- `-a`, `--aspect-ratio`   Set the output aspect ratio [default: 1.333]
-- `--no-vsync`             Disable vertical sync
-- `-h`, `--help`           Print help
+- `-w`, `--world <WORLD>`         Index of the world to load [default: -1 / none]
+- `-s`, `--scene <SCENE>`         Index of the scene to load [default: -1 / none]
+- `--scale <SCALE>`               Display scale factor, integer [default: -1 / auto]
+- `--scale-linear`                Scale output using linear scaling instead of nearest
+- `-d`, `--display-aspect-ratio`  Set the display aspect ratio [default: 1.333 for a 4/3 ratio]
+- `-p`, `--pixel-aspect-ratio`    Set the pixel aspect ratio [default: 1.143]
+- `--no-vsync`                    Disable vertical sync
+- `-h`, `--help`                  Print help
 
 Examples:
 - `ctviewer chrono-trigger.smc -s 144`: view Denadaro North Face from the SNES version.

@@ -1,8 +1,7 @@
 use bitflags::bitflags;
 use sdl3::pixels::{Color as SDLColor, PixelFormat};
-use sdl3::render::{BlendMode, Texture, TextureCreator, WindowCanvas};
+use sdl3::render::{BlendMode, ScaleMode, Texture, TextureCreator, WindowCanvas};
 use sdl3::{sys, Sdl};
-use sdl3::sys::everything::SDL_ScaleMode;
 use sdl3::ttf::Font;
 use sdl3::video::WindowContext;
 use crate::software_renderer::blit::{blit_surface_to_surface, SurfaceBlendOps};
@@ -17,15 +16,12 @@ pub enum TextFont {
     Small,
 }
 
-const SCREEN_WIDTH: u32 = 256;
-const SCREEN_HEIGHT: u32 = 224;
-
 pub struct Renderer<'a> {
     pub scale: i32,
     scale_factor_x: f32,
     scale_factor_y: f32,
 
-    aspect_ratio: f64,
+    display_aspect_ratio: f64,
     scale_linear: bool,
     vsync: bool,
 
@@ -116,8 +112,55 @@ bitflags! {
 }
 
 impl<'a> Renderer<'a> {
-    pub fn new(sdl: &'_ Sdl, scale: i32, scale_linear: bool, aspect_ratio: f64, vsync: bool) -> Renderer<'_> {
+    pub fn new(sdl: &'_ Sdl, scale: i32, scale_linear: bool, pixel_aspect_ratio: f64, display_aspect_ratio: f64, vsync: bool) -> Renderer<'_> {
         let video = sdl.video().unwrap();
+
+        // Calculate display and render size.
+        let display_height = 224;
+        let display_width = (display_height as f64 * display_aspect_ratio) as u32;
+        let render_width = (display_width as f64 / pixel_aspect_ratio) as u32;
+        let render_height = 224;
+        println!("Render target size is {}x{}", render_width, render_height);
+
+        // Auto-adjust scale to display size.
+        let display_scale = if scale < 1 {
+            let current_mode = video.displays().unwrap()[0].get_mode().unwrap();
+            let scale_w = (current_mode.w as f64 / display_width as f64).floor();
+            let scale_h = (current_mode.h as f64 / display_height as f64).floor();
+            scale_w.min(scale_h.max(1.0)) as u32
+        } else {
+            scale as u32
+        };
+        println!("Display scale is {}x", display_scale);
+
+        // Calculate scaled output size.
+        let mut scaled_display_width = display_width * display_scale;
+        let mut scaled_display_height = display_height * display_scale;
+        scaled_display_width += scaled_display_width % 4;
+        scaled_display_height += scaled_display_height % 4;
+        println!("Display size is {}x{}", scaled_display_width, scaled_display_height);
+
+        let canvas = video.window_and_renderer("Chrono Trigger", scaled_display_width, scaled_display_height).unwrap();
+        unsafe { sys::render::SDL_SetRenderVSync(canvas.raw(), if vsync { 1 } else { 0 }); }
+
+        // Internal SNES rendering target.
+        let target = Surface::new(render_width, render_height);
+
+        let texture_creator = canvas.texture_creator();
+
+        // Create a surface to copy the internal output to. This is used as the source for the
+        // initial integer scaling.
+        let mut texture = texture_creator
+            .create_texture_streaming(PixelFormat::from(PixelFormat::ABGR8888), render_width, render_height)
+            .unwrap();
+        texture.set_scale_mode(if scale_linear { ScaleMode::Linear } else { ScaleMode::Nearest });
+
+        // Create a surface to scale the output to. This will be scaled to match the final output size
+        // linearly to mask uneven pixel widths.
+        let mut scaled_texture = texture_creator
+            .create_texture_target(PixelFormat::from(PixelFormat::ABGR8888), render_width * display_scale, render_height * display_scale)
+            .unwrap();
+        scaled_texture.set_scale_mode(ScaleMode::Linear);
 
         // Font setup.
         let ttf_context = sdl3::ttf::init().unwrap();
@@ -127,51 +170,13 @@ impl<'a> Renderer<'a> {
         let mut font_small = ttf_context.load_font(&"data/bm_mini/BMmini.TTF", 8.0).unwrap();
         font_small.set_style(sdl3::ttf::FontStyle::NORMAL);
 
-        // Auto-adjust scale to display size.
-        let output_scale = if scale < 1 {
-            let current_mode = video.displays().unwrap()[0].get_mode().unwrap();
-            let scale_w = (current_mode.w as f64 / (SCREEN_HEIGHT as f64 * aspect_ratio)).floor();
-            let scale_h = (current_mode.h as f64 / SCREEN_HEIGHT as f64).floor();
-            scale_w.min(scale_h.max(1.0)) as u32
-        } else {
-            scale as u32
-        };
-
-        // Calculate scaled output size.
-        let mut output_width = (SCREEN_HEIGHT as f64 * aspect_ratio).ceil() as u32 * output_scale;
-        output_width += output_width % 4;
-        let output_height = SCREEN_HEIGHT * output_scale;
-        println!("Display size is {}x{}", output_width, output_height);
-
-        let canvas = video.window_and_renderer("Chrono Trigger", output_width, output_height).unwrap();
-        unsafe { sys::render::SDL_SetRenderVSync(canvas.raw(), if vsync { 1 } else { 0 }); }
-
-        // Internal SNES rendering target.
-        let target = Surface::new(SCREEN_WIDTH, SCREEN_HEIGHT);
-
-        let texture_creator = canvas.texture_creator();
-
-        // Create a surface to copy the internal output to. This is used as the source for the
-        // initial integer scaling.
-        let texture = texture_creator
-            .create_texture_streaming(PixelFormat::from(PixelFormat::ABGR8888), SCREEN_WIDTH, SCREEN_HEIGHT)
-            .unwrap();
-        unsafe { sys::render::SDL_SetTextureScaleMode(texture.raw(), if scale_linear { SDL_ScaleMode::LINEAR } else { SDL_ScaleMode::NEAREST }); }
-
-        // Create a surface to scale the output to. This will be scaled to match the final output size
-        // linearly to mask uneven pixel widths.
-        let scaled_texture = texture_creator
-            .create_texture_target(PixelFormat::from(PixelFormat::ABGR8888), SCREEN_WIDTH * output_scale, SCREEN_HEIGHT * output_scale)
-            .unwrap();
-        unsafe { sys::render::SDL_SetTextureScaleMode(scaled_texture.raw(), SDL_ScaleMode::LINEAR); }
-
         Renderer {
             scale,
-            scale_factor_x: target.width as f32 / output_width as f32,
-            scale_factor_y: target.height as f32 / output_height as f32,
+            scale_factor_x: target.width as f32 / scaled_display_width as f32,
+            scale_factor_y: target.height as f32 / scaled_display_height as f32,
 
             scale_linear,
-            aspect_ratio,
+            display_aspect_ratio,
             vsync,
 
             texture_creator,
@@ -202,20 +207,28 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn copy_to_canvas(&mut self) {
+        self.texture.with_lock(None, |buffer: &mut [u8], dest_pitch: usize| {
+            let src_pitch = self.target.width as usize * 4;
+            let mut src_ptr = self.target.data.as_mut_ptr();
+            let mut dest_ptr = buffer.as_mut_ptr();
+
+            // Copy row by row in case of pitch mismatch between the surface and texture.
+            for _ in 0..self.target.height {
+                unsafe {
+                    std::ptr::copy_nonoverlapping(src_ptr, dest_ptr, src_pitch);
+                    src_ptr = src_ptr.add(src_pitch);
+                    dest_ptr = dest_ptr.add(dest_pitch);
+                }
+            }
+        }).unwrap();
 
         // Linear scaling can output the scene directly to the window.
         if self.scale_linear {
-            self.texture.with_lock(None, |buffer: &mut [u8], _: usize| {
-                buffer.copy_from_slice(&self.target.data);
-            }).unwrap();
             self.canvas.copy(&self.texture, None, None).unwrap();
 
         // Nearest scaling takes care to first scale the scene up to the nearest integer size.
         // Then scales that to the desired aspect ratio linearly.
         } else {
-            self.texture.with_lock(None, |buffer: &mut [u8], _: usize| {
-                buffer.copy_from_slice(&self.target.data);
-            }).unwrap();
             self.canvas.with_texture_canvas(&mut self.scaled_texture, |texture_canvas| {
                 texture_canvas.copy(&self.texture, None, None).unwrap();
             }).unwrap();

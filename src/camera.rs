@@ -80,8 +80,17 @@ impl Camera {
     }
 
     pub fn clamp(&mut self) {
-        self.pos.x = self.pos.x.min(self.x2 - self.size.x).max(self.x1);
-        self.pos.y = self.pos.y.min(self.y2 - self.size.y).max(self.y1);
+        if self.size.x >= self.x2 - self.x1 {
+            self.pos.x = (self.x1 + (self.x2 - self.x1) / 2.0) - self.size.x / 2.0;
+        } else {
+            self.pos.x = self.pos.x.min(self.x2 - self.size.x).max(self.x1);
+        }
+
+        if self.size.y >= self.y2 - self.y1 {
+            self.pos.y = (self.y1 + (self.y2 - self.y1) / 2.0) - self.size.y / 2.0;
+        } else {
+            self.pos.y = self.pos.y.min(self.y2 - self.size.y).max(self.y1);
+        }
     }
 
     pub fn wrap(&mut self) {

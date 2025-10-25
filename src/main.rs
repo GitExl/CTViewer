@@ -80,7 +80,7 @@ struct Args {
     #[arg(short, long, default_value_t = -1)]
     scene: isize,
 
-    /// Display scale.
+    /// Display scale factor, integer.
     #[arg(long, default_value_t = -1)]
     scale: i32,
 
@@ -88,9 +88,13 @@ struct Args {
     #[arg(long, default_value_t = false)]
     scale_linear: bool,
 
-    /// Set the output aspect ratio.
-    #[arg(short, long, default_value_t = 4.0 / 3.0)]
-    aspect_ratio: f64,
+    /// Set the display aspect ratio.
+    #[arg(short, long, default_value_t = 4.0 / 3.0, value_name = "RATIO")]
+    display_aspect_ratio: f64,
+
+    /// Set the pixel aspect ratio.
+    #[arg(short, long, default_value_t = (256.0 * (8.0 / 7.0)) / 256.0, value_name = "RATIO")]
+    pixel_aspect_ratio: f64,
 
     /// Disable vertical sync.
     #[arg(long, default_value_t = false)]
@@ -116,10 +120,11 @@ fn main() -> Result<(), String> {
     println!("SDL3 TTF: {}", sdl3::ttf::get_linked_version());
 
     let args = Args::parse();
+
     let fs = create_filesystem(args.path);
     let l10n = L10n::new("en", &fs);
     let sdl = sdl3::init().unwrap();
-    let render = Renderer::new(&sdl, args.scale, args.scale_linear, args.aspect_ratio, !args.no_vsync);
+    let render = Renderer::new(&sdl, args.scale, args.scale_linear, args.pixel_aspect_ratio, args.display_aspect_ratio, !args.no_vsync);
     let sprite_assets = SpriteAssets::new(&fs);
     let sprites = SpriteStateList::new();
     let random = Random::new();
