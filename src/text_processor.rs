@@ -2,38 +2,16 @@ use std::collections::HashMap;
 use regex::Regex;
 use crate::party::{CharacterPartyState, Party};
 
-pub enum TextIcon {
-    Blade,
-    Bow,
-    Gun,
-    Arm,
-    Sword,
-    Fist,
-    Scythe,
-    Helm,
-    Armor,
-    Ring,
-    Shield,
-    Star,
-    Left,
-    Right,
-}
-
 #[derive(Debug, PartialEq)]
 pub enum TextPart {
     /// A single word.
-    Word {
-        word: String
+    Text {
+        text: String
     },
 
     /// Wait for n ticks.
     Delay {
         ticks: u32,
-    },
-
-    /// Whitepace.
-    Whitespace {
-        space: String,
     },
 
     /// Choice option.
@@ -46,29 +24,18 @@ pub enum TextPart {
 }
 
 #[derive(Debug, PartialEq)]
-enum MatchType {
-    TagOpen = 0,
-    Word = 1,
-    Whitespace = 2,
-    TagWait = 3,
+enum PartType {
+    TagWait,
+    TagOpen,
+    Text,
 }
 
-pub struct TextPage {
-    pub parts: Vec<TextPart>,
-}
-
-impl TextPage {
-    pub fn new() -> TextPage {
-        TextPage {
-            parts: Vec::new(),
-        }
-    }
-}
+pub type TextPage = Vec<TextPart>;
 
 // icons not part of the TTF font, need to handle these separately - todo
 // <BLADE> <BOW> <GUN> <ARM> <SWORD> <FIST> <SCYTHE> <HELM> <ARMOR> <RING>
 //
-// probably no need to implement these, they look like battle texts - todo
+// probably no need to implement these, they look battle UI related - todo
 // <H> <M> <P>
 // <SHIELD> <STAR> <LEFT> <RIGHT>
 // <HAND1> <HAND2> <HAND3> <HAND4>
@@ -90,7 +57,7 @@ impl TextPage {
 // <NUMBER 8> 8 bit number from textbox choice result. SNES, from 0x7E0200
 // <NUMBER 16> 16 bit number from textbox choice result. SNES, from 0x7E0200
 // <NUMBER 24> 24 bit number from textbox choice result. SNES, from 0x7E0200
-// <RESULT ITEM> item name from result value. SNES. from 0x7F0200
+// <NAME_ITM> item name from result value. SNES. from 0x7F0200
 
 // Coliseum related
 // <STR> - todo
@@ -117,7 +84,6 @@ impl TextPage {
 // <NAME_PT3> Party member 3 name
 // <NAME_LEENE> always replaced by "Leene", SNES
 // <NAME_SIL> name for the Epoch (from "Sil Bird")
-// <NAME_ITM> item name, PC - todo
 
 // used by choices by the PC version. end tags are ignored, we just want to use the part index
 // <S10> Some sort of indentation?
@@ -128,40 +94,49 @@ impl TextPage {
 
 pub struct TextProcessor {
     replacements: HashMap<String, String>,
-    regex_choice: Regex,
-    regex_variable: Regex,
-    regex_number_bits: Regex,
+
     regex_match_parts: Vec<Regex>,
+
+    regex_tag_choice: Regex,
+    regex_tag_variable: Regex,
+    regex_tag_number_bits: Regex,
 }
 
 impl TextProcessor {
     pub fn new() -> TextProcessor {
-        let mut replacements = HashMap::new();
-        replacements.insert("NAME_SIL".into(), "Epoch".into());
-        replacements.insert("NAME_LEENE".into(), "Leene".into());
-
         TextProcessor {
-            replacements,
-            regex_choice: Regex::new(r"^C(\d{1})$").unwrap(),
-            regex_variable: Regex::new(r"<(.+?)>").unwrap(),
-            regex_number_bits: Regex::new(r"NUMBER (\d+)").unwrap(),
+            replacements: HashMap::new(),
+
             regex_match_parts: [
                 Regex::new(r"^<WAIT>(.+?)</WAIT>").unwrap(),
                 Regex::new(r"^<(.+?)>").unwrap(),
-                Regex::new(r"^([^[:space:]<]+)").unwrap(),
-                Regex::new(r"^(\s+)").unwrap(),
+                Regex::new(r"^([^<]+)").unwrap(),
             ].to_vec(),
+
+            regex_tag_choice: Regex::new(r"^C(\d{1})$").unwrap(),
+            regex_tag_variable: Regex::new(r"<(.+?)>").unwrap(),
+            regex_tag_number_bits: Regex::new(r"NUMBER (\d+)").unwrap(),
         }
     }
 
     pub fn update_party_names(&mut self, party: &Party) {
+
+        // Add names for active party members.
         for (index, character) in party.characters.iter() {
             self.replacements.insert(character.text_key.clone(), character.name.clone());
             if character.party_state == CharacterPartyState::Active {
                 self.replacements.insert(format!("NAME_PT{}", index + 1), character.name.clone());
             }
         }
+
+        // Crono nickname.
         self.replacements.insert("NICK_CRO".into(), party.characters[&0].name.clone());
+
+        // Epoch.
+        self.replacements.insert("NAME_SIL".into(), "Epoch".into());
+
+        // Unused Queen Leene name.
+        self.replacements.insert("NAME_LEENE".into(), "Leene".into());
     }
 
     pub fn process_dialog_text(&self, text: &str, result_value: u32, result_item: String) -> Vec<TextPage> {
@@ -170,11 +145,11 @@ impl TextProcessor {
         // Change PC line breaks to SNES line breaks.
         let text = text.replace("<PAGE>\\", "<PAGE>");
         let text = text.replace("\\", "<BR>");
+
+        // Replace variables.
         let text = self.replace_variables(text);
 
-        // Split text into parts separated by whitespace.
-        // This can be used to do manual word wrapping, but that isn't needed right now.
-        // So this could be simplified a lot...
+        // Split text on parts.
         let mut index = 0;
         let mut pages: Vec<TextPage> = Vec::new();
         let mut page = TextPage::new();
@@ -188,21 +163,18 @@ impl TextProcessor {
             index += match_len;
 
             match match_type {
-                MatchType::Word => {
-                    page.parts.push(TextPart::Word { word: match_contents });
+                PartType::Text => {
+                    page.push(TextPart::Text { text: match_contents });
                 },
-                MatchType::Whitespace => {
-                    page.parts.push(TextPart::Whitespace { space: match_contents });
-                },
-                MatchType::TagOpen => {
+                PartType::TagOpen => {
 
                     // Hard line break.
                     if match_contents == "BR" {
-                        page.parts.push(TextPart::LineBreak);
+                        page.push(TextPart::LineBreak);
 
                     // Indentation.
                     } else if match_contents == "INDENT" {
-                        page.parts.push(TextPart::Whitespace { space: "   ".into() });
+                        page.push(TextPart::Text { text: "   ".into() });
 
                     // New page, auto-progress is actually done by <WAIT>.
                     } else if match_contents == "PAGE" || match_contents == "AUTO_PAGE" || match_contents == "AUTO_END" {
@@ -211,24 +183,24 @@ impl TextProcessor {
 
                     // Whitespace?
                     } else if match_contents == "S10" {
-                        page.parts.push(TextPart::Whitespace { space: "   ".into() });
-
-                    // Match a choice option.
-                    // <C1>Choice</C1>
-                    } else if let Some(captures) = self.regex_choice.captures(&match_contents) {
-                        let index: usize = captures[1].parse::<usize>().unwrap() - 1;
-                        page.parts.push(TextPart::Choice { index });
+                        page.push(TextPart::Text { text: "   ".into() });
 
                     // Match a number result.
                     } else if match_contents == "NUMBER" {
-                        page.parts.push(TextPart::Word { word: result_value.to_string() });
+                        page.push(TextPart::Text { text: result_value.to_string() });
 
                     // Match a result item name.
-                    } else if match_contents == "RESULT ITEM" {
-                        page.parts.push(TextPart::Word { word: result_item.clone() });
+                    } else if match_contents == "NAME_ITM" {
+                        page.push(TextPart::Text { text: result_item.clone() });
+
+                    // Match a choice option.
+                    // <C1>Choice</C1>
+                    } else if let Some(captures) = self.regex_tag_choice.captures(&match_contents) {
+                        let index: usize = captures[1].parse::<usize>().unwrap() - 1;
+                        page.push(TextPart::Choice { index });
 
                     // Match a sized number result.
-                    } else if let Some(captures) = self.regex_number_bits.captures(&match_contents) {
+                    } else if let Some(captures) = self.regex_tag_number_bits.captures(&match_contents) {
                         let bits: usize = captures[1].parse::<usize>().unwrap();
                         let value = match bits {
                             8 => result_value & 0xFF,
@@ -236,19 +208,19 @@ impl TextProcessor {
                             24 => result_value & 0xFFFFFF,
                             _ => panic!("Number result bits is {} but must be 8, 16 or 24.", bits),
                         };
-                        page.parts.push(TextPart::Word { word: value.to_string() });
+                        page.push(TextPart::Text { text: value.to_string() });
                     }
                 },
 
                 // Wait a number of ticks.
-                MatchType::TagWait => {
+                PartType::TagWait => {
                     let ticks: u32 = u32::from_str_radix(&match_contents, 16).unwrap();
-                    page.parts.push(TextPart::Delay { ticks: (ticks + 1) * 16 });
+                    page.push(TextPart::Delay { ticks: (ticks + 1) * 16 });
                 },
             };
         }
 
-        if page.parts.len() > 0 {
+        if page.len() > 0 {
             pages.push(page);
         }
 
@@ -260,7 +232,7 @@ impl TextProcessor {
     fn replace_variables(&self, text: String) -> String {
         let mut new_text = String::with_capacity(text.len());
         let mut last_match = 0;
-        for capture in self.regex_variable.captures_iter(&text) {
+        for capture in self.regex_tag_variable.captures_iter(&text) {
             let variable = capture.get(1).unwrap().as_str();
             if !self.replacements.contains_key(variable) {
                 continue;
@@ -281,17 +253,16 @@ impl TextProcessor {
         new_text
     }
 
-    fn match_part(&self, text: &str, index: usize) -> Option<(MatchType, String, usize)> {
+    fn match_part(&self, text: &str, index: usize) -> Option<(PartType, String, usize)> {
         for (regex_index, regex) in self.regex_match_parts.iter().enumerate() {
             let captures = regex.captures_at(&text[index..text.len()], 0);
             if let Some(captures) = captures {
                 let len = captures[0].len();
                 let contents = captures[1].to_string();
                 let part = match regex_index {
-                    0 => MatchType::TagWait,
-                    1 => MatchType::TagOpen,
-                    2 => MatchType::Word,
-                    3 => MatchType::Whitespace,
+                    0 => PartType::TagWait,
+                    1 => PartType::TagOpen,
+                    2 => PartType::Text,
                     _ => panic!("Unknown match type."),
                 };
                 return Some((part, contents, len));
@@ -304,11 +275,10 @@ impl TextProcessor {
     fn dump_pages(&self, pages: &Vec<TextPage>) {
         for page in pages.iter() {
             println!("-------------------------------------");
-            for part in page.parts.iter() {
+            for part in page.iter() {
                 match part {
-                    TextPart::Word { ref word } => print!("{}", word),
+                    TextPart::Text { ref text } => print!("{}", text),
                     TextPart::LineBreak => println!(),
-                    TextPart::Whitespace { ref space } => print!("{}", space),
                     _ => {},
                 }
             }

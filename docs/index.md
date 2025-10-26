@@ -21,10 +21,11 @@
     - Graphics
     - Assemblies
     - Animations
-  - Strings
+  - [Strings](data/strings.md)
 - Scene scripts
   - [Memory areas](scene_scripts/memory_areas.md)
   - [Script execution flow](scene_scripts/script_execution_flow.md)
   - [Actor movement](scene_scripts/actor_movement.md)
   - [Sprite animation](scene_scripts/sprite_animation.md)
+  - [Dialogue](scene_scripts/dialogue.md)
 - [Glossary](glossary.md)

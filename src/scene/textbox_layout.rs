@@ -40,10 +40,9 @@ impl TextBoxLayout {
 
         add_choice_line_choice(choice_lines, line, &mut layout, x, y);
 
-        for part in page.parts.iter() {
+        for part in page.iter() {
             let text = match part {
-                TextPart::Word { ref word } => { word },
-                TextPart::Whitespace { ref space } => space,
+                TextPart::Text { ref text } => { text },
                 TextPart::LineBreak => {
                     x = 0;
                     y += line_height;

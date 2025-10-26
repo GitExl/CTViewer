@@ -77,7 +77,7 @@ during scene initialization.
 | `priority_ptrs`        | `$7F0580` - `$7F0900` | Script priority pointers         | `$0000`                           |
 | `call_busy`            | `$7F0980`             | Waiting for a call to finish     |                                   |
 | ?                      | `$7F0A00`             | Text dialog string               |                                   |
-| ?                      | `$7F0A80`             | Text dialog choice result        |                                   |
+| `result`               | `$7F0A80`             | Text dialog choice result        |                                   |
 | ?                      | `$7F0B00`             |                                  |                                   |
 | `anim_loops_remaining` | `$7F0B01`             | Number of animation loops left   |                                   |
 | ?                      | `$7F0B80`             | Related to op 88, palette cycle? |                                   |

@@ -1,12 +1,11 @@
 use std::io::{Cursor, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 
-const DICTIONARY_LENGTH: u8 = 0x9F;
-
+// 8x8 font character mapping.
 const FONT_8_MAP: [&str; 256] = [
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
-    "<BLADE>", "<BOW>", "<GUN>", "<ARM>", "<SWORD>", "<FIST>", "<SCYTHE>", "<HELM>", "<ARMOR>", "<RING>", "<H>", "<M>", "<P>", ":", "<SHIELD>", "<STAR>",
+    "<BLADE>", "<BOW>", "<GUN>", "<ARM>", "<SWORD>", "<FIST>", "<SCYTHE>", "<HELM>", "<ARMOR>", "<RING>", "<H>", "<M>", "<P>", "<:>", "<SHIELD>", "<STAR>",
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶",
     "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "¶", "<LEFT>", "<RIGHT>", "(", ")", ":",
@@ -19,29 +18,32 @@ const FONT_8_MAP: [&str; 256] = [
     "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v",
     "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?",
     "/", "“", "”", ":", "&", "(", ")", "'", ".", ",", "=", "-", "+", "%", "#", " ",
-    "°", "<A>", "#", "#", "<L>", "<R>", "<H>", "<M>", "<P>", "̖", "<CORNER>", "(", ")", "¶", "¶", " "
+    "°", "<A>", "#", "#", "<L>", "<R>", "<H>", "<M>", "<P>", "", "<CORNER>", "(", ")", "¶", "¶", " "
 ];
 
 pub struct TextDecoder {
-    pub words: Vec<String>,
+    pub substrings: Vec<String>,
 }
 
 impl TextDecoder {
-    pub fn from_cursor(data: &mut Cursor<Vec<u8>>, word_count: usize, start: u16) -> Self {
-        let mut pointers = vec![0u16; word_count];
-        for i in 0..word_count {
+    pub fn from_cursor(data: &mut Cursor<Vec<u8>>, substring_count: usize, start: u16) -> Self {
+
+        // Read substring pointers.
+        let mut pointers = vec![0u16; substring_count];
+        for i in 0..substring_count {
             pointers[i] = data.read_u16::<LittleEndian>().unwrap() - start;
         }
 
-        let mut words = Vec::<String>::with_capacity(word_count);
+        // Decode all substrings.
+        let mut substrings = Vec::<String>::with_capacity(substring_count);
         for pointer in pointers {
             data.seek(SeekFrom::Start(pointer as u64)).unwrap();
             let len = data.read_u8().unwrap() as usize;
-            words.push(read_word(data, len));
+            substrings.push(read_substring(data, len));
         }
 
         TextDecoder {
-            words,
+            substrings,
         }
     }
 
@@ -70,12 +72,12 @@ impl TextDecoder {
                 parts.push(format!("<WAIT>{:02x}</WAIT><AUTO_PAGE>", data.read_u8().unwrap()));
 
             // A word from the dictionary.
-            } else if value >= 0x21 && value <= DICTIONARY_LENGTH {
+            } else if value >= 0x21 && value <= 0x9F {
                 let index = value as usize - 0x21;
-                parts.push(self.words[index].clone());
+                parts.push(self.substrings[index].clone());
 
             // Direct characters.
-            } else if value > DICTIONARY_LENGTH {
+            } else if value > 0x9F {
                 parts.push(parse_character(value));
             } else {
                 parts.push(read_special_character(value, data));
@@ -94,7 +96,7 @@ impl TextDecoder {
     }
 }
 
-fn read_word(data: &mut Cursor<Vec<u8>>, len: usize) -> String {
+fn read_substring(data: &mut Cursor<Vec<u8>>, len: usize) -> String {
     let mut parts = Vec::<String>::new();
 
     for _ in 0..len {
@@ -114,7 +116,7 @@ fn read_word(data: &mut Cursor<Vec<u8>>, len: usize) -> String {
             }
             parts.push(format!("<WAIT>{:02x}</WAIT><AUTO_PAGE>", data.read_u8().unwrap()));
 
-        } else if value >= DICTIONARY_LENGTH {
+        } else if value >= 0x9F {
             parts.push(parse_character(value));
         } else {
             parts.push(read_special_character(value, data));
@@ -169,17 +171,17 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
         0x04 => "<UNKNOWN04>",
         0x05 => "<BR>",
         0x06 => "<BR><INDENT>",
-        0x07 => "<WAIT>06</WAIT><BR>",         // todo wait for how long?
-        0x08 => "<WAIT>06</WAIT><BR><INDENT>", // todo wait for how long?
+        0x07 => "<WAIT>03</WAIT><BR>",         // todo wait for how long exactly?
+        0x08 => "<WAIT>03</WAIT><BR><INDENT>", // todo wait for how long exactly?
         0x09 => "<AUTO_PAGE>",
         0x0A => "<AUTO_PAGE><INDENT>",
         0x0B => "<PAGE>",
         0x0C => "<PAGE><INDENT>",
-        0x0D => "<NUMBER 8>",  // 8 bits
-        0x0E => "<NUMBER 16>", // 16 bits
-        0x0F => "<NUMBER 24>", // 24 bits
+        0x0D => "<NUMBER 8>",
+        0x0E => "<NUMBER 16>",
+        0x0F => "<NUMBER 24>",
         0x10 => "<UNKNOWN10>",
-        0x11 => "<SPCH 11>",  // TODO displays previous substring?
+        0x11 => "<SPCH 11>",  // todo display previous substring?
         0x13 => "<NAME_CRO>",
         0x14 => "<NAME_MAR>",
         0x15 => "<NAME_LUC>",
@@ -192,7 +194,7 @@ fn read_special_character(code: u8, data: &mut Cursor<Vec<u8>>) -> String {
         0x1C => "<NAME_PT2>",
         0x1D => "<NAME_PT3>",
         0x1E => "<NAME_LEENE>",
-        0x1F => "<RESULT ITEM>",
+        0x1F => "<NAME_ITM>",
         0x20 => "<NAME_SIL>",
         _ => "<UNKNOWN>",
     }.to_string()
