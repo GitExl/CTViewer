@@ -303,6 +303,6 @@ impl TextBox {
         } else {
             self.choice_lines
         };
-        self.layout = TextBoxLayout::from_page(ctx, &self.pages[self.current_page], TEXTBOX_LINE_HEIGHT, choice_lines);
+        self.layout = TextBoxLayout::from_page(ctx, &self.pages[self.current_page], self.window_surface.width as i32 - 16, TEXTBOX_LINE_HEIGHT, choice_lines);
     }
 }

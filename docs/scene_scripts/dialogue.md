@@ -66,7 +66,7 @@ text, as described in [Strings](../data/strings.md).
 - `<S10>` Some amount of indentation, PC only
 - `<BR>` Line break
 - `<WAIT>$xx</WAIT>` Wait for `$xx` number of ticks, then auto-progress
-- `<CT>` Center this line horizontally - not yet implemented
+- `<CT>` Center this line horizontally
 
 ### Variable replacements
 

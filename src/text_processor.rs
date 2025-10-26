@@ -16,6 +16,9 @@ pub enum TextPart {
 
     /// Hard line break.
     LineBreak,
+
+    /// Center this line.
+    CenterNextLine,
 }
 
 #[derive(Debug, PartialEq)]
@@ -74,11 +77,13 @@ impl TextProcessor {
     }
 
     pub fn process_dialog_text(&self, text: &str, result_value: u32, result_item: String) -> Vec<TextPage> {
-        println!(">>> {}", text);
 
-        // Change PC line breaks to SNES line breaks.
+        // Change some PC line break handling to something more sane.
+        let text = text.replace("<CT>\\", "<BR><CT>");
         let text = text.replace("<PAGE>\\", "<PAGE>");
         let text = text.replace("\\", "<BR>");
+
+        println!(">>> {}", text);
 
         // Replace variables.
         let text = self.replace_variables(text);
@@ -118,6 +123,10 @@ impl TextProcessor {
                     // Whitespace?
                     } else if match_contents == "S10" {
                         page.push(TextPart::Text { text: "   ".into() });
+
+                    // Center this line.
+                    } else if match_contents == "CT" {
+                        page.push(TextPart::CenterNextLine);
 
                     // Match a number result.
                     } else if match_contents == "NUMBER" {

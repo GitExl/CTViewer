@@ -11,6 +11,7 @@ const TEXTBOX_CHOICE_INDENT: i32 = 12;
 pub struct TextBoxLayoutItem {
     pub renderable: TextRenderable,
     pub pos: Vec2Di32,
+    pub size: Vec2Di32,
     pub wait: u32,
 }
 
@@ -32,44 +33,79 @@ impl TextBoxLayout {
         }
     }
 
-    pub fn from_page(ctx: &Context, page: &TextPage, line_height: i32, choice_lines: Option<[usize; 2]>) -> TextBoxLayout {
+    pub fn from_page(ctx: &Context, page: &TextPage, page_width: i32, line_height: i32, choice_lines: Option<[usize; 2]>) -> TextBoxLayout {
         let mut x: i32 = 0;
         let mut y: i32 = 0;
         let mut line = 0;
+        let mut center_start = None;
         let mut layout = TextBoxLayout::empty();
 
+        // Add a choice for the first line if there is any.
         add_choice_line_choice(choice_lines, line, &mut layout, x, y);
 
         for part in page.iter() {
-            let text = match part {
-                TextPart::Text { ref text } => { text },
+            match part {
+                TextPart::Text { ref text } => {
+                    // Measure text size.
+                    let (width, height) = ctx.render.measure_text(text, TextFont::Regular);
+
+                    // Store layout data for the text.
+                    layout.items.push(TextBoxLayoutItem {
+                        pos: Vec2Di32::new(x, y),
+                        size: Vec2Di32::new(width as i32, height as i32),
+                        renderable: TextRenderable::new(text.clone(), TextFont::Regular, TEXTBOX_TEXT_COLOR, TextDrawFlags::SHADOW, 0),
+                        wait: 0,
+                    });
+
+                    // Move position.
+                    x += width as i32;
+                },
                 TextPart::LineBreak => {
+
+                    // If this line needed centering, do it after the line is complete.
+                    if let Some(center_start) = center_start {
+                        let center_end = layout.items.len();
+                        center_line(&mut layout.items, center_start, center_end, page_width);
+                    }
+                    center_start = None;
+
                     x = 0;
                     y += line_height;
+
                     line += 1;
                     add_choice_line_choice(choice_lines, line, &mut layout, x, y);
-                    continue;
                 },
                 TextPart::Delay { ticks } => {
                     layout.items.last_mut().unwrap().wait = *ticks;
-                    continue;
                 },
+                TextPart::CenterNextLine => {
+                    center_start = Some(layout.items.len());
+                }
             };
+        }
 
-            let (width, _height) = ctx.render.measure_text(text, TextFont::Regular);
-
-            // Store layout data.
-            layout.items.push(TextBoxLayoutItem {
-                pos: Vec2Di32::new(x, y),
-                renderable: TextRenderable::new(text.clone(), TextFont::Regular, TEXTBOX_TEXT_COLOR, TextDrawFlags::SHADOW, 0),
-                wait: 0,
-            });
-
-            // Move position.
-            x += width as i32;
+        // Center the last line if needed.
+        if let Some(center_start) = center_start {
+            let center_end = layout.items.len();
+            center_line(&mut layout.items, center_start, center_end, page_width);
         }
 
         layout
+    }
+}
+
+fn center_line(items: &mut Vec<TextBoxLayoutItem>, start: usize, end: usize, textbox_width: i32) {
+
+    // Measure the line length.
+    let mut line_width = 0;
+    for i in start..end {
+        line_width += items[i].size.x;
+    }
+println!("{}", line_width);
+    // Shift the line items back to center them.
+    let offset = (textbox_width / 2) - line_width / 2;
+    for i in start..end {
+        items[i].pos.x += offset;
     }
 }
 
