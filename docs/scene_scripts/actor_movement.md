@@ -68,4 +68,10 @@ If bit `$02` of `move_dest_flags` is set, actors will try to detect other solid 
 bit `$01` of `solidity_flags` set. If one is found in front of where the actor is facing, the calculated movement angle
 is offset by 67.5 degrees clockwise.
 
+## Object pushing
+
+TODO
+
 ## Animation during movement
+
+TODO

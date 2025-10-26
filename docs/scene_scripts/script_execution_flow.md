@@ -72,7 +72,7 @@ initialization by yielding, but move to the next op.
 
 ---
 
-### `$02 call_actor <actor> <priority_function>`
+### `$02 call <actor> <priority_function>`
 
 - `actor` byte: the target actor index * 2
 - `priority_function` byte
@@ -84,7 +84,7 @@ the function will not be called.
 
 ---
 
-### `$03 call_actor_wait <actor> <priority_function>`
+### `$03 call_wait <actor> <priority_function>`
 
 - `actor` byte: the target actor index * 2
 - `priority_function` byte
@@ -98,7 +98,7 @@ one.
 
 ---
 
-### `$04 call_actor_wait_halt <actor> <priority_function>`
+### `$04 call_wait_halt <actor> <priority_function>`
 
 - `actor` byte: the target actor index * 2
 - `priority_function` byte
@@ -122,7 +122,7 @@ Waiting for the function call to complete is tracked in the `call_waiting` actor
     - lower 4 bits: call priority
     - upper 4 bits: function to call
 
-Same as op `$02 call_actor`, but for a player index.
+Same as op `$02 call`, but for a player index.
 
 ---
 
@@ -133,7 +133,7 @@ Same as op `$02 call_actor`, but for a player index.
     - lower 4 bits: call priority
     - upper 4 bits: function to call
 
-Same as op `$03 call_actor_wait`, but for a player index.
+Same as op `$03 call_wait`, but for a player index.
 
 ---
 
@@ -144,15 +144,15 @@ Same as op `$03 call_actor_wait`, but for a player index.
     - lower 4 bits: call priority
     - upper 4 bits: function to call
 
-Same as op `$04 call_actor_wait_halt`, but for a player index.
+Same as op `$04 call_wait_halt`, but for a player index.
 
 ---
 
-### `$87 script_set_cycle_delay <delay>`
+### `$87 cycle_delay <delay>`
 
 - `delay` byte: the number of ticks to wait between script cycles
 
-Sets the new `script_delay` value. The actual value set internally is one higher than the specified delay. The
+Sets the new `script_cycle_delay` value. The actual value set internally is one higher than the specified delay. The
 `script_delay_counter` value is also immediately reset to that value.
 
 ---

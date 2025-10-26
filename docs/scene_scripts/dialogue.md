@@ -45,14 +45,8 @@ files in the `Localize/<language>/msg` directory is as follows:
 30. `wireless1.txt`
 31. `wireless2.txt`
 
+The PC string tables are all UTF-8 encoded. Each line is prefixed with a key, but this is not used by the textbox ops.
 Some PC string tables have variants for players using a control pad, these contain `_pad` at the end of their filename.
-
-## Choices
-
-If a choice op is used to display a dialogue string, the player can choose an option on the last page of dialogue. The
-choice parameter byte indicates where the lines containing a choice start and end. The first 2 bits of that byte is the
-last choice line on the page, the next 2 bits is the first line. The selected choice is stored in the `result` actor
-value of the actor that displays the dialogue. 
 
 ## Control codes
 
@@ -71,7 +65,7 @@ text, as described in [Strings](../data/strings.md).
 - `<INDENT>` 3 space indent
 - `<S10>` Some amount of indentation, PC only
 - `<BR>` Line break
-- `<WAIT>$xx</WAIT>` Wait for $xx number of ticks, then auto-progress
+- `<WAIT>$xx</WAIT>` Wait for `$xx` number of ticks, then auto-progress
 - `<CT>` Center this line horizontally - not yet implemented
 
 ### Variable replacements
@@ -141,6 +135,13 @@ These are likely used by the battle UI in the SNES version. These are not implem
 - `<H>` `<M>` `<P>`
 - `<CORNER>`
 
+## Choices
+
+If a choice op is used to display a dialogue string, the player can choose an option on the last page of dialogue. The
+choice parameter byte indicates where the lines containing a choice start and end. The first 2 bits of that byte is the
+last choice line on the page, the next 2 bits is the first line. The selected choice is stored in the `result` value
+of the actor that displays the dialogue.
+
 ## Textbox positioning
 
 A textbox can be placed at the top or bottom of the screen. This can also be determined automatically based on the
@@ -149,27 +150,37 @@ bottom and vice versa.
 
 ## Op descriptions
 
-### `$B8 string_table <value>`
+### `$B8 string_table <table>`
 
-- `value`: a 24 bit address in the SNES version, a single byte in the PC version.
+- `table`: a 24 bit address in the SNES version, a single byte in the PC version.
 
 Sets the current string table. 
 
 ---
 
-### `$BB textbox <string index> auto`
+### `$BB textbox <string index> position=auto`
 
-Displays a textbox with dialogue. Determines the position automatically.
+- `string index` byte: the string index to display
+- `position`: where to show the textbox
+
+Displays a textbox with dialogue. The textbox is positioned automatically.
 
 ---
 
-### `$C0 choice <string index> <choice lines> auto`
+### `$C0 choice <string index> <choice lines> position=auto`
 
-Displays a textbox with dialogue and a choice on the last page. Determines the position automatically.
+- `string index` byte: the string index to display
+- `choice lines` byte: 2 bits where the choice lines end, and 2 more bits where they start
+- `position`: where to show the textbox
+
+Displays a textbox with dialogue and a choice on the last page. The textbox is positioned automatically.
 
 ---
 
 ### `$C1 textbox <string index> top`
+
+- `string index` byte: the string index to display
+- `position`: where to show the textbox
 
 Displays a textbox with dialogue. The textbox is positioned at the top.
 
@@ -177,11 +188,18 @@ Displays a textbox with dialogue. The textbox is positioned at the top.
 
 ### `$C2 textbox <string index> bottom`
 
+- `string index` byte: the string index to display
+- `position`: where to show the textbox
+
 Displays a textbox with dialogue. The textbox is positioned at the bottom.
 
 ---
 
 ### `$C3 choice <string index> <choice lines> top`
+
+- `string index` byte: the string index to display
+- `choice lines` byte: 2 bits where the choice lines end, and 2 more bits where they start
+- `position`: where to show the textbox
 
 Displays a textbox with dialogue and a choice on the last page. The textbox is positioned at the top.
 
@@ -189,16 +207,21 @@ Displays a textbox with dialogue and a choice on the last page. The textbox is p
 
 ### `$C4 choice <string index> <choice lines> bottom`
 
+- `string index` byte: the string index to display
+- `choice lines` byte: 2 bits where the choice lines end, and 2 more bits where they start
+- `position`: where to show the textbox
+
 Displays a textbox with dialogue and a choice on the last page. The textbox is positioned at the bottom.
 
 ---
 
 ### `$C8 ui <ui>`
 
-Opens a UI dialog.
+- `ui` byte: what UI dialog to display.
+    - If `$00`, the character switch UI will open.
+  - If `$01`, the load game UI will open. Bit `$40` has an unknown special meaning.
+  - If `$02`, the save game UI will open. Bit `$40` has an unknown special meaning.
+  - If only bit `$80` is set, it will open the shop UI for that shop index.
+  - If bits `$C0` are set, it will open the rename UI for that given player character.
 
-- If `$00`, the character switch UI will open.
-- If `$01`, the load game UI will open. Bit `$40` has an unknown special meaning.
-- If `$02`, the save game UI will open. Bit `$40` has an unknown special meaning.
-- If only bit `$80` is set, it will open the shop UI for that shop index.
-- If bits `$C0` are set, it will open the rename UI for that given player character.
+Opens a special UI dialog.

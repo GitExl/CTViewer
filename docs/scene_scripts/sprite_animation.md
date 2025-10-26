@@ -49,7 +49,7 @@ acceptable when there are lots of animations and actors on screen. That function
 
 ---
 
-### `$AA anim_play_loop <animation>`
+### `$AA anim_loop <animation>`
 
 - `animation` byte: the animation index to play
 
@@ -57,7 +57,7 @@ Plays the animation and loops it indefinitely. Sets animation mode 1. Does not y
 
 ---
 
-### `$AB anim_play_halt <animation>`
+### `$AB anim_halt <animation>`
 
 - `animation` byte: the animation index to play
 
@@ -65,7 +65,7 @@ Same as op `$B7 anim_play_loop_halt` but with a hardcoded loop count argument of
 
 ---
 
-### `$AC anim_set_frame <frame>`
+### `$AC anim_frame <frame>`
 
 - `frame` byte: the sprite frame to set
 
@@ -81,19 +81,19 @@ something other than mode 0. Does not change the animation mode. Does not yield 
 
 ---
 
-### `$B3 anim_play_loop 0`
+### `$B3 anim_loop 0`
 
 Same as op `$AA anim_play_loop`, but with a hardcoded animation argument of 0.
 
 ---
 
-### `$B4 anim_play_loop 1`
+### `$B4 anim_loop 1`
 
 Same as op `$AA anim_play_loop`, but with a hardcoded animation argument of 1.
 
 ---
 
-### `$B7 anim_play_loop_halt <animation> <loops>`
+### `$B7 anim_loop_halt <animation> <loop_count>`
 
 - `animation` byte: the animation index to play
 - `loop_count` byte: how many loops to play the animation for.
