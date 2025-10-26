@@ -140,7 +140,8 @@ pub fn blit_surface_to_surface(src_surface: &Surface, dest_surface: &mut Surface
         width = width + dest_x;
         src_x += -dest_x;
         dest_x = dest_surface.clip.left;
-    } else if dest_x + width >= dest_surface.clip.right {
+    }
+    if dest_x + width >= dest_surface.clip.right {
         width = dest_surface.clip.right - dest_x;
     }
     if width <= 0 {
@@ -151,7 +152,8 @@ pub fn blit_surface_to_surface(src_surface: &Surface, dest_surface: &mut Surface
         height = height + dest_y;
         src_y += -dest_y;
         dest_y = dest_surface.clip.top;
-    } else if dest_y + height >= dest_surface.clip.bottom {
+    }
+    if dest_y + height >= dest_surface.clip.bottom {
         height = dest_surface.clip.bottom - dest_y;
     }
     if height <= 0 {
@@ -159,7 +161,6 @@ pub fn blit_surface_to_surface(src_surface: &Surface, dest_surface: &mut Surface
     }
 
     let mut src_color: Color = [0u8; 4];
-
     for y in 0..height {
         let mut src = (src_x + ((src_y + y) * src_surface.width as i32)) as usize * 4;
         let mut dest = (dest_x + ((dest_y + y) * dest_surface.width as i32)) as usize * 4;
