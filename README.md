@@ -24,6 +24,7 @@ Options:
 - `-d`, `--display-aspect-ratio`  Set the display aspect ratio [default: 1.333 for a 4/3 ratio]
 - `-p`, `--pixel-aspect-ratio`    Set the pixel aspect ratio [default: 1.143]
 - `--no-vsync`                    Disable vertical sync
+- `-u`, `--ui-theme`              The user interface theme index, from 0 to 7 [default: 0]
 - `-h`, `--help`                  Print help
 
 Examples:

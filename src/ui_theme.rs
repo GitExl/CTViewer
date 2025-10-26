@@ -28,45 +28,6 @@ impl UiTheme {
         let pixel_width = chip_width * 8;
         let pixel_height = chip_height * 8;
 
-        // Draw top.
-        let dest_y = y;
-        for chip_x in 1..chip_width - 1 {
-            let dest_x = x + chip_x * 8;
-            let ci = (chip_x % 2) * 8;
-            blit_bitmap_to_surface(&self.window_bitmap, surface, 8 + ci, 0, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::empty());
-        }
-
-        // Draw bottom.
-        let dest_y = y + chip_height * 8 - 8;
-        for chip_x in 1..chip_width - 1 {
-            let dest_x = x + chip_x * 8;
-            let ci = (chip_x % 2) * 8;
-            blit_bitmap_to_surface(&self.window_bitmap, surface, 8 + ci, 24, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::empty());
-        }
-
-        // Draw left side.
-        let dest_x = x;
-        for chip_y in 1..chip_height - 1 {
-            let dest_y = y + chip_y * 8;
-            let ci = (chip_y % 2) * 8;
-            blit_bitmap_to_surface(&self.window_bitmap, surface, 0, 8 + ci, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::empty());
-        }
-
-        // Draw right side.
-        let dest_x = x + chip_width * 8 - 8;
-        for chip_y in 1..chip_height - 1 {
-            let dest_y = y + chip_y * 8;
-            let ci = (chip_y % 2) * 8;
-            blit_bitmap_to_surface(&self.window_bitmap, surface, 24, 8 + ci, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::empty());
-        }
-
-        // Draw corners.
-        blit_bitmap_to_surface(&self.window_bitmap, surface, 0, 0, 8, 8, x, y, &self.window_palette, 0, BitmapBlitFlags::empty());
-        blit_bitmap_to_surface(&self.window_bitmap, surface, 24, 0, 8, 8, x + pixel_width - 8, y, &self.window_palette, 0, BitmapBlitFlags::empty());
-
-        blit_bitmap_to_surface(&self.window_bitmap, surface, 0, 24, 8, 8, x, y + pixel_height - 8, &self.window_palette, 0, BitmapBlitFlags::empty());
-        blit_bitmap_to_surface(&self.window_bitmap, surface, 24, 24, 8, 8, x + pixel_width - 8, y + pixel_height - 8, &self.window_palette, 0, BitmapBlitFlags::empty());
-
         // Fill inside.
         for chip_y in 1..chip_height - 1 {
             for chip_x in 1..chip_width - 1 {
@@ -83,6 +44,46 @@ impl UiTheme {
             }
         }
 
+        // Draw top.
+        let dest_y = y;
+        for chip_x in 1..chip_width - 1 {
+            let dest_x = x + chip_x * 8;
+            let ci = (chip_x % 2) * 8;
+            blit_bitmap_to_surface(&self.window_bitmap, surface, 8 + ci, 0, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+        }
+
+        // Draw bottom.
+        let dest_y = y + chip_height * 8 - 8;
+        for chip_x in 1..chip_width - 1 {
+            let dest_x = x + chip_x * 8;
+            let ci = (chip_x % 2) * 8;
+            blit_bitmap_to_surface(&self.window_bitmap, surface, 8 + ci, 24, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+        }
+
+        // Draw left side.
+        let dest_x = x;
+        for chip_y in 1..chip_height - 1 {
+            let dest_y = y + chip_y * 8;
+            let ci = (chip_y % 2) * 8;
+            blit_bitmap_to_surface(&self.window_bitmap, surface, 0, 8 + ci, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+        }
+
+        // Draw right side.
+        let dest_x = x + chip_width * 8 - 8;
+        for chip_y in 1..chip_height - 1 {
+            let dest_y = y + chip_y * 8;
+            let ci = (chip_y % 2) * 8;
+            blit_bitmap_to_surface(&self.window_bitmap, surface, 24, 8 + ci, 8, 8, dest_x, dest_y, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+        }
+
+        // Draw corners.
+        blit_bitmap_to_surface(&self.window_bitmap, surface, 0, 0, 8, 8, x, y, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+        blit_bitmap_to_surface(&self.window_bitmap, surface, 24, 0, 8, 8, x + pixel_width - 8, y, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+
+        blit_bitmap_to_surface(&self.window_bitmap, surface, 0, 24, 8, 8, x, y + pixel_height - 8, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+        blit_bitmap_to_surface(&self.window_bitmap, surface, 24, 24, 8, 8, x + pixel_width - 8, y + pixel_height - 8, &self.window_palette, 0, BitmapBlitFlags::SKIP_0);
+
+        // Add gradient.
         draw_box_gradient_vertical(surface, Rect::new(x, y, x + pixel_width, y + pixel_height / 2), [66, 66, 66, 255], [0, 0, 0, 255], 5, SurfaceBlendOps::Add);
         draw_box_gradient_vertical(surface, Rect::new(x, y + pixel_height / 2, x + pixel_width, y + pixel_height), [0, 0, 0, 255], [66, 66, 66, 255], 5, SurfaceBlendOps::Subtract);
     }

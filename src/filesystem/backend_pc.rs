@@ -530,11 +530,56 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.remove_string_list_keys(self.read_text_string_list(data, None, None))
     }
 
-    fn get_ui_theme_cursor_graphics(&self, _ui_theme_index: usize) -> (Bitmap, Palette) {
-        (Bitmap::new(32, 16), Palette::new(16))
+    fn get_ui_theme_cursor_graphics(&self) -> (Bitmap, Palette) {
+        let mut file = self.get_file_cursor(&"Game/common/K_NEW3.BIN".to_string(), None, None);
+
+        file.seek(SeekFrom::Start(0xDD86)).unwrap();
+        let mut data = vec![0u8; 0x100];
+        file.read_exact(&mut data).unwrap();
+        let raw = self.convert_planar_chips_to_linear(data, 128, 4);
+        let cursor_bitmap = Bitmap::from_raw_data(128, 64, raw);
+
+        let cursor_palette = Palette::from_colors(&[
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+            [0x00, 0x00, 0x00, 0xFF],
+
+            [0x00, 0x00, 0x00, 0xFF],
+            [0xFF, 0xFF, 0xFF, 0xFF],
+            [0x6B, 0x63, 0x63, 0xFF],
+            [0x29, 0x29, 0x29, 0xFF],
+        ].to_vec());
+
+        (cursor_bitmap, cursor_palette)
     }
 
-    fn get_ui_theme_window_graphics(&self, _ui_theme_index: usize) -> (Bitmap, Palette) {
-        (Bitmap::new(32, 48), Palette::new(16))
+    fn get_ui_theme_window_graphics(&self, ui_theme_index: usize) -> (Bitmap, Palette) {
+        let mut file = self.get_file_cursor(&"Game/common/K_NEW3.BIN".to_string(), None, None);
+
+        // Read chip graphics.
+        let start = 0xDE86 + ui_theme_index as u64 * 0x280;
+        file.seek(SeekFrom::Start(start)).unwrap();
+        let mut data = vec![0u8; 0x1400];
+        file.read_exact(&mut data).unwrap();
+        let raw = self.convert_planar_chips_to_linear(data, 64, 4);
+        let window_bitmap = Bitmap::from_raw_data(64, 24, raw);
+
+        // Read palette data.
+        let start = 0xF286 + ui_theme_index as u64 * 16;
+        file.seek(SeekFrom::Start(start)).unwrap();
+        let window_palette = self.read_palette(file, 0, 8, 1, 0, 8);
+
+        (window_bitmap, window_palette)
     }
 }

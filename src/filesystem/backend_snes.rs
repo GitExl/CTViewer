@@ -3,11 +3,9 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::path::Path;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::filesystem::backend::FileSystemBackendTrait;
-use crate::filesystem::filesystem::{FileSystem};
 use crate::filesystem::text_decoder::TextDecoder;
 use crate::software_renderer::bitmap::Bitmap;
-use crate::software_renderer::blit::{blit_bitmap_to_bitmap, BitmapBlitFlags};
-use crate::software_renderer::palette::{Color, Palette};
+use crate::software_renderer::palette::Palette;
 use crate::util::lz_decompress::lz_decompress;
 
 #[derive(Default, Clone)]
@@ -166,86 +164,6 @@ impl FileSystemBackendSnes {
         let decompressed_data = self.get_bytes_lz(offset);
 
         Cursor::new(decompressed_data)
-    }
-
-    fn read_palette(&self, mut data: Cursor<Vec<u8>>, skip: usize, set_size: usize, set_count: usize, set_start: usize, set_pad: usize) -> Palette {
-        let mut colors = Vec::<Color>::new();
-        for _ in 0..skip {
-            colors.push([0, 0, 0, 0xFF]);
-        }
-
-        for _ in 0..set_count {
-            for _ in 0..set_start {
-                colors.push([0, 0, 0, 0xFF]);
-            }
-
-            for _ in 0..set_size {
-                colors.push(FileSystem::read_color(&mut data));
-            }
-
-            for _ in 0..set_pad {
-                colors.push([0, 0, 0, 0xFF]);
-            }
-        }
-
-        Palette::from_colors(&colors)
-    }
-
-    fn convert_planar_chips_to_linear(&self, data: Vec<u8>, width: usize, bitplanes: usize) -> Vec<u8> {
-        let chip_count = data.len() / (bitplanes * 8);
-        let chips_per_row = width / 8;
-        let height = (chip_count as f64 / chips_per_row as f64).ceil() as usize * 8;
-        let mut pixels = vec![0u8; width * height];
-
-        let mut src_byte: usize = 0;
-        for chip in 0..chip_count {
-            let chip_x = chip % chips_per_row;
-            let chip_y = chip / chips_per_row;
-
-            let mut dest = (chip_y * 8) * width + (chip_x * 8);
-            for _ in 0..8 {
-
-                let mut bit = 0b10000000;
-                for _ in 0..8 {
-                    if data[src_byte + 0] & bit != 0 {
-                        pixels[dest] |= 1;
-                    }
-                    if data[src_byte + 1] & bit != 0 {
-                        pixels[dest] |= 2;
-                    }
-
-                    dest += 1;
-                    bit >>= 1;
-                }
-
-                dest += width - 8;
-                src_byte += 2;
-            }
-
-            if bitplanes == 4 {
-                let mut dest = (chip_y * 8) * width + (chip_x * 8);
-                for _ in 0..8 {
-
-                    let mut bit = 0b10000000;
-                    for _ in 0..8 {
-                        if data[src_byte + 0] & bit != 0 {
-                            pixels[dest] |= 4;
-                        }
-                        if data[src_byte + 1] & bit != 0 {
-                            pixels[dest] |= 8;
-                        }
-
-                        dest += 1;
-                        bit >>= 1;
-                    }
-
-                    dest += width - 8;
-                    src_byte += 2;
-                }
-            }
-        }
-
-        pixels
     }
 
     fn read_string_list(&self, pointers_start: usize, count: usize) -> Vec<String> {
@@ -540,21 +458,10 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         strings
     }
 
-    fn get_ui_theme_cursor_graphics(&self, _ui_theme_index: usize) -> (Bitmap, Palette) {
+    fn get_ui_theme_cursor_graphics(&self) -> (Bitmap, Palette) {
         let data = self.data[0x3F9CF0..0x3F9CF0 + 0x100].to_vec();
         let raw = self.convert_planar_chips_to_linear(data, 128, 4);
-        let src = Bitmap::from_raw_data(128, 64, raw);
-
-        let mut cursor_bitmap = Bitmap::new(32, 16);
-
-        // Hand
-        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 0, 0, 16, 8, 0, 0, BitmapBlitFlags::empty());
-        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 16, 0, 16, 8, 0, 8, BitmapBlitFlags::empty());
-
-        // Arrow
-        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 32, 0, 16, 8, 16, 0, BitmapBlitFlags::empty());
-        blit_bitmap_to_bitmap(&src, &mut cursor_bitmap, 48, 0, 16, 8, 16, 8, BitmapBlitFlags::empty());
-
+        let cursor_bitmap = Bitmap::from_raw_data(128, 64, raw);
         let cursor_palette = self.read_palette(self.get_bytes_cursor(0x3F9DF0, 32), 0, 16, 1, 0, 0);
 
         (cursor_bitmap, cursor_palette)
@@ -564,29 +471,8 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         let start = 0x3F9E10 + ui_theme_index * 0x280;
         let data = self.data[start..start + 0x1400].to_vec();
         let raw = self.convert_planar_chips_to_linear(data, 64, 4);
-        let src = Bitmap::from_raw_data(64, 24, raw);
 
-        let mut window_bitmap = Bitmap::new(32, 48);
-
-        // Top
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 0, 0, 32, 8, 0, 0, BitmapBlitFlags::empty());
-
-        // Sides
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 32, 0, 8, 8, 0, 8, BitmapBlitFlags::empty());
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 48, 0, 8, 8, 0, 16, BitmapBlitFlags::empty());
-
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 40, 0, 8, 8, 24, 8, BitmapBlitFlags::empty());
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 56, 0, 8, 8, 24, 16, BitmapBlitFlags::empty());
-
-        // Bottom
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 0, 8, 32, 8, 0, 24, BitmapBlitFlags::empty());
-
-        // Fill
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 32, 8, 16, 8, 0, 32, BitmapBlitFlags::empty());
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 48, 8, 16, 8, 0, 40, BitmapBlitFlags::empty());
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 0, 16, 16, 8, 16, 32, BitmapBlitFlags::empty());
-        blit_bitmap_to_bitmap(&src, &mut window_bitmap, 16, 16, 16, 8, 16, 40, BitmapBlitFlags::empty());
-
+        let window_bitmap = Bitmap::from_raw_data(64, 24, raw);
         let window_palette = self.read_palette(self.get_bytes_cursor(0x3FB210 + ui_theme_index * 16, 16), 0, 8, 1, 0, 8);
 
         (window_bitmap, window_palette)

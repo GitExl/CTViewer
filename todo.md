@@ -1,6 +1,3 @@
-0.2.1 alpha
-- PC version UI graphics.
-
 0.2.2 alpha
 - PC map extensions for widescreen
 - read item data into structs, indices & arrays per category

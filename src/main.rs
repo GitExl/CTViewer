@@ -100,6 +100,10 @@ struct Args {
     /// Disable vertical sync.
     #[arg(long, default_value_t = false)]
     no_vsync: bool,
+
+    /// The user interface theme index, from 0 to 7.
+    #[arg(short, long, default_value_t = 0, value_name = "THEME")]
+    ui_theme: usize,
 }
 
 pub struct Context<'a> {
@@ -129,7 +133,7 @@ fn main() -> Result<(), String> {
     let sprite_assets = SpriteAssets::new(&fs);
     let sprites = SpriteStateList::new();
     let random = Random::new();
-    let ui_theme = fs.read_ui_theme(0);
+    let ui_theme = fs.read_ui_theme(args.ui_theme);
     let screen_fade = ScreenFade::new(0.0);
 
     // Init some of the same variables that scene 0 does.

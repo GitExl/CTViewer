@@ -49,7 +49,7 @@ impl Surface {
 
         let info = reader.next_frame(&mut buf).unwrap();
         if info.color_type != ColorType::Rgba {
-            panic!("Surface only supports RGBA PNG images.");
+            panic!("Surface only supports reading RGBA PNG images.");
         }
 
         let mut surface = Surface::new(info.width, info.height);

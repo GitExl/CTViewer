@@ -288,7 +288,7 @@ impl TextBox {
                 // Display choice.
                 if self.layout.choices.len() > 0 {
                     let choice = &self.layout.choices[self.current_choice];
-                    let choice_x = dest_x + 8 + choice.pos.x - 18;
+                    let choice_x = dest_x + 8 + choice.pos.x - 19;
                     let choice_y = dest_y + 9 + choice.pos.y + 1;
                     blit_bitmap_to_surface(&ctx.ui_theme.cursor_bitmap, &mut ctx.render.target, 0, 0, 16, 16, choice_x, choice_y, &ctx.ui_theme.cursor_palette, 0, BitmapBlitFlags::SKIP_0);
                 }
