@@ -78,9 +78,10 @@ the actor script execution one step.
 
 These are some screenshots from various scenes. They have been scaled to a 4/3 aspect ratio.
 
-![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png "Castle Magus Throne of Strength. (SNES)")
 ![Denadoro South Face](/readme/Cave%20of%20Masamune%20Exterior.png "Cave of Masamune exterior. (SNES)")
+![Schala's Room](/readme/Schala's%20Room.png "Some dialogue between Schala and Janus. (SNES)")
 ![Crono's Kitchen](/readme/Crono's%20Kitchen.png "Chrono's Kitchen. (SNES)")
+![Castle Magus Throne of Strength](/readme/Castle%20Magus%20Throne%20of%20Strength.png "Castle Magus Throne of Strength. (SNES)")
 ![Zeal Kingdom](/readme/Zeal%20Kingdom.png "Zeal Kingdom world. (SNES)")
 ![Frog's Burrow](/readme/Frog's%20Burrow.png "Frog's Burrow with treasure contents. (SNES)")
 ![Mountain of Woe Z Debug data](/readme/Mt%20Woe%20Debug.png "Mountain of Woe with Z debug information. (PC)")
