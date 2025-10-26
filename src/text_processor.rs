@@ -14,11 +14,6 @@ pub enum TextPart {
         ticks: u32,
     },
 
-    /// Choice option.
-    Choice {
-        index: usize,
-    },
-
     /// Hard line break.
     LineBreak,
 }
@@ -30,74 +25,14 @@ enum PartType {
     Text,
 }
 
+// Text parts that form a single page.
 pub type TextPage = Vec<TextPart>;
-
-// icons not part of the TTF font, need to handle these separately - todo
-// <BLADE> <BOW> <GUN> <ARM> <SWORD> <FIST> <SCYTHE> <HELM> <ARMOR> <RING>
-//
-// probably no need to implement these, they look battle UI related - todo
-// <H> <M> <P>
-// <SHIELD> <STAR> <LEFT> <RIGHT>
-// <HAND1> <HAND2> <HAND3> <HAND4>
-// <H> <M> <P>
-// <HP0> <HP1> <HP2> <HP3> <HP4> <HP5> <HP6> <HP7> <HP8>
-// <D> <Z> <UP> <A> <L> <R>
-// <H> <M> <P>
-// <CORNER>
-
-// text flow
-// <AUTO_PAGE> Automatically go to next page after x time?
-// <AUTO_END> End, skipping remaining pages
-// <INDENT> 3 space indent
-// <BR> Hard line break, indent next line?
-// <WAIT>00</WAIT> Wait for 00 ticks, then auto-progress
-
-// data
-// <NUMBER> number from textbox choice result. PC
-// <NUMBER 8> 8 bit number from textbox choice result. SNES, from 0x7E0200
-// <NUMBER 16> 16 bit number from textbox choice result. SNES, from 0x7E0200
-// <NUMBER 24> 24 bit number from textbox choice result. SNES, from 0x7E0200
-// <NAME_ITM> item name from result value. SNES. from 0x7F0200
-
-// Coliseum related
-// <STR> - todo
-// <NAME_MON> - todo
-// <NAME_TEC> tech name, PC - todo
-
-// other
-// <SPCH 11> from the SNES text decoder, should repeat last substring? - todo
-// <CT> center horizontally - todo
-// <UNKNOWN> an unknown character the text decoder didn't understand
-// <UNKNOWN_SPEC> an unknown special character the text decoder didn't understand
-
-// name replacements
-// <NAME_CRO> Crono name
-// <NAME_MAR> Marle name
-// <NAME_LUC> Lucca name
-// <NAME_FRO> Frog name
-// <NAME_ROB> Robo name
-// <NAME_AYL> Ayla name
-// <NAME_MAG> Magus name
-// <NICK_CRO> Crono nickname used by Ayla in the Japanese version
-// <NAME_PT1> Party member 1 name
-// <NAME_PT2> Party member 2 name
-// <NAME_PT3> Party member 3 name
-// <NAME_LEENE> always replaced by "Leene", SNES
-// <NAME_SIL> name for the Epoch (from "Sil Bird")
-
-// used by choices by the PC version. end tags are ignored, we just want to use the part index
-// <S10> Some sort of indentation?
-// <C1>x</C1> Choice 1
-// <C2>x</C2> Choice 2
-// <C3>x</C3> Choice 3
-// <C4>x</C4> Choice 4
 
 pub struct TextProcessor {
     replacements: HashMap<String, String>,
 
     regex_match_parts: Vec<Regex>,
 
-    regex_tag_choice: Regex,
     regex_tag_variable: Regex,
     regex_tag_number_bits: Regex,
 }
@@ -113,7 +48,6 @@ impl TextProcessor {
                 Regex::new(r"^([^<]+)").unwrap(),
             ].to_vec(),
 
-            regex_tag_choice: Regex::new(r"^C(\d{1})$").unwrap(),
             regex_tag_variable: Regex::new(r"<(.+?)>").unwrap(),
             regex_tag_number_bits: Regex::new(r"NUMBER (\d+)").unwrap(),
         }
@@ -192,12 +126,6 @@ impl TextProcessor {
                     // Match a result item name.
                     } else if match_contents == "NAME_ITM" {
                         page.push(TextPart::Text { text: result_item.clone() });
-
-                    // Match a choice option.
-                    // <C1>Choice</C1>
-                    } else if let Some(captures) = self.regex_tag_choice.captures(&match_contents) {
-                        let index: usize = captures[1].parse::<usize>().unwrap() - 1;
-                        page.push(TextPart::Choice { index });
 
                     // Match a sized number result.
                     } else if let Some(captures) = self.regex_tag_number_bits.captures(&match_contents) {

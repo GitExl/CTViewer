@@ -98,12 +98,13 @@ text, as described in [Strings](../data/strings.md).
 
 ### Choices
 
-These are only used by the PC version to tag a choice's text.
+These are only used by the PC version to tag a choice's text. The actual line index is still used to track what choice
+was made.
 
-- `<C1> </C1>` Choice option 1
-- `<C2> </C2>` Choice option 2
-- `<C3> </C3>` Choice option 3
-- `<C4> </C4>` Choice option 4
+- `<C1>...</C1>` Choice option 1
+- `<C2>...</C2>` Choice option 2
+- `<C3>...</C3>` Choice option 3
+- `<C4>...</C4>` Choice option 4
 
 ### Coliseum related
 

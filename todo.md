@@ -1,14 +1,12 @@
 0.2.1 alpha
-- Textbox choice input.
 - PC version UI graphics.
-- Basic widescreen support, so that PC dialogue is fully visible.
 
 0.2.2 alpha
 - PC map extensions for widescreen
 - read item data into structs, indices & arrays per category
 - inventory scene script ops
 - remaining movement ops (jump & party move)
-- remaining palette script ops
+- remaining actor palette script ops
 - ???
 
 0.3.0 alpha

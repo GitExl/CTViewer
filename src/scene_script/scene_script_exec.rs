@@ -510,14 +510,16 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             let text = if index < scene_state.textbox_strings.len() {
                 scene_state.textbox_strings[index].clone()
             } else {
-                format!("STRING INDEX {}", index)
+                format!("MISSING STRING INDEX {}", index)
             };
 
+            // Set textbox result variable.
             let result_value =
                 ctx.memory.read_u8(0x7E0200, scene_state) as u32 |
                 (ctx.memory.read_u8(0x7E0201, scene_state) as u32) << 8 |
                 (ctx.memory.read_u8(0x7E0202, scene_state) as u32) << 16;
 
+            // Set textbox item index variable.
             // todo read proper item index, categorized for PC?
             let result_item = ctx.memory.read_u8(0x7F0200, scene_state) as usize;
             let result_item_name = ctx.l10n.get_indexed(IndexedType::Item, result_item);

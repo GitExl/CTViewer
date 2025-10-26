@@ -54,13 +54,6 @@ impl TextBoxLayout {
                     layout.items.last_mut().unwrap().wait = *ticks;
                     continue;
                 },
-                TextPart::Choice { index } => {
-                    layout.choices.push(TextBoxChoice {
-                        pos: Vec2Di32::new(x, y),
-                        line: *index,
-                    });
-                    continue;
-                },
             };
 
             let (width, _height) = ctx.render.measure_text(text, TextFont::Regular);
