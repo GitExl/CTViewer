@@ -212,16 +212,16 @@ impl FileSystem {
         // except for a 0-duration frame, which will show that frame forever or on an instruction
         // that loops back to an earlier point in the animation.
         //
-        // Instructions:
-        // 0: Unknown.
-        // 1: Unknown.
-        // 2: Unknown, not encountered in any data.
-        // 3: Change position by n number of bytes (signed, so can loop back). Can move to a
+        // Instructions @ 0xC20E4A
+        // 0: Unknown. Writes CPU direct page address to [$52] + arg.
+        // 1: Unknown. Increments [$52] + arg by 1.
+        // 2: Unknown. Decrements [$52] + arg by 1.
+        // 3: Change position by arg number of bytes (signed, so can loop back). Can move to a
         //    different animation entirely! Not yet implemented.
         // 4: A pointer to frame assembly data, and frame duration. A duration of 0 will show the
         //    frame forever.
         // 5: Unknown.
-        // 6: Unknown.
+        // 6: Unknown. First byte goes to $62. Next 2 bytes into $60. Next 2 bytes into $63. Next 2 bytes into $65.
         for (_, offset) in offsets.iter().enumerate() {
             data.seek(SeekFrom::Start(*offset)).unwrap();
 

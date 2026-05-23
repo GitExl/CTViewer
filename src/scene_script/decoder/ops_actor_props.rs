@@ -22,11 +22,13 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Set actor result from 0x7F0200.
+        // "switch"
         0x19 => Op::ActorSetResult8 {
             actor: ActorRef::This,
             result: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         // Set 16 bit actor result from 0x7F0000.
+        // "gswitch"
         0x1C => Op::ActorSetResult16 {
             actor: ActorRef::This,
             result: DataSource::for_global_memory(data.read_u8().unwrap() as usize),

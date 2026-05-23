@@ -14,12 +14,12 @@ use crate::scene_script::decoder::ops_textbox::op_decode_textbox;
 use crate::scene_script::decoder::ops_facing::op_decode_facing;
 use crate::scene_script::decoder::ops_jump::op_decode_jump;
 use crate::scene_script::decoder::ops_location::op_decode_location;
-use crate::scene_script::decoder::ops_math::op_decode_math;
+use crate::scene_script::decoder::ops_math::{op_decode_math, BitMathOp};
 use crate::scene_script::decoder::ops_movement::ops_decode_movement;
 use crate::scene_script::decoder::ops_palette::{op_decode_palette, ColorMathMode};
 use crate::scene_script::decoder::ops_party::op_decode_party;
 use crate::scene_script::scene_script::SceneScriptMode;
-use crate::memory::DataDest;
+use crate::memory::{DataDest, DataSource};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SpecialEffect {
@@ -137,7 +137,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
 
         // Byte math.
         0x5B | 0x5D | 0x5E | 0x5F | 0x60 | 0x61 | 0x71 | 0x72 | 0x73 | 0x63 | 0x64 | 0x65 | 0x66 |
-        0x67 | 0x69 | 0x6B | 0x6F | 0x2A | 0x2B | 0x32 | 0x45 | 0x46 => op_decode_math(op_byte, data),
+        0x67 | 0x69 | 0x6B | 0x6F | 0x45 | 0x46 => op_decode_math(op_byte, data),
 
         // Load character.
         0x57 | 0x5C | 0x62 | 0x68 | 0x6A | 0x6C | 0x6D | 0x80 | 0x81 | 0x82 | 0x83 => op_decode_char_load(op_byte, data, mode),
@@ -173,6 +173,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0xE8 | 0xEA | 0xEB | 0xEC | 0xED | 0xEE => op_decode_audio(op_byte, data),
 
         // Screen effects.
+        // "fade"
         0xF0 => {
             let value = data.read_u8().unwrap();
             Op::ScreenFade {
@@ -180,6 +181,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
                 delay: value as usize & 0x0F,
             }
         },
+        // "flash"
         0xF1 => {
             let bits = data.read_u8().unwrap();
             if bits == 0 {
@@ -211,11 +213,16 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
                 }
             }
         },
+        // "fadew"
         0xF2 => Op::ScreenWaitForFade,
+        // "flashw"
         0xF3 => Op::WaitForColorMath,
+        // "shake"
         0xF4 => Op::ScreenShake {
             enabled: data.read_u8().unwrap() == 1,
         },
+
+        // "rect"
         0xFE => Op::ColorMathGeometry {
             unknown: data.read_u8().unwrap(),
 
@@ -245,6 +252,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         },
 
         // Special effects or scenes.
+        // "special"
         0xFF => {
             let mode = data.read_u8().unwrap();
             if mode <= 0x8F {
@@ -296,6 +304,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         },
 
         // Copy tiles from somewhere else in the map.
+        // "mapcopy"
         0xE4 => Op::CopyTiles {
             left: data.read_u8().unwrap() as u32,
             top: data.read_u8().unwrap() as u32,
@@ -306,6 +315,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             flags: CopyTilesFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
             delayed: false,
         },
+        // "mapcopyd", same as mapcopy but delayed?
         0xE5 => Op::CopyTiles {
             left: data.read_u8().unwrap() as u32,
             top: data.read_u8().unwrap() as u32,
@@ -318,12 +328,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         },
 
         // Scroll map layers.
-        0x2F => Op::ScrollLayers {
-            x: data.read_i8().unwrap() as i32,
-            y: data.read_i8().unwrap() as i32,
-            flags: ScrollLayerFlags::SCROLL_L1 | ScrollLayerFlags::SCROLL_L2 | ScrollLayerFlags::SCROLL_L3,
-            duration: 0,
-        },
+        // "scroll"
         0xE6 => Op::ScrollLayers {
             x: data.read_i8().unwrap() as i32,
             y: data.read_i8().unwrap() as i32,
@@ -332,6 +337,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         },
 
         // Move camera.
+        // "fscroll"
         0xE7 => Op::MoveCameraTo {
             x: data.read_i8().unwrap() as i32,
             y: data.read_i8().unwrap() as i32,
@@ -350,33 +356,41 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         },
 
         // Wait durations are 1/16th of a second for NPCs, 1/64th for PCs?
+        // "wait"
         0xAD => Op::Wait {
             ticks: data.read_u8().unwrap() as u32,
         },
+        // "wait04h"
         0xB9 => Op::Wait {
             ticks: 4,
         },
+        // "wait08h"
         0xBA => Op::Wait {
             ticks: 8,
         },
+        // "wait10h"
         0xBC => Op::Wait {
             ticks: 16,
         },
+        // "wait20h"
         0xBD => Op::Wait {
             ticks: 32,
         },
 
         // Disable/enable script processing.
+        // "sleep"
         0x0B => Op::SetScriptProcessing {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             enabled: false,
         },
+        // "wakeup"
         0x0C => Op::SetScriptProcessing {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             enabled: true,
         },
 
         // Script execution delay in ticks.
+        // "think"
         0x87 => Op::SetScriptDelay {
             delay: data.read_u8().unwrap() as u32,
         },
@@ -396,27 +410,59 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             flags: BattleFlags::from_bits_truncate(data.read_u16::<LittleEndian>().unwrap() as u32),
         },
 
-        // Ascii text related (???)
+        // "Staff roll" ops, for handling credits.
+        // "setstaffroll", load staff roll text index?
         0x29 => Op::Unknown {
             code: 0x29,
             data: [data.read_u8().unwrap(), 0, 0, 0],
         },
+        // "staffrollclear0", clear staff roll in some way, animation maybe?
+        0x2A => Op::BitMath {
+            dest: DataDest::for_system_memory(0x7E0154),
+            lhs: DataSource::for_system_memory(0x7E0154),
+            op: BitMathOp::Or,
+            rhs: DataSource::Immediate(0x04),
+        },
+        // "staffrollclear1", clear staff roll in some way, animation maybe?
+        0x2B => Op::BitMath {
+            dest: DataDest::for_system_memory(0x7E0154),
+            lhs: DataSource::for_system_memory(0x7E0154),
+            op: BitMathOp::Or,
+            rhs: DataSource::Immediate(0x08),
+        },
+        // "staffrollxy"
+        0x2F => Op::ScrollLayers {
+            x: data.read_i8().unwrap() as i32,
+            y: data.read_i8().unwrap() as i32,
+            flags: ScrollLayerFlags::SCROLL_L1 | ScrollLayerFlags::SCROLL_L2 | ScrollLayerFlags::SCROLL_L3,
+            duration: 0,
+        },
+        // "staffroll1page", advance staff roll maybe?
+        0x32 => Op::BitMath {
+            dest: DataDest::for_system_memory(0x7E0154),
+            lhs: DataSource::for_system_memory(0x7E0154),
+            op: BitMathOp::Or,
+            rhs: DataSource::Immediate(0x10),
+        },
 
-        // Unknown.
+        // "bg3offset"
         0x2C => Op::Unknown {
             code: 0x2C,
             data: [data.read_u8().unwrap(), data.read_u8().unwrap(), 0, 0],
         },
 
         // Unknown PC ops.
+        // "CheckAPM"
         0xFB => Op::Unknown {
             code: 0xFB,
             data: [0, 0, 0, 0],
         },
+        // "DS_Link"
         0xFD => Op::Unknown {
             code: 0xFD,
             data: [data.read_u8().unwrap(), 0, 0, 0],
         },
+        // "minimapcopy"
         0xA2 => Op::Unknown {
             code: 0xA2,
             data: [0, 0, 0, 0],

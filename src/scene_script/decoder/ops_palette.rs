@@ -20,6 +20,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
     match op {
 
         // Dual mode palette command.
+        // "bgcolor"
         0x2E => {
             let cmd_mode = data.read_u8().unwrap();
             if cmd_mode & 0x40 > 0 {
@@ -77,6 +78,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 panic!("Mode for op 0x2E is unknown.");
             }
         },
+        // "fixpal", restore palette?
         0x33 => Op::PaletteSetIndex {
             palette_index: data.read_u8().unwrap() as usize,
         },

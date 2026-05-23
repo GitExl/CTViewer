@@ -101,13 +101,17 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
             offset: data.read_u8().unwrap() as i64 + 2,
         },
         // Equal with actor result.
+        // "case"
         0x1A => Op::JumpConditional8 {
             lhs: DataSource::ActorResult(ActorRef::This),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Eq,
             offset: data.read_u8().unwrap() as i64 + 2,
         },
+
         // If actor is not drawn.
+        // TODO: is this really "not on screen", meaning it wasn't drawn beause it was off-screen?
+        // "inscreen"
         0x27 => Op::JumpConditionalDrawMode {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             draw_mode: DrawMode::Hidden,
@@ -115,12 +119,14 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
         },
 
         // If actor is in battle range (see actor target movement op exec).
+        // "binscreen"
         0x28 => Op::JumpConditionalBattleRange {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             offset: data.read_u8().unwrap() as i64 + 2,
         },
 
         // Jump on input tests.
+        // "anykeys"
         0x2D => Op::JumpConditional8 {
             lhs: DataSource::CurrentInput(false),
             rhs: DataSource::Immediate(0),
