@@ -1,5 +1,4 @@
 use std::path::Path;
-use crate::actor::Actor;
 use crate::Context;
 use crate::destination::Destination;
 use crate::game_palette::GamePalette;
@@ -67,27 +66,12 @@ pub struct World {
     pub scripted_exits: Vec<ScriptedWorldExit>,
     pub script_offsets: Vec<usize>,
 
-    pub actors: Vec<Actor>,
     pub sprite_graphics: [usize; 4],
 }
 
 impl World {
     pub fn tick(&mut self, _ctx: &Context, delta: f64) {
         self.map.tick(delta);
-
-        // for (index, actor) in self.actors.iter_mut().enumerate() {
-        //     actor.tick(delta);
-        //     sprites.tick_sprite(delta, &mut actor.sprite_state);
-        //
-        //     // todo better linkage
-        //     let sprite = &mut self.render_sprites[index];
-        //     sprite.sprite_index = actor.sprite_state.sprite_index;
-        //     sprite.frame = actor.sprite_state.sprite_frame;
-        //     sprite.x = actor.x;
-        //     sprite.y = actor.y;
-        //     sprite.priority = actor.sprite_priority;
-        //     sprite.palette_offset = actor.sprite_state.palette_offset;
-        // }
 
         // todo clean up
         // todo move into palette anim for tileset?

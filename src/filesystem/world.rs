@@ -120,8 +120,6 @@ impl FileSystem {
             exits,
             scripted_exits,
             script_offsets,
-
-            actors: Vec::new(),
         }
     }
 

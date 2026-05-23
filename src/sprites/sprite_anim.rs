@@ -51,7 +51,7 @@ impl SpriteAnimSet {
         for (j, anim) in self.anims.iter().enumerate() {
             println!("  Sprite animation {}", j);
             for (k, frame) in anim.frames.iter().enumerate() {
-                println!("    Frame {}: U {:>3} D {:>3} L {:>3} R {:>3}, {:.3} seconds", k, frame.sprite_frames[0], frame.sprite_frames[1], frame.sprite_frames[2], frame.sprite_frames[3], frame.delay);
+                println!("    Frame {}: U {:>3} D {:>3} L {:>3} R {:>3}, {:.3} ticks", k, frame.sprite_frames[0], frame.sprite_frames[1], frame.sprite_frames[2], frame.sprite_frames[3], frame.delay);
             }
         }
     }

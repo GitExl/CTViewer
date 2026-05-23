@@ -3,6 +3,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
+use crate::actor::{Actor, ActorClass, ActorFlags};
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map_renderer::LayerFlags;
@@ -12,6 +13,7 @@ use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
+use crate::sprites::sprite_assets::WORLD_SPRITE_INDEX;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
@@ -39,6 +41,8 @@ pub struct GameStateWorld {
     debug_box: Option<Rect>,
 
     next_game_event: Option<GameEvent>,
+
+    pub actors: Vec<Actor>,
 }
 
 impl GameStateWorld {
@@ -50,22 +54,44 @@ impl GameStateWorld {
         ctx.sprite_assets.load_world_player_sprites_asset(&ctx.fs, [0, 1, 2]);
 
 
-        // // Test sprites.
-        // let mut actor = Actor::spawn(64.0, 64.0, WORLD_SPRITE_INDEX, 0);
-        // sprites.set_animation(&mut actor.sprite_state, 0);
-        // world.add_actor(actor);
-        //
-        // let mut actor = Actor::spawn(128.0, 96.0, WORLD_SPRITE_INDEX, 0);
-        // sprites.set_animation(&mut actor.sprite_state, 1);
-        // world.add_actor(actor);
-        //
-        // let mut actor = Actor::spawn(64.0, 128.0, WORLD_SPRITE_INDEX, 0);
-        // sprites.set_animation(&mut actor.sprite_state, 4);
-        // world.add_actor(actor);
-        //
-        // let mut actor = Actor::spawn(32.0, 192.0, WORLD_SPRITE_INDEX, 0);
-        // sprites.set_animation(&mut actor.sprite_state, 6);
-        // world.add_actor(actor);
+        let mut actors = Vec::new();
+
+        // Test sprites.
+        let mut actor = Actor::new(0);
+        let state = ctx.sprites_states.add_state();
+        actor.pos = Vec2Df64::new(128.0, 128.0);
+        actor.flags.remove(ActorFlags::DEAD);
+        actor.class = ActorClass::NPC;
+        state.sprite_index = WORLD_SPRITE_INDEX;
+        state.anim_index = 1;
+        actors.push(actor);
+
+        let mut actor = Actor::new(1);
+        actor.pos = Vec2Df64::new(128.0, 64.0);
+        actor.flags.remove(ActorFlags::DEAD);
+        actor.class = ActorClass::NPC;
+        let state = ctx.sprites_states.add_state();
+        state.sprite_index = WORLD_SPRITE_INDEX;
+        state.anim_index = 34;
+        actors.push(actor);
+
+        let mut actor = Actor::new(2);
+        actor.pos = Vec2Df64::new(64.0, 128.0);
+        actor.flags.remove(ActorFlags::DEAD);
+        actor.class = ActorClass::NPC;
+        let state = ctx.sprites_states.add_state();
+        state.sprite_index = WORLD_SPRITE_INDEX;
+        state.anim_index = 81;
+        actors.push(actor);
+
+        let mut actor = Actor::new(3);
+        actor.pos = Vec2Df64::new(32.0, 192.0);
+        actor.flags.remove(ActorFlags::DEAD);
+        actor.class = ActorClass::NPC;
+        let state = ctx.sprites_states.add_state();
+        state.sprite_index = WORLD_SPRITE_INDEX;
+        state.anim_index = 155;
+        actors.push(actor);
 
 
         let mut camera = Camera::new(
@@ -111,6 +137,8 @@ impl GameStateWorld {
             debug_box: None,
 
             next_game_event: None,
+
+            actors,
         }
     }
 }
@@ -118,6 +146,13 @@ impl GameStateWorld {
 impl GameStateTrait for GameStateWorld {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.world.tick(ctx, delta);
+
+        for (index, actor) in self.actors.iter_mut().enumerate() {
+            // /actor.tick(delta, &self.state.scene_map);
+            let state = ctx.sprites_states.get_state_mut(index);
+            actor.update_sprite_state(state);
+            ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
+        }
 
         self.camera.tick(delta);
         if self.key_up {

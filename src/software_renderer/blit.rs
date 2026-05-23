@@ -51,8 +51,7 @@ pub fn blit_bitmap_to_surface_and_source(bitmap: &Bitmap, surface: &mut Surface,
     for y in dest_y..dest_y + src_height {
         if !(y < surface.clip.top || y >= surface.clip.bottom) {
 
-            let mut cx = start_cx;
-            let mut src = src_x + cx + ((src_y + cy) * bitmap.width as i32);
+            let mut src = src_x + start_cx + ((src_y + cy) * bitmap.width as i32);
             let mut dest = (dest_x + (y * surface.width as i32)) * 4;
             let mut dest_source = dest_x + (y * dest_bitmap.width as i32);
 
@@ -75,7 +74,6 @@ pub fn blit_bitmap_to_surface_and_source(bitmap: &Bitmap, surface: &mut Surface,
                 src += delta_x;
                 dest += 4;
                 dest_source += 1;
-                cx += delta_x;
             }
         }
 
@@ -109,8 +107,7 @@ pub fn blit_bitmap_to_surface(bitmap: &Bitmap, surface: &mut Surface, src_x: i32
     for y in dest_y..dest_y + src_height {
         if !(y < surface.clip.top || y >= surface.clip.bottom) {
 
-            let mut cx = start_cx;
-            let mut src = src_x + cx + ((src_y + cy) * bitmap.width as i32);
+            let mut src = src_x + start_cx + ((src_y + cy) * bitmap.width as i32);
             let mut dest = (dest_x + (y * surface.width as i32)) * 4;
 
             for x in dest_x..dest_x + src_width {
@@ -125,7 +122,6 @@ pub fn blit_bitmap_to_surface(bitmap: &Bitmap, surface: &mut Surface, src_x: i32
 
                 src += delta_x;
                 dest += 4;
-                cx += delta_x;
             }
         }
 
