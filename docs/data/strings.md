@@ -9,10 +9,10 @@ a substring of it. This saves a considerable amount of space in the SNES ROM.
 ### Dictionary
 
 The dictionary of substrings is stored from `$1EFA00` to `$1EFF00` and contains 128 16-bit bank-relative pointers, one
-for each substring in the dictionary. Each substring can be decoded with:
+for each substring in the dictionary. Each substring can be decoded as:
 
 - `$00` - end of substring.
-- `$01` or `$02` - decode next byte as a regular character.
+- `$01` or `$02` - decode the next byte as a regular character.
 - `$03` - decode the next byte as a delay in ticks. A delay of 0 ends the substring.
 - `>= $9F` - decode *this* byte as a regular character.
 - anything else is decoded as a special character.

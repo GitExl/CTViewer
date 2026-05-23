@@ -51,19 +51,19 @@ Some PC string tables have variants for players using a control pad, these conta
 ## Control codes
 
 All dialogue text is split up into pages by `<PAGE>` or `<AUTO_PAGE>` control codes. Players can advance the dialogue
-to the next page after it has finished "typing" onto the screen. Neither the SNES nor PC version do any sort of
-automatic word wrapping.
+to the next page after the "typing" animation has finished. Neither the SNES nor PC version do any sort of automatic
+word wrapping.
 
-Both the SNES and PC version dialogue can be decoded into a similar set of control codes. The PC version codes are
-used as a basis. Note that some of the control codes listed are split from a single control code in the SNES dialogue
-text, as described in [Strings](../data/strings.md).
+Both the SNES and PC version dialogue can be decoded into a similar set of control codes. In this document, the PC
+version codes are used as a basis. Note that some of the control codes listed are split from a single control code in
+the SNES dialogue text, as described in [Strings](../data/strings.md).
 
 ### Text flow
 
 - `<PAGE>` Page end
 - `<AUTO_PAGE>` Page end and automatically go to the next page
 - `<INDENT>` 3 space indent
-- `<S10>` Some amount of indentation, PC only
+- `<S10>` 3 space indent, PC only
 - `<BR>` Line break
 - `<WAIT>$xx</WAIT>` Wait for `$xx` number of ticks, then auto-progress
 - `<CT>` Center this line horizontally
@@ -138,8 +138,8 @@ These are likely used by the battle UI in the SNES version. These are not implem
 ## Choices
 
 If a choice op is used to display a dialogue string, the player can choose an option on the last page of dialogue. The
-choice parameter byte indicates where the lines containing a choice start and end. The first 2 bits of that byte is the
-last choice line on the page, the next 2 bits is the first line. The selected choice is stored in the `result` value
+choice parameter byte indicates where the lines containing a choice start and end. The first 2 bits of that byte are the
+last choice line on the page, the next 2 bits are the first line. The selected choice is stored in the `result` value
 of the actor that displays the dialogue.
 
 ## Textbox positioning
@@ -177,7 +177,7 @@ Displays a textbox with dialogue and a choice on the last page. The textbox is p
 
 ---
 
-### `$C1 textbox <string index> top`
+### `$C1 textbox <string index> position=top`
 
 - `string index` byte: the string index to display
 - `position`: where to show the textbox
@@ -186,7 +186,7 @@ Displays a textbox with dialogue. The textbox is positioned at the top.
 
 ---
 
-### `$C2 textbox <string index> bottom`
+### `$C2 textbox <string index> position=bottom`
 
 - `string index` byte: the string index to display
 - `position`: where to show the textbox
@@ -195,7 +195,7 @@ Displays a textbox with dialogue. The textbox is positioned at the bottom.
 
 ---
 
-### `$C3 choice <string index> <choice lines> top`
+### `$C3 choice <string index> <choice lines> position=top`
 
 - `string index` byte: the string index to display
 - `choice lines` byte: 2 bits where the choice lines end, and 2 more bits where they start
@@ -205,7 +205,7 @@ Displays a textbox with dialogue and a choice on the last page. The textbox is p
 
 ---
 
-### `$C4 choice <string index> <choice lines> bottom`
+### `$C4 choice <string index> <choice lines> position=bottom`
 
 - `string index` byte: the string index to display
 - `choice lines` byte: 2 bits where the choice lines end, and 2 more bits where they start
@@ -218,10 +218,11 @@ Displays a textbox with dialogue and a choice on the last page. The textbox is p
 ### `$C8 ui <ui>`
 
 - `ui` byte: what UI dialog to display.
-    - If `$00`, the character switch UI will open.
-  - If `$01`, the load game UI will open. Bit `$40` has an unknown special meaning.
-  - If `$02`, the save game UI will open. Bit `$40` has an unknown special meaning.
-  - If only bit `$80` is set, it will open the shop UI for that shop index.
-  - If bits `$C0` are set, it will open the rename UI for that given player character.
 
-Opens a special UI dialog.
+Opens a special UI dialog. Valid options for the `ui` byte are:
+
+- `$00`, the character switch UI will open.
+- `$01`, the load game UI will open. Bit `$40` has an unknown special meaning.
+- `$02`, the save game UI will open. Bit `$40` has an unknown special meaning.
+- If only bit `$80` is set, it will open the shop UI for that shop index.
+- If bits `$C0` are set, it will open the rename UI for that given player character.
