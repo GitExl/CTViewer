@@ -7,7 +7,7 @@ use crate::memory::DataSource;
 
 pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
-        // Inventory.
+        // "vitemP"
         0xC7 => Op::ItemGive {
             actor: ActorRef::This,
             item: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
@@ -16,6 +16,7 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
                 SceneScriptMode::Snes => 0,
             }
         },
+        // "itemP"
         0xCA => Op::ItemGive {
             actor: ActorRef::This,
             item: DataSource::Immediate(data.read_u8().unwrap() as i32),
@@ -24,6 +25,7 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
                 SceneScriptMode::Snes => 0,
             }
         },
+        // "itemM"
         0xCB => Op::ItemTake {
             actor: ActorRef::This,
             item: DataSource::Immediate(data.read_u8().unwrap() as i32),
@@ -32,14 +34,26 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
                 SceneScriptMode::Snes => 0,
             }
         },
+        // "goldP"
         0xCD => Op::GoldGive {
             actor: ActorRef::This,
             amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
         },
+        // "goldM"
         0xCE => Op::GoldTake {
             actor: ActorRef::This,
             amount: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
         },
+        // "equip"
+        0xD5 => Op::Equip {
+            pc: data.read_u8().unwrap() as usize,
+            item: data.read_u8().unwrap() as usize,
+            category: match mode {
+                SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
+                SceneScriptMode::Snes => 0,
+            }
+        },
+        // "itemN"
         0xD7 => Op::ItemGetAmount {
             item: data.read_u8().unwrap() as usize,
             category: match mode {

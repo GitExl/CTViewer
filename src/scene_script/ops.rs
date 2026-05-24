@@ -3,7 +3,7 @@ use crate::character::CharacterId;
 use crate::destination::Destination;
 use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
-use crate::scene_script::decoder::ops_textbox::DialogueSpecialType;
+use crate::scene_script::decoder::ops_textbox::UiType;
 use crate::scene_script::decoder::ops_jump::CompareOp;
 use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::decoder::ops_palette::{ColorMathMode, SubPalette};
@@ -283,8 +283,8 @@ pub enum Op {
     },
 
     // Special dialogues.
-    DialogueSpecial {
-        dialogue_type: DialogueSpecialType,
+    OpenUi {
+        ui: UiType,
     },
 
     // Inventory.
@@ -333,7 +333,7 @@ pub enum Op {
     PartyMemberMoveToReserve {
         pc: CharacterId,
     },
-    PartyMemberEquip {
+    Equip {
         pc: CharacterId,
         item: usize,
         category: usize,
@@ -475,6 +475,11 @@ pub enum Op {
     },
     SpecialEffect {
         effect: SpecialEffect,
+    },
+
+    // Play movie.
+    PlayMovie {
+        movie: u8,
     },
 
     // Unknown.

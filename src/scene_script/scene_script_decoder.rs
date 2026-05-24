@@ -128,7 +128,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
 
         // Actor movement.
         0x8F | 0x92 | 0x94 | 0x95 | 0x96 | 0x97 | 0x98 | 0x99 | 0x9A | 0x9C | 0x9D | 0x9E | 0x9F |
-        0xA0 | 0xA1 | 0x7A | 0x7B | 0xB5 | 0xD9 | 0xB6 => ops_decode_movement(op_byte, data),
+        0xA0 | 0xA1 | 0x7A | 0x7B | 0xB5 | 0xD9 | 0xDA | 0xB6 => ops_decode_movement(op_byte, data),
 
         // Data copy.
         0x20 | 0x48 | 0x49 | 0x4A | 0x4B | 0x4C | 0x4D | 0x4E | 0x4F | 0x50 | 0x51 | 0x52 | 0x53 |
@@ -158,7 +158,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0xAA | 0xAB | 0xAC | 0xAE | 0xB3 | 0xB4 | 0xB7 | 0x47 => op_decode_animation(op_byte, data),
 
         // Party management.
-        0xD0 | 0xD1 | 0xD3 | 0xD4 | 0xD6 | 0xD5 | 0xDA | 0xE3 => op_decode_party(op_byte, data, mode),
+        0xD0 | 0xD1 | 0xD3 | 0xD4 | 0xD6 | 0xE3 => op_decode_party(op_byte, data, mode),
 
         // Palettes.
         0x2E | 0x33 | 0x88 => op_decode_palette(op_byte, data, mode),
@@ -167,7 +167,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0xDC | 0xDD | 0xDE | 0xDF | 0xE0 | 0xE1 | 0xE2 => op_decode_location(op_byte, data, mode),
 
         // Inventory.
-        0xC7 | 0xCA | 0xCB | 0xCD | 0xCE | 0xD7 => op_decode_inventory(op_byte, data, mode),
+        0xC7 | 0xCA | 0xCB | 0xCD | 0xCE | 0xD5 | 0xD7 => op_decode_inventory(op_byte, data, mode),
 
         // Sound and music.
         0xE8 | 0xEA | 0xEB | 0xEC | 0xED | 0xEE => op_decode_audio(op_byte, data),
@@ -247,6 +247,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             y4_dest: data.read_u8().unwrap(),
         },
 
+        // "random"
         0x7F => Op::Random {
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
@@ -345,12 +346,15 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
 
         // Yield to the function with the next higher priority number.
         // If there is none, simply yield.
+        // "ret"
         0x00 => Op::Return,
 
         // Yield once or forever.
+        // "stay"
         0xB1 => Op::Yield {
             forever: false,
         },
+        // "everstay"
         0xB2 => Op::Yield {
             forever: true,
         },
@@ -398,14 +402,17 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         // Handle player character controls.
         // PC1 will respond to input. Other player characters will imitate the previous member
         // with a delay.
+        // "pc"
         0xAF => Op::Control {
             forever: false,
         },
+        // "everpc"
         0xB0 => Op::Control {
             forever: true,
         },
 
         // Start battle.
+        // "battle"
         0xD8 => Op::Battle {
             flags: BattleFlags::from_bits_truncate(data.read_u16::<LittleEndian>().unwrap() as u32),
         },
@@ -451,7 +458,13 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
             data: [data.read_u8().unwrap(), data.read_u8().unwrap(), 0, 0],
         },
 
-        // Unknown PC ops.
+        // "playMovie"
+        // TODO: verify argument
+        0xC5 => Op::PlayMovie {
+            movie: data.read_u8().unwrap(),
+        },
+
+        // Unknown PC/DS version ops.
         // "CheckAPM"
         0xFB => Op::Unknown {
             code: 0xFB,
@@ -465,6 +478,36 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         // "minimapcopy"
         0xA2 => Op::Unknown {
             code: 0xA2,
+            data: [0, 0, 0, 0],
+        },
+        // "isHit"
+        0x79 => Op::Unknown {
+            code: 0x79,
+            data: [0, 0, 0, 0],
+        },
+        // "DirectScroll"
+        0x85 => Op::Unknown {
+            code: 0x85,
+            data: [0, 0, 0, 0],
+        },
+        // "pausePalAnim"
+        0x86 => Op::Unknown {
+            code: 0x86,
+            data: [0, 0, 0, 0],
+        },
+        // "BG_Priority"
+        0xA3 => Op::Unknown {
+            code: 0xA3,
+            data: [0, 0, 0, 0],
+        },
+        // "isMesBusy"
+        0xA4 => Op::Unknown {
+            code: 0xA4,
+            data: [0, 0, 0, 0],
+        },
+        // "isDash"
+        0xA5 => Op::Unknown {
+            code: 0xA5,
             data: [0, 0, 0, 0],
         },
 

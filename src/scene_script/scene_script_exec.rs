@@ -528,7 +528,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             OpResult::YIELD
         },
-        Op::DialogueSpecial { dialogue_type } => {
+        Op::OpenUi { ui: dialogue_type } => {
             println!("Unimplemented: show special dialogue {:?}", dialogue_type);
             OpResult::COMPLETE
         },
@@ -682,7 +682,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             println!("Unimplemented: party follow");
             OpResult::YIELD | OpResult::COMPLETE
         },
-        Op::PartyMemberEquip { pc, item, category } => {
+        Op::Equip { pc, item, category } => {
             println!("Unimplemented: party member {} equip item {} category {}", pc, item, category);
             OpResult::YIELD | OpResult::COMPLETE
         },

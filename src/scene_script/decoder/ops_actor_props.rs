@@ -10,11 +10,13 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
 
         // Enable/disable function calls on this actor.
+        // "lock"
         0x08 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
             set: ActorFlags::CALLS_DISABLED,
             remove: ActorFlags::empty(),
         },
+        // "unlock"
         0x09 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
             set: ActorFlags::empty(),
@@ -35,33 +37,41 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Disable script processing and hide.
+        // "kill"
         0x0A => Op::ActorRemove {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
         },
 
         // Set drawing mode.
+        // "dshow"
         0x7C => Op::ActorSetDrawMode {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             draw_mode: DrawMode::Draw,
         },
+        // "dhide"
         0x7D => Op::ActorSetDrawMode {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             draw_mode: DrawMode::Hidden,
         },
+        // "battlehide"
+        // TODO: "removed" means only for battle?
         0x7E => Op::ActorSetDrawMode {
             actor: ActorRef::This,
             draw_mode: DrawMode::Removed,
         },
+        // "show"
         0x90 => Op::ActorSetDrawMode {
             actor: ActorRef::This,
             draw_mode: DrawMode::Draw,
         },
+        // "hide"
         0x91 => Op::ActorSetDrawMode {
             actor: ActorRef::This,
             draw_mode: DrawMode::Hidden,
         },
 
         // Sprite priority.
+        // "pri"
         0x8E => {
             let bits = data.read_u8().unwrap();
             let set_and_lock = bits & 0x80 == 0;
@@ -79,6 +89,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Set actor solidity.
+        // "hitcheck"
         0x84 => {
             let bits = data.read_u8().unwrap();
             let mut flags_set = ActorFlags::empty();
@@ -98,6 +109,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Set actor collision properties.
+        // "movecheck"
         0x0D => {
             let flags = data.read_u8().unwrap();
             let mut flags_set = ActorFlags::empty();
@@ -117,6 +129,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Set actor movement destination properties.
+        // "moveadjust"
         0x0E => {
             let flags = data.read_u8().unwrap();
             let mut flags_set = ActorFlags::empty();
@@ -135,16 +148,19 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             }
         },
 
+        // "mspeed"
         0x89 => Op::ActorSetSpeed {
             actor: ActorRef::This,
             speed: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
+        // "vmspeed"
         0x8A => Op::ActorSetSpeed {
             actor: ActorRef::This,
             speed: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
 
         // Coordinates from actor.
+        // "where"
         0x21 => Op::ActorCoordinatesGet {
             actor: ActorRef::ScriptActor(data.read_u8().unwrap() as usize / 2),
             tile_x: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
@@ -152,6 +168,7 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Coordinates from party member actor.
+        // "pwhere"
         0x22 => Op::ActorCoordinatesGet {
             actor: ActorRef::ActivePartyIndex(data.read_u8().unwrap() as usize),
             tile_x: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
@@ -159,32 +176,38 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Set coordinates.
+        // "xy"
         0x8B => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
             tile_x: DataSource::Immediate(data.read_u8().unwrap() as i32),
             tile_y: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
+        // "vxy"
         0x8C => Op::ActorCoordinatesSet {
             actor: ActorRef::This,
             tile_x: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             tile_y: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
+        // "dotxy"
         0x8D => Op::ActorCoordinatesSetPrecise {
             actor: ActorRef::This,
             x: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 >> 4),
             y: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32 >> 4),
         },
 
+        // "hpmpfull"
         0xF8 => Op::ActorHeal {
             actor: ActorRef::This,
             hp: true,
             mp: true,
         },
+        // "hpfull"
         0xF9 => Op::ActorHeal {
             actor: ActorRef::This,
             hp: true,
             mp: false,
         },
+        // "mpfull"
         0xFA => Op::ActorHeal {
             actor: ActorRef::This,
             hp: false,

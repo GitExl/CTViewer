@@ -4,19 +4,23 @@ use crate::scene_script::ops::Op;
 
 pub fn op_decode_audio(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
+        // "sound"
         0xE8 => Op::SoundPlay {
             sound: data.read_u8().unwrap() as usize,
             panning: 0.5,
         },
+        // "music"
         0xEA => Op::MusicPlay {
             music: data.read_u8().unwrap() as usize,
             interrupt: true,
         },
+        // "volume"
         0xEB => Op::SoundVolumeSlide {
             left: data.read_u8().unwrap() as f64 * (1.0 / 255.0),
             right: data.read_u8().unwrap() as f64 * (1.0 / 255.0),
             duration: 0.0,
         },
+        // "akao"
         0xEC => {
             let mode = data.read_u8().unwrap();
             let data1 = data.read_u8().unwrap();
@@ -64,7 +68,9 @@ pub fn op_decode_audio(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 }
             }
         },
+        // "volumew"
         0xED => Op::SoundWaitEnd,
+        // "musicw"
         0xEE => Op::MusicWaitEnd,
 
         _ => panic!("Unknown audio op."),

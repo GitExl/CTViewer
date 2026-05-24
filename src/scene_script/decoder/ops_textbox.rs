@@ -6,7 +6,7 @@ use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::read_24_bit_address;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum DialogueSpecialType {
+pub enum UiType {
     CharacterSwitch,
     Load(bool),
     Save(bool),
@@ -14,18 +14,18 @@ pub enum DialogueSpecialType {
     RenamePC(usize),
 }
 
-impl DialogueSpecialType {
-    pub fn from_value(value: u8) -> DialogueSpecialType {
+impl UiType {
+    pub fn from_value(value: u8) -> UiType {
         if value >= 0x80 && value <= 0xBF {
-            DialogueSpecialType::Shop(value as usize - 0x80)
+            UiType::Shop(value as usize - 0x80)
         } else if value >= 0xC0 && value <= 0xC7 {
-            DialogueSpecialType::RenamePC(value as usize - 0xC0)
+            UiType::RenamePC(value as usize - 0xC0)
         } else if value == 0 {
-            DialogueSpecialType::CharacterSwitch
+            UiType::CharacterSwitch
         } else if value == 1 || value == 0x41 {
-            DialogueSpecialType::Load(value & 0x40 > 0)
+            UiType::Load(value & 0x40 > 0)
         } else if value == 2 || value == 0x40 {
-            DialogueSpecialType::Save(value & 0x40 > 0)
+            UiType::Save(value & 0x40 > 0)
         } else {
             panic!("Cannot determine special dialogue type from 0x{:02X}.", value)
         }
@@ -36,6 +36,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
     match op {
 
         // Set string table address.
+        // "msegg"
         0xB8 => {
             match mode {
                 SceneScriptMode::Snes => Op::TextSetTable {
@@ -48,6 +49,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
         },
 
         // Textboxes.
+        // "mes"
         0xBB => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
@@ -57,6 +59,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
             position: TextBoxPosition::Auto,
             choice_lines: None,
         },
+        // "query"
         0xC0 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
@@ -66,6 +69,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
             position: TextBoxPosition::Auto,
             choice_lines: get_textbox_choice_lines(data.read_u8().unwrap()),
         },
+        // "mesu"
         0xC1 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
@@ -75,6 +79,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
             position: TextBoxPosition::Top,
             choice_lines: None,
         },
+        // "mesl"
         0xC2 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
@@ -84,6 +89,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
             position: TextBoxPosition::Bottom,
             choice_lines: None,
         },
+        // "queryu"
         0xC3 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
@@ -93,6 +99,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
             position: TextBoxPosition::Top,
             choice_lines: get_textbox_choice_lines(data.read_u8().unwrap()),
         },
+        // "queryl"
         0xC4 => Op::TextBoxShow {
             index: if matches!(mode, SceneScriptMode::Snes) {
                 data.read_u8().unwrap() as usize
@@ -103,9 +110,10 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
             choice_lines: get_textbox_choice_lines(data.read_u8().unwrap()),
         },
 
-        // Special dialogues.
-        0xC8 => Op::DialogueSpecial {
-            dialogue_type: DialogueSpecialType::from_value(data.read_u8().unwrap()),
+        // Special UI.
+        // "menu"
+        0xC8 => Op::OpenUi {
+            ui: UiType::from_value(data.read_u8().unwrap()),
         },
 
         _ => panic!("Unknown textbox op."),

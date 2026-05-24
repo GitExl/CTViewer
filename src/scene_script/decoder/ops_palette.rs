@@ -78,12 +78,14 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 panic!("Mode for op 0x2E is unknown.");
             }
         },
+
         // "fixpal", restore palette?
         0x33 => Op::PaletteSetIndex {
             palette_index: data.read_u8().unwrap() as usize,
         },
 
         // 0x88 sub ops.
+        // "color"
         0x88 => {
             let cmd = data.read_u8().unwrap();
             if cmd == 0 {

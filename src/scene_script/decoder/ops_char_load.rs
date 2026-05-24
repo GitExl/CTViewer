@@ -13,59 +13,70 @@ pub enum CharacterType {
 
 pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {
+        // "autobindChrono"
         0x57 => Op::LoadCharacterPlayer {
             character_index: 0,
             must_be_active: true,
             battle_index: 0,
         },
+        // "autobindMarl"
         0x5C => Op::LoadCharacterPlayer {
             character_index: 1,
             must_be_active: true,
             battle_index: 0,
         },
+        // "autobindLukka"
         0x62 => Op::LoadCharacterPlayer {
             character_index: 2,
             must_be_active: true,
             battle_index: 0,
         },
+        // "autobindKaeru"
         0x68 => Op::LoadCharacterPlayer {
             character_index: 4,
             must_be_active: true,
             battle_index: 0,
         },
+        // "autobindRobo"
         0x6A => Op::LoadCharacterPlayer {
             character_index: 3,
             must_be_active: true,
             battle_index: 0,
         },
+        // "autobindEira"
         0x6C => Op::LoadCharacterPlayer {
             character_index: 5,
             must_be_active: true,
             battle_index: 0,
         },
+        // "autobindMaou"
         0x6D => Op::LoadCharacterPlayer {
             character_index: 6,
             must_be_active: true,
             battle_index: 0,
         },
 
+        // "autobind"
         0x80 => Op::LoadCharacterPlayer {
             character_index: data.read_u8().unwrap() as usize,
             must_be_active: true,
             battle_index: 0,
         },
+        // "char"
         0x81 => Op::LoadCharacter {
             char_type: CharacterType::PCAsNPC,
             index: data.read_u8().unwrap() as usize,
             is_static: false,
             battle_index: 0,
         },
+        // "people"
         0x82 => Op::LoadCharacter {
             char_type: CharacterType::NPC,
             index: data.read_u8().unwrap() as usize,
             is_static: false,
             battle_index: 0,
         },
+        // "monster"
         0x83 => {
             let index = match mode {
                 SceneScriptMode::Snes => data.read_u8().unwrap() as usize,

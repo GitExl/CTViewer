@@ -22,6 +22,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
 
         // Byte math.
+        // "plus"
         0x5B => {
             let rhs = data.read_u8().unwrap() as i32;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -32,6 +33,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(rhs),
             }
         },
+        // "vplus"
         0x5D => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -42,6 +44,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::for_local_memory(rhs),
             }
         },
+        // "vplus2"
         0x5E => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -52,6 +55,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::for_local_memory(rhs),
             }
         },
+
+        // "minus"
         0x5F => {
             let rhs = data.read_u8().unwrap() as i32;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -62,6 +67,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(rhs),
             }
         },
+        // "minus2"
         0x60 => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -72,6 +78,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::for_local_memory(rhs),
             }
         },
+        // "vminus"
         0x61 => {
             let rhs = data.read_u8().unwrap() as usize * 2;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -82,6 +89,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::for_local_memory(rhs),
             }
         },
+
+        // "inc"
         0x71 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath8 {
@@ -91,6 +100,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(1),
             }
         },
+        // "inc2"
         0x72 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath16 {
@@ -100,6 +110,8 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(1),
             }
         },
+
+        // "dec"
         0x73 => {
             let lhs = data.read_u8().unwrap() as usize * 2;
             Op::ByteMath8 {
@@ -111,6 +123,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // Bit math.
+        // "biton"
         0x63 => {
             let rhs = 1 << data.read_u8().unwrap() as u32;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -121,6 +134,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(rhs),
             }
         },
+        // "bitoff"
         0x64 => {
             let rhs = !(1 << data.read_u8().unwrap() as u32);
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -132,6 +146,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             }
         },
 
+        // "gbiton"
         0x65 => {
             let bit = data.read_u8().unwrap() as u32;
             let mut lhs = data.read_u8().unwrap() as usize;
@@ -145,6 +160,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 op: BitMathOp::Or,
             }
         },
+        // "gbitoff"
         0x66 => {
             let bit = data.read_u8().unwrap() as u32;
             let mut lhs = data.read_u8().unwrap() as usize;
@@ -159,6 +175,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             }
         },
 
+        // "and"
         0x67 => {
             let rhs = data.read_u8().unwrap() as i32;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -169,6 +186,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(rhs),
             }
         },
+        // "or"
         0x69 => {
             let rhs = data.read_u8().unwrap() as i32;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -179,6 +197,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(rhs),
             }
         },
+        // "xor"
         0x6B => {
             let rhs = data.read_u8().unwrap() as i32;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -189,6 +208,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 rhs: DataSource::Immediate(rhs),
             }
         },
+        // "shiftR"
         0x6F => {
             let rhs = data.read_u8().unwrap() as i32;
             let lhs = data.read_u8().unwrap() as usize * 2;
@@ -201,6 +221,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         },
 
         // PC specific ops.
+        // "exbiton"
         0x45 => {
             let bit = data.read_u8().unwrap();
             let lhs = data.read_u8().unwrap() as usize;
@@ -211,6 +232,7 @@ pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
                 op: BitMathOp::Or,
             }
         },
+        // "exbitoff"
         0x46 => {
             let rhs = !(1 << data.read_u8().unwrap() as u32);
             let lhs = data.read_u8().unwrap() as usize;
