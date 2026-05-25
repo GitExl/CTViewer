@@ -4,7 +4,7 @@ use bitflags::bitflags;
 use crate::actor::ActorFlags;
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_scene::SceneState;
-use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_ops::Op;
 use crate::scene_script::scene_script_decoder::op_decode;
 use crate::scene_script::scene_script_exec::op_execute;
 

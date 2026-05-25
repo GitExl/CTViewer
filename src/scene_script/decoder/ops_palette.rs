@@ -1,8 +1,8 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::GameMode;
-use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::read_script_blob;
+use crate::scene_script::scene_script_ops::Op;
+use crate::util::data_read::read_script_blob;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SubPalette {

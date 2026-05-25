@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::{ActorFlags, DrawMode};
-use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::memory::{DataDest, DataSource};
 use crate::sprites::sprite_renderer::SpritePriority;

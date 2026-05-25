@@ -2,7 +2,7 @@ use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::destination::Destination;
 use crate::GameMode;
-use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_ops::Op;
 use crate::memory::DataSource;
 
 pub fn op_decode_location(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {

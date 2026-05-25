@@ -1,10 +1,11 @@
-use std::io::{Cursor};
+use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::destination::Destination;
 use crate::GameMode;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::memory::{DataDest, DataSource};
-use crate::world_script::ops::Op;
+use crate::util::data_read::read_24_bit_address;
+use crate::world_script::world_script_ops::Op;
 
 /// Opcodes.
 pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
@@ -184,14 +185,14 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             offset: data.read_i8().unwrap() as isize,
         },
 
-        // "jz", unused
+        // "jz"
         0x1C => Op::JumpConditional {
             lhs: DataSource::WorldLocal(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(0),
             cmp: CompareOp::Eq,
             offset: data.read_i8().unwrap() as isize,
         },
-        // "jnz", unused
+        // "jnz"
         0x1D => Op::JumpConditional {
             lhs: DataSource::WorldLocal(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(0),
@@ -351,8 +352,6 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             speed: data.read_u8().unwrap(),
         },
 
-        // 0x3A unused, "timer"
-
         // "effect1"
         0x3B => Op::PlaySound1 {
             sound: data.read_u8().unwrap(),
@@ -383,9 +382,6 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             i0: data.read_u16::<LittleEndian>().unwrap(),
             i1: data.read_u16::<LittleEndian>().unwrap(),
         },
-
-        // 0x41 unused, "trigger"
-        // 0x42 unused, "slink"
 
         // "s_newevent"
         0x43 => Op::AddActorS {
@@ -450,14 +446,12 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
 
         // DS/PC extra ops.
         // "moveEX"
-        // TODO: is the argument count correct? One path seems to have variable number of arguments.
         0x53 => Op::MoveExtended {
             i0: data.read_u8().unwrap(),
             i1: data.read_u8().unwrap(),
             i2: data.read_u8().unwrap(),
         },
         // "palEX"
-        // TODO: is the argument count correct?
         0x54 => Op::PaletteExtended {
             i0: data.read_u8().unwrap(),
             i1: data.read_u8().unwrap(),
@@ -472,10 +466,4 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
     };
 
     Some(op)
-}
-
-fn read_24_bit_address(data: &mut Cursor<Vec<u8>>) -> usize {
-    data.read_u8().unwrap() as usize |
-        (data.read_u8().unwrap() as usize) << 8 |
-        (data.read_u8().unwrap() as usize) << 16
 }

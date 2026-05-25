@@ -2,8 +2,8 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::GameMode;
 use crate::scene::textbox::TextBoxPosition;
-use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::read_24_bit_address;
+use crate::scene_script::scene_script_ops::Op;
+use crate::util::data_read::read_24_bit_address;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum UiType {

@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_world::WorldState;
-use crate::world_script::ops::Op;
+use crate::world_script::world_script_ops::Op;
 use crate::world_script::world_script_decoder::op_decode;
 
 pub struct WorldActorScript {

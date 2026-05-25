@@ -1,9 +1,9 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::GameMode;
-use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script_decoder::{read_24_bit_address, read_script_blob, read_segmented_address};
+use crate::scene_script::scene_script_ops::Op;
 use crate::memory::{DataDest, DataSource};
+use crate::util::data_read::{read_24_bit_address, read_script_blob, read_segmented_address};
 
 pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {

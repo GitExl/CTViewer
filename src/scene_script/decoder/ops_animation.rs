@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
-use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::memory::DataSource;
 

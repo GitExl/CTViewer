@@ -4,7 +4,7 @@ use crate::actor::DrawMode;
 use crate::character::CharacterId;
 use crate::GameMode;
 use crate::shared_op::CompareOp;
-use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::memory::DataSource;
 

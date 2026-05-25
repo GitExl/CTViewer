@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::GameMode;
-use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_ops::Op;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum CharacterType {

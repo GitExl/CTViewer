@@ -9,7 +9,7 @@ use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_count, exec_animation_reset, exec_animation_static_frame};
 use crate::scene_script::exec::call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
 use crate::scene_script::exec::movement::{exec_movement_to_tile, exec_movement_by_vector, exec_movement_to_actor};
-use crate::scene_script::ops::Op;
+use crate::scene_script::scene_script_ops::Op;
 use crate::scene_script::decoder::ops_palette::SubPalette;
 use crate::scene_script::exec::load_character::{exec_load_character, exec_load_character_player};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
