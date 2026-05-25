@@ -1,11 +1,10 @@
 use crate::actor::{ActorFlags, DrawMode};
 use crate::character::CharacterId;
+use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::destination::Destination;
 use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
 use crate::scene_script::decoder::ops_textbox::UiType;
-use crate::scene_script::decoder::ops_jump::CompareOp;
-use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::decoder::ops_palette::{ColorMathMode, SubPalette};
 use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, ScrollLayerFlags, SpecialEffect};
 use crate::memory::{DataDest, DataSource};

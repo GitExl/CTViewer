@@ -186,9 +186,9 @@ impl FileSystem {
     // in one location. These are treated internally as one sprite with many animations, because
     // there is no clearly defined boundary between the sprites themselves.
     //
-    // The world loads the graphics tile data at the top of VRAM. At some point, the game
-    // loads in different graphics data, so animations do not produce their intended sprites
-    // in all worlds at all times.
+    // The world loads the graphics tile data at the top of VRAM. At various points, the game
+    // loads in different graphics data. Animations require the correct graphics data to be loaded
+    // for them to look as intended.
     pub fn read_world_sprites(&self) -> (SpriteAssembly, SpriteAnimSet) {
 
         // shapeSeqTbl.bin contains both animation frames and sprite tile assemblies for all
@@ -196,7 +196,7 @@ impl FileSystem {
         let mut data = self.backend.get_world_sprite_data();
 
         // Read offsets to the data for each animation.
-        // The SNES version has two less (the dimensional vortex probably).
+        // The PC version has two extra offsets (the dimensional vortex probably).
         let count = if matches!(self.parse_mode, ParseMode::Pc) { 168 } else { 166 };
         let mut offsets = Vec::new();
         for _ in 0..count {
@@ -209,7 +209,7 @@ impl FileSystem {
 
         // Each world sprite animation consists of a series of instructions and data. The first
         // byte is the instruction followed by 1 or more bytes of data. Animations have no real end
-        // except for a 0-duration frame, which will show that frame forever or on an instruction
+        // except for a 0-duration frame, which will show that frame forever, or on an instruction
         // that loops back to an earlier point in the animation.
         //
         // Instructions @ 0xC20E4A
@@ -222,7 +222,7 @@ impl FileSystem {
         //    frame forever.
         // 5: Unknown.
         // 6: Unknown. First byte goes to $62. Next 2 bytes into $60. Next 2 bytes into $63. Next 2 bytes into $65.
-        for (_, offset) in offsets.iter().enumerate() {
+        for (_index, offset) in offsets.iter().enumerate() {
             data.seek(SeekFrom::Start(*offset)).unwrap();
 
             let mut anim = SpriteAnim::empty();
@@ -264,6 +264,9 @@ impl FileSystem {
                 else if op == 0x04 {
                     let ptr = data.read_u16::<LittleEndian>().unwrap() as u64;
                     let duration = data.read_u8().unwrap() as u32;
+
+                    op_data.push(ptr as isize);
+                    op_data.push(duration as isize);
 
                     // Read frame assembly data from the position, but keep track
                     // of the current position so we can return here later.
@@ -313,6 +316,7 @@ impl FileSystem {
 
                     data.seek(SeekFrom::Start(old_pos)).unwrap();
                     if duration == 0 {
+                        debug_data.push(op_data);
                         break;
                     }
                 }
@@ -341,7 +345,7 @@ impl FileSystem {
 
             anim_set.add_anim(anim);
 
-            // println!("{:>04}: {:>3}: {:02X?}", offset, index, debug_data);
+            // println!("{:>04X}: {:>3}: {:02X?}", offset, _index, debug_data);
         }
 
         // assembly.dump();

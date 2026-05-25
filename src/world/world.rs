@@ -7,6 +7,7 @@ use crate::map::Map;
 use crate::tileset::TileSet;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world_map::WorldMap;
+use crate::world_script::world_script::WorldScript;
 
 pub struct WorldExit {
     pub index: usize,
@@ -60,7 +61,7 @@ pub struct World {
     pub map: Map,
     pub world_map: WorldMap,
 
-    pub script: usize,
+    pub script: WorldScript,
 
     pub exits: Vec<WorldExit>,
     pub scripted_exits: Vec<ScriptedWorldExit>,
@@ -116,7 +117,6 @@ impl World {
         println!("  Tileset 3: {}", self.tileset_l3.index);
         println!("  Palette: {}", self.palette.index);
         println!("  Map: {}", self.map.index);
-        println!("  Script: {}", self.script);
         println!();
 
         self.world_map.dump();

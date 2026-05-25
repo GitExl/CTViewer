@@ -1,11 +1,14 @@
+use std::collections::HashMap;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
 use crate::actor::{Actor, ActorClass, ActorFlags};
+use crate::character::CharacterId;
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
+use crate::map::Map;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
 use crate::next_destination::NextDestination;
@@ -17,16 +20,25 @@ use crate::sprites::sprite_assets::WORLD_SPRITE_INDEX;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
+use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 
-pub struct GameStateWorld {
-    pub world: World,
-
+/// Mutable state for a world.
+pub struct WorldState {
+    pub actors: Vec<Actor>,
+    pub player_actors: HashMap<CharacterId, usize>,
+    pub next_destination: NextDestination,
     pub camera: Camera,
+    pub world_map: WorldMap,
+    pub map: Map,
+}
+
+pub struct GameStateWorld {
+    world: World,
+    state: WorldState,
+
     map_renderer: MapRenderer,
     world_renderer: WorldRenderer,
-
-    next_destination: NextDestination,
 
     key_up: bool,
     key_down: bool,
@@ -41,8 +53,6 @@ pub struct GameStateWorld {
     debug_box: Option<Rect>,
 
     next_game_event: Option<GameEvent>,
-
-    pub actors: Vec<Actor>,
 }
 
 impl GameStateWorld {
@@ -64,65 +74,76 @@ impl GameStateWorld {
         actor.class = ActorClass::NPC;
         state.sprite_index = WORLD_SPRITE_INDEX;
         state.anim_index = 1;
+        state.palette = world.palette.palette.clone();
         actors.push(actor);
 
         let mut actor = Actor::new(1);
-        actor.pos = Vec2Df64::new(128.0, 64.0);
+        actor.pos = Vec2Df64::new(192.0, 32.0);
         actor.flags.remove(ActorFlags::DEAD);
         actor.class = ActorClass::NPC;
         let state = ctx.sprites_states.add_state();
         state.sprite_index = WORLD_SPRITE_INDEX;
         state.anim_index = 34;
+        state.palette = world.palette.palette.clone();
         actors.push(actor);
 
         let mut actor = Actor::new(2);
-        actor.pos = Vec2Df64::new(64.0, 128.0);
-        actor.flags.remove(ActorFlags::DEAD);
-        actor.class = ActorClass::NPC;
-        let state = ctx.sprites_states.add_state();
-        state.sprite_index = WORLD_SPRITE_INDEX;
-        state.anim_index = 81;
-        actors.push(actor);
-
-        let mut actor = Actor::new(3);
         actor.pos = Vec2Df64::new(32.0, 192.0);
         actor.flags.remove(ActorFlags::DEAD);
         actor.class = ActorClass::NPC;
         let state = ctx.sprites_states.add_state();
         state.sprite_index = WORLD_SPRITE_INDEX;
+        state.anim_index = 81;
+        state.palette = world.palette.palette.clone();
+        actors.push(actor);
+
+        let mut actor = Actor::new(3);
+        actor.pos = Vec2Df64::new(32.0, 256.0);
+        actor.flags.remove(ActorFlags::DEAD);
+        actor.class = ActorClass::NPC;
+        let state = ctx.sprites_states.add_state();
+        state.sprite_index = WORLD_SPRITE_INDEX;
         state.anim_index = 155;
+        state.palette = world.palette.palette.clone();
         actors.push(actor);
 
 
-        let mut camera = Camera::new(
-            0.0, 0.0,
-            ctx.render.target.width as f64, ctx.render.target.height as f64,
-            0.0, 0.0,
-            (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
-        );
+        // Create new shared scene state.
+        let mut state = WorldState {
+            next_destination: NextDestination::new(),
+            camera: Camera::new(
+                0.0, 0.0,
+                ctx.render.target.width as f64, ctx.render.target.height as f64,
+                0.0, 0.0,
+                (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
+            ),
+            actors,
+            player_actors: HashMap::new(),
+            world_map: world.world_map.clone(),
+            map: world.map.clone(),
+        };
+
 
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut world.map);
 
-        camera.center_to(pos);
-
-        let next_destination = NextDestination::new();
+        state.camera.center_to(pos);
 
         if fade_in {
             ctx.screen_fade.start(1.0, 2);
         }
 
+        world.script.decode();
+
         println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));
 
         GameStateWorld {
             world,
+            state,
 
-            camera,
             world_renderer,
             map_renderer,
-
-            next_destination,
 
             key_down: false,
             key_left: false,
@@ -137,8 +158,6 @@ impl GameStateWorld {
             debug_box: None,
 
             next_game_event: None,
-
-            actors,
         }
     }
 }
@@ -147,32 +166,32 @@ impl GameStateTrait for GameStateWorld {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.world.tick(ctx, delta);
 
-        for (index, actor) in self.actors.iter_mut().enumerate() {
+        for (index, actor) in self.state.actors.iter_mut().enumerate() {
             // /actor.tick(delta, &self.state.scene_map);
             let state = ctx.sprites_states.get_state_mut(index);
             actor.update_sprite_state(state);
             ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
         }
 
-        self.camera.tick(delta);
+        self.state.camera.tick(delta);
         if self.key_up {
-            self.camera.pos.y -= 300.0 * delta;
+            self.state.camera.pos.y -= 300.0 * delta;
         }
         else if self.key_down {
-            self.camera.pos.y += 300.0 * delta;
+            self.state.camera.pos.y += 300.0 * delta;
         }
         if self.key_left {
-            self.camera.pos.x -= 300.0 * delta;
+            self.state.camera.pos.x -= 300.0 * delta;
         }
         else if self.key_right {
-            self.camera.pos.x += 300.0 * delta;
+            self.state.camera.pos.x += 300.0 * delta;
         }
-        self.camera.wrap();
+        self.state.camera.wrap();
 
-        if let Some(next_destination) = self.next_destination.destination {
+        if let Some(next_destination) = self.state.next_destination.destination {
             if !ctx.screen_fade.is_active() {
-                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination, fade_in: self.next_destination.fade_in });
-                self.next_destination.clear();
+                self.next_game_event = Some(GameEvent::GotoDestination { destination: next_destination, fade_in: self.state.next_destination.fade_in });
+                self.state.next_destination.clear();
             }
         }
 
@@ -186,11 +205,11 @@ impl GameStateTrait for GameStateWorld {
     }
 
     fn render(&mut self, ctx: &mut Context, lerp: f64) {
-        self.camera.lerp(lerp);
+        self.state.camera.lerp(lerp);
 
         self.map_renderer.render(
             lerp,
-            &self.camera,
+            &self.state.camera,
             &mut ctx.render.target,
             &self.world.map,
             &self.world.tileset_l12,
@@ -201,7 +220,7 @@ impl GameStateTrait for GameStateWorld {
         );
         self.world_renderer.render(
             lerp,
-            &self.camera,
+            &self.state.camera,
             &mut self.world,
             &mut ctx.render.target,
         );
@@ -209,13 +228,13 @@ impl GameStateTrait for GameStateWorld {
         if self.debug_text.is_some() {
             ctx.render.render_text(
                 &mut self.debug_text.as_mut().unwrap(),
-                self.debug_text_x - self.camera.pos_lerp.x as i32, self.debug_text_y - self.camera.pos_lerp.y as i32,
+                self.debug_text_x - self.state.camera.pos_lerp.x as i32, self.debug_text_y - self.state.camera.pos_lerp.y as i32,
                 TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
             );
         }
         if self.debug_box.is_some() {
             ctx.render.render_box_filled(
-                self.debug_box.as_mut().unwrap().moved_by(-self.camera.pos_lerp.x as i32, -self.camera.pos_lerp.y as i32),
+                self.debug_box.as_mut().unwrap().moved_by(-self.state.camera.pos_lerp.x as i32, -self.state.camera.pos_lerp.y as i32),
                 [255, 255, 255, 127],
                 SurfaceBlendOps::Blend,
             );
@@ -291,7 +310,7 @@ impl GameStateTrait for GameStateWorld {
                     let index = self.get_exit_at(self.mouse_pos);
                     if index.is_some() {
                         let exit = &self.world.exits[index.unwrap()];
-                        self.next_destination.set(exit.destination, true);
+                        self.state.next_destination.set(exit.destination, true);
                         ctx.screen_fade.start(0.0, 2);
                     }
                 }
@@ -303,8 +322,8 @@ impl GameStateTrait for GameStateWorld {
 
     fn mouse_motion(&mut self, ctx: &Context, x: i32, y: i32) {
         self.mouse_pos = Vec2Di32::new(
-            (x as f64 + self.camera.pos.x) as i32,
-            (y as f64 + self.camera.pos.y) as i32,
+            (x as f64 + self.state.camera.pos.x) as i32,
+            (y as f64 + self.state.camera.pos.y) as i32,
         );
 
         // Output exit or treasure data at mouse position.

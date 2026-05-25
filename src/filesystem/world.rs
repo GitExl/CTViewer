@@ -10,6 +10,7 @@ use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::WorldExit;
 use crate::world::world::ScriptedWorldExit;
 use crate::world::world::World;
+use crate::world_script::world_script::{WorldScript, WorldScriptMode};
 
 #[derive(Default)]
 struct WorldHeader {
@@ -90,8 +91,12 @@ impl FileSystem {
         header.exits_index = data.read_u8().unwrap() as usize;
         header.script_index = data.read_u8().unwrap() as usize;
 
+        let script_mode: WorldScriptMode;
         if matches!(self.parse_mode, ParseMode::Pc) {
             header.palette_anim_index = index;
+            script_mode = WorldScriptMode::Pc;
+        } else {
+            script_mode = WorldScriptMode::Snes;
         }
 
         let tileset_l12 = self.read_world_tileset_layer12(header.chips_l12, header.assembly_l12);
@@ -100,11 +105,10 @@ impl FileSystem {
         let palette = self.read_world_palette(header.palette_index);
         let palette_anim = self.read_world_palette_anim_data(header.palette_anim_index);
         let (exits, scripted_exits, script_offsets) = self.read_world_exits(header.script_index);
+        let script = self.read_world_script(header.script_index, script_mode);
 
         World {
             index,
-
-            script: header.script_index,
 
             tileset_l12,
             tileset_l3,
@@ -120,7 +124,14 @@ impl FileSystem {
             exits,
             scripted_exits,
             script_offsets,
+            script,
         }
+    }
+
+    fn read_world_script(&self, script_index: usize, script_mode: WorldScriptMode) -> WorldScript {
+        let script_data = self.backend.get_world_script_data(script_index);
+
+        WorldScript::new(script_index, script_data, script_mode)
     }
 
     // Read world exit data.

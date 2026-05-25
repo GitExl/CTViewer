@@ -14,12 +14,13 @@ use crate::scene_script::decoder::ops_textbox::op_decode_textbox;
 use crate::scene_script::decoder::ops_facing::op_decode_facing;
 use crate::scene_script::decoder::ops_jump::op_decode_jump;
 use crate::scene_script::decoder::ops_location::op_decode_location;
-use crate::scene_script::decoder::ops_math::{op_decode_math, BitMathOp};
+use crate::scene_script::decoder::ops_math::{op_decode_math};
 use crate::scene_script::decoder::ops_movement::ops_decode_movement;
 use crate::scene_script::decoder::ops_palette::{op_decode_palette, ColorMathMode};
 use crate::scene_script::decoder::ops_party::op_decode_party;
 use crate::scene_script::scene_script::SceneScriptMode;
 use crate::memory::{DataDest, DataSource};
+use crate::shared_op::BitMathOp;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SpecialEffect {
@@ -158,7 +159,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         0xAA | 0xAB | 0xAC | 0xAE | 0xB3 | 0xB4 | 0xB7 | 0x47 => op_decode_animation(op_byte, data),
 
         // Party management.
-        0xD0 | 0xD1 | 0xD3 | 0xD4 | 0xD6 | 0xE3 => op_decode_party(op_byte, data, mode),
+        0xD0 | 0xD1 | 0xD3 | 0xD4 | 0xD6 | 0xE3 => op_decode_party(op_byte, data),
 
         // Palettes.
         0x2E | 0x33 | 0x88 => op_decode_palette(op_byte, data, mode),
@@ -468,6 +469,11 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op
         // "CheckAPM"
         0xFB => Op::Unknown {
             code: 0xFB,
+            data: [0, 0, 0, 0],
+        },
+        // "AD_AddComCnt"
+        0xFC => Op::Unknown {
+            code: 0xFC,
             data: [0, 0, 0, 0],
         },
         // "DS_Link"

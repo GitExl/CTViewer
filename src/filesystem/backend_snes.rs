@@ -28,6 +28,7 @@ pub struct FileSystemBackendSnes {
     world_exit_entries: Vec<Entry>,
     world_sprite_entries: Vec<Entry>,
     world_palette_entries: Vec<Entry>,
+    world_script_entries: Vec<Entry>,
 
     scene_map_entries: Vec<Entry>,
     scene_tileset_entries: Vec<Entry>,
@@ -90,6 +91,7 @@ impl FileSystemBackendSnes {
         let world_exit_entries = get_entries(&data, 0x6FFC0, 8, 0x629EC);
         let world_sprite_entries = get_entries(&data, 0x6FDF0, 16, 0x61E73);
         let world_palette_entries = get_entries(&data, 0x6FEA0, 32, 0x3E000);
+        let world_script_entries = get_entries(&data, 0x6FFE0, 8, 0x3CE43);
 
         let scene_map_entries = get_entries(&data, 0x361E00, 202, 0x35EE02);
         let scene_tileset_entries = get_entries(&data, 0x362220, 204, 0x3D8E64);
@@ -129,6 +131,7 @@ impl FileSystemBackendSnes {
             world_exit_entries,
             world_sprite_entries,
             world_palette_entries,
+            world_script_entries,
 
             scene_map_entries,
             scene_tileset_entries,
@@ -268,6 +271,10 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
 
     fn get_world_palette_anim_data(&self, world_palette_index: usize) -> Cursor<Vec<u8>> {
         self.get_bytes_cursor_lz(self.world_palette_entries[world_palette_index].address)
+    }
+
+    fn get_world_script_data(&self, script_index: usize) -> Vec<u8> {
+        self.get_bytes_lz(self.world_script_entries[script_index].address)
     }
 
     fn get_scene_palette_anim_data(&self) -> (Cursor<Vec<u8>>, Cursor<Vec<u8>>, Cursor<Vec<u8>>) {

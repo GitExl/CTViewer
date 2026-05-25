@@ -2,21 +2,7 @@ use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
 use crate::memory::{DataDest, DataSource};
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum BitMathOp {
-    Or,
-    And,
-    Xor,
-    ShiftLeft,
-    ShiftRight,
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum ByteMathOp {
-    Add,
-    Subtract,
-}
+use crate::shared_op::{BitMathOp, ByteMathOp};
 
 pub fn op_decode_math(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {

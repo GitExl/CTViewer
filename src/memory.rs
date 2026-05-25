@@ -166,6 +166,9 @@ pub enum DataSource {
     // Player character is recruited/active.
     PCIsActiveOrReserve(CharacterId),
     PCIsActive(CharacterId),
+
+    // World actor memory.
+    WorldLocal(usize),
 }
 
 impl DataSource {
@@ -202,6 +205,9 @@ impl DataSource {
             DataSource::CurrentInput(is_current) => is_current as u8,
             DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Active) as u8,
             DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u8,
+
+            // TODO
+            DataSource::WorldLocal(_actor_address) => 0,
         }
     }
 
@@ -218,6 +224,8 @@ impl DataSource {
             DataSource::CurrentInput(is_current) => is_current as u16,
             DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Active) as u16,
             DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u16,
+
+            DataSource::WorldLocal(_actor_address) => 0,
         }
     }
 }
@@ -227,6 +235,7 @@ impl DataSource {
 pub enum DataDest {
     // To memory.
     Memory(usize),
+    WorldLocal(usize),
 }
 
 impl DataDest {
@@ -253,18 +262,27 @@ impl DataDest {
     pub fn put_u8(&self, ctx: &mut Context, _scene_state: &mut SceneState, value: u8) {
         match self {
             DataDest::Memory(address) => ctx.memory.write_u8(*address, value),
+
+            // TODO
+            DataDest::WorldLocal(_address) => {},
         }
     }
 
     pub fn put_u16(&self, ctx: &mut Context, _scene_state: &mut SceneState, value: u16) {
         match self {
             DataDest::Memory(address) => ctx.memory.write_u16(*address, value),
+
+            // TODO
+            DataDest::WorldLocal(_address) => {},
         }
     }
 
     pub fn put_bytes(&self, ctx: &mut Context, _scene_state: &mut SceneState, bytes: [u8; 64], length: usize) {
         match self {
             DataDest::Memory(address) => ctx.memory.write_bytes(*address, &bytes[0..length]),
+
+            // TODO
+            DataDest::WorldLocal(_address) => {},
         }
     }
 }

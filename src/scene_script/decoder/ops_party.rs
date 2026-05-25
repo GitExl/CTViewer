@@ -1,9 +1,8 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script::SceneScriptMode;
 
-pub fn op_decode_party(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_party(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
         // "memberP"
         0xD0 => Op::PartyMemberAddToReserve {

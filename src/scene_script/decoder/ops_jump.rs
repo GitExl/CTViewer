@@ -2,41 +2,11 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::DrawMode;
 use crate::character::CharacterId;
+use crate::shared_op::CompareOp;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::memory::DataSource;
 use crate::scene_script::scene_script::SceneScriptMode;
-
-/// Conditionals for comparisons.
-#[derive(Copy, Clone, PartialEq, Debug)]
-pub enum CompareOp {
-    Eq,
-    NotEq,
-    Lt,
-    Gt,
-    LtEq,
-    GtEq,
-    And,
-    Or,
-}
-
-impl CompareOp {
-    pub fn from_value(value: usize) -> CompareOp {
-        match value {
-            0 => CompareOp::Eq,
-            1 => CompareOp::NotEq,
-            2 => CompareOp::Gt,
-            3 => CompareOp::Lt,
-            4 => CompareOp::GtEq,
-            5 => CompareOp::LtEq,
-            6 => CompareOp::And,
-            7 => CompareOp::Or,
-            other => {
-                panic!("Unknown conditional op {:?}", other);
-            },
-        }
-    }
-}
 
 pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
     match op {

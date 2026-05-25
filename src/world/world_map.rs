@@ -16,6 +16,7 @@ pub struct WorldChip {
     pub music: usize,
 }
 
+#[derive(Clone)]
 pub struct WorldMap {
     pub index: usize,
 

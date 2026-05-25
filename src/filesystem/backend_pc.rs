@@ -278,6 +278,10 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.get_file_cursor(&format!("Game/world/colanim_bin/{}_colanim.bin", world_palette_index), None, None)
     }
 
+    fn get_world_script_data(&self, script_index: usize) -> Vec<u8> {
+        self.get_file_bytes(&format!("Game/world/esl/Event_{:04}.dat", script_index), None, None)
+    }
+
     fn get_scene_palette_anim_data(&self) -> (Cursor<Vec<u8>>, Cursor<Vec<u8>>, Cursor<Vec<u8>>) {
         (
             self.get_file_cursor(&"Game/common/PalAnimaAdrs.dat".to_string(), None, Some(4)),

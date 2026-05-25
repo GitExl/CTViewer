@@ -1,5 +1,6 @@
 use crate::actor::{ActorClass, ActorFlags, DebugSprite, DrawMode};
 use crate::camera::CameraMoveTo;
+use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::Context;
 use crate::facing::Facing;
 use crate::gamestate::gamestate_scene::SceneState;
@@ -9,8 +10,6 @@ use crate::scene_script::exec::animation::{exec_animation, exec_animation_loop_c
 use crate::scene_script::exec::call::{exec_call, exec_call_return, exec_call_wait_completion, exec_call_wait_return};
 use crate::scene_script::exec::movement::{exec_movement_to_tile, exec_movement_by_vector, exec_movement_to_actor};
 use crate::scene_script::ops::Op;
-use crate::scene_script::decoder::ops_jump::CompareOp;
-use crate::scene_script::decoder::ops_math::{BitMathOp, ByteMathOp};
 use crate::scene_script::decoder::ops_palette::SubPalette;
 use crate::scene_script::exec::load_character::{exec_load_character, exec_load_character_player};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
