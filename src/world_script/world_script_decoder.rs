@@ -1,12 +1,13 @@
 use std::io::{Cursor};
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::destination::Destination;
+use crate::GameMode;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::memory::{DataDest, DataSource};
 use crate::world_script::ops::Op;
-use crate::world_script::world_script::WorldScriptMode;
 
 /// Opcodes.
-pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: WorldScriptMode) -> Option<Op> {
+pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
     let op_byte = match data.read_u8() {
         Ok(op_byte) => op_byte,
         Err(_) => {
@@ -46,21 +47,8 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: WorldScriptMode) -> Option<Op
             i1: data.read_u8().unwrap(),
         },
         // "mapjump"
-        0x05 => {
-            match mode {
-                WorldScriptMode::Snes => Op::ChangeLocation {
-                    location: data.read_u16::<LittleEndian>().unwrap(),
-                    i0: 0,
-                    x: data.read_u8().unwrap(),
-                    y: data.read_u8().unwrap(),
-                },
-                WorldScriptMode::Pc => Op::ChangeLocation {
-                    location: data.read_u16::<LittleEndian>().unwrap(),
-                    i0: data.read_u8().unwrap(),
-                    x: data.read_u8().unwrap(),
-                    y: data.read_u8().unwrap(),
-                },
-            }
+        0x05 => Op::ChangeLocation {
+            destination: Destination::from_cursor(data, mode),
         },
         // "putmap"
         0x07 => Op::SetTile {

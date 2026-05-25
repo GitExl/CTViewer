@@ -5,12 +5,13 @@ use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 use crate::destination::Destination;
 use crate::facing::Facing;
-use crate::filesystem::filesystem::{FileSystem, ParseMode};
+use crate::filesystem::filesystem::FileSystem;
+use crate::GameMode;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::WorldExit;
 use crate::world::world::ScriptedWorldExit;
 use crate::world::world::World;
-use crate::world_script::world_script::{WorldScript, WorldScriptMode};
+use crate::world_script::world_script::WorldScript;
 
 #[derive(Default)]
 struct WorldHeader {
@@ -91,12 +92,8 @@ impl FileSystem {
         header.exits_index = data.read_u8().unwrap() as usize;
         header.script_index = data.read_u8().unwrap() as usize;
 
-        let script_mode: WorldScriptMode;
-        if matches!(self.parse_mode, ParseMode::Pc) {
+        if matches!(self.mode, GameMode::Pc) {
             header.palette_anim_index = index;
-            script_mode = WorldScriptMode::Pc;
-        } else {
-            script_mode = WorldScriptMode::Snes;
         }
 
         let tileset_l12 = self.read_world_tileset_layer12(header.chips_l12, header.assembly_l12);
@@ -105,7 +102,7 @@ impl FileSystem {
         let palette = self.read_world_palette(header.palette_index);
         let palette_anim = self.read_world_palette_anim_data(header.palette_anim_index);
         let (exits, scripted_exits, script_offsets) = self.read_world_exits(header.script_index);
-        let script = self.read_world_script(header.script_index, script_mode);
+        let script = self.read_world_script(header.script_index);
 
         World {
             index,
@@ -128,10 +125,10 @@ impl FileSystem {
         }
     }
 
-    fn read_world_script(&self, script_index: usize, script_mode: WorldScriptMode) -> WorldScript {
+    fn read_world_script(&self, script_index: usize) -> WorldScript {
         let script_data = self.backend.get_world_script_data(script_index);
 
-        WorldScript::new(script_index, script_data, script_mode)
+        WorldScript::new(script_index, script_data, self.mode)
     }
 
     // Read world exit data.
@@ -146,8 +143,8 @@ impl FileSystem {
 
             // The full 16 bits are used by the PC version. The SNES version has facing
             // data in the last 7 bits.
-            match self.parse_mode {
-                ParseMode::Snes => {
+            match self.mode {
+                GameMode::Snes => {
                     exit_data.x = data.read_u8().unwrap();
                     exit_data.y = data.read_u8().unwrap();
                     exit_data.name_index = data.read_u8().unwrap();
@@ -155,7 +152,7 @@ impl FileSystem {
                     exit_data.scene_tile_x = data.read_u8().unwrap() as i32;
                     exit_data.scene_tile_y = data.read_u8().unwrap() as i32;
                 },
-                ParseMode::Pc => {
+                GameMode::Pc => {
                     exit_data.x = data.read_u8().unwrap();
                     exit_data.y = data.read_u8().unwrap();
                     exit_data.name_index = data.read_u8().unwrap();
@@ -175,14 +172,14 @@ impl FileSystem {
             let facing;
             let shift_left;
             let shift_up;
-            match self.parse_mode {
-                ParseMode::Pc => {
+            match self.mode {
+                GameMode::Pc => {
                     scene_index = exit_data.scene_index as usize;
                     facing = ((exit_data.scene_facing & 0x6) >> 1) as usize;
                     shift_left = exit_data.scene_facing & 0x8 > 0;
                     shift_up = exit_data.scene_facing & 0x10 > 0;
                 },
-                ParseMode::Snes => {
+                GameMode::Snes => {
                     scene_index = (exit_data.scene_index & 0x1FF) as usize;
                     facing = ((exit_data.scene_index & 0x600) >> 9) as usize;
                     shift_left = exit_data.scene_index & 0x800 > 0;

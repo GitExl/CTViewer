@@ -5,7 +5,6 @@ use filesystem::filesystem::FileSystem;
 use util::timer::Timer;
 use crate::filesystem::backend_pc::{FileSystemBackendPc, FileSystemBackendPcMode};
 use crate::filesystem::backend_snes::FileSystemBackendSnes;
-use crate::filesystem::filesystem::ParseMode;
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::gamestate::gamestate_scene::GameStateScene;
 use crate::gamestate::gamestate_world::GameStateWorld;
@@ -59,6 +58,11 @@ mod shared_op;
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
 
+#[derive(Copy, Clone, PartialEq)]
+pub enum GameMode {
+    Pc,
+    Snes,
+}
 
 #[derive(Copy, Clone)]
 pub enum GameEvent {
@@ -120,6 +124,7 @@ pub struct Context<'a> {
     party: Party,
     text_processor: TextProcessor,
     screen_fade: ScreenFade,
+    mode: GameMode,
 }
 
 fn main() -> Result<(), String> {
@@ -137,6 +142,7 @@ fn main() -> Result<(), String> {
     let random = Random::new();
     let ui_theme = fs.read_ui_theme(args.ui_theme);
     let screen_fade = ScreenFade::new(0.0);
+    let mode = fs.mode;
 
     // Init some of the same variables that scene 0 does.
     let mut memory = Memory::new();
@@ -161,6 +167,7 @@ fn main() -> Result<(), String> {
         party,
         text_processor,
         screen_fade,
+        mode,
     };
 
     let mut gamestate: Box<dyn GameStateTrait>;
@@ -300,15 +307,15 @@ fn create_filesystem(path: String) -> FileSystem {
     // A directory is assumed to be the extracted version of the Steam resources.bin file.
     if src.is_dir() {
         let backend = FileSystemBackendPc::new(&src.into(), FileSystemBackendPcMode::FileSystem);
-        return FileSystem::new(Box::new(backend), ParseMode::Pc);
+        return FileSystem::new(Box::new(backend), GameMode::Pc);
 
     // Steam version resources.bin.
     } else if src.file_name().unwrap().to_ascii_lowercase() == "resources.bin" {
         let backend = FileSystemBackendPc::new(&src.into(), FileSystemBackendPcMode::ResourcesBin);
-        return FileSystem::new(Box::new(backend), ParseMode::Pc);
+        return FileSystem::new(Box::new(backend), GameMode::Pc);
     }
 
     // Any other file is assumed to be an SNES ROM image.
     let backend = FileSystemBackendSnes::new(&src);
-    FileSystem::new(Box::new(backend), ParseMode::Snes)
+    FileSystem::new(Box::new(backend), GameMode::Snes)
 }

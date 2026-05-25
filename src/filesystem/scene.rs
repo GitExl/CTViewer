@@ -3,9 +3,10 @@ use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 use crate::destination::Destination;
 use crate::facing::Facing;
-use crate::filesystem::filesystem::{FileSystem, ParseMode};
+use crate::filesystem::filesystem::FileSystem;
+use crate::GameMode;
 use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
-use crate::scene_script::scene_script::{SceneActorScript, SceneScript, SceneScriptMode};
+use crate::scene_script::scene_script::{SceneActorScript, SceneScript};
 use crate::util::vec2di32::Vec2Di32;
 
 struct SceneHeader {
@@ -45,8 +46,8 @@ impl FileSystem {
     pub fn read_scene(&self, scene_index: usize) -> Scene {
         let mut data = self.backend.get_scene_header_data(scene_index);
 
-        let mut header = match self.parse_mode {
-            ParseMode::Snes => SceneHeader {
+        let mut header = match self.mode {
+            GameMode::Snes => SceneHeader {
                 music_index: data.read_u8().unwrap() as usize,
                 tileset_l12_index: data.read_u8().unwrap() as usize,
                 tileset_l12_assembly_index: 0,
@@ -65,7 +66,7 @@ impl FileSystem {
                     bottom: data.read_u8().unwrap() as isize,
                 },
             },
-            ParseMode::Pc => SceneHeader {
+            GameMode::Pc => SceneHeader {
                 music_index: data.read_u16::<LittleEndian>().unwrap() as usize,
                 tileset_l12_index: data.read_u16::<LittleEndian>().unwrap() as usize,
                 tileset_l12_assembly_index: data.read_u16::<LittleEndian>().unwrap() as usize,
@@ -86,18 +87,15 @@ impl FileSystem {
             },
         };
 
-        let script_mode;
-        match self.parse_mode {
-            ParseMode::Snes => {
+        match self.mode {
+            GameMode::Snes => {
                 header.palette_anims_index = header.palette_index;
                 header.chip_anims_index = header.tileset_l12_index;
                 header.tileset_l12_assembly_index = header.tileset_l12_index;
                 header.tileset_l3_assembly_index = header.tileset_l3_index;
-                script_mode = SceneScriptMode::Snes;
             },
-            ParseMode::Pc => {
+            GameMode::Pc => {
                 header.tileset_l3_assembly_index = scene_index;
-                script_mode = SceneScriptMode::Pc;
             }
         }
 
@@ -108,7 +106,7 @@ impl FileSystem {
         let palette_anims = self.read_palette_anim_set(header.palette_anims_index);
         let exits = self.read_scene_exits(scene_index);
         let treasure = self.read_scene_treasure(scene_index);
-        let script = self.read_scene_script(header.script_index, script_mode);
+        let script = self.read_scene_script(header.script_index);
 
         // A disabled scroll mask must cover the entire map.
         if header.scroll_mask.left == 0x80 {
@@ -144,7 +142,7 @@ impl FileSystem {
         )
     }
 
-    pub fn read_scene_script(&self, script_index: usize, mode: SceneScriptMode) -> SceneScript {
+    pub fn read_scene_script(&self, script_index: usize) -> SceneScript {
         let mut data = self.backend.get_scene_script_data(script_index);
 
         let mut actor_scripts: Vec<SceneActorScript> = Vec::new();
@@ -161,7 +159,7 @@ impl FileSystem {
         let mut script_data = vec![0u8; data.get_ref().len() - header_size as usize - 1];
         data.read_exact(&mut script_data).unwrap();
 
-        SceneScript::new(script_index, script_data, actor_scripts, mode)
+        SceneScript::new(script_index, script_data, actor_scripts, self.mode)
     }
 
     // Read exits from scenes.
@@ -169,9 +167,9 @@ impl FileSystem {
     // new location (world or scene).
     pub fn read_scene_exits(&self, scene_index: usize) -> Vec<SceneExit> {
         let mut data = self.backend.get_scene_exit_data(scene_index);
-        let count = match self.parse_mode {
-            ParseMode::Pc => data.get_ref().len() / 8,
-            ParseMode::Snes => data.get_ref().len() / 7,
+        let count = match self.mode {
+            GameMode::Pc => data.get_ref().len() / 8,
+            GameMode::Snes => data.get_ref().len() / 7,
         };
 
         // Read exits.
@@ -186,8 +184,8 @@ impl FileSystem {
             let shift_x;
             let shift_y;
 
-            match self.parse_mode {
-                ParseMode::Pc => {
+            match self.mode {
+                GameMode::Pc => {
                     pos = Vec2Di32::new(
                         data.read_u8().unwrap() as i32 * 16,
                         data.read_u8().unwrap() as i32 * 16,
@@ -213,7 +211,7 @@ impl FileSystem {
 
                 // The SNES uses 7 bytes and packs the facing and destination offset
                 // into the destination bytes.
-                ParseMode::Snes => {
+                GameMode::Snes => {
                     pos = Vec2Di32::new(
                         data.read_u8().unwrap() as i32 * 16,
                         data.read_u8().unwrap() as i32 * 16,
@@ -253,9 +251,9 @@ impl FileSystem {
 
     pub fn read_scene_treasure(&self, scene_index: usize) -> Vec<SceneTreasure> {
         let (pointers, mut data) = self.backend.get_scene_treasure_data();
-        let treasure_count = match self.parse_mode {
-            ParseMode::Pc => (pointers[scene_index + 1] - pointers[scene_index]) / 6,
-            ParseMode::Snes => (pointers[scene_index + 1] - pointers[scene_index]) / 4,
+        let treasure_count = match self.mode {
+            GameMode::Pc => (pointers[scene_index + 1] - pointers[scene_index]) / 6,
+            GameMode::Snes => (pointers[scene_index + 1] - pointers[scene_index]) / 4,
         };
 
         let mut treasure: Vec<SceneTreasure> = Vec::new();
@@ -274,13 +272,13 @@ impl FileSystem {
                 return self.read_scene_treasure(contents as usize);
             }
 
-            let item = match self.parse_mode {
-                ParseMode::Snes => parse_snes_treasure(id, tile_pos, contents),
-                ParseMode::Pc => parse_pc_treasure(id, tile_pos, contents),
+            let item = match self.mode {
+                GameMode::Snes => parse_snes_treasure(id, tile_pos, contents),
+                GameMode::Pc => parse_pc_treasure(id, tile_pos, contents),
             };
             treasure.push(item);
 
-            if matches!(self.parse_mode, ParseMode::Pc) {
+            if matches!(self.mode, GameMode::Pc) {
                 data.read_u16::<LittleEndian>().unwrap();
             }
         }

@@ -1,6 +1,7 @@
 use std::io::{Cursor, Read};
 use bitflags::bitflags;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::GameMode;
 use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::decoder::ops_inventory::op_decode_inventory;
 use crate::scene_script::ops::Op;
@@ -18,7 +19,6 @@ use crate::scene_script::decoder::ops_math::{op_decode_math};
 use crate::scene_script::decoder::ops_movement::ops_decode_movement;
 use crate::scene_script::decoder::ops_palette::{op_decode_palette, ColorMathMode};
 use crate::scene_script::decoder::ops_party::op_decode_party;
-use crate::scene_script::scene_script::SceneScriptMode;
 use crate::memory::{DataDest, DataSource};
 use crate::shared_op::BitMathOp;
 
@@ -109,7 +109,7 @@ pub enum InputBinding {
 }
 
 /// Opcodes.
-pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Option<Op> {
+pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
     let op_byte = match data.read_u8() {
         Ok(op_byte) => op_byte,
         Err(_) => {

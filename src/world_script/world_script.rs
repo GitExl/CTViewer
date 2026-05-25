@@ -1,14 +1,8 @@
 use std::io::Cursor;
-use crate::Context;
+use crate::{Context, GameMode};
 use crate::gamestate::gamestate_world::WorldState;
 use crate::world_script::ops::Op;
 use crate::world_script::world_script_decoder::op_decode;
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum WorldScriptMode {
-    Pc,
-    Snes,
-}
 
 pub struct WorldActorScript {
     ptrs: [u64; 16],
@@ -65,13 +59,13 @@ impl WorldActorScriptState {
 
 pub struct WorldScript {
     index: usize,
-    mode: WorldScriptMode,
+    mode: GameMode,
     data: Vec<u8>,
     actor_scripts: Vec<WorldActorScript>,
 }
 
 impl WorldScript {
-    pub fn new(index: usize, data: Vec<u8>, mode: WorldScriptMode) -> WorldScript {
+    pub fn new(index: usize, data: Vec<u8>, mode: GameMode) -> WorldScript {
         WorldScript {
             index,
             mode,

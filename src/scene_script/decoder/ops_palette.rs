@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
+use crate::GameMode;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::read_script_blob;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -16,7 +16,7 @@ pub enum ColorMathMode {
     Subtractive,
 }
 
-pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {
 
         // Dual mode palette command.
@@ -48,7 +48,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
 
             } else if cmd_mode & 0x80 > 0 {
                 match mode {
-                    SceneScriptMode::Snes => {
+                    GameMode::Snes => {
                         let bits = data.read_u8().unwrap() as usize;
                         let color_index = bits & 0xF;
                         let sub_palette = (bits & 0xF0) >> 4;
@@ -61,7 +61,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                             length,
                         }
                     },
-                    SceneScriptMode::Pc => {
+                    GameMode::Pc => {
                         let bits = data.read_u8().unwrap() as usize;
                         let color_index = bits & 0xF;
                         let sub_palette = (bits & 0xF0) >> 4;
@@ -107,7 +107,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                 }
             } else if cmd >= 0x80 && cmd < 0x90 {
                 match mode {
-                    SceneScriptMode::Snes => {
+                    GameMode::Snes => {
                         let (blob, length) = read_script_blob(data);
                         Op::PaletteSetImmediate {
                             color_index: cmd as usize & 0x0F,
@@ -116,7 +116,7 @@ pub fn op_decode_palette(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
                             length,
                         }
                     },
-                    SceneScriptMode::Pc => {
+                    GameMode::Pc => {
                         Op::PaletteSetImmediateIndex {
                             color_index: cmd as usize & 0x0F,
                             sub_palette: SubPalette::This,

@@ -1,8 +1,8 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::GameMode;
 use crate::scene::textbox::TextBoxPosition;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::read_24_bit_address;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -32,17 +32,17 @@ impl UiType {
     }
 }
 
-pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {
 
         // Set string table address.
         // "msegg"
         0xB8 => {
             match mode {
-                SceneScriptMode::Snes => Op::TextSetTable {
+                GameMode::Snes => Op::TextSetTable {
                     address: read_24_bit_address(data) - 0xC00000,
                 },
-                SceneScriptMode::Pc => Op::TextSetTable {
+                GameMode::Pc => Op::TextSetTable {
                     address: data.read_u8().unwrap() as usize,
                 },
             }
@@ -51,7 +51,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
         // Textboxes.
         // "mes"
         0xBB => Op::TextBoxShow {
-            index: if matches!(mode, SceneScriptMode::Snes) {
+            index: if matches!(mode, GameMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
@@ -61,7 +61,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
         },
         // "query"
         0xC0 => Op::TextBoxShow {
-            index: if matches!(mode, SceneScriptMode::Snes) {
+            index: if matches!(mode, GameMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
@@ -71,7 +71,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
         },
         // "mesu"
         0xC1 => Op::TextBoxShow {
-            index: if matches!(mode, SceneScriptMode::Snes) {
+            index: if matches!(mode, GameMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
@@ -81,7 +81,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
         },
         // "mesl"
         0xC2 => Op::TextBoxShow {
-            index: if matches!(mode, SceneScriptMode::Snes) {
+            index: if matches!(mode, GameMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
@@ -91,7 +91,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
         },
         // "queryu"
         0xC3 => Op::TextBoxShow {
-            index: if matches!(mode, SceneScriptMode::Snes) {
+            index: if matches!(mode, GameMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize
@@ -101,7 +101,7 @@ pub fn op_decode_textbox(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMo
         },
         // "queryl"
         0xC4 => Op::TextBoxShow {
-            index: if matches!(mode, SceneScriptMode::Snes) {
+            index: if matches!(mode, GameMode::Snes) {
                 data.read_u8().unwrap() as usize
             } else {
                 data.read_u16::<LittleEndian>().unwrap() as usize

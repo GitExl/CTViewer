@@ -1,21 +1,16 @@
 use crate::filesystem::backend::FileSystemBackendTrait;
-
-#[derive(Clone, Copy, PartialEq, Debug)]
-pub enum ParseMode {
-    Snes,
-    Pc,
-}
+use crate::GameMode;
 
 pub struct FileSystem {
     pub backend: Box<dyn FileSystemBackendTrait>,
-    pub parse_mode: ParseMode,
+    pub mode: GameMode,
 }
 
 impl FileSystem {
-    pub fn new(backend: Box<dyn FileSystemBackendTrait>, parse_mode: ParseMode) -> Self {
+    pub fn new(backend: Box<dyn FileSystemBackendTrait>, mode: GameMode) -> Self {
         FileSystem {
             backend,
-            parse_mode,
+            mode,
         }
     }
 }

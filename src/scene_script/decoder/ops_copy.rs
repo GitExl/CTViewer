@@ -1,11 +1,11 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::GameMode;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::{read_24_bit_address, read_script_blob, read_segmented_address};
 use crate::memory::{DataDest, DataSource};
 
-pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {
 
         // Set what character the first party member is to 0x7F0200.
@@ -19,16 +19,16 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
         // "read"
         0x48 => Op::Copy8 {
             source: match mode {
-                SceneScriptMode::Snes => DataSource::Memory(read_24_bit_address(data)),
-                SceneScriptMode::Pc => DataSource::Memory(read_segmented_address(data)),
+                GameMode::Snes => DataSource::Memory(read_24_bit_address(data)),
+                GameMode::Pc => DataSource::Memory(read_segmented_address(data)),
             },
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         // "read2"
         0x49 => Op::Copy16 {
             source: match mode {
-                SceneScriptMode::Snes => DataSource::Memory(read_24_bit_address(data)),
-                SceneScriptMode::Pc => DataSource::Memory(read_segmented_address(data)),
+                GameMode::Snes => DataSource::Memory(read_24_bit_address(data)),
+                GameMode::Pc => DataSource::Memory(read_segmented_address(data)),
             },
             dest: DataDest::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
@@ -37,40 +37,40 @@ pub fn op_decode_copy(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
         // "write"
         0x4A => Op::Copy8 {
             dest: match mode {
-                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
-                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+                GameMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                GameMode::Pc => DataDest::Memory(read_segmented_address(data)),
             },
             source: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         // "write2"
         0x4B => Op::Copy16 {
             dest: match mode {
-                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
-                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+                GameMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                GameMode::Pc => DataDest::Memory(read_segmented_address(data)),
             },
             source: DataSource::Immediate(data.read_u16::<LittleEndian>().unwrap() as i32),
         },
         // "vwrite"
         0x4C => Op::Copy8 {
             dest: match mode {
-                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
-                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+                GameMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                GameMode::Pc => DataDest::Memory(read_segmented_address(data)),
             },
             source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         // "vwrite2"
         0x4D => Op::Copy16 {
             dest: match mode {
-                SceneScriptMode::Snes => DataDest::Memory(read_24_bit_address(data)),
-                SceneScriptMode::Pc => DataDest::Memory(read_segmented_address(data)),
+                GameMode::Snes => DataDest::Memory(read_24_bit_address(data)),
+                GameMode::Pc => DataDest::Memory(read_segmented_address(data)),
             },
             source: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },
         // "datawrite"
         0x4E => {
             let destination = match mode {
-                SceneScriptMode::Snes => read_24_bit_address(data),
-                SceneScriptMode::Pc => read_segmented_address(data),
+                GameMode::Snes => read_24_bit_address(data),
+                GameMode::Pc => read_segmented_address(data),
             };
             let (blob, length) = read_script_blob(data);
             Op::CopyBytes {

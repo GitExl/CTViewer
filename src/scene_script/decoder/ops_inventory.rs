@@ -1,19 +1,19 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::GameMode;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script::SceneScriptMode;
 use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::memory::DataSource;
 
-pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {
         // "vitemP"
         0xC7 => Op::ItemGive {
             actor: ActorRef::This,
             item: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
             category: match mode {
-                SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
-                SceneScriptMode::Snes => 0,
+                GameMode::Pc => data.read_u8().unwrap() as usize,
+                GameMode::Snes => 0,
             }
         },
         // "itemP"
@@ -21,8 +21,8 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
             actor: ActorRef::This,
             item: DataSource::Immediate(data.read_u8().unwrap() as i32),
             category: match mode {
-                SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
-                SceneScriptMode::Snes => 0,
+                GameMode::Pc => data.read_u8().unwrap() as usize,
+                GameMode::Snes => 0,
             }
         },
         // "itemM"
@@ -30,8 +30,8 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
             actor: ActorRef::This,
             item: DataSource::Immediate(data.read_u8().unwrap() as i32),
             category: match mode {
-                SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
-                SceneScriptMode::Snes => 0,
+                GameMode::Pc => data.read_u8().unwrap() as usize,
+                GameMode::Snes => 0,
             }
         },
         // "goldP"
@@ -49,16 +49,16 @@ pub fn op_decode_inventory(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
             pc: data.read_u8().unwrap() as usize,
             item: data.read_u8().unwrap() as usize,
             category: match mode {
-                SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
-                SceneScriptMode::Snes => 0,
+                GameMode::Pc => data.read_u8().unwrap() as usize,
+                GameMode::Snes => 0,
             }
         },
         // "itemN"
         0xD7 => Op::ItemGetAmount {
             item: data.read_u8().unwrap() as usize,
             category: match mode {
-                SceneScriptMode::Pc => data.read_u8().unwrap() as usize,
-                SceneScriptMode::Snes => 0,
+                GameMode::Pc => data.read_u8().unwrap() as usize,
+                GameMode::Snes => 0,
             },
             dest: DataSource::for_local_memory(data.read_u8().unwrap() as usize * 2),
         },

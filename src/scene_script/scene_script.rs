@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 use bitflags::bitflags;
 use crate::actor::ActorFlags;
-use crate::Context;
+use crate::{Context, GameMode};
 use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::op_decode;
@@ -94,21 +94,15 @@ impl ActorScriptState {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
-pub enum SceneScriptMode {
-    Pc,
-    Snes,
-}
-
 pub struct SceneScript {
     index: usize,
-    mode: SceneScriptMode,
+    mode: GameMode,
     data: Vec<u8>,
     actor_scripts: Vec<SceneActorScript>,
 }
 
 impl SceneScript {
-    pub fn new(index: usize, data: Vec<u8>, actor_scripts: Vec<SceneActorScript>, mode: SceneScriptMode) -> SceneScript {
+    pub fn new(index: usize, data: Vec<u8>, actor_scripts: Vec<SceneActorScript>, mode: GameMode) -> SceneScript {
         SceneScript {
             index,
             mode,

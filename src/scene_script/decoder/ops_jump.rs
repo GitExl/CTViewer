@@ -2,13 +2,13 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::actor::DrawMode;
 use crate::character::CharacterId;
+use crate::GameMode;
 use crate::shared_op::CompareOp;
 use crate::scene_script::ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::memory::DataSource;
-use crate::scene_script::scene_script::SceneScriptMode;
 
-pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {
 
         // Relative unconditional jumps.
@@ -230,8 +230,8 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode)
         // "itemQ"
         0xC9 => Op::JumpConditional8 {
             lhs: match mode {
-                SceneScriptMode::Snes => DataSource::ItemCount(data.read_u8().unwrap() as usize),
-                SceneScriptMode::Pc => DataSource::ItemCount(data.read_u16::<LittleEndian>().unwrap() as usize),
+                GameMode::Snes => DataSource::ItemCount(data.read_u8().unwrap() as usize),
+                GameMode::Pc => DataSource::ItemCount(data.read_u16::<LittleEndian>().unwrap() as usize),
             },
             rhs: DataSource::Immediate(1),
             cmp: CompareOp::GtEq,

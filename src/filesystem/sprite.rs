@@ -4,7 +4,8 @@ use std::io::SeekFrom;
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 
-use crate::filesystem::filesystem::{FileSystem, ParseMode};
+use crate::filesystem::filesystem::FileSystem;
+use crate::GameMode;
 use crate::software_renderer::bitmap::Bitmap;
 use crate::software_renderer::palette::Palette;
 use crate::sprites::sprite_anim::SpriteAnim;
@@ -23,8 +24,8 @@ impl FileSystem {
     pub fn read_sprite_header(&self, index: usize) -> SpriteHeader {
         let mut data = self.backend.get_sprite_header_data(index);
 
-        let mut header = match self.parse_mode {
-            ParseMode::Pc => SpriteHeader {
+        let mut header = match self.mode {
+            GameMode::Pc => SpriteHeader {
                 index,
                 bitmap_index: data.read_u8().unwrap() as usize,
                 assembly_index: data.read_u8().unwrap() as usize,
@@ -38,7 +39,7 @@ impl FileSystem {
                 enemy_unknown2: 0,
                 enemy_unknown3: 0,
             },
-            ParseMode::Snes => SpriteHeader {
+            GameMode::Snes => SpriteHeader {
                 index,
                 bitmap_index: data.read_u8().unwrap() as usize,
                 assembly_index: data.read_u8().unwrap() as usize,
@@ -54,7 +55,7 @@ impl FileSystem {
             },
         };
 
-        if matches!(self.parse_mode, ParseMode::Pc) {
+        if matches!(self.mode, GameMode::Pc) {
             header.bitmap_index = index;
             header.assembly_index = index;
             header.palette_index = index;
@@ -76,12 +77,12 @@ impl FileSystem {
     pub fn read_sprite_assembly(&self, index: usize, sprite_header: &SpriteHeader) -> SpriteAssembly {
         let mut data = self.backend.get_sprite_assembly_data(index);
 
-        let assembly = match self.parse_mode {
-            ParseMode::Pc => {
+        let assembly = match self.mode {
+            GameMode::Pc => {
                 data.seek(SeekFrom::Start(3)).unwrap();
                 parse_pc_sprite_assembly(index, &mut data)
             },
-            ParseMode::Snes => {
+            GameMode::Snes => {
                 let (groups_per_frame, tiles_per_group) = match sprite_header.size_flags & 0x3 {
                     0 => (1, 4),
                     1 => (1, 8),
@@ -166,13 +167,13 @@ impl FileSystem {
 
     // Read a sprite's graphics tiles.
     pub fn read_sprite_tiles(&self, sprite_tiles_index: usize, chip_count: usize) -> Bitmap {
-        match self.parse_mode {
-            ParseMode::Pc => {
+        match self.mode {
+            GameMode::Pc => {
                 let data = self.backend.get_sprite_graphics(sprite_tiles_index, chip_count, false);
                 let bitmap_height = (data.len() as f64 / 256.0).ceil() as u32;
                 Bitmap::from_raw_data(256, bitmap_height, data)
             },
-            ParseMode::Snes => {
+            GameMode::Snes => {
                 let data = self.backend.get_sprite_graphics(sprite_tiles_index, chip_count, sprite_tiles_index > 6);
                 let bitmap_height = (data.len() as f64 / 128.0).ceil() as u32;
                 Bitmap::from_raw_data(128, bitmap_height, data)
@@ -197,7 +198,7 @@ impl FileSystem {
 
         // Read offsets to the data for each animation.
         // The PC version has two extra offsets (the dimensional vortex probably).
-        let count = if matches!(self.parse_mode, ParseMode::Pc) { 168 } else { 166 };
+        let count = if matches!(self.mode, GameMode::Pc) { 168 } else { 166 };
         let mut offsets = Vec::new();
         for _ in 0..count {
             offsets.push(data.read_u16::<LittleEndian>().unwrap() as u64 - 0xE000);

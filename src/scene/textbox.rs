@@ -1,5 +1,4 @@
-use crate::Context;
-use crate::filesystem::filesystem::ParseMode;
+use crate::{Context, GameMode};
 use crate::renderer::TextFlags;
 use crate::scene::textbox_layout::TextBoxLayout;
 use crate::software_renderer::blit::{blit_bitmap_to_surface, blit_surface_to_surface, BitmapBlitFlags, SurfaceBlendOps};
@@ -57,7 +56,7 @@ pub struct TextBox {
 
 impl TextBox {
     pub fn new(ctx: &mut Context) -> TextBox {
-        let chip_width = if ctx.fs.parse_mode == ParseMode::Pc { TEXTBOX_CHIP_WIDTH_PC } else { TEXTBOX_CHIP_WIDTH_SNES };
+        let chip_width = if ctx.mode == GameMode::Pc { TEXTBOX_CHIP_WIDTH_PC } else { TEXTBOX_CHIP_WIDTH_SNES };
 
         // Render a fresh copy of the window UI background.
         let mut window_surface = Surface::new(chip_width as u32 * 8, TEXTBOX_CHIP_HEIGHT as u32 * 8);

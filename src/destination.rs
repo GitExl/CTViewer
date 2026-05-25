@@ -1,4 +1,6 @@
-use crate::Context;
+use std::io::Cursor;
+use byteorder::{LittleEndian, ReadBytesExt};
+use crate::{Context, GameMode};
 use crate::facing::Facing;
 use crate::l10n::IndexedType;
 use crate::util::vec2di32::Vec2Di32;
@@ -67,6 +69,28 @@ impl Destination {
                     tile_x * 16 + 8 + shift_x,
                     tile_y * 16 + 15 + shift_y,
                 ),
+            }
+        }
+    }
+
+    pub fn from_cursor(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Destination {
+        match mode {
+            GameMode::Snes => {
+                let index_facing = data.read_u16::<LittleEndian>().unwrap() as usize;
+                let index = index_facing & 0x01FF;
+                let facing = index_facing & 0x0600;
+                let tile_x = data.read_u8().unwrap() as i32;
+                let tile_y = data.read_u8().unwrap() as i32;
+
+                Destination::from_data(index, Facing::from_index(facing), tile_x, tile_y, 0, 0)
+            },
+            GameMode::Pc => {
+                let index = data.read_u16::<LittleEndian>().unwrap() as usize;
+                let facing = data.read_u8().unwrap() as usize;
+                let tile_x = data.read_u8().unwrap() as i32;
+                let tile_y = data.read_u8().unwrap() as i32;
+
+                Destination::from_data(index, Facing::from_index(facing), tile_x, tile_y, 0, 0)
             }
         }
     }

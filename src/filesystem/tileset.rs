@@ -4,7 +4,8 @@ use std::io::Read;
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
 
-use crate::filesystem::filesystem::{FileSystem, ParseMode};
+use crate::filesystem::filesystem::FileSystem;
+use crate::GameMode;
 use crate::map::MapChip;
 use crate::map::MapChipFlags;
 use crate::software_renderer::bitmap::Bitmap;
@@ -120,12 +121,12 @@ impl FileSystem {
             // Using these chips, 16x16 tiles are constructed. Each tile has 4 corners. Each
             // corner refers to a chip, a palette and some flags to describe the tile.
             let mut assembly_data = self.backend.get_scene_tileset12_assembly_data(index_assembly);
-            tiles.extend(parse_scene_tile_assembly(&mut assembly_data, 512, 16, self.parse_mode));
+            tiles.extend(parse_scene_tile_assembly(&mut assembly_data, 512, 16, self.mode));
 
             // Read tile animation data.
             let anim_data = self.backend.get_scene_tileset12_animation_data(chip_anims_index);
             if anim_data.is_some() {
-                chip_anims.extend(parse_chip_anims(&mut anim_data.unwrap(), self.parse_mode));
+                chip_anims.extend(parse_chip_anims(&mut anim_data.unwrap(), self.mode));
             }
         }
 
@@ -155,7 +156,7 @@ impl FileSystem {
 
             let assembly_data = self.backend.get_scene_tileset3_assembly_data(index_assembly);
             if assembly_data.is_some() {
-                tiles.extend(parse_scene_tile_assembly(&mut assembly_data.unwrap(), 256, 4, self.parse_mode));
+                tiles.extend(parse_scene_tile_assembly(&mut assembly_data.unwrap(), 256, 4, self.mode));
             }
         }
 
@@ -173,7 +174,7 @@ impl FileSystem {
 // Read tile chip animation data.
 //
 // An animation lists an offset for and animates 4 chips in a tileset.
-fn parse_chip_anims(reader: &mut Cursor<Vec<u8>>, parse_mode: ParseMode) -> Vec<ChipAnim> {
+fn parse_chip_anims(reader: &mut Cursor<Vec<u8>>, mode: GameMode) -> Vec<ChipAnim> {
     let mut anims = Vec::<ChipAnim>::new();
     while reader.fill_buf().unwrap().len() > 0 {
         let frame_count = reader.read_u8().unwrap() as usize;
@@ -181,9 +182,9 @@ fn parse_chip_anims(reader: &mut Cursor<Vec<u8>>, parse_mode: ParseMode) -> Vec<
             break;
         }
 
-        let dest_chip = match parse_mode {
-            ParseMode::Snes => (reader.read_u16::<LittleEndian>().unwrap() as usize - 0x2000) / 16,
-            ParseMode::Pc => reader.read_u16::<LittleEndian>().unwrap() as usize / 32,
+        let dest_chip = match mode {
+            GameMode::Snes => (reader.read_u16::<LittleEndian>().unwrap() as usize - 0x2000) / 16,
+            GameMode::Pc => reader.read_u16::<LittleEndian>().unwrap() as usize / 32,
         };
 
         let mut anim = ChipAnim {
@@ -210,9 +211,9 @@ fn parse_chip_anims(reader: &mut Cursor<Vec<u8>>, parse_mode: ParseMode) -> Vec<
             anim.frames.push(frame);
         }
         for frame_index in 0..frame_count {
-            let src_chip = match parse_mode {
-                ParseMode::Snes => (reader.read_u16::<LittleEndian>().unwrap() - 0x6000) as usize / 32,
-                ParseMode::Pc => reader.read_u16::<LittleEndian>().unwrap() as usize / 32,
+            let src_chip = match mode {
+                GameMode::Snes => (reader.read_u16::<LittleEndian>().unwrap() - 0x6000) as usize / 32,
+                GameMode::Pc => reader.read_u16::<LittleEndian>().unwrap() as usize / 32,
             };
             anim.frames[frame_index].src_chip = src_chip;
         }
@@ -231,7 +232,7 @@ fn set_chip_bitmap_data(bitmap_data: &mut Vec<u8>, data: &mut Vec<u8>, offset: u
 }
 
 // Reads tile assembly data for a scene tileset.
-fn parse_scene_tile_assembly(reader: &mut Cursor<Vec<u8>>, tile_count: usize, palette_size: usize, parse_mode: ParseMode) -> Vec<Tile> {
+fn parse_scene_tile_assembly(reader: &mut Cursor<Vec<u8>>, tile_count: usize, palette_size: usize, mode: GameMode) -> Vec<Tile> {
     let mut tiles = vec![Tile::default(); tile_count];
 
     // Read data for each tile corner (chip).
@@ -241,7 +242,7 @@ fn parse_scene_tile_assembly(reader: &mut Cursor<Vec<u8>>, tile_count: usize, pa
             let chip;
             let palette;
             
-            match parse_mode {
+            match mode {
 
                 // byte 1 & 2
                 // chip: 10 bits
@@ -251,7 +252,7 @@ fn parse_scene_tile_assembly(reader: &mut Cursor<Vec<u8>>, tile_count: usize, pa
                 //
                 // byte 2
                 // priority: 1 bit
-                ParseMode::Pc => {
+                GameMode::Pc => {
                     let data1 = reader.read_u16::<LittleEndian>().unwrap();
                     chip = (data1 & 0x3FF) as usize;
 
@@ -274,7 +275,7 @@ fn parse_scene_tile_assembly(reader: &mut Cursor<Vec<u8>>, tile_count: usize, pa
                 // priority: 1 bit
                 // flip x: 1 bit
                 // flip y: 1 bit
-                ParseMode::Snes => {
+                GameMode::Snes => {
                     let data1 = reader.read_u16::<LittleEndian>().unwrap();
                     if palette_size == 4 {
                         chip = (data1 & 0x3FF) as usize;

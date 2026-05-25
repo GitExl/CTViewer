@@ -1,3 +1,4 @@
+use crate::destination::Destination;
 use crate::memory::{DataDest, DataSource};
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 
@@ -37,10 +38,7 @@ pub enum Op {
         address: usize,
     },
     ChangeLocation {
-        location: u16,
-        i0: u8,
-        x: u8,
-        y: u8,
+        destination: Destination,
     },
     Copy8 {
         lhs: DataDest,

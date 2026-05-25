@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::GameMode;
 use crate::scene_script::ops::Op;
-use crate::scene_script::scene_script::SceneScriptMode;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum CharacterType {
@@ -11,7 +11,7 @@ pub enum CharacterType {
     Enemy,
 }
 
-pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScriptMode) -> Op {
+pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {
         // "autobindChrono"
         0x57 => Op::LoadCharacterPlayer {
@@ -79,15 +79,15 @@ pub fn op_decode_char_load(op: u8, data: &mut Cursor<Vec<u8>>, mode: SceneScript
         // "monster"
         0x83 => {
             let index = match mode {
-                SceneScriptMode::Snes => data.read_u8().unwrap() as usize,
-                SceneScriptMode::Pc => data.read_u16::<LittleEndian>().unwrap() as usize,
+                GameMode::Snes => data.read_u8().unwrap() as usize,
+                GameMode::Pc => data.read_u16::<LittleEndian>().unwrap() as usize,
             };
             let bits = data.read_u8().unwrap();
             Op::LoadCharacter {
                 char_type: CharacterType::Enemy,
                 index: match mode {
-                    SceneScriptMode::Snes => index,
-                    SceneScriptMode::Pc => index + 7,
+                    GameMode::Snes => index,
+                    GameMode::Pc => index + 7,
                 },
                 is_static: bits & 0x80 > 0,
                 battle_index: bits as usize & 0x7F,
