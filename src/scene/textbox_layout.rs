@@ -45,7 +45,7 @@ impl TextBoxLayout {
 
         for part in page.iter() {
             match part {
-                TextPart::Text { ref text } => {
+                TextPart::Text { text } => {
                     // Measure text size.
                     let (width, height) = ctx.render.measure_text(text, TextFont::Regular);
 

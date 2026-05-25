@@ -1,18 +1,18 @@
 [package]
 name = "ctviewer"
-version = "0.2.1"
-edition = "2021"
+version = "0.3.0"
+edition = "2024"
 
 [dependencies]
 byteorder = "1.5.0"
-bitflags = "2.9.4"
+bitflags = "2.11.1"
 png = "0.18.0"
-clap = { version = "4.5.48", features = ["derive"] }
-flate2 = "1.1.2"
-regex = "1.12.1"
+clap = { version = "4.6.1", features = ["derive"] }
+flate2 = "1.1.9"
+regex = "1.12.3"
 
 [dependencies.sdl3]
-version = "0.16.1"
+version = "0.18.4"
 default-features = false
 features = ["ttf", "unsafe_textures"]
 

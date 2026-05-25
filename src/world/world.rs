@@ -99,18 +99,6 @@ impl World {
         self.map.lerp(lerp)
     }
 
-    // pub fn add_actor(&mut self, actor: Actor) {
-    //     self.render_sprites.push(MapSprite {
-    //         x: actor.x,
-    //         y: actor.y,
-    //         frame: actor.sprite_state.sprite_frame,
-    //         priority: actor.sprite_priority,
-    //         sprite_index: actor.sprite_state.sprite_index,
-    //         palette_offset: actor.sprite_state.palette_offset,
-    //     });
-    //     self.actors.push(actor);
-    // }
-
     pub fn dump(&self, ctx: &Context) {
         println!("World {}", self.index);
         println!("  Tileset layer 1/2: {}", self.tileset_l12.index);
@@ -119,6 +107,7 @@ impl World {
         println!("  Map: {}", self.map.index);
         println!();
 
+        self.script.decode();
         self.world_map.dump();
         self.map.dump();
         self.tileset_l12.dump();

@@ -129,12 +129,9 @@ impl GameStateWorld {
         map_renderer.setup_for_map(&mut world.map);
 
         state.camera.center_to(pos);
-
         if fade_in {
             ctx.screen_fade.start(1.0, 2);
         }
-
-        world.script.decode();
 
         println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));
 

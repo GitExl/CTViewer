@@ -214,7 +214,7 @@ impl TextProcessor {
             println!("-------------------------------------");
             for part in page.iter() {
                 match part {
-                    TextPart::Text { ref text } => print!("{}", text),
+                    TextPart::Text { text } => print!("{}", text),
                     TextPart::LineBreak => println!(),
                     _ => {},
                 }
