@@ -150,6 +150,17 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::Memory(0x7E000 + data.read_u16::<LittleEndian>().unwrap() as usize),
         },
 
+        // "trnr"
+        0x18 => Op::Copy8 {
+            lhs: DataDest::WorldLocal(data.read_u8().unwrap() as usize),
+            rhs: DataSource::WorldLocal(data.read_u8().unwrap() as usize),
+        },
+        // "trnmem"
+        0x19 => Op::Copy8 {
+            lhs: DataDest::Memory(0x7E000 + data.read_u16::<LittleEndian>().unwrap() as usize),
+            rhs: DataSource::Memory(0x7E000 + data.read_u16::<LittleEndian>().unwrap() as usize),
+        },
+
         // "addr"
         0x46 => Op::ByteMath {
             lhs: DataDest::WorldLocal(data.read_u8().unwrap() as usize),
@@ -292,6 +303,16 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x29 => Op::FadeIn {
             i0: data.read_u8().unwrap(),
         },
+
+        // "mozin"
+        0x2A => Op::MosaicIn {
+            i0: data.read_u8().unwrap(),
+        },
+        // "mozout"
+        0x2B => Op::MosaicOut {
+            i0: data.read_u8().unwrap(),
+        },
+
 
         // "pos"
         0x2C => Op::SetCoordinates {

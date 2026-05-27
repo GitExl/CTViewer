@@ -4,30 +4,6 @@ use crate::gamestate::gamestate_world::WorldState;
 use crate::world_script::world_script_ops::Op;
 use crate::world_script::world_script_decoder::op_decode;
 
-pub struct WorldActorScript {
-    ptrs: [u64; 16],
-}
-
-impl WorldActorScript {
-    pub fn new(ptrs: [u64; 16]) -> WorldActorScript {
-        WorldActorScript {
-            ptrs,
-        }
-    }
-
-    pub fn get_initial_state(&self) -> WorldActorScriptState {
-        WorldActorScriptState {
-            delay: 4,
-            delay_counter: 4,
-            pause_counter: 0,
-
-            current_address: self.ptrs[0],
-
-            current_op: None,
-        }
-    }
-}
-
 #[derive(Clone, Copy)]
 pub struct WorldActorScriptState {
 
@@ -61,7 +37,6 @@ pub struct WorldScript {
     index: usize,
     mode: GameMode,
     data: Vec<u8>,
-    actor_scripts: Vec<WorldActorScript>,
 }
 
 impl WorldScript {
@@ -70,12 +45,7 @@ impl WorldScript {
             index,
             mode,
             data,
-            actor_scripts: Vec::new(),
         }
-    }
-
-    pub fn get_actor_scripts(&self) -> &Vec<WorldActorScript> {
-        &self.actor_scripts
     }
 
     pub fn get_data(&self) -> &Vec<u8> {

@@ -108,7 +108,7 @@ impl GameStateWorld {
         actors.push(actor);
 
 
-        // Create new shared scene state.
+        // Create new shared world state.
         let mut state = WorldState {
             next_destination: NextDestination::new(),
             camera: Camera::new(

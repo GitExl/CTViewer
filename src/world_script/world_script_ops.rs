@@ -85,6 +85,12 @@ pub enum Op {
         x: u8,
         y: u8,
     },
+    MosaicIn {
+        i0: u8,
+    },
+    MosaicOut {
+        i0: u8,
+    },
     Move {
         steps: u8,
     },
