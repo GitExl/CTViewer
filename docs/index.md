@@ -28,4 +28,7 @@
   - [Actor movement](scene_scripts/actor_movement.md)
   - [Sprite animation](scene_scripts/sprite_animation.md)
   - [Dialogue](scene_scripts/dialogue.md)
+- [World scripts](world_scripts/index.md)
+  - [Commands](world_scripts/script_ops.md)
+  - [Executor functions](world_scripts/executor_functions.md)
 - [Glossary](glossary.md)

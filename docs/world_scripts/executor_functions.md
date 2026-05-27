@@ -1,0 +1,71 @@
+# World script executor functions
+
+All located in the `$C20000` segment.
+
+- `0F38` CODE_FN_C20F38
+- `0F63` execute from event commands, fn_epoch_overworld_code_processing
+- `1B45` partially inside fn_overworld_command_4f_copy_tiles opcode? used in `$C22402`
+- `1CF5` inside fn_overworld_set_sprite_assembly_pointer, used by unused "grp" command
+- `1DD4` inside fn_initialze_overworld_ram_idk, used by "pal" command
+- `1E38` inside fn_initialze_overworld_ram_idk, used in `$C21DB5`
+- `20A2` used by "fadeout" command
+- `2105` used by "fadein" command
+- `21F8` used by unused "mozin" command
+- `2194` used by unused "mozout" command
+- `26A8` more_overworld_loading_init
+- `27DE` fn_decompress_overworld_tiles_sets1_7
+- `2EC1` data from overworld_data_called_from_code, used in `$C22402`, `$C2251E`, `$C2261D`
+- `2EC4` inside data from overworld_data_called_from_code, used in `$C22402`, `$C2251E`, `$C2261D`
+- `2EC7` inside data from overworld_data_called_from_code, used in `$C2258D`
+- `2ED0` inside data from overworld_data_called_from_code, used in `$C2258D`
+- `2F0F` fn_load_overworld_song_if_not_flying_epoch
+- `3404` control player character
+- `3AE2` fn_pc_2_and_3_idle_code
+- `309E` fn_overworld_action_movement_processing
+- `31A8` data from overworld_action_07_data, used in `$C230CD`
+- `3264` ? black_omen_dactyl_access_y_coordinate?
+- `48CD` fn_overword_subroutine_event_call_c248cd
+- `2F94` fn_do_overworld_music_actions
+- `5628` inside CODE_FN_C25605?
+- `6400` inside fn_load_tiles_select_map, after fn_decompress_overworld_tiles_sets1_7
+- `65B2` CODE_FN_C265B2
+- `666C` fn_select_map_prehistoric_special_case? used in `$C2631F`
+- `68F4` fn_initialize_select_map_vram
+- `6AC8` fn_main_epoch_menu_routine? used in `$C27389`
+- `6F85` CODE_FN_C26F33? used in `$C27389`
+- `7143` fn_load_epoch_menu_data_packet? used in `$C27389`
+- `74B8` data from overworld_events_C274B8, used in `$C27389`
+- `74AE` data from overworld_events_C274AE, used in `$C27389`
+- `7504` data from overworld_events_C27504, used in `$C27389`
+- `754D` fn_overword_subroutine_event_call_c2754d, lavos floating rock related
+- `7575` fn_overword_subroutine_event_call_c27575, lavos floating rock related
+- `7598` fn_overword_subroutine_event_call_c27598, lavos floating rock related
+- `75C3` fn_time_gauge_idk_function_1000_ad
+- `78A1` fn_overword_subroutine_event_call_c278a1
+- `786F` fn_overword_subroutine_event_call_c2786f, PC index related
+- `7911` inside something_dma_or_other
+- `7957` does_something_with_dma
+- `7981` inside does_something_with_dma
+- `79C8` fn_overword_subroutine_event_call_c279c8
+- `79E0` inside fn_overword_subroutine_event_call_c279c8, lava floating rock related
+- `7A0C` inside fn_overword_subroutine_event_call_c279c8
+- `7A31` inside fn_overword_subroutine_event_call_c279c8
+- `7A56` inside fn_overword_subroutine_event_call_c279c8
+- `7AAF` inside fn_overword_subroutine_event_call_c279c8
+- `7ADA` inside fn_overword_subroutine_event_call_c279c8
+- `7AEB` inside fn_overword_subroutine_event_call_c279c8
+- `7AFC` inside fn_overword_subroutine_event_call_c279c8
+- `7B20` inside fn_overword_subroutine_event_call_c279c8
+- `7B44` inside fn_overword_subroutine_event_call_c279c8
+- `7B4F` inside fn_overword_subroutine_event_call_c279c8
+- `7B5A` fn_decompress_overworld_black_omen_graphics
+- `7B9F` fn_finish_load_black_omen_overworld
+- `7BC4` inside fn_finish_load_black_omen_overworld
+- `7BD1` inside fn_finish_load_black_omen_overworld
+- `7BD8` inside fn_finish_load_black_omen_overworld
+- `7C48` fn_idk_called_from_last_villiage_c27c48
+- `7C4F` fn_idk_called_from_last_villiage_c27c4f
+- `7C56` fn_idk_called_from_last_villiage_c27c56
+- `7C97` fn_idk_called_from_last_villiage_c27c97
+- `7CD8` fn_idk_called_from_last_villiage_c27cd8
+- `7D5E` fn_idk_called_from_last_villiage_c27d5e
