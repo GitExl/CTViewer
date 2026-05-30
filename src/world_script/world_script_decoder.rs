@@ -19,16 +19,9 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
 
     let op = match op_byte {
 
+        // Misc. ops.
         // "initialize"
         0x00 => Op::InitMemory,
-        // "colofs"
-        0x01 => Op::SetPalette {
-            index: data.read_u8().unwrap(),
-        },
-        // "priset"
-        0x02 => Op::SetPriority {
-            priority: data.read_u8().unwrap(),
-        },
         // "grp"
         0x03 => Op::Unknown03 {
             i0: data.read_u8().unwrap(),
@@ -41,34 +34,22 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             i7: data.read_u8().unwrap(),
             i8: data.read_u8().unwrap(),
         },
-        // "pal", source address?, number of colors?, unknown?
-        0x04 => Op::Unknown04 {
+        // "pal", source data address, number of colors, mode
+        0x04 => Op::PaletteCopy {
             address: read_24_bit_address(data),
-            i0: data.read_u8().unwrap(),
-            i1: data.read_u8().unwrap(),
+            count: data.read_u8().unwrap(),
+            mode: data.read_u8().unwrap(),
         },
         // "mapjump"
         0x05 => Op::ChangeLocation {
             destination: Destination::from_cursor(data, mode),
         },
-        // "putmap"
-        0x07 => Op::SetTile {
+        // "initscreen"
+        0x3E => Op::InitBackgroundLayer {
             layer: data.read_u8().unwrap(),
-            x: data.read_u8().unwrap(),
-            y: data.read_u8().unwrap(),
-            tile_index: data.read_u8().unwrap(),
-        },
-        // "bind"
-        0x08 => Op::Bind {
-            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
-            pc: data.read_u8().unwrap(),
-        },
-        // "newevent"
-        0x09 => Op::AddActor {
-            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
-            i0: data.read_u8().unwrap(),
         },
 
+        // Memory/math.
         // "clr"
         0x0A => Op::Copy8 {
             lhs: DataDest::WorldLocal(data.read_u8().unwrap() as usize),
@@ -103,7 +84,6 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             op: BitMathOp::Xor,
         },
-
         // "memclr"
         0x10 => Op::Copy8 {
             lhs: DataDest::Memory(0x7E000 + data.read_u16::<LittleEndian>().unwrap() as usize),
@@ -138,7 +118,6 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             op: BitMathOp::Xor,
         },
-
         // "trnlg"
         0x16 => Op::Copy8 {
             lhs: DataDest::Memory(0x7E000 + data.read_u16::<LittleEndian>().unwrap() as usize),
@@ -160,7 +139,6 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             lhs: DataDest::Memory(0x7E000 + data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Memory(0x7E000 + data.read_u16::<LittleEndian>().unwrap() as usize),
         },
-
         // "addr"
         0x46 => Op::ByteMath {
             lhs: DataDest::WorldLocal(data.read_u8().unwrap() as usize),
@@ -186,6 +164,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             op: ByteMathOp::Subtract,
         },
 
+        // Jumps.
         // "jp"
         0x1A => Op::Jump {
             address: data.read_u16::<LittleEndian>().unwrap() as usize - 0x400,
@@ -195,7 +174,6 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             address: DataDest::WorldLocal(data.read_u8().unwrap() as usize),
             offset: data.read_i8().unwrap() as isize,
         },
-
         // "jz"
         0x1C => Op::JumpConditional {
             lhs: DataSource::WorldLocal(data.read_u8().unwrap() as usize),
@@ -295,44 +273,91 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             offset: data.read_i8().unwrap() as isize,
         },
 
+        // Reveal/show.
         // "fadeout"
         0x28 => Op::FadeOut {
-            i0: data.read_u8().unwrap(),
+            mode: data.read_u8().unwrap(),
         },
         // "fadein"
         0x29 => Op::FadeIn {
-            i0: data.read_u8().unwrap(),
+            mode: data.read_u8().unwrap(),
         },
-
         // "mozin"
         0x2A => Op::MosaicIn {
-            i0: data.read_u8().unwrap(),
+            mode: data.read_u8().unwrap(),
         },
         // "mozout"
         0x2B => Op::MosaicOut {
-            i0: data.read_u8().unwrap(),
+            mode: data.read_u8().unwrap(),
         },
 
+        // Sprite/appearance.
+        // "colofs"
+        0x01 => Op::SetPalette {
+            index: data.read_u8().unwrap(),
+        },
+        // "priset"
+        0x02 => Op::SetPriority {
+            priority: data.read_u8().unwrap(),
+        },
+        // "anmseq"
+        0x30 => Op::SetAnimation {
+            anim_index: data.read_u8().unwrap(),
+        },
+        // "anmwait"
+        0x39 => Op::WaitThenAnimate {
+            delay: data.read_u8().unwrap(),
+        },
 
+        // Map changes.
+        // "putmap"
+        0x07 => Op::SetTile {
+            layer: data.read_u8().unwrap(),
+            x: data.read_u8().unwrap(),
+            y: data.read_u8().unwrap(),
+            tile_index: data.read_u8().unwrap(),
+        },
+        // "bganm"
+        0x33 => Op::BgAnimate {
+            i0: data.read_u8().unwrap(),
+            i1: data.read_u16::<LittleEndian>().unwrap(),
+            i2: data.read_u16::<LittleEndian>().unwrap(),
+            i3: data.read_u16::<LittleEndian>().unwrap(),
+        },
+        // "copymap"
+        0x4F => Op::CopyTiles {
+            source_layer: data.read_u8().unwrap(),
+            source_x: data.read_u8().unwrap(),
+            source_y: data.read_u8().unwrap(),
+            dest_layer: data.read_u8().unwrap(),
+            dest_x: data.read_u8().unwrap(),
+            dest_y: data.read_u8().unwrap(),
+            width: data.read_u8().unwrap(),
+            height: data.read_u8().unwrap(),
+        },
+        // "putmapr"
+        0x50 => Op::SetTileR {
+            layer: data.read_u8().unwrap(),
+            x: data.read_u8().unwrap(),
+            y: data.read_u8().unwrap(),
+            tile_index: data.read_u8().unwrap(),
+        },
+
+        // Movement/position.
         // "pos"
         0x2C => Op::SetCoordinates {
             x: data.read_u16::<LittleEndian>().unwrap(),
             y: data.read_u16::<LittleEndian>().unwrap(),
         },
-
         // "vecx"
-        0x2E => Op::SpeedX {
+        0x2E => Op::VectorX {
             a: data.read_i16::<LittleEndian>().unwrap(),
             b: data.read_i16::<LittleEndian>().unwrap(),
         },
         // "vecy"
-        0x2F => Op::SpeedY {
+        0x2F => Op::VectorY {
             a: data.read_i16::<LittleEndian>().unwrap(),
             b: data.read_i16::<LittleEndian>().unwrap(),
-        },
-        // "anmseq"
-        0x30 => Op::SetAnimation {
-            anim_index: data.read_u8().unwrap(),
         },
         // "move"
         0x31 => Op::Move {
@@ -340,14 +365,36 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "scroll"
         0x32 => Op::Scroll {
-            time: data.read_u8().unwrap(),
+            steps: data.read_u8().unwrap(),
         },
-        // "bganm"
-        0x33 => Op::Unknown33 {
-            i0: data.read_u8().unwrap(),
-            i1: data.read_u16::<LittleEndian>().unwrap(),
-            i2: data.read_u16::<LittleEndian>().unwrap(),
-            i3: data.read_u16::<LittleEndian>().unwrap(),
+        // "scrollr
+        0x51 => Op::ScrollR {
+            layer: data.read_u8().unwrap(),
+            steps: data.read_u8().unwrap(),
+        },
+        // "tpxmove"
+        0x3F => Op::TpMoveX {
+            steps: data.read_u16::<LittleEndian>().unwrap(),
+            animation1: data.read_u8().unwrap(),
+            animation2: data.read_u8().unwrap(),
+        },
+        // "tpymove"
+        0x40 => Op::TpMoveY {
+            steps: data.read_u16::<LittleEndian>().unwrap(),
+            animation1: data.read_u8().unwrap(),
+            animation2: data.read_u8().unwrap(),
+        },
+
+        // Function calls/new objects.
+        // "bind"
+        0x08 => Op::Bind {
+            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
+            pc: data.read_u8().unwrap(),
+        },
+        // "newevent"
+        0x09 => Op::AddActor {
+            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
+            unused: data.read_u8().unwrap(),
         },
         // "func"
         0x34 => Op::Func {
@@ -355,8 +402,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "link"
         0x35 => Op::Link {
-            x: data.read_u8().unwrap(),
-            y: data.read_u8().unwrap(),
+            address: data.read_u16::<LittleEndian>().unwrap(),
         },
         // "call"
         0x36 => Op::Call {
@@ -364,15 +410,31 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "return"
         0x37 => Op::Return,
-        // "wait"
-        0x38 => Op::Wait {
+        // "slink"
+        0x42 => Op::LinkSpecial {
+            address: data.read_u16::<LittleEndian>().unwrap(),
+        },
+        // "s_newevent"
+        0x43 => Op::AddActorSpecial {
+            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
             i0: data.read_u8().unwrap(),
         },
-        // "anmwait"
-        0x39 => Op::AnimWait {
-            speed: data.read_u8().unwrap(),
+        // "func2"
+        0x4E => Op::CallFar {
+            address: read_24_bit_address(data),
+        },
+        // "taskend"
+        0x52 => Op::End,
+        // "wait"
+        0x38 => Op::Wait {
+            steps: data.read_u8().unwrap(),
+        },
+        // "timer"
+        0x3A => Op::Timer {
+            value: data.read_u8().unwrap(),
         },
 
+        // Sound / music.
         // "effect1"
         0x3B => Op::PlaySound1 {
             sound: data.read_u8().unwrap(),
@@ -387,85 +449,29 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x3D => Op::PlayMusic {
             music_index: data.read_u8().unwrap(),
         },
-
-        // "initscreen"
-        0x3E => Op::InitLayers {
-            i0: data.read_u8().unwrap(),
-        },
-
-        // "tpxmove"
-        0x3F => Op::TpMoveX {
-            i0: data.read_u16::<LittleEndian>().unwrap(),
-            i1: data.read_u16::<LittleEndian>().unwrap(),
-        },
-        // "tpymove"
-        0x40 => Op::TpMoveY {
-            i0: data.read_u16::<LittleEndian>().unwrap(),
-            i1: data.read_u16::<LittleEndian>().unwrap(),
-        },
-
-        // "s_newevent"
-        0x43 => Op::AddActorS {
-            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
-            i0: data.read_u8().unwrap(),
-        },
-
-        // "wake"
-        0x44 => Op::Wake {
-            address: data.read_u16::<LittleEndian>().unwrap(),
-        },
-        // "sleep"
-        0x45 => Op::Sleep {
-            address: data.read_u16::<LittleEndian>().unwrap(),
-        },
-
         // "s_sound"
         0x4A => Op::PlayMusicS {
             music_index: data.read_u8().unwrap(),
         },
         // "musiccmd"
         0x4B => Op::MusicCommand {
-            i0: data.read_u8().unwrap(),
-            i1: data.read_u8().unwrap(),
-            i2: data.read_u8().unwrap(),
-            i3: data.read_u8().unwrap(),
+            flags1: data.read_u8().unwrap(),
+            music_index: data.read_u8().unwrap(),
+            flags2: data.read_u8().unwrap(),
+            extra: data.read_u8().unwrap(),
         },
 
-        // "func2"
-        0x4E => Op::CallFar {
-            address: read_24_bit_address(data),
+        // Exits/scripted exits.
+        // "wake"
+        0x44 => Op::ExitOpen {
+            address: data.read_u16::<LittleEndian>().unwrap(),
+        },
+        // "sleep"
+        0x45 => Op::ExitClose {
+            address: data.read_u16::<LittleEndian>().unwrap(),
         },
 
-        // "copymap"
-        0x4F => Op::CopyTiles {
-            source_layer: data.read_u8().unwrap(),
-            source_x: data.read_u8().unwrap(),
-            source_y: data.read_u8().unwrap(),
-            dest_layer: data.read_u8().unwrap(),
-            dest_x: data.read_u8().unwrap(),
-            dest_y: data.read_u8().unwrap(),
-            width: data.read_u8().unwrap(),
-            height: data.read_u8().unwrap(),
-        },
-
-        // "putmapr"
-        // TODO: are the arguments correct?
-        0x50 => Op::SetTileR {
-            layer: data.read_u8().unwrap(),
-            x: data.read_u8().unwrap(),
-            y: data.read_u8().unwrap(),
-            tile_index: data.read_u8().unwrap(),
-        },
-        // "scrollr"
-        0x51 => Op::ScrollR {
-            i0: data.read_u8().unwrap(),
-            i1: data.read_u8().unwrap(),
-        },
-
-        // "taskend"
-        0x52 => Op::End,
-
-        // DS/PC extra ops.
+        // DS/PC specific ops.
         // "moveEX"
         0x53 => Op::MoveExtended {
             i0: data.read_u8().unwrap(),

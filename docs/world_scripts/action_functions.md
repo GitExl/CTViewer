@@ -1,9 +1,9 @@
-# World script executor functions
+# World script action functions
 
 All located in the `$C20000` segment.
 
 - `0F38` CODE_FN_C20F38
-- `0F63` execute from event commands, fn_epoch_overworld_code_processing
+- `0F63` executes from script ops, fn_epoch_overworld_code_processing
 - `1B45` partially inside fn_overworld_command_4f_copy_tiles opcode? used in `$C22402`
 - `1CF5` inside fn_overworld_set_sprite_assembly_pointer, used by unused "grp" command
 - `1DD4` inside fn_initialze_overworld_ram_idk, used by "pal" command

@@ -30,5 +30,5 @@
   - [Dialogue](scene_scripts/dialogue.md)
 - [World scripts](world_scripts/index.md)
   - [Commands](world_scripts/script_ops.md)
-  - [Executor functions](world_scripts/executor_functions.md)
+  - [Action functions](world_scripts/action_functions.md)
 - [Glossary](glossary.md)

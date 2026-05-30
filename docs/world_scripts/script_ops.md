@@ -1,87 +1,95 @@
-| Decimal | Hexadecimal | Name             | Description                               |
-|---------|-------------|------------------|-------------------------------------------|
-| 0       | `0x00`      | `initialize`     | Clears local memory.                      |
-| 1       | `0x01`      | `colofs`         | Sets current object palette.              |
-| 2       | `0x02`      | `priset`         | Sets current object priority.             |
-| 3       | `0x03`      | `grp`            | Unknown, unusued.                         |
-| 4       | `0x04`      | `pal`            | Unknown, data copy?                       |
-| 5       | `0x05`      | `mapjump`        | Changes location.                         |
-| 6       | `0x06`      | `mappos`         | Unknown, unused.                          |
-| 7       | `0x07`      | `putmap`         | Changes a single map tile.                |
-| 8       | `0x08`      | `bind`           | Binds object to a player character.       |
-| 9       | `0x09`      | `newevent`       | Creates a new object at the op address.   |
-| 10      | `0x0a`      | `clr`            | Clears local byte.                        |
-| 11      | `0x0b`      | `incr`           | Increments local byte.                    |
-| 12      | `0x0c`      | `decr`           | Decrements local byte.                    |
-| 13      | `0x0d`      | `setr`           | Sets local byte.                          |
-| 14      | `0x0e`      | `bitsetr`        | Sets local bits.                          |
-| 15      | `0x0f`      | `bitclr`         | Clears local bits.                        |
-| 16      | `0x10`      | `memclr`         | Clears global byte.                       |
-| 17      | `0x11`      | `meminc`         | Increments global byte.                   |
-| 18      | `0x12`      | `memdec`         | Decrements global byte.                   |
-| 19      | `0x13`      | `memset`         | Sets global byte.                         |
-| 20      | `0x14`      | `membitset`      | Sets global bits.                         |
-| 21      | `0x15`      | `membitclr`      | Clears global bits.                       |
-| 22      | `0x16`      | `trnlg`          | Copies byte from local to global memory.  |
-| 23      | `0x17`      | `trngl`          | Copies byte global to local memory.       |
-| 24      | `0x18`      | `trnr`           | Copies byte from local to local memory.   |
-| 25      | `0x19`      | `trnmem`         | Copies byte from global to global memory. |
-| 26      | `0x1a`      | `jp`             |                                           |
-| 27      | `0x1b`      | `jdjnz`          |                                           |
-| 28      | `0x1c`      | `jz`             |                                           |
-| 29      | `0x1d`      | `jnz`            |                                           |
-| 30      | `0x1e`      | `jcpnz`          |                                           |
-| 31      | `0x1f`      | `jcpz`           |                                           |
-| 32      | `0x20`      | `jandnz`         |                                           |
-| 33      | `0x21`      | `jandz`          |                                           |
-| 34      | `0x22`      | `jz_g`           |                                           |
-| 35      | `0x23`      | `jnz_g`          |                                           |
-| 36      | `0x24`      | `jcpnz_g`        |                                           |
-| 37      | `0x25`      | `jcpz_g`         |                                           |
-| 38      | `0x26`      | `jandnz_g`       |                                           |
-| 39      | `0x27`      | `jandz_g`        |                                           |
-| 40      | `0x28`      | `fadeout`        |                                           |
-| 41      | `0x29`      | `fadein`         |                                           |
-| 42      | `0x2a`      | `mozin`          |                                           |
-| 43      | `0x2b`      | `mozout`         |                                           |
-| 44      | `0x2c`      | `pos`            |                                           |
-| 45      | `0x2d`      | ???, skip 1 byte |                                           |
-| 46      | `0x2e`      | `vecx`           |                                           |
-| 47      | `0x2f`      | `vecy`           |                                           |
-| 48      | `0x30`      | `anmseq`         |                                           |
-| 49      | `0x31`      | `move`           |                                           |
-| 50      | `0x32`      | `scroll`         |                                           |
-| 51      | `0x33`      | `bganm`          |                                           |
-| 52      | `0x34`      | `func`           |                                           |
-| 53      | `0x35`      | `link`           |                                           |
-| 54      | `0x36`      | `call`           |                                           |
-| 55      | `0x37`      | `return`         |                                           |
-| 56      | `0x38`      | `wait`           |                                           |
-| 57      | `0x39`      | `anmwait`        |                                           |
-| 58      | `0x3a`      | `timer`          |                                           |
-| 59      | `0x3b`      | `effect1`        |                                           |
-| 60      | `0x3c`      | `effect2`        |                                           |
-| 61      | `0x3d`      | `sound`          |                                           |
-| 62      | `0x3e`      | `initscreen`     |                                           |
-| 63      | `0x3f`      | `tpxmove`        |                                           |
-| 64      | `0x40`      | `tpymove`        |                                           |
-| 65      | `0x41`      | `trigger`        |                                           |
-| 66      | `0x42`      | `slink`          |                                           |
-| 67      | `0x43`      | `s_newevent`     |                                           |
-| 68      | `0x44`      | `wake`           |                                           |
-| 69      | `0x45`      | `sleep`          |                                           |
-| 70      | `0x46`      | `addr`           |                                           |
-| 71      | `0x47`      | `subr`           |                                           |
-| 72      | `0x48`      | `memadd`         |                                           |
-| 73      | `0x49`      | `memsub`         |                                           |
-| 74      | `0x4a`      | `s_sound`        |                                           |
-| 75      | `0x4b`      | `musiccmd`       |                                           |
-| 76      | `0x4c`      | `jcpcc`          |                                           |
-| 77      | `0x4d`      | `jcpcs`          |                                           |
-| 78      | `0x4e`      | `func2`          |                                           |
-| 79      | `0x4f`      | `copymap`        |                                           |
-| 80      | `0x50`      | `putmapr`        |                                           |
-| 81      | `0x51`      | `scrollr`        |                                           |
-| 82      | `0x52`      | `taskend`        |                                           |
-| 83      | `0x53`      | `moveEX`         |                                           |
-| 84      | `0x54`      | `palEX`          |                                           |
+# World script ops
+
+- `u8` unsigned 8-bit integer
+- `i8` signed 8-bit integer
+- `u16` unsigned 16-bit integer
+- `[n]` array of n values
+- `destination` 2 byte destination data, formatted for SNES or PC
+
+| Dec | Hex   | Name         | Arguments                                                       | Description                                                         |
+|-----|-------|--------------|-----------------------------------------------------------------|---------------------------------------------------------------------|
+| 0   | `$00` | `initialize` |                                                                 | Clears local memory.                                                |
+| 1   | `$01` | `colofs`     | u8 palette                                                      | Sets current object palette.                                        |
+| 2   | `$02` | `priset`     | u8 priority                                                     | Sets current object priority.                                       |
+| 3   | `$03` | `grp`        | u8[9] ?                                                         | Unknown.                                                            |
+| 4   | `$04` | `pal`        | u8 address, u8 count, u8 mode                                   | Copies palette data into this obejct's palette. 3 modes?            |
+| 5   | `$05` | `mapjump`    | destination                                                     | Changes location.                                                   |
+| 6   | `$06` | `mappos`     |                                                                 | Unused.                                                             |
+| 7   | `$07` | `putmap`     | u8 layer, u8 x, u8 y, u8 tile                                   | Changes a single map tile.                                          |
+| 8   | `$08` | `bind`       | u16 address, u8 pc                                              | Binds object to a player character.                                 |
+| 9   | `$09` | `newevent`   | u16 address, u8 unused                                          | Creates a new object executing script ops from the address.         |
+| 10  | `$0a` | `clr`        | u8 address                                                      | Clears local byte.                                                  |
+| 11  | `$0b` | `incr`       | u8 address                                                      | Increments local byte.                                              |
+| 12  | `$0c` | `decr`       | u8 address                                                      | Decrements local byte.                                              |
+| 13  | `$0d` | `setr`       | u8 address, u8 value                                            | Sets local byte.                                                    |
+| 14  | `$0e` | `bitsetr`    | u8 address, u8 bits                                             | Sets local bits.                                                    |
+| 15  | `$0f` | `bitclr`     | u8 address, u8 bits                                             | Clears local bits.                                                  |
+| 16  | `$10` | `memclr`     | u8 address                                                      | Clears global byte.                                                 |
+| 17  | `$11` | `meminc`     | u8 address                                                      | Increments global byte.                                             |
+| 18  | `$12` | `memdec`     | u8 address                                                      | Decrements global byte.                                             |
+| 19  | `$13` | `memset`     | u8 address, u8 value                                            | Sets global byte.                                                   |
+| 20  | `$14` | `membitset`  | u8 address, u8 bits                                             | Sets global bits.                                                   |
+| 21  | `$15` | `membitclr`  | u8 address, u8 bits                                             | Clears global bits.                                                 |
+| 22  | `$16` | `trnlg`      | u8 address, u16 address                                         | Copies byte from local to global memory.                            |
+| 23  | `$17` | `trngl`      | u16 address, u16 address                                        | Copies byte global to local memory.                                 |
+| 24  | `$18` | `trnr`       | u8 address, u8 address                                          | Copies byte from local to local memory.                             |
+| 25  | `$19` | `trnmem`     | u16 address, u16 address                                        | Copies byte from global to global memory.                           |
+| 26  | `$1a` | `jp`         | u16 address                                                     | Jump to address.                                                    |
+| 27  | `$1b` | `jdjnz`      | u8 address, i8 offset                                           | Decrement local byte and jump if non-zero.                          |
+| 28  | `$1c` | `jz`         | u8 address, i8 offset                                           | Jump if local byte is zero.                                         |
+| 29  | `$1d` | `jnz`        | u8 address, u8 value, i8 offset                                 | Jump if local byte is non-zero.                                     |
+| 30  | `$1e` | `jcpnz`      | u8 address, u8 value, i8 offset                                 | Jump if local byte is not equal to value.                           |
+| 31  | `$1f` | `jcpz`       | u8 address, u8 value, i8 offset                                 | Jump if local byte is equal to value.                               |
+| 32  | `$20` | `jandnz`     | u8 address, u8 value, i8 offset                                 | Jump if local byte has one or more bits from value set.             |
+| 33  | `$21` | `jandz`      | u8 address, u8 value, i8 offset                                 | Jump if local byte has no no bits from value set.                   |
+| 34  | `$22` | `jz_g`       | u16 address, i8 offset                                          | Jump if global byte is zero.                                        |
+| 35  | `$23` | `jnz_g`      | u16 address, i8 offset                                          | Jump if global byte is non-zero.                                    |
+| 36  | `$24` | `jcpnz_g`    | u16 address, u8 value, i8 offset                                | Jump if global byte is not equal to value.                          |
+| 37  | `$25` | `jcpz_g`     | u16 address, u8 value, i8 offset                                | Jump if global byte is equal to value.                              |
+| 38  | `$26` | `jandnz_g`   | u16 address, u8 value, i8 offset                                | Jump if global byte has one or more bits from value set.            |
+| 39  | `$27` | `jandz_g`    | u16 address, u8 value, i8 offset                                | Jump if global byte has no bits from value set.                     |
+| 40  | `$28` | `fadeout`    | u8 mode                                                         | Fade to black.                                                      |
+| 41  | `$29` | `fadein`     | u8 mode                                                         | Fade from black.                                                    |
+| 42  | `$2a` | `mozin`      | u8 mode                                                         | Mosaic in                                                           |
+| 43  | `$2b` | `mozout`     | u8 mode                                                         | Mosaic out                                                          |
+| 44  | `$2c` | `pos`        | u16 x, u16 y                                                    | Sets sprite position.                                               |
+| 45  | `$2d` |              |                                                                 | Skips 1 byte.                                                       |
+| 46  | `$2e` | `vecx`       | u16 unknown, u16 unknown                                        | Set movement vector X component?                                    |
+| 47  | `$2f` | `vecy`       | u16 unknown, u16 unknown                                        | Set movement vector Y component?                                    |
+| 48  | `$30` | `anmseq`     | u8 animation                                                    | Set sprite animation.                                               |
+| 49  | `$31` | `move`       | u8 steps                                                        | Move object by vector components for given amount of steps.         |
+| 50  | `$32` | `scroll`     | u8 steps                                                        | Scroll map by vector components for given amount of steps.          |
+| 51  | `$33` | `bganm`      | u8 unknown, u16[3] unknown                                      | Animate background somehow?                                         |
+| 52  | `$34` | `func`       | u16 address                                                     | Directly calls a native function, with a 16 bit address.            |
+| 53  | `$35` | `link`       | u16 address                                                     | Creates a new object with the specified action function.            |
+| 54  | `$36` | `call`       | u16 address                                                     | Stores the next op address and jumps to a new address.              |
+| 55  | `$37` | `return`     |                                                                 | Jumps back to the stored op address.                                |
+| 56  | `$38` | `wait`       | u8 delay                                                        | Waits for a given number of cycles.                                 |
+| 57  | `$39` | `anmwait`    | u8 delay                                                        | Waits for a given number of cycles, then animates                   |
+| 58  | `$3a` | `timer`      | u8 unknown                                                      | Waits for object timer to reach zero? Unused.                       |
+| 59  | `$3b` | `effect1`    | u8 sound, i8 panning                                            | Play sound effect with sound command `$18`?                         |
+| 60  | `$3c` | `effect2`    | u8 sound, i8 panning                                            | Play sound effect with sound command `$19`?                         |
+| 61  | `$3d` | `sound`      | u8 music                                                        | Play music. Does nothing if it is already playing.                  |
+| 62  | `$3e` | `initscreen` | u8 layer                                                        | Some screen setup layer for the given layer.                        |
+| 63  | `$3f` | `tpxmove`    | u16 steps, u8 animation1, u8 animation2                         | Move object by X, also animates in some way.                        |
+| 64  | `$40` | `tpymove`    | u16 steps, u8 animation1, u8 animation2                         | Move object by Y, also animates in some way.                        |
+| 65  | `$41` | `trigger`    |                                                                 | Unused.                                                             |
+| 66  | `$42` | `slink`      | u16 address                                                     | Creates a new special object with the specified action function.    |
+| 67  | `$43` | `s_newevent` | u16 address, u8 unused                                          | Creates a new special object executing script ops from the address. |
+| 68  | `$44` | `wake`       | u16 address                                                     | Open up a (scripted) exit by address.                               |
+| 69  | `$45` | `sleep`      | u16 address                                                     | Close down a (scripted) exit by address.                            |
+| 70  | `$46` | `addr`       | u8 address, u8 value                                            | Adds a value to a local byte.                                       |
+| 71  | `$47` | `subr`       | u8 address, u8 value                                            | Subtracts a value from a local byte.                                |
+| 72  | `$48` | `memadd`     | u16 address, u8 value                                           | Adds a value to a global byte.                                      |
+| 73  | `$49` | `memsub`     | u16 address, u8 value                                           | Subtracts a value from a global byte.                               |
+| 74  | `$4a` | `s_sound`    | u8 music                                                        | Plays music, always interrups already playing track?                |
+| 75  | `$4b` | `musiccmd`   | u8 flags1, u8 music, u8 flags2, u8 extra                        | Plays music, with additional data sent to sound command?            |
+| 76  | `$4c` | `jcpcc`      | u16 address, u8 value, i8 offset                                | Jump if global byte is less than the value.                         |
+| 77  | `$4d` | `jcpcs`      | u16 address, u8 value, i8 offset                                | Jump if global byte is equal to or greater than the value.          |
+| 78  | `$4e` | `func2`      | u8[3] address                                                   | Directly calls a native function, with a 24 bit address.            |
+| 79  | `$4f` | `copymap`    | u8 src, u8 srcx, u8 srcy, u8 dst, u8 destx, u8 dsty, u8 w, u8 h | Copy map tiles from a source layer to a destination layer.          |
+| 80  | `$50` | `putmapr`    | u8 layer, u8 x, u8 y, u8 tile                                   | Changes a single map tile like `putmap`, but different somehow.     |
+| 81  | `$51` | `scrollr`    | u8 layer, u8 steps                                              | Like `scroll`, but only for a single layer.                         |
+| 82  | `$52` | `taskend`    |                                                                 | Terminates this object.                                             |
+| 83  | `$53` | `moveEX`     |                                                                 | PC/DS specific, unknown.                                            |
+| 84  | `$54` | `palEX`      |                                                                 | PC/DS specific, unknown.                                            |

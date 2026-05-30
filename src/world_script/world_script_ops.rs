@@ -8,14 +8,14 @@ pub enum Op {
 
     AddActor {
         address: u16,
-        i0: u8,
+        unused: u8,
     },
-    AddActorS {
+    AddActorSpecial {
         address: u16,
         i0: u8,
     },
-    AnimWait {
-        speed: u8,
+    WaitThenAnimate {
+        delay: u8,
     },
     Bind {
         address: u16,
@@ -60,16 +60,16 @@ pub enum Op {
     },
     End,
     FadeIn {
-        i0: u8,
+        mode: u8,
     },
     FadeOut {
-        i0: u8,
+        mode: u8,
     },
     Func {
         address: u16,
     },
-    InitLayers {
-        i0: u8,
+    InitBackgroundLayer {
+        layer: u8,
     },
     InitMemory,
     Jump {
@@ -82,14 +82,16 @@ pub enum Op {
         offset: isize,
     },
     Link {
-        x: u8,
-        y: u8,
+        address: u16,
+    },
+    LinkSpecial {
+        address: u16,
     },
     MosaicIn {
-        i0: u8,
+        mode: u8,
     },
     MosaicOut {
-        i0: u8,
+        mode: u8,
     },
     Move {
         steps: u8,
@@ -100,10 +102,10 @@ pub enum Op {
         i2: u8,
     },
     MusicCommand {
-        i0: u8,
-        i1: u8,
-        i2: u8,
-        i3: u8,
+        flags1: u8,
+        music_index: u8,
+        flags2: u8,
+        extra: u8,
     },
     PaletteExtended {
         i0: u8,
@@ -127,11 +129,11 @@ pub enum Op {
     },
     Return,
     Scroll {
-        time: u8,
+        steps: u8,
     },
     ScrollR {
-        i0: u8,
-        i1: u8,
+        layer: u8,
+        steps: u8,
     },
     SetAnimation {
         anim_index: u8,
@@ -158,24 +160,29 @@ pub enum Op {
         y: u8,
         tile_index: u8,
     },
-    Sleep {
+    ExitClose {
         address: u16,
     },
-    SpeedX {
+    VectorX {
         a: i16,
         b: i16,
     },
-    SpeedY {
+    VectorY {
         a: i16,
         b: i16,
+    },
+    Timer {
+        value: u8,
     },
     TpMoveX {
-        i0: u16,
-        i1: u16,
+        steps: u16,
+        animation1: u8,
+        animation2: u8,
     },
     TpMoveY {
-        i0: u16,
-        i1: u16,
+        steps: u16,
+        animation1: u8,
+        animation2: u8,
     },
     Unknown03 {
         i0: u8,
@@ -188,21 +195,21 @@ pub enum Op {
         i7: u8,
         i8: u8,
     },
-    Unknown04 {
+    PaletteCopy {
         address: usize,
-        i0: u8,
-        i1: u8,
+        count: u8,
+        mode: u8,
     },
-    Unknown33 {
+    BgAnimate {
         i0: u8,
         i1: u16,
         i2: u16,
         i3: u16,
     },
     Wait {
-        i0: u8,
+        steps: u8,
     },
-    Wake {
+    ExitOpen {
         address: u16,
     },
 }
