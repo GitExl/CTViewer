@@ -29,6 +29,21 @@ impl CompareOp {
     }
 }
 
+impl CompareOp {
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            CompareOp::Eq => "==",
+            CompareOp::NotEq => "!=",
+            CompareOp::Lt => "<",
+            CompareOp::Gt => ">",
+            CompareOp::LtEq => "<=",
+            CompareOp::GtEq => ">=",
+            CompareOp::And => "&",
+            CompareOp::Or => "|",
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum BitMathOp {
     Or,
@@ -38,8 +53,29 @@ pub enum BitMathOp {
     ShiftRight,
 }
 
+impl BitMathOp {
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            BitMathOp::Or => "|",
+            BitMathOp::And => "&",
+            BitMathOp::Xor => "^",
+            BitMathOp::ShiftLeft => "<<",
+            BitMathOp::ShiftRight => ">>",
+        }
+    }
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum ByteMathOp {
     Add,
     Subtract,
+}
+
+impl ByteMathOp {
+    pub fn as_string(&self) -> &'static str {
+        match self {
+            ByteMathOp::Add => "+",
+            ByteMathOp::Subtract => "-",
+        }
+    }
 }

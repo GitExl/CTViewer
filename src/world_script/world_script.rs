@@ -1,19 +1,10 @@
-use std::io::Cursor;
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_world::WorldState;
 use crate::world_script::world_script_ops::Op;
-use crate::world_script::world_script_decoder::op_decode;
+use crate::world_script::world_script_disassembler::WorldScriptDisassembler;
 
 #[derive(Clone, Copy)]
 pub struct WorldActorScriptState {
-
-    /// The delay is how many ticks need to pass before this script state is processed again.
-    /// The counter tracks how many such ticks are left in the current cycle.
-    pub delay: u32,
-    pub delay_counter: u32,
-
-    /// Counter for pausing.
-    pub pause_counter: u32,
 
     /// The current execution address.
     pub current_address: u64,
@@ -25,8 +16,6 @@ pub struct WorldActorScriptState {
 impl WorldActorScriptState {
     pub fn dump(&self) {
         println!("World actor script state");
-        println!("  Delay {} / {}", self.delay_counter, self.delay);
-        println!("  Pause {}", self.pause_counter);
         println!("  Current address 0x{:04X}", self.current_address);
         println!("  Current op {:?}", self.current_op);
         println!();
@@ -56,20 +45,9 @@ impl WorldScript {
 
     }
 
-    pub fn decode(&self) {
-        let mut data = Cursor::new(self.data.clone());
-        data.set_position(0);
-        let data_len = data.get_ref().len() as u64;
-
-        let mut address = 0;
-        while address < data_len {
-            let op = op_decode(&mut data, self.mode);
-            match op {
-                Some(op) => println!("    0x{:04X} {:?}", address, op),
-                None => println!("    0x{:04X} ???", address),
-            };
-
-            address = data.position();
-        }
+    pub fn disassemble(&self) {
+        let mut disassembler = WorldScriptDisassembler::new(&self.data, self.mode);
+        disassembler.disassemble();
+        disassembler.dump();
     }
 }

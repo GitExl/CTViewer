@@ -168,7 +168,7 @@ pub enum DataSource {
     PCIsActive(CharacterId),
 
     // World actor memory.
-    WorldLocal(usize),
+    WorldActor(usize),
 }
 
 impl DataSource {
@@ -192,6 +192,10 @@ impl DataSource {
         DataSource::Memory(address + 0x9F0000)
     }
 
+    pub fn for_world_actor_memory(address: usize) -> DataSource {
+        DataSource::WorldActor(address)
+    }
+
     pub fn get_u8(self, ctx: &Context, scene_state: &SceneState, current_actor: usize) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
@@ -207,7 +211,7 @@ impl DataSource {
             DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u8,
 
             // TODO
-            DataSource::WorldLocal(_actor_address) => 0,
+            DataSource::WorldActor(_actor_address) => 0,
         }
     }
 
@@ -225,7 +229,24 @@ impl DataSource {
             DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Active) as u16,
             DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u16,
 
-            DataSource::WorldLocal(_actor_address) => 0,
+            DataSource::WorldActor(_actor_address) => 0,
+        }
+    }
+
+    pub fn as_string(&self) -> String {
+        match self {
+            DataSource::Immediate(value) => format!("{}", value),
+            DataSource::Memory(address) => format!("0x{:06X}", address),
+            DataSource::ActorResult(actor) => format!("ActorResult({:?})", actor),
+            DataSource::GoldCount => String::from("Gold"),
+            DataSource::ItemCount(item) => format!("ItemCount({})", item),
+            DataSource::ActorFlag(actor, flags) => format!("ActorFlag({:?}, 0x{:02X})", actor, flags),
+            DataSource::PartyCharacter(index) => format!("PC({})", index),
+            DataSource::Input(binding) => format!("Input({:?})", binding),
+            DataSource::CurrentInput(is_current) => format!("CurrentInput({})", is_current),
+            DataSource::PCIsActive(pc) => format!("PCIsActive({})", pc),
+            DataSource::PCIsActiveOrReserve(pc) => format!("PCIsActive({})", pc),
+            DataSource::WorldActor(address) => format!("self.0x{:02X}", address),
         }
     }
 }
@@ -233,9 +254,8 @@ impl DataSource {
 /// Destination values for data operations.
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum DataDest {
-    // To memory.
     Memory(usize),
-    WorldLocal(usize),
+    WorldActor(usize),
 }
 
 impl DataDest {
@@ -259,30 +279,35 @@ impl DataDest {
         DataDest::Memory(address + 0x9F0000)
     }
 
+    pub fn for_world_actor_memory(address: usize) -> DataDest {
+        DataDest::WorldActor(address)
+    }
+
     pub fn put_u8(&self, ctx: &mut Context, _scene_state: &mut SceneState, value: u8) {
         match self {
             DataDest::Memory(address) => ctx.memory.write_u8(*address, value),
-
-            // TODO
-            DataDest::WorldLocal(_address) => {},
+            DataDest::WorldActor(_address) => {},
         }
     }
 
     pub fn put_u16(&self, ctx: &mut Context, _scene_state: &mut SceneState, value: u16) {
         match self {
             DataDest::Memory(address) => ctx.memory.write_u16(*address, value),
-
-            // TODO
-            DataDest::WorldLocal(_address) => {},
+            DataDest::WorldActor(_address) => {},
         }
     }
 
     pub fn put_bytes(&self, ctx: &mut Context, _scene_state: &mut SceneState, bytes: [u8; 64], length: usize) {
         match self {
             DataDest::Memory(address) => ctx.memory.write_bytes(*address, &bytes[0..length]),
+            DataDest::WorldActor(_address) => {},
+        }
+    }
 
-            // TODO
-            DataDest::WorldLocal(_address) => {},
+    pub fn as_string(&self) -> String {
+        match self {
+            DataDest::Memory(address) => format!("0x{:06X}", address),
+            DataDest::WorldActor(address) => format!("self.0x{:02X}", address),
         }
     }
 }

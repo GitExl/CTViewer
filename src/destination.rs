@@ -101,4 +101,15 @@ impl Destination {
             Destination::Scene { index, .. } => *index,
         }
     }
+
+    pub fn as_string(&self) -> String {
+        match self {
+            Destination::World { index, pos } => {
+                format!("World({}, {}, {})", index, pos.x, pos.y)
+            },
+            Destination::Scene { index, pos, facing } => {
+                format!("Scene({}, {}, {}, {:?})", index, pos.x, pos.y, facing)
+            }
+        }
+    }
 }

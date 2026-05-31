@@ -4,8 +4,6 @@ use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Op {
-    NOP,
-
     AddActor {
         address: u16,
         unused: u8,
@@ -31,10 +29,10 @@ pub enum Op {
         rhs: DataSource,
         op: ByteMathOp,
     },
-    Call {
+    GoSub {
         address: u16,
     },
-    CallFar {
+    CallFunctionFar {
         address: usize,
     },
     ChangeLocation {
@@ -65,14 +63,14 @@ pub enum Op {
     FadeOut {
         mode: u8,
     },
-    Func {
+    CallFunction {
         address: u16,
     },
     InitBackgroundLayer {
         layer: u8,
     },
     InitMemory,
-    Jump {
+    GoTo {
         address: usize,
     },
     JumpConditional {
@@ -131,14 +129,14 @@ pub enum Op {
     Scroll {
         steps: u8,
     },
-    ScrollR {
+    ScrollLayer {
         layer: u8,
         steps: u8,
     },
     SetAnimation {
         anim_index: u8,
     },
-    SetCoordinates {
+    SetPosition {
         x: u16,
         y: u16,
     },
@@ -195,7 +193,7 @@ pub enum Op {
         i7: u8,
         i8: u8,
     },
-    PaletteCopy {
+    PaletteAnimation {
         address: usize,
         count: u8,
         mode: u8,

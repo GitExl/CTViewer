@@ -107,7 +107,6 @@ impl World {
         println!("  Map: {}", self.map.index);
         println!();
 
-        self.script.decode();
         self.world_map.dump();
         self.map.dump();
         self.tileset_l12.dump();
@@ -121,6 +120,8 @@ impl World {
         for scripted_exit in &self.scripted_exits {
             scripted_exit.dump();
         }
+
+        self.script.disassemble();
 
         self.tileset_l12.render_chips_to_surface(&self.tileset_l12.chip_bitmaps).write_to_bmp(Path::new("debug_output/world_chips_l12.bmp"));
         self.tileset_l3.render_chips_to_surface(&self.tileset_l3.chip_bitmaps).write_to_bmp(Path::new("debug_output/world_chips_l3.bmp"));
