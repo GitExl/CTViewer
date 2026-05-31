@@ -162,12 +162,10 @@ pub enum Op {
         address: u16,
     },
     VectorX {
-        a: i16,
-        b: i16,
+        magnitude: i32,
     },
     VectorY {
-        a: i16,
-        b: i16,
+        magnitude: i32,
     },
     Timer {
         value: u8,
@@ -193,9 +191,9 @@ pub enum Op {
         i7: u8,
         i8: u8,
     },
-    PaletteAnimation {
+    PaletteLoad {
         address: usize,
-        count: u8,
+        palette_index: u8,
         mode: u8,
     },
     BgAnimate {

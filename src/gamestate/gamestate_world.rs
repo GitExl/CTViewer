@@ -4,7 +4,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
-use crate::actor::{Actor, ActorClass, ActorFlags};
+use crate::actor::Actor;
 use crate::character::CharacterId;
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
@@ -16,12 +16,13 @@ use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
-use crate::sprites::sprite_assets::WORLD_SPRITE_INDEX;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
 use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
+use crate::world::world_sprites::WorldSprites;
+use crate::world_script::world_animation_script::WorldAnimationScript;
 
 /// Mutable state for a world.
 pub struct WorldState {
@@ -31,6 +32,8 @@ pub struct WorldState {
     pub camera: Camera,
     pub world_map: WorldMap,
     pub map: Map,
+    pub animations: WorldAnimationScript,
+    pub sprites: WorldSprites,
 }
 
 pub struct GameStateWorld {
@@ -60,53 +63,9 @@ impl GameStateWorld {
         ctx.sprites_states.clear();
 
         let mut world = ctx.fs.read_world(world_index);
-        ctx.sprite_assets.load_world_sprite_asset(&ctx.fs, world_index, world.sprite_graphics, &world.palette.palette);
-        ctx.sprite_assets.load_world_player_sprites_asset(&ctx.fs, [0, 1, 2]);
 
-
-        let mut actors = Vec::new();
-
-        // Test sprites.
-        let mut actor = Actor::new(0);
-        let state = ctx.sprites_states.add_state();
-        actor.pos = Vec2Df64::new(128.0, 128.0);
-        actor.flags.remove(ActorFlags::DEAD);
-        actor.class = ActorClass::NPC;
-        state.sprite_index = WORLD_SPRITE_INDEX;
-        state.anim_index = 1;
-        state.palette = world.palette.palette.clone();
-        actors.push(actor);
-
-        let mut actor = Actor::new(1);
-        actor.pos = Vec2Df64::new(192.0, 32.0);
-        actor.flags.remove(ActorFlags::DEAD);
-        actor.class = ActorClass::NPC;
-        let state = ctx.sprites_states.add_state();
-        state.sprite_index = WORLD_SPRITE_INDEX;
-        state.anim_index = 34;
-        state.palette = world.palette.palette.clone();
-        actors.push(actor);
-
-        let mut actor = Actor::new(2);
-        actor.pos = Vec2Df64::new(32.0, 192.0);
-        actor.flags.remove(ActorFlags::DEAD);
-        actor.class = ActorClass::NPC;
-        let state = ctx.sprites_states.add_state();
-        state.sprite_index = WORLD_SPRITE_INDEX;
-        state.anim_index = 81;
-        state.palette = world.palette.palette.clone();
-        actors.push(actor);
-
-        let mut actor = Actor::new(3);
-        actor.pos = Vec2Df64::new(32.0, 256.0);
-        actor.flags.remove(ActorFlags::DEAD);
-        actor.class = ActorClass::NPC;
-        let state = ctx.sprites_states.add_state();
-        state.sprite_index = WORLD_SPRITE_INDEX;
-        state.anim_index = 155;
-        state.palette = world.palette.palette.clone();
-        actors.push(actor);
-
+        let mut sprites = WorldSprites::new(&ctx.fs, world_index, world.sprite_graphics);
+        sprites.load_player_sprites(&ctx.fs, [0, 1, 2]);
 
         // Create new shared world state.
         let mut state = WorldState {
@@ -117,12 +76,13 @@ impl GameStateWorld {
                 0.0, 0.0,
                 (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
             ),
-            actors,
+            actors: Vec::new(),
             player_actors: HashMap::new(),
             world_map: world.world_map.clone(),
             map: world.map.clone(),
+            animations: ctx.fs.read_world_animation_script(),
+            sprites,
         };
-
 
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
@@ -354,12 +314,7 @@ impl GameStateTrait for GameStateWorld {
 
     fn dump(&mut self, ctx: &Context) {
         self.world.dump(ctx);
-
-        ctx.sprite_assets.dump_world_sprite_graphics();
-
-        // for set in self.sprites.anim_sets.iter() {
-        //     set.dump();
-        // }
+        self.state.sprites.dump(&self.world.palette.palette);
     }
 }
 

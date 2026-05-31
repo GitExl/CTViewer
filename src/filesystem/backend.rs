@@ -107,7 +107,7 @@ pub trait FileSystemBackendTrait {
     fn get_world_exit_data(&self, exits_index: usize) -> Cursor<Vec<u8>>;
     fn get_world_exit_names(&self, language: &str) -> Vec<String>;
     fn get_world_names(&self, language: &str) -> Vec<String>;
-    fn get_world_sprite_data(&self) -> Cursor<Vec<u8>>;
+    fn get_world_sprite_data(&self) -> Vec<u8>;
     fn get_world_sprite_graphics(&self, world_index: usize, tiles_index: usize) -> Option<Vec<u8>>;
     fn get_world_player_sprite_graphics(&self) -> Option<Vec<u8>>;
     fn get_world_epoch_sprite_graphics(&self) -> Option<Vec<u8>>;

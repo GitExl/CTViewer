@@ -151,6 +151,10 @@ impl FileSystemBackendSnes {
         }
     }
 
+    fn get_bytes(&self, offset: usize, len: usize) -> Vec<u8> {
+        self.data[offset..offset + len].to_vec()
+    }
+
     fn get_bytes_cursor(&self, offset: usize, len: usize) -> Cursor<Vec<u8>> {
         Cursor::new(self.data[offset..offset + len].to_vec())
     }
@@ -242,8 +246,8 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         self.read_string_list(0x6F4D4, 6)
     }
 
-    fn get_world_sprite_data(&self) -> Cursor<Vec<u8>> {
-        self.get_bytes_cursor(0x3E000, 8192)
+    fn get_world_sprite_data(&self) -> Vec<u8> {
+        self.get_bytes(0x3E000, 8192)
     }
 
     fn get_world_sprite_graphics(&self, _world_index: usize, tiles_index: usize) -> Option<Vec<u8>> {

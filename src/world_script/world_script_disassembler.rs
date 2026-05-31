@@ -6,7 +6,7 @@ use crate::sound_list::get_sound_name;
 use crate::world_script::world_action_funcs::action_func_as_string;
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_ops::Op;
-use crate::world_script::world_sprites::get_sprite_description;
+use crate::world_script::world_animation_script::get_animation_description;
 
 pub struct WorldScriptDisassembler {
     data: Cursor<Vec<u8>>,
@@ -41,7 +41,7 @@ impl WorldScriptDisassembler {
                 match op {
                     Op::AddActor { address, .. } => self.add_label(address as u64, format!("actor_{:04X}", address)),
                     Op::AddActorSpecial { address, .. } => self.add_label(address as u64, format!("actor_special_{:04X}", address)),
-                    Op::Bind { address, pc } => self.add_label(address as u64, format!("pc_{:04X}", address)),
+                    Op::Bind { address, .. } => self.add_label(address as u64, format!("pc_{:04X}", address)),
                     Op::DecrementAndJumpIfNonZero { offset, .. } => self.add_label((op_address as isize + offset) as u64, format!("jpnz_{:04X}", op_address as isize + offset)),
                     Op::GoTo { address } => self.add_label(address as u64, format!("jp_{:04X}", address)),
                     Op::JumpConditional { offset, .. } => self.add_label((op_address as isize + offset) as u64, format!("jp_{:04X}", op_address as isize + offset)),
@@ -123,26 +123,26 @@ impl WorldScriptDisassembler {
                     Op::Return => String::from("return"),
                     Op::Scroll { steps } => format!("scroll {}", steps),
                     Op::ScrollLayer { layer, steps } => format!("scroll_layer {}, {}", layer, steps),
-                    Op::SetAnimation { anim_index } => format!("set_animation {}    // Animation: {}", anim_index, get_sprite_description(anim_index)),
+                    Op::SetAnimation { anim_index } => format!("set_animation {}    // Animation: {}", anim_index, get_animation_description(anim_index)),
                     Op::SetPosition { x, y } => format!("set_pos {}, {}", x, y),
                     Op::SetPalette { index } => format!("set_palette {}", index),
                     Op::SetPriority { priority } => format!("set_priority {}", priority),
                     Op::SetTile { layer, x, y, tile_index } => format!("set_tile {}, ({}, {}), {}", layer, x, y, tile_index),
                     Op::SetTileR { layer, x, y, tile_index } => format!("set_tile_r {}, ({}, {}), {}", layer, x, y, tile_index),
                     Op::ExitClose { address } => format!("exit_close 0x{:04X}", address),
-                    Op::VectorX { a, b } => format!("vector_x {}, {}", a, b),
-                    Op::VectorY { a, b } => format!("vector_y {}, {}", a, b),
+                    Op::VectorX { magnitude } => format!("vector_x {:.03}", (magnitude as f64) / 65536.0),
+                    Op::VectorY { magnitude } => format!("vector_y {:.03}", (magnitude as f64) / 65536.0),
                     Op::Timer { value } => format!("timer {}", value),
                     Op::TpMoveX { steps, animation1, animation2 } => {
-                        format!("tp_move_x {}, {}, {}    // Animation: {}, Animation: {}", steps, animation1, animation2, get_sprite_description(animation1), get_sprite_description(animation2))
+                        format!("tp_move_x {}, {}, {}    // Animation: {}, Animation: {}", steps, animation1, animation2, get_animation_description(animation1), get_animation_description(animation2))
                     },
                     Op::TpMoveY { steps, animation1, animation2 } => {
-                        format!("tp_move_y {}, {}, {}    // Animation: {}, Animation: {}", steps, animation1, animation2, get_sprite_description(animation1), get_sprite_description(animation2))
+                        format!("tp_move_y {}, {}, {}    // Animation: {}, Animation: {}", steps, animation1, animation2, get_animation_description(animation1), get_animation_description(animation2))
                     },
                     Op::Unknown03 { i0, i1, i2, i3, i4, i5, i6, i7, i8 } => {
                         format!("unknown03 {}, {}, {}, {}, {}, {}, {}, {}, {}", i0, i1, i2, i3, i4, i5, i6, i7, i8)
                     },
-                    Op::PaletteAnimation { address, count, mode } => format!("palette_anim 0x{:04X}, {}, {}", address, count, mode),
+                    Op::PaletteLoad { address, palette_index: count, mode } => format!("palette_load 0x{:04X}, {}, {}", address, count, mode),
                     Op::BgAnimate { i0, i1, i2, i3 } => format!("bg_anim {}, {}, {}, {}", i0, i1, i2, i3),
                     Op::Wait { steps } => format!("wait {}", steps),
                     Op::ExitOpen { address } => format!("exit_open 0x{:04X}", address),

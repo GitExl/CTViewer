@@ -12,7 +12,7 @@
 | 1   | `$01` | `colofs`     | u8 palette                                                      | Sets current actor palette.                                        |
 | 2   | `$02` | `priset`     | u8 priority                                                     | Sets current actor priority.                                       |
 | 3   | `$03` | `grp`        | u8[9] ?                                                         | Unknown.                                                           |
-| 4   | `$04` | `pal`        | u8 address, u8 count, u8 mode                                   | Copies palette data into this obejct's palette. 3 modes?           |
+| 4   | `$04` | `pal`        | u8 address, u8 pal_index, u8 mode                               | Copies palette data into this actor's palette. 3 modes?            |
 | 5   | `$05` | `mapjump`    | destination                                                     | Changes location.                                                  |
 | 6   | `$06` | `mappos`     |                                                                 | Unused.                                                            |
 | 7   | `$07` | `putmap`     | u8 layer, u8 x, u8 y, u8 tile                                   | Changes a single map tile.                                         |
@@ -54,8 +54,8 @@
 | 43  | `$2b` | `mozout`     | u8 mode                                                         | Mosaic out                                                         |
 | 44  | `$2c` | `pos`        | u16 x, u16 y                                                    | Sets sprite position.                                              |
 | 45  | `$2d` |              |                                                                 | Skips 1 byte.                                                      |
-| 46  | `$2e` | `vecx`       | u16 unknown, u16 unknown                                        | Set movement vector X component?                                   |
-| 47  | `$2f` | `vecy`       | u16 unknown, u16 unknown                                        | Set movement vector Y component?                                   |
+| 46  | `$2e` | `vecx`       | i32 magnitude                                                   | Set X movement vector. 16.16 fixed point value.                    |
+| 47  | `$2f` | `vecy`       | i32 magnitude                                                   | Set Y movement vector. 16.16 fixed point value.                    |
 | 48  | `$30` | `anmseq`     | u8 animation                                                    | Set sprite animation.                                              |
 | 49  | `$31` | `move`       | u8 steps                                                        | Move actor by vector components for given amount of steps.         |
 | 50  | `$32` | `scroll`     | u8 steps                                                        | Scroll map by vector components for given amount of steps.         |

@@ -35,9 +35,9 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             i8: data.read_u8().unwrap(),
         },
         // "pal", source data address, number of colors, mode
-        0x04 => Op::PaletteAnimation {
+        0x04 => Op::PaletteLoad {
             address: read_24_bit_address(data),
-            count: data.read_u8().unwrap(),
+            palette_index: data.read_u8().unwrap(),
             mode: data.read_u8().unwrap(),
         },
         // "mapjump"
@@ -351,13 +351,11 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "vecx"
         0x2E => Op::VectorX {
-            a: data.read_i16::<LittleEndian>().unwrap(),
-            b: data.read_i16::<LittleEndian>().unwrap(),
+            magnitude: data.read_i32::<LittleEndian>().unwrap(),
         },
         // "vecy"
         0x2F => Op::VectorY {
-            a: data.read_i16::<LittleEndian>().unwrap(),
-            b: data.read_i16::<LittleEndian>().unwrap(),
+            magnitude: data.read_i32::<LittleEndian>().unwrap(),
         },
         // "move"
         0x31 => Op::Move {

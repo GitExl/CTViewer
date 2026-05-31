@@ -199,8 +199,8 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.read_text_string_list(data, Some(106), Some(112))
     }
 
-    fn get_world_sprite_data(&self) -> Cursor<Vec<u8>> {
-        self.get_file_cursor(&String::from("Game/common/shapeSeqTbl.bin"), None, None)
+    fn get_world_sprite_data(&self) -> Vec<u8> {
+        self.get_file_bytes(&String::from("Game/common/shapeSeqTbl.bin"), None, None)
     }
 
     fn get_world_sprite_graphics(&self, world_index: usize, tiles_index: usize) -> Option<Vec<u8>> {

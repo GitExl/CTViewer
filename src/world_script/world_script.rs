@@ -1,23 +1,23 @@
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_world::WorldState;
-use crate::world_script::world_script_ops::Op;
 use crate::world_script::world_script_disassembler::WorldScriptDisassembler;
 
-#[derive(Clone, Copy)]
 pub struct WorldActorScriptState {
-
-    /// The current execution address.
+    pub action_function: u16,
+    pub unknown: u8,
+    pub timer: u8,
+    pub return_address: u64,
     pub current_address: u64,
-
-    /// Current decoded op.
-    pub current_op: Option<Op>,
+    pub counter: u8,
+    pub animation_address: u64,
+    pub animation_counter: u8,
+    pub palette_priority: u8,
+    pub memory: [u8; 48],
 }
 
 impl WorldActorScriptState {
     pub fn dump(&self) {
         println!("World actor script state");
-        println!("  Current address 0x{:04X}", self.current_address);
-        println!("  Current op {:?}", self.current_op);
         println!();
     }
 }

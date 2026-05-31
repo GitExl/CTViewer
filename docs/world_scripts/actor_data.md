@@ -19,10 +19,8 @@
 | `$16`  | `?`   |                                                                                              |
 | `$17`  | `?`   |                                                                                              |
 | `$18`  | `W`   | Current sprite Y pixel                                                                       |
-| `$1A`  | `W`   | X scroll vector?                                                                             |
-| `$1C`  | `W`   | X move vector                                                                                |
-| `$1E`  | `W`   | Y scroll vector?                                                                             |
-| `$20`  | `W`   | Y move vector                                                                                |
+| `$1A`  | `L`   | 16.16 fixed point X movement vector                                                          |
+| `$1E`  | `L`   | 16.16 fixed point Y movement vector                                                          |
 | `$22`  | `?`   |                                                                                              |
 | `$23`  | `?`   |                                                                                              |
 | `$24`  | `?`   |                                                                                              |
