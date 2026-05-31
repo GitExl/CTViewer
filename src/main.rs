@@ -54,6 +54,8 @@ mod items;
 mod character;
 mod world_script;
 mod shared_op;
+mod music_list;
+mod sound_list;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;

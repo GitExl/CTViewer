@@ -214,15 +214,18 @@ impl FileSystem {
         // that loops back to an earlier point in the animation.
         //
         // Instructions @ 0xC20E4A
-        // 0: Unknown. Writes CPU direct page address to [$52] + arg.
-        // 1: Unknown. Increments [$52] + arg by 1.
-        // 2: Unknown. Decrements [$52] + arg by 1.
+        // 0: Sets current world object $26 to value. Only used by PC animations.
+        // 1: Increments current world object $26 value by 1. Only used by PC animations.
+        // 2: Decrements current world object $26 value by 1. Only used by PC animations.
         // 3: Change position by arg number of bytes (signed, so can loop back). Can move to a
         //    different animation entirely! Not yet implemented.
         // 4: A pointer to frame assembly data, and frame duration. A duration of 0 will show the
-        //    frame forever.
-        // 5: Unknown.
-        // 6: Unknown. First byte goes to $62. Next 2 bytes into $60. Next 2 bytes into $63. Next 2 bytes into $65.
+        //    frame forever. Sets world object 0x0E and counts it down from frame duration, so waits
+        //    x frames. World object 0x0F bit $40 means there will be no delay and animates
+        //    immediately.
+        // 5: Sets world object 0x0E and counts it down, so just waits x frames.
+        // 6: Unknown. First 3 bytes go into $60. Next 2 bytes into $63. Next 2 bytes into $65.
+        // 7: unused.
         for (_index, offset) in offsets.iter().enumerate() {
             data.seek(SeekFrom::Start(*offset)).unwrap();
 
@@ -238,7 +241,12 @@ impl FileSystem {
                 if op == 0x00 {
                     op_data.push(data.read_u8().unwrap() as isize);
                 }
+                // Increment something.
                 else if op == 0x01 {
+                    op_data.push(data.read_u8().unwrap() as isize);
+                }
+                // Decrement something.
+                else if op == 0x02 {
                     op_data.push(data.read_u8().unwrap() as isize);
                 }
 

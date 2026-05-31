@@ -119,11 +119,11 @@ pub enum Op {
     },
     PlaySound1 {
         sound: u8,
-        position: i8,
+        position: u8,
     },
     PlaySound2 {
         sound: u8,
-        position: i8,
+        position: u8,
     },
     Return,
     Scroll {

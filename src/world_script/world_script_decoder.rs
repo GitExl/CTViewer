@@ -438,12 +438,12 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // "effect1"
         0x3B => Op::PlaySound1 {
             sound: data.read_u8().unwrap(),
-            position: data.read_i8().unwrap(),
+            position: data.read_u8().unwrap(),
         },
         // "effect2"
         0x3C => Op::PlaySound2 {
             sound: data.read_u8().unwrap(),
-            position: data.read_i8().unwrap(),
+            position: data.read_u8().unwrap(),
         },
         // "sound"
         0x3D => Op::PlayMusic {
