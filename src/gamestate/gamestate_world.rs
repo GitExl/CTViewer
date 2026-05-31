@@ -4,7 +4,6 @@ use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
-use crate::actor::Actor;
 use crate::character::CharacterId;
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
@@ -23,10 +22,10 @@ use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 use crate::world::world_sprites::WorldSprites;
 use crate::world_script::world_animation_script::WorldAnimationScript;
+use crate::world_script::world_script::WorldActorState;
 
 /// Mutable state for a world.
 pub struct WorldState {
-    pub actors: Vec<Actor>,
     pub player_actors: HashMap<CharacterId, usize>,
     pub next_destination: NextDestination,
     pub camera: Camera,
@@ -34,6 +33,7 @@ pub struct WorldState {
     pub map: Map,
     pub animations: WorldAnimationScript,
     pub sprites: WorldSprites,
+    pub actors: [WorldActorState; 64],
 }
 
 pub struct GameStateWorld {
@@ -60,12 +60,12 @@ pub struct GameStateWorld {
 
 impl GameStateWorld {
     pub fn new(ctx: &mut Context, world_index: usize, pos: Vec2Df64, fade_in: bool) -> GameStateWorld {
-        ctx.sprites_states.clear();
-
         let mut world = ctx.fs.read_world(world_index);
 
         let mut sprites = WorldSprites::new(&ctx.fs, world_index, world.sprite_graphics);
         sprites.load_player_sprites(&ctx.fs, [0, 1, 2]);
+
+        ctx.sprites_states.clear();
 
         // Create new shared world state.
         let mut state = WorldState {
@@ -76,13 +76,15 @@ impl GameStateWorld {
                 0.0, 0.0,
                 (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
             ),
-            actors: Vec::new(),
+            actors: [WorldActorState::default(); 64],
             player_actors: HashMap::new(),
             world_map: world.world_map.clone(),
             map: world.map.clone(),
             animations: ctx.fs.read_world_animation_script(),
             sprites,
         };
+
+        world.script.initialize(&mut state);
 
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
@@ -122,13 +124,14 @@ impl GameStateWorld {
 impl GameStateTrait for GameStateWorld {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.world.tick(ctx, delta);
+        self.world.script.run(ctx, &mut self.state);
 
-        for (index, actor) in self.state.actors.iter_mut().enumerate() {
-            // /actor.tick(delta, &self.state.scene_map);
-            let state = ctx.sprites_states.get_state_mut(index);
-            actor.update_sprite_state(state);
-            ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
-        }
+        // for (index, actor) in self.state.actors.iter_mut().enumerate() {
+        //     // /actor.tick(delta, &self.state.scene_map);
+        //     let state = ctx.sprites_states.get_state_mut(index);
+        //     actor.update_sprite_state(state);
+        //     ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
+        // }
 
         self.state.camera.tick(delta);
         if self.key_up {

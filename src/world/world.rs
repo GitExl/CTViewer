@@ -74,8 +74,7 @@ impl World {
     pub fn tick(&mut self, _ctx: &Context, delta: f64) {
         self.map.tick(delta);
 
-        // todo clean up
-        // todo move into palette anim for tileset?
+        // TODO remove when world script is working correctly.
         self.palette_anim_timer += delta;
         if self.palette_anim_timer >= 1.0 / 6.0 {
             self.palette_anim_timer -= 1.0 / 6.0;

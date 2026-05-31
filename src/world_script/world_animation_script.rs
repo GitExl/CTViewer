@@ -3,7 +3,7 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::sprites::sprite_assembly::{SpriteAssemblyChip, SpriteAssemblyChipFlags, SpriteAssemblyFrame};
 use crate::util::data_read::read_24_bit_address;
-use crate::world_script::world_script::WorldActorScriptState;
+use crate::world_script::world_script::WorldActorState;
 
 pub struct WorldAnimationScript {
     offsets: Vec<usize>,
@@ -54,7 +54,7 @@ impl WorldAnimationScript {
         }
     }
 
-    pub fn run(&mut self, state: &mut WorldActorScriptState) {
+    pub fn run(&mut self, state: &mut WorldActorState) {
         let op = self.decode(state.animation_address);
         match op {
             WorldAnimationOp::Set { value } => {
@@ -152,8 +152,8 @@ impl WorldAnimationScript {
     fn set_sprite_assembly(&mut self, assembly_address: u64) {
         println!("set anim frame assembly {}", assembly_address);
 
-        // Read frame assembly data from the position, but keep track
-        // of the current position so we can return here later.
+        // Read frame assembly data from the position, but keep track of the current position so we
+        // can return here later.
         let old_pos = self.data.position();
         self.data.set_position(assembly_address - 0xE000);
 
