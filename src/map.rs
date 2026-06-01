@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 
 #[derive(Clone)]
@@ -108,6 +109,37 @@ impl MapLayer {
 
     pub fn lerp(&mut self, lerp: f64) {
         self.scroll_lerp = Vec2Df64::interpolate(self.scroll_last, self.scroll, lerp);
+    }
+
+    // Assemble map layer chips from a tileset's tiles.
+    pub fn assemble_chips(&mut self, tileset: &TileSet, start_x: u32, start_y: u32, width: u32, height: u32) {
+
+        // Convert each tile into 2x2 chips.
+        for y in 0..height {
+            for x in 0..width {
+                let tile_x = start_x + x;
+                let tile_y = start_y + y;
+                let tile_index = tile_y * self.tile_width + tile_x;
+                if tile_index >= self.tiles.len() as u32 {
+                    continue;
+                }
+
+                let tile = self.tiles[tile_index as usize];
+                if tile >= tileset.tiles.len() {
+                    continue;
+                }
+                let tile_asy = &tileset.tiles[tile];
+
+                let chip_x = tile_x * 2;
+                let chip_y = tile_y * 2;
+                let chip_index = (chip_y * self.chip_width + chip_x) as usize;
+
+                self.chips[chip_index + 0].clone_from(&tile_asy.corners[0]);
+                self.chips[chip_index + 1].clone_from(&tile_asy.corners[1]);
+                self.chips[chip_index + self.chip_width as usize + 0].clone_from(&tile_asy.corners[2]);
+                self.chips[chip_index + self.chip_width as usize + 1].clone_from(&tile_asy.corners[3]);
+            }
+        }
     }
 }
 

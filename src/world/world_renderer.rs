@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use crate::camera::Camera;
+use crate::gamestate::gamestate_world::WorldState;
 use crate::map::Map;
 use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
@@ -35,43 +36,41 @@ impl WorldRenderer {
         }
     }
 
-    pub fn render(&mut self, lerp: f64, camera: &Camera, world: &mut World, surface: &mut Surface) {
-        world.lerp(lerp);
-
-        self.render_debug(camera, world, surface);
+    pub fn render(&mut self, lerp: f64, state: &WorldState, surface: &mut Surface) {
+        self.render_debug(state, surface);
     }
 
-    fn render_debug(&mut self, camera: &Camera, world: &World, surface: &mut Surface) {
+    fn render_debug(&mut self, state: &WorldState, surface: &mut Surface) {
         if self.debug_layer != WorldDebugLayer::Disabled {
-            self.render_debug_layer(&world.map, &world.world_map, &camera, surface);
+            self.render_debug_layer(&state, surface);
         }
 
         if self.debug_layer == WorldDebugLayer::Exits {
-            self.render_debug_exits(&world.exits, &world.scripted_exits, &camera, surface);
+            self.render_debug_exits(&state, surface);
         }
 
         if self.debug_palette {
-            render_palette(&world.palette.palette, surface, 8);
+            render_palette(&state.palette.palette, surface, 8);
         }
     }
 
-    fn render_debug_exits(&mut self, exits: &Vec<WorldExit>, scripted_exits: &Vec<ScriptedWorldExit>, camera: &Camera, surface: &mut Surface) {
-        for exit in exits {
-            let pos = exit.pos - camera.pos_lerp.as_vec2d_i32();
+    fn render_debug_exits(&mut self, state: &WorldState, surface: &mut Surface) {
+        for exit in state.exits.iter() {
+            let pos = exit.pos - state.camera.pos_lerp.as_vec2d_i32();
             let (src_x, src_y) = if exit.is_available { (0, 8) } else { (16, 8) };
             blit_surface_to_surface(&self.debug_tiles, surface, src_x, src_y, 16, 16, pos.x, pos.y, SurfaceBlendOps::Blend);
         }
 
-        for scripted_exit in scripted_exits {
-            let pos = scripted_exit.pos - camera.pos_lerp.as_vec2d_i32();
+        for scripted_exit in state.scripted_exits.iter() {
+            let pos = scripted_exit.pos - state.camera.pos_lerp.as_vec2d_i32();
             blit_surface_to_surface(&self.debug_tiles, surface, 32, 8, 16, 16, pos.x, pos.y, SurfaceBlendOps::Blend);
         }
     }
 
-    fn render_debug_layer(&mut self, map: &Map, world_map: &WorldMap, camera: &Camera, surface: &mut Surface) {
-        let chip1 = (camera.pos_lerp / 8.0).floor().as_vec2d_i32();
-        let chip2 = ((camera.pos_lerp + camera.size) / 8.0).ceil().as_vec2d_i32();
-        let layer = &map.layers[1];
+    fn render_debug_layer(&mut self, state: &WorldState, surface: &mut Surface) {
+        let chip1 = (state.camera.pos_lerp / 8.0).floor().as_vec2d_i32();
+        let chip2 = ((state.camera.pos_lerp + state.camera.size) / 8.0).ceil().as_vec2d_i32();
+        let layer = &state.map.layers[1];
 
         let chip_width = layer.chip_width as i32;
         let chip_height = layer.chip_height as i32;
@@ -93,7 +92,7 @@ impl WorldRenderer {
                 }
 
                 let chip_index = (chip_x_wrap + chip_y_wrap * chip_width) as usize;
-                let chip = &world_map.chips[chip_index];
+                let chip = &state.world_map.chips[chip_index];
 
                 let src_x;
                 let src_y;
@@ -129,8 +128,8 @@ impl WorldRenderer {
                     continue;
                 }
 
-                let px = (chip_x * 8) - camera.pos_lerp.x.floor() as i32;
-                let py = (chip_y * 8) - camera.pos_lerp.y.floor() as i32;
+                let px = (chip_x * 8) - state.camera.pos_lerp.x.floor() as i32;
+                let py = (chip_y * 8) - state.camera.pos_lerp.y.floor() as i32;
                 blit_surface_to_surface(&self.debug_tiles, surface, src_x * 8, src_y * 8, 8, 8, px, py, SurfaceBlendOps::Blend);
             }
         }

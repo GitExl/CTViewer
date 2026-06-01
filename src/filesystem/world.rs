@@ -112,8 +112,6 @@ impl FileSystem {
 
             palette,
             palette_anim,
-            palette_anim_index: 0,
-            palette_anim_timer: 0.0,
 
             sprite_graphics: header.sprite_sets,
             map,

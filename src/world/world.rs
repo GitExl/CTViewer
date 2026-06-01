@@ -9,6 +9,7 @@ use crate::util::vec2di32::Vec2Di32;
 use crate::world::world_map::WorldMap;
 use crate::world_script::world_script::WorldScript;
 
+#[derive(Clone)]
 pub struct WorldExit {
     pub index: usize,
 
@@ -32,6 +33,7 @@ impl WorldExit {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct ScriptedWorldExit {
     pub index: usize,
     pub pos: Vec2Di32,
@@ -55,8 +57,6 @@ pub struct World {
 
     pub palette: GamePalette,
     pub palette_anim: GamePalette,
-    pub palette_anim_index: usize,
-    pub palette_anim_timer: f64,
 
     pub map: Map,
     pub world_map: WorldMap,
@@ -71,32 +71,6 @@ pub struct World {
 }
 
 impl World {
-    pub fn tick(&mut self, _ctx: &Context, delta: f64) {
-        self.map.tick(delta);
-
-        // TODO remove when world script is working correctly.
-        self.palette_anim_timer += delta;
-        if self.palette_anim_timer >= 1.0 / 6.0 {
-            self.palette_anim_timer -= 1.0 / 6.0;
-
-            self.palette_anim_index += 1;
-            if self.palette_anim_index >= 4 {
-                self.palette_anim_index = 0;
-            }
-
-            if self.index == 3 {
-                self.palette.palette.colors[48..64].copy_from_slice(&self.palette_anim.palette.colors[self.palette_anim_index * 16..self.palette_anim_index * 16 + 16]);
-            } else if self.index == 5 {
-                self.palette.palette.colors[112..128].copy_from_slice(&self.palette_anim.palette.colors[self.palette_anim_index * 16..self.palette_anim_index * 16 + 16]);
-            } else {
-                self.palette.palette.colors[32..48].copy_from_slice(&self.palette_anim.palette.colors[self.palette_anim_index * 16..self.palette_anim_index * 16 + 16]);
-            }
-        }
-    }
-
-    pub fn lerp(&mut self, lerp: f64) {
-        self.map.lerp(lerp)
-    }
 
     pub fn dump(&self, ctx: &Context) {
         println!("World {}", self.index);

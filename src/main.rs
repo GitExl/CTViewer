@@ -145,7 +145,16 @@ fn main() -> Result<(), String> {
     let ui_theme = fs.read_ui_theme(args.ui_theme);
     let screen_fade = ScreenFade::new(0.0);
     let mode = fs.mode;
-    let memory = Memory::new();
+
+    let mut memory = Memory::new();
+    memory.system[0x0104] |= 128;
+    memory.system[0x0104] |= 64;
+    memory.system[0x1BA7] |= 4;
+    memory.system[0x1BA7] |= 8;
+    memory.system[0x1BAA] |= 4;
+    memory.system[0x1BAB] |= 1;
+    memory.system[0x1BA8] |= 16;
+    memory.system[0x1BA7] |= 2;
 
     let mut text_processor = TextProcessor::new();
     let party = Party::new();

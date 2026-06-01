@@ -368,10 +368,10 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // Map changes.
         // "putmap"
         0x07 => Op::SetTile {
-            layer: data.read_u8().unwrap(),
-            x: data.read_u8().unwrap(),
-            y: data.read_u8().unwrap(),
-            tile_index: data.read_u8().unwrap(),
+            layer: data.read_u8().unwrap() as usize - 1,
+            x: data.read_u8().unwrap() as usize,
+            y: data.read_u8().unwrap() as usize,
+            tile_index: data.read_u8().unwrap() as usize,
         },
         // "bganm"
         0x33 => Op::BgAnimate {
@@ -382,18 +382,18 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "copymap"
         0x4F => Op::CopyTiles {
-            source_layer: data.read_u8().unwrap(),
-            source_x: data.read_u8().unwrap(),
-            source_y: data.read_u8().unwrap(),
-            dest_layer: data.read_u8().unwrap(),
-            dest_x: data.read_u8().unwrap(),
-            dest_y: data.read_u8().unwrap(),
-            width: data.read_u8().unwrap(),
-            height: data.read_u8().unwrap(),
+            source_layer: data.read_u8().unwrap() as usize - 1,
+            source_x: data.read_u8().unwrap() as usize,
+            source_y: data.read_u8().unwrap() as usize,
+            dest_layer: data.read_u8().unwrap() as usize - 1,
+            dest_x: data.read_u8().unwrap() as usize,
+            dest_y: data.read_u8().unwrap() as usize,
+            width: data.read_u8().unwrap() as usize,
+            height: data.read_u8().unwrap() as usize,
         },
         // "putmapr"
         0x50 => Op::SetTileR {
-            layer: data.read_u8().unwrap(),
+            layer: data.read_u8().unwrap() - 1,
             x: data.read_u8().unwrap(),
             y: data.read_u8().unwrap(),
             tile_index: data.read_u8().unwrap(),
@@ -423,7 +423,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "scrollr
         0x51 => Op::ScrollLayer {
-            layer: data.read_u8().unwrap(),
+            layer: data.read_u8().unwrap() - 1,
             steps: data.read_u8().unwrap(),
         },
         // "tpxmove"

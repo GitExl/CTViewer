@@ -1,7 +1,10 @@
 use std::io::Cursor;
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_world::WorldState;
+use crate::map::Map;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
+use crate::tileset::TileSet;
+use crate::world::world_map::WorldMap;
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_disassembler::WorldScriptDisassembler;
 use crate::world_script::world_script_ops::Op;
@@ -189,9 +192,14 @@ impl WorldScript {
                         OpResult::Yield
                     }
                     Op::CopyTiles { source_layer, source_x, source_y, dest_layer, dest_x, dest_y, width, height } => {
+                        self.exec_tile_copy(&mut world_state.map, &mut world_state.world_map, &world_state.tileset_l12, source_layer, source_x, source_y, dest_layer, dest_x, dest_y, width, height);
                         OpResult::Continue
                     }
                     Op::SetTile { layer, x, y, tile_index } => {
+                        let layer = &mut world_state.map.layers[layer];
+                        let index = x + y * layer.tile_width as usize;
+                        layer.tiles[index] = tile_index;
+                        layer.assemble_chips(&world_state.tileset_l12, x as u32, y as u32, 1, 1);
                         OpResult::Continue
                     }
                     Op::BitMath { dest, lhs, op, rhs } => {
@@ -311,5 +319,54 @@ impl WorldScript {
         let mut disassembler = WorldScriptDisassembler::new(&self.data.get_ref(), self.mode);
         disassembler.disassemble();
         disassembler.dump();
+    }
+
+    fn exec_tile_copy(&self, map: &mut Map, world_map: &mut WorldMap, tileset: &TileSet, src_layer: usize, src_x: usize, src_y: usize, dest_layer: usize, dest_x: usize, dest_y: usize, width: usize, height: usize) {
+
+        // Copy tiles into intermediate buffer to prevent multiple borrows.
+        let layer_src = &map.layers[src_layer];
+        let src_len = layer_src.tiles.len();
+        let src_tile_width = layer_src.tile_width;
+        let mut buffer = vec![0usize; width * height];
+
+        // TODO: Copy properties.
+        // let world_map = &world_state.world_map;
+        // let chip_index = x * 2 + ((y * 2) * world_map.width);
+        // world_map.chips[chip_index];
+
+        for tile_y in 0..height {
+            for tile_x in 0..width  {
+                let src_tile_x = src_x + tile_x;
+                let src_tile_y = src_y + tile_y;
+                let src_tile_index = src_tile_x + src_tile_y * src_tile_width as usize;
+                if src_tile_index >= src_len {
+                    continue;
+                }
+
+                let dest_tile_index = tile_x + tile_y * width;
+                buffer[dest_tile_index] = layer_src.tiles[src_tile_index];
+            }
+        }
+
+        // Copy buffer tiles to destination.
+        let layer_dest = &mut map.layers[dest_layer];
+        let dest_len = layer_dest.tiles.len();
+        let dest_tile_width = layer_dest.tile_width;
+
+        for tile_y in 0..height {
+            for tile_x in 0..width  {
+                let dest_tile_x = dest_x + tile_x;
+                let dest_tile_y = dest_y + tile_y;
+                let dest_tile_index = dest_tile_x + dest_tile_y * dest_tile_width as usize;
+                if dest_tile_index >= dest_len {
+                    continue;
+                }
+
+                let src_tile_index = tile_x + tile_y * width;
+                layer_dest.tiles[dest_tile_index] = buffer[src_tile_index];
+            }
+        }
+
+        layer_dest.assemble_chips(&tileset, dest_x as u32, dest_y as u32, width as u32, height as u32);
     }
 }

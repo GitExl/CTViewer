@@ -5,6 +5,7 @@ use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
 use crate::character::CharacterId;
+use crate::game_palette::GamePalette;
 use crate::gamestate::gamestate::GameStateTrait;
 use crate::l10n::IndexedType;
 use crate::map::Map;
@@ -15,9 +16,10 @@ use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
+use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
-use crate::world::world::World;
+use crate::world::world::{ScriptedWorldExit, World, WorldExit};
 use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 use crate::world::world_sprites::WorldSprites;
@@ -33,6 +35,11 @@ pub struct WorldState {
     pub map: Map,
     pub animations: WorldAnimationScript,
     pub sprites: WorldSprites,
+    pub tileset_l12: TileSet,
+    pub tileset_l3: TileSet,
+    pub palette: GamePalette,
+    pub exits: Vec<WorldExit>,
+    pub scripted_exits: Vec<ScriptedWorldExit>,
     pub actors: [WorldActorState; 64],
 }
 
@@ -80,6 +87,11 @@ impl GameStateWorld {
             player_actors: HashMap::new(),
             world_map: world.world_map.clone(),
             map: world.map.clone(),
+            tileset_l12: world.tileset_l12.clone(),
+            tileset_l3: world.tileset_l3.clone(),
+            palette: world.palette.clone(),
+            exits: world.exits.clone(),
+            scripted_exits: world.scripted_exits.clone(),
             animations: ctx.fs.read_world_animation_script(),
             sprites,
         };
@@ -122,8 +134,10 @@ impl GameStateWorld {
 }
 
 impl GameStateTrait for GameStateWorld {
+
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
-        self.world.tick(ctx, delta);
+        self.state.map.tick(delta);
+
         self.world.script.run(ctx, &mut self.state);
 
         // for (index, actor) in self.state.actors.iter_mut().enumerate() {
@@ -165,23 +179,23 @@ impl GameStateTrait for GameStateWorld {
     }
 
     fn render(&mut self, ctx: &mut Context, lerp: f64) {
+        self.state.map.lerp(lerp);
         self.state.camera.lerp(lerp);
 
         self.map_renderer.render(
             lerp,
             &self.state.camera,
             &mut ctx.render.target,
-            &self.world.map,
-            &self.world.tileset_l12,
-            &self.world.tileset_l3,
-            &self.world.palette,
+            &self.state.map,
+            &self.state.tileset_l12,
+            &self.state.tileset_l3,
+            &self.state.palette,
             &ctx.sprites_states,
             &ctx.sprite_assets,
         );
         self.world_renderer.render(
             lerp,
-            &self.state.camera,
-            &mut self.world,
+            &self.state,
             &mut ctx.render.target,
         );
 

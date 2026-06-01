@@ -6,11 +6,12 @@ use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
 
-#[derive(Default, Clone)]
+#[derive(Default, Copy, Clone)]
 pub struct Tile {
     pub corners: [MapChip; 4],
 }
 
+#[derive(Clone)]
 pub struct ChipAnimFrame {
     pub src_chip: usize,
     pub duration: f64,
@@ -18,6 +19,7 @@ pub struct ChipAnimFrame {
 
 // Chip graphics animation data and state.
 // Each animation covers 4 chips in the tileset.
+#[derive(Clone)]
 pub struct ChipAnim {
     pub dest_chip: usize,
     pub frames: Vec<ChipAnimFrame>,
@@ -29,6 +31,7 @@ pub struct ChipAnim {
 
 // A map's layers refer to these tiles. They are assembled from 4 "chips", corners of a tile.
 // They refer to a chip from the chip graphics data, a palette and have some flags.
+#[derive(Clone)]
 pub struct TileSet {
     pub index: usize,
     pub index_assembly: usize,

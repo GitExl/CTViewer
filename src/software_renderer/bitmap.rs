@@ -6,6 +6,7 @@ use png::{ColorType, Decoder};
 use crate::software_renderer::palette::Palette;
 use crate::util::rect::Rect;
 
+#[derive(Clone)]
 pub struct Bitmap {
     pub width: u32,
     pub height: u32,

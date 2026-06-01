@@ -66,8 +66,8 @@ impl FileSystem {
         // Read 2x2 chip map tiles and assemble chips from them.
         read_map_layer_tiles(&mut layer_1, &mut data_map, 0);
         read_map_layer_tiles(&mut layer_2, &mut data_map, 256);
-        assemble_map_layer(&mut layer_1, &tileset_l12);
-        assemble_map_layer(&mut layer_2, &tileset_l12);
+        layer_1.assemble_chips(&tileset_l12, 0, 0, layer_1.tile_width, layer_1.tile_height);
+        layer_2.assemble_chips(&tileset_l12, 0, 0, layer_2.tile_width, layer_2.tile_height);
 
         // Assemble layer 3 from the top and bottom halves of the layer 3 tileset.
         for x in 0..16 {
@@ -82,7 +82,7 @@ impl FileSystem {
                 layer_3.tiles[tile_index] = (((x - 16) + y * 16) + 256) as usize;
             }
         }
-        assemble_map_layer(&mut layer_3, &tileset_l3);
+        layer_3.assemble_chips(&tileset_l3, 0, 0, layer_3.tile_width, layer_3.tile_height);
 
         // Read tile properties. Each tile in the tileset has fixed properties associated with it.
         let mut chips: Vec<WorldChip> = vec![WorldChip::default(); layer_1.chips.len()];
@@ -197,9 +197,9 @@ impl FileSystem {
 
         // Build map chips from a scene map and tilesets.
         // Map layer tiles refer directly to chips, scene map tiles are 2x2 chip references.
-        assemble_map_layer(&mut layer_1, &tileset_l12);
-        assemble_map_layer(&mut layer_2, &tileset_l12);
-        assemble_map_layer(&mut layer_3, &tileset_l3);
+        layer_1.assemble_chips(&tileset_l12, 0, 0, layer_1.tile_width, layer_1.tile_height);
+        layer_2.assemble_chips(&tileset_l12, 0, 0, layer_2.tile_width, layer_2.tile_height);
+        layer_3.assemble_chips(&tileset_l3, 0, 0, layer_3.tile_width, layer_3.tile_height);
 
         // Set layer 2 scrolling properties.
         let (scroll_speed_x, scroll_speed_y) = decode_scene_layer_scroll_speed(header.scroll_l2);
@@ -276,29 +276,6 @@ fn decode_scene_layer_scroll_speed(bits: u8) -> (f64, f64) {
         mapping[(bits & 0x0F) as usize],
         mapping[((bits & 0xF0) >> 4) as usize],
     )
-}
-
-// Assemble map layer chips from a tileset's tiles.
-fn assemble_map_layer(layer: &mut MapLayer, tileset: &TileSet) {
-
-    // Convert each tile into 2x2 chips.
-    for (index, tile_index) in layer.tiles.iter().enumerate() {
-        let src_x = index as u32 % layer.tile_width;
-        let src_y = index as u32 / layer.tile_width;
-        let dest_x = src_x * 2;
-        let dest_y = src_y * 2;
-        let dest_index = (dest_y * layer.chip_width + dest_x) as usize;
-
-        if *tile_index >= tileset.tiles.len() {
-            continue;
-        }
-        let tile = &tileset.tiles[*tile_index];
-
-        layer.chips[dest_index + 0].clone_from(&tile.corners[0]);
-        layer.chips[dest_index + 1].clone_from(&tile.corners[1]);
-        layer.chips[dest_index + layer.chip_width as usize + 0].clone_from(&tile.corners[2]);
-        layer.chips[dest_index + layer.chip_width as usize + 1].clone_from(&tile.corners[3]);
-    }
 }
 
 // Read raw map tile data.

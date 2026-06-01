@@ -1,5 +1,6 @@
 use crate::software_renderer::palette::Palette;
 
+#[derive(Clone)]
 pub struct GamePalette {
     pub index: usize,
     pub palette: Palette,
