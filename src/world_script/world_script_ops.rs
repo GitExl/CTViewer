@@ -5,32 +5,34 @@ use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Op {
     AddActor {
-        address: u16,
+        address: u64,
         unused: u8,
     },
     AddActorSpecial {
-        address: u16,
+        address: u64,
         i0: u8,
     },
     WaitThenAnimate {
         delay: u8,
     },
     Bind {
-        address: u16,
+        address: u64,
         pc: u8,
     },
     BitMath {
-        lhs: DataDest,
+        dest: DataDest,
+        lhs: DataSource,
         rhs: DataSource,
         op: BitMathOp,
     },
     ByteMath {
-        lhs: DataDest,
+        dest: DataDest,
+        lhs: DataSource,
         rhs: DataSource,
         op: ByteMathOp,
     },
     GoSub {
-        address: u16,
+        address: u64,
     },
     CallFunctionFar {
         address: usize,
@@ -64,26 +66,26 @@ pub enum Op {
         mode: u8,
     },
     CallFunction {
-        address: u16,
+        address: u64,
     },
     InitBackgroundLayer {
         layer: u8,
     },
     InitMemory,
     GoTo {
-        address: usize,
+        address: u64,
     },
     JumpConditional {
         lhs: DataSource,
         rhs: DataSource,
         cmp: CompareOp,
-        offset: isize,
+        offset: i64,
     },
     Link {
-        address: u16,
+        address: u64,
     },
     LinkSpecial {
-        address: u16,
+        address: u64,
     },
     MosaicIn {
         mode: u8,

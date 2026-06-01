@@ -64,7 +64,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Copy.
         Op::Copy8 { source, dest } => {
-            dest.put_u8(ctx, scene_state, source.get_u8(ctx, scene_state, this_actor));
+            dest.put_scene_u8(ctx, scene_state, source.get_scene_u8(ctx, scene_state, this_actor));
             OpResult::COMPLETE
         },
         Op::Copy16 { source, dest } => {
@@ -82,8 +82,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::COMPLETE | OpResult::JUMPED
         },
         Op::JumpConditional8 { lhs, cmp, rhs, offset } => {
-            let lhs_value = lhs.get_u8(ctx, scene_state, this_actor);
-            let rhs_value = rhs.get_u8(ctx, scene_state, this_actor);
+            let lhs_value = lhs.get_scene_u8(ctx, scene_state, this_actor);
+            let rhs_value = rhs.get_scene_u8(ctx, scene_state, this_actor);
             let result = match cmp {
                 CompareOp::Eq => lhs_value == rhs_value,
                 CompareOp::NotEq => lhs_value != rhs_value,
@@ -134,14 +134,14 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Math.
         Op::ByteMath8 { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u8(ctx, scene_state, this_actor);
-            let rhs_value = rhs.get_u8(ctx, scene_state, this_actor);
+            let lhs_value = lhs.get_scene_u8(ctx, scene_state, this_actor);
+            let rhs_value = rhs.get_scene_u8(ctx, scene_state, this_actor);
 
             let result = match op {
                 ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
                 ByteMathOp::Subtract => lhs_value.overflowing_sub(rhs_value).0,
             };
-            dest.put_u8(ctx, scene_state, result);
+            dest.put_scene_u8(ctx, scene_state, result);
 
             OpResult::COMPLETE
         },
@@ -158,8 +158,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::COMPLETE
         },
         Op::BitMath { dest, lhs, op, rhs } => {
-            let lhs_value = lhs.get_u8(ctx, scene_state, this_actor);
-            let rhs_value = rhs.get_u8(ctx, scene_state, this_actor);
+            let lhs_value = lhs.get_scene_u8(ctx, scene_state, this_actor);
+            let rhs_value = rhs.get_scene_u8(ctx, scene_state, this_actor);
 
             let result = match op {
                 BitMathOp::And => lhs_value & rhs_value,
@@ -168,7 +168,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 BitMathOp::ShiftLeft => lhs_value << rhs_value,
                 BitMathOp::ShiftRight => lhs_value >> rhs_value,
             };
-            dest.put_u8(ctx, scene_state, result);
+            dest.put_scene_u8(ctx, scene_state, result);
 
             OpResult::COMPLETE
         },
@@ -209,8 +209,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         Op::ActorCoordinatesSet { actor, tile_x: x, tile_y: y } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            let x = x.get_u8(ctx, scene_state, this_actor) as f64;
-            let y = y.get_u8(ctx, scene_state, this_actor) as f64;
+            let x = x.get_scene_u8(ctx, scene_state, this_actor) as f64;
+            let y = y.get_scene_u8(ctx, scene_state, this_actor) as f64;
 
             scene_state.actors[actor_index].move_to(Vec2Df64::new(x * 16.0 + 8.0, y * 16.0 + 16.0), true, &scene_state.scene_map);
 
@@ -235,8 +235,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             let tile_pos_x = (actor.pos.x / 16.0) as u8;
             let tile_pos_y = (actor.pos.y / 16.0) as u8;
-            tile_x.put_u8(ctx, scene_state, tile_pos_x);
-            tile_y.put_u8(ctx, scene_state, tile_pos_y);
+            tile_x.put_scene_u8(ctx, scene_state, tile_pos_x);
+            tile_y.put_scene_u8(ctx, scene_state, tile_pos_y);
 
             OpResult::COMPLETE
         },
@@ -244,7 +244,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         // Actor facing.
         Op::ActorFacingSet { actor, facing } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            let facing = Facing::from_index(facing.get_u8(ctx, scene_state, this_actor) as usize);
+            let facing = Facing::from_index(facing.get_scene_u8(ctx, scene_state, this_actor) as usize);
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             scene_state.actors[actor_index].facing = facing;
@@ -254,7 +254,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
         Op::ActorFacingGet { actor, dest } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            dest.put_u8(ctx, scene_state, scene_state.actors[actor_index].facing.to_index() as u8);
+            dest.put_scene_u8(ctx, scene_state, scene_state.actors[actor_index].facing.to_index() as u8);
 
             OpResult::YIELD | OpResult::COMPLETE
         },
@@ -295,13 +295,13 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         Op::ActorSetSpeed { actor, speed } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            scene_state.actors[actor_index].move_speed = speed.get_u8(ctx, scene_state, this_actor) as f64 * (1.0 / 18.0);
+            scene_state.actors[actor_index].move_speed = speed.get_scene_u8(ctx, scene_state, this_actor) as f64 * (1.0 / 18.0);
             OpResult::COMPLETE
         },
 
         Op::ActorSetResult8 { actor, result } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            scene_state.actors[actor_index].result = result.get_u8(ctx, scene_state, this_actor) as u32;
+            scene_state.actors[actor_index].result = result.get_scene_u8(ctx, scene_state, this_actor) as u32;
             OpResult::COMPLETE
         },
 
@@ -314,7 +314,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         // Animation ops.
         Op::Animation { actor, animation } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            let anim_index = animation.get_u8(ctx, scene_state, this_actor) as usize;
+            let anim_index = animation.get_scene_u8(ctx, scene_state, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation(state, anim_index)
@@ -322,8 +322,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         Op::AnimationLoopCount { actor, animation, loops } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            let anim_index = animation.get_u8(ctx, scene_state, this_actor) as usize;
-            let loop_count = loops.get_u8(ctx, scene_state, this_actor) as u32;
+            let anim_index = animation.get_scene_u8(ctx, scene_state, this_actor) as usize;
+            let loop_count = loops.get_scene_u8(ctx, scene_state, this_actor) as u32;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation_loop_count(state, &mut scene_state.actors[actor_index], anim_index, loop_count)
@@ -338,7 +338,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         Op::AnimationStaticFrame { actor, frame} => {
             let actor_index = actor.deref(scene_state, this_actor);
-            let frame_index = frame.get_u8(ctx, scene_state, this_actor) as usize;
+            let frame_index = frame.get_scene_u8(ctx, scene_state, this_actor) as usize;
             let state = ctx.sprites_states.get_state_mut(actor_index);
 
             exec_animation_static_frame(state, frame_index)
@@ -346,8 +346,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Movement ops.
         Op::ActorMoveAtAngle { angle, steps, update_facing, animated } => {
-            let angle = angle.get_u8(ctx, scene_state, this_actor) as f64 * 1.40625;
-            let steps = steps.get_u8(ctx, scene_state, this_actor) as u32;
+            let angle = angle.get_scene_u8(ctx, scene_state, this_actor) as f64 * 1.40625;
+            let steps = steps.get_scene_u8(ctx, scene_state, this_actor) as u32;
 
             exec_movement_by_vector(ctx, scene_state, this_actor, angle, steps, update_facing, animated)
         },
@@ -362,9 +362,9 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             }
         },
         Op::ActorMoveToTile { x, y, steps, update_facing, animated } => {
-            let dest_tile_x = x.get_u8(ctx, scene_state, this_actor) as i32;
-            let dest_tile_y = y.get_u8(ctx, scene_state, this_actor) as i32;
-            let steps = if let Some(steps) = steps { Some(steps.get_u8(ctx, scene_state, this_actor) as u32) } else { None };
+            let dest_tile_x = x.get_scene_u8(ctx, scene_state, this_actor) as i32;
+            let dest_tile_y = y.get_scene_u8(ctx, scene_state, this_actor) as i32;
+            let steps = if let Some(steps) = steps { Some(steps.get_scene_u8(ctx, scene_state, this_actor) as u32) } else { None };
 
             exec_movement_to_tile(ctx, scene_state, state, this_actor, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
@@ -428,7 +428,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         Op::Random { dest } => {
             let random = ctx.random.get_u8();
-            dest.put_u8(ctx, scene_state, random);
+            dest.put_scene_u8(ctx, scene_state, random);
             OpResult::COMPLETE
         },
 
@@ -514,13 +514,13 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             // Set textbox result variable.
             let result_value =
-                ctx.memory.read_u8(0x7E0200, scene_state) as u32 |
-                (ctx.memory.read_u8(0x7E0201, scene_state) as u32) << 8 |
-                (ctx.memory.read_u8(0x7E0202, scene_state) as u32) << 16;
+                ctx.memory.read_scene_u8(0x7E0200, scene_state) as u32 |
+                (ctx.memory.read_scene_u8(0x7E0201, scene_state) as u32) << 8 |
+                (ctx.memory.read_scene_u8(0x7E0202, scene_state) as u32) << 16;
 
             // Set textbox item index variable.
             // todo read proper item index, categorized for PC?
-            let result_item = ctx.memory.read_u8(0x7F0200, scene_state) as usize;
+            let result_item = ctx.memory.read_scene_u8(0x7F0200, scene_state) as usize;
             let result_item_name = ctx.l10n.get_indexed(IndexedType::Item, result_item);
 
             scene_state.textbox.show(ctx, text, real_position, this_actor, choice_lines, result_value, result_item_name);

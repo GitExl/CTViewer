@@ -44,7 +44,7 @@ impl WorldScriptDisassembler {
                     Op::Bind { address, .. } => self.add_label(address as u64, format!("pc_{:04X}", address)),
                     Op::DecrementAndJumpIfNonZero { offset, .. } => self.add_label((op_address as isize + offset) as u64, format!("jpnz_{:04X}", op_address as isize + offset)),
                     Op::GoTo { address } => self.add_label(address as u64, format!("jp_{:04X}", address)),
-                    Op::JumpConditional { offset, .. } => self.add_label((op_address as isize + offset) as u64, format!("jp_{:04X}", op_address as isize + offset)),
+                    Op::JumpConditional { offset, .. } => self.add_label((op_address as i64 + offset) as u64, format!("jp_{:04X}", op_address as i64 + offset)),
                     Op::GoSub { address } => self.add_label(address as u64, format!("sub_{:04X}", address)),
                     _ => {}
                 };
@@ -84,8 +84,8 @@ impl WorldScriptDisassembler {
                     Op::AddActorSpecial { address, i0 } => format!("add_special_actor actor_special_{:04X}, {}", address, i0),
                     Op::WaitThenAnimate { delay } => format!("wait_animate {}", delay),
                     Op::Bind { address, pc } => format!("bind_pc pc_{:04X}, {}", address, pc_index(pc)),
-                    Op::BitMath { lhs, op, rhs } => format!("{} {}= {}", lhs.as_string(), op.as_string(), rhs.as_string()),
-                    Op::ByteMath { lhs, op, rhs } => format!("{} {}= {}", lhs.as_string(), op.as_string(), rhs.as_string()),
+                    Op::BitMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
+                    Op::ByteMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::GoSub { address } => format!("gosub sub_{:04X}", address),
                     Op::CallFunctionFar { address } => format!("function_far 0x{:06X}", address),
                     Op::ChangeLocation { destination } => format!("location {}", destination.as_string()),
@@ -104,7 +104,7 @@ impl WorldScriptDisassembler {
                     Op::InitMemory => String::from("init_memory"),
                     Op::GoTo { address } => format!("goto jp_{:04X}", address),
                     Op::JumpConditional { lhs, cmp, rhs, offset } => {
-                        format!("if {} {} {} goto jp_{:04X}", lhs.as_string(), cmp.as_string(), rhs.as_string(), op_address as isize + offset)
+                        format!("if {} {} {} goto jp_{:04X}", lhs.as_string(), cmp.as_string(), rhs.as_string(), op_address as i64 + offset)
                     },
                     Op::Link { address } => format!("link 0xC2{:04X}", address),
                     Op::LinkSpecial { address } => format!("link_special 0xC2{:04X}", address),

@@ -56,16 +56,24 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::Immediate(0),
         },
         // "incr"
-        0x0B => Op::ByteMath {
-            lhs: DataDest::for_world_actor_memory(data.read_u8().unwrap() as usize),
-            rhs: DataSource::Immediate(1),
-            op: ByteMathOp::Add,
-        },
+        0x0B => {
+            let lhs_address = data.read_u8().unwrap() as usize;
+            Op::ByteMath {
+                dest:  DataDest::for_world_actor_memory(lhs_address),
+                lhs: DataSource::for_world_actor_memory(lhs_address),
+                rhs: DataSource::Immediate(1),
+                op: ByteMathOp::Add,
+            }
+        }
         // "decr"
-        0x0C => Op::ByteMath {
-            lhs: DataDest::for_world_actor_memory(data.read_u8().unwrap() as usize),
-            rhs: DataSource::Immediate(1),
-            op: ByteMathOp::Subtract,
+        0x0C => {
+            let lhs_address = data.read_u8().unwrap() as usize;
+            Op::ByteMath {
+                dest:  DataDest::for_world_actor_memory(lhs_address),
+                lhs: DataSource::for_world_actor_memory(lhs_address),
+                rhs: DataSource::Immediate(1),
+                op: ByteMathOp::Subtract,
+            }
         },
         // "setr"
         0x0D => Op::Copy8 {
@@ -73,16 +81,26 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         // "bitsetr"
-        0x0E => Op::BitMath {
-            lhs: DataDest::for_world_actor_memory(data.read_u8().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: BitMathOp::Or,
+        0x0E => {
+            let lhs_address = data.read_u8().unwrap() as usize;
+            let rhs_address = data.read_u8().unwrap() as i32;
+            Op::BitMath {
+                dest: DataDest::for_world_actor_memory(lhs_address),
+                lhs: DataSource::for_world_actor_memory(lhs_address),
+                rhs: DataSource::Immediate(rhs_address),
+                op: BitMathOp::Or,
+            }
         },
         // "bitclr"
-        0x0F => Op::BitMath {
-            lhs: DataDest::for_world_actor_memory(data.read_u8().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: BitMathOp::Xor,
+        0x0F => {
+            let lhs_address = data.read_u8().unwrap() as usize;
+            let rhs_address = data.read_u8().unwrap() as i32;
+            Op::BitMath {
+                dest: DataDest::for_world_actor_memory(lhs_address),
+                lhs: DataSource::for_world_actor_memory(lhs_address),
+                rhs: DataSource::Immediate(rhs_address),
+                op: BitMathOp::Xor,
+            }
         },
         // "memclr"
         0x10 => Op::Copy8 {
@@ -90,16 +108,24 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::Immediate(0),
         },
         // "meminc"
-        0x11 => Op::ByteMath {
-            lhs: DataDest::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
-            rhs: DataSource::Immediate(1),
-            op: ByteMathOp::Add,
+        0x11 => {
+            let lhs_address = data.read_u16::<LittleEndian>().unwrap() as usize;
+            Op::ByteMath {
+                dest:  DataDest::for_system_memory(lhs_address),
+                lhs: DataSource::for_system_memory(lhs_address),
+                rhs: DataSource::Immediate(1),
+                op: ByteMathOp::Add,
+            }
         },
         // "memdec"
-        0x12 => Op::ByteMath {
-            lhs: DataDest::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
-            rhs: DataSource::Immediate(1),
-            op: ByteMathOp::Subtract,
+        0x12 => {
+            let lhs_address = data.read_u16::<LittleEndian>().unwrap() as usize;
+            Op::ByteMath {
+                dest:  DataDest::for_system_memory(lhs_address),
+                lhs: DataSource::for_system_memory(lhs_address),
+                rhs: DataSource::Immediate(1),
+                op: ByteMathOp::Subtract,
+            }
         },
         // "memset"
         0x13 => Op::Copy8 {
@@ -107,16 +133,26 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
         },
         // "membitset"
-        0x14 => Op::BitMath {
-            lhs: DataDest::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: BitMathOp::Or,
+        0x14 => {
+            let lhs_address = data.read_u16::<LittleEndian>().unwrap() as usize;
+            let rhs_address = data.read_u8().unwrap() as i32;
+            Op::BitMath {
+                dest: DataDest::for_system_memory(lhs_address),
+                lhs: DataSource::for_system_memory(lhs_address),
+                rhs: DataSource::Immediate(rhs_address),
+                op: BitMathOp::Or,
+            }
         },
         // "membitclr"
-        0x15 => Op::BitMath {
-            lhs: DataDest::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: BitMathOp::Xor,
+        0x15 => {
+            let lhs_address = data.read_u16::<LittleEndian>().unwrap() as usize;
+            let rhs_address = data.read_u8().unwrap() as i32;
+            Op::BitMath {
+                dest: DataDest::for_system_memory(lhs_address),
+                lhs: DataSource::for_system_memory(lhs_address),
+                rhs: DataSource::Immediate(rhs_address),
+                op: BitMathOp::Xor,
+            }
         },
         // "trnlg"
         0x16 => Op::Copy8 {
@@ -140,34 +176,50 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             rhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
         },
         // "addr"
-        0x46 => Op::ByteMath {
-            lhs: DataDest::for_world_actor_memory(data.read_u8().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: ByteMathOp::Add,
+        0x46 => {
+            let lhs_address = data.read_u8().unwrap() as usize;
+            Op::ByteMath {
+                dest: DataDest::for_world_actor_memory(lhs_address),
+                lhs: DataSource::for_world_actor_memory(lhs_address),
+                rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
+                op: ByteMathOp::Add,
+            }
         },
         // "subr"
-        0x47 => Op::ByteMath {
-            lhs: DataDest::for_world_actor_memory(data.read_u8().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: ByteMathOp::Subtract,
+        0x47 => {
+            let lhs_address = data.read_u8().unwrap() as usize;
+            Op::ByteMath {
+                dest: DataDest::for_world_actor_memory(lhs_address),
+                lhs: DataSource::for_world_actor_memory(lhs_address),
+                rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
+                op: ByteMathOp::Subtract,
+            }
         },
         // "memadd"
-        0x48 => Op::ByteMath {
-            lhs: DataDest::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: ByteMathOp::Add,
+        0x48 => {
+            let lhs_address = data.read_u16::<LittleEndian>().unwrap() as usize;
+            Op::ByteMath {
+                dest: DataDest::for_system_memory(lhs_address),
+                lhs: DataSource::for_system_memory(lhs_address),
+                rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
+                op: ByteMathOp::Add,
+            }
         },
         // "memsub"
-        0x49 => Op::ByteMath {
-            lhs: DataDest::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
-            rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            op: ByteMathOp::Subtract,
+        0x49 => {
+            let lhs_address = data.read_u16::<LittleEndian>().unwrap() as usize;
+            Op::ByteMath {
+                dest: DataDest::for_system_memory(lhs_address),
+                lhs: DataSource::for_system_memory(lhs_address),
+                rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
+                op: ByteMathOp::Subtract,
+            }
         },
 
         // Jumps.
         // "jp"
         0x1A => Op::GoTo {
-            address: data.read_u16::<LittleEndian>().unwrap() as usize - 0x400,
+            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
         },
         // "jdjnz"
         0x1B => Op::DecrementAndJumpIfNonZero {
@@ -179,98 +231,98 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             lhs: DataSource::for_world_actor_memory(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(0),
             cmp: CompareOp::Eq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jnz"
         0x1D => Op::JumpConditional {
             lhs: DataSource::for_world_actor_memory(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(0),
             cmp: CompareOp::NotEq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jcpnz"
         0x1E => Op::JumpConditional {
             lhs: DataSource::for_world_actor_memory(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::NotEq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jcpz"
         0x1F => Op::JumpConditional {
             lhs: DataSource::for_world_actor_memory(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Eq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jandnz"
         0x20 => Op::JumpConditional {
             lhs: DataSource::for_world_actor_memory(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::And,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jandz"
         0x21 => Op::JumpConditional {
             lhs: DataSource::for_world_actor_memory(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Or,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jz_g"
         0x22 => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(0),
             cmp: CompareOp::Eq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jnz_g"
         0x23 => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(0),
             cmp: CompareOp::NotEq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jcpnz_g"
         0x24 => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::NotEq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jcpz_g"
         0x25 => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Eq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jandnz_g"
         0x26 => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::And,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jandz_g"
         0x27 => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Or,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jcpcc"
         0x4C => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::Lt,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
         // "jcpcs"
         0x4D => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
             cmp: CompareOp::GtEq,
-            offset: data.read_i8().unwrap() as isize,
+            offset: data.read_i8().unwrap() as i64,
         },
 
         // Reveal/show.
@@ -386,35 +438,35 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // Function calls/new objects.
         // "bind"
         0x08 => Op::Bind {
-            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
+            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
             pc: data.read_u8().unwrap(),
         },
         // "newevent"
         0x09 => Op::AddActor {
-            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
+            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
             unused: data.read_u8().unwrap(),
         },
         // "func"
         0x34 => Op::CallFunction {
-            address: data.read_u16::<LittleEndian>().unwrap(),
+            address: data.read_u16::<LittleEndian>().unwrap() as u64,
         },
         // "link"
         0x35 => Op::Link {
-            address: data.read_u16::<LittleEndian>().unwrap(),
+            address: data.read_u16::<LittleEndian>().unwrap() as u64,
         },
         // "call"
         0x36 => Op::GoSub {
-            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
+            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
         },
         // "return"
         0x37 => Op::Return,
         // "slink"
         0x42 => Op::LinkSpecial {
-            address: data.read_u16::<LittleEndian>().unwrap(),
+            address: data.read_u16::<LittleEndian>().unwrap() as u64,
         },
         // "s_newevent"
         0x43 => Op::AddActorSpecial {
-            address: data.read_u16::<LittleEndian>().unwrap() - 0x400,
+            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
             i0: data.read_u8().unwrap(),
         },
         // "func2"
