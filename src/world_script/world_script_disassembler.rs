@@ -39,13 +39,13 @@ impl WorldScriptDisassembler {
 
                 // Generate labels.
                 match op {
-                    Op::AddActor { address, .. } => self.add_label(address as u64, format!("actor_{:04X}", address)),
-                    Op::AddActorSpecial { address, .. } => self.add_label(address as u64, format!("actor_special_{:04X}", address)),
-                    Op::Bind { address, .. } => self.add_label(address as u64, format!("pc_{:04X}", address)),
-                    Op::DecrementAndJumpIfNonZero { offset, .. } => self.add_label((op_address as isize + offset) as u64, format!("jpnz_{:04X}", op_address as isize + offset)),
-                    Op::GoTo { address } => self.add_label(address as u64, format!("jp_{:04X}", address)),
+                    Op::AddActor { address, .. } => self.add_label(address, format!("actor_{:04X}", address)),
+                    Op::AddActorSpecial { address, .. } => self.add_label(address, format!("actor_special_{:04X}", address)),
+                    Op::Bind { address, .. } => self.add_label(address, format!("pc_{:04X}", address)),
+                    Op::DecrementAndJumpIfNonZero { offset, .. } => self.add_label((op_address as i64 + offset) as u64, format!("jpnz_{:04X}", op_address as i64 + offset)),
+                    Op::GoTo { address } => self.add_label(address, format!("jp_{:04X}", address)),
                     Op::JumpConditional { offset, .. } => self.add_label((op_address as i64 + offset) as u64, format!("jp_{:04X}", op_address as i64 + offset)),
-                    Op::GoSub { address } => self.add_label(address as u64, format!("sub_{:04X}", address)),
+                    Op::GoSub { address } => self.add_label(address, format!("sub_{:04X}", address)),
                     _ => {}
                 };
             }
@@ -93,8 +93,8 @@ impl WorldScriptDisassembler {
                     Op::CopyTiles { source_layer, source_x, source_y, dest_layer, dest_x, dest_y, width, height } => {
                         format!("copy_tiles {}, ({}, {}), {}, ({}, {}), ({}, {})", source_layer, source_x, source_y, dest_layer, dest_x, dest_y, width, height)
                     }
-                    Op::DecrementAndJumpIfNonZero { address, offset } => {
-                        format!("if --{} != 0 goto jpnz_{:04X}", address.as_string(), op_address as isize + offset)
+                    Op::DecrementAndJumpIfNonZero { src, offset, .. } => {
+                        format!("if --{} != 0 goto jpnz_{:04X}", src.as_string(), op_address as i64 + offset)
                     },
                     Op::End => String::from("end"),
                     Op::FadeIn { mode } => format!("fade_in {}", mode),

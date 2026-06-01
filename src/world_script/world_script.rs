@@ -29,7 +29,7 @@ pub struct WorldActorState {
     pub animation_address: u64,
     pub animation_counter: u8,
     pub palette_priority: u8,
-    pub memory: [u8; 48],
+    pub memory: [u8; 64],
 }
 
 impl WorldActorState {
@@ -43,7 +43,7 @@ impl WorldActorState {
             counter: 0,
             timer: 0,
             current_address: 0,
-            memory: [0; 48],
+            memory: [0; 64],
             return_address: 0,
             unknown: 0,
             animation_counter: 0,
@@ -82,6 +82,7 @@ impl WorldScript {
                 self.run_script(ctx, actor_index, world_state);
             }
         }
+        // println!("-------------");
     }
 
     fn run_script(&mut self, ctx: &mut Context, actor_index: usize, world_state: &mut WorldState) {
@@ -92,12 +93,14 @@ impl WorldScript {
 
             let result;
             if let Some(op) = op_decode(&mut self.data, self.mode) {
+                // println!("{:02} {:04X} {:?}", actor_index, state.current_address, op);
                 result = match op {
                     Op::InitMemory => {
                         OpResult::Continue
                     }
                     Op::Copy8 { lhs, rhs } => {
-                        lhs.put_world_u8(ctx, world_state, rhs.get_world_u8(ctx, world_state, actor_index));
+                        let value = rhs.get_world_u8(ctx, world_state, &mut state);
+                        lhs.put_world_u8(ctx, world_state, &mut state, value);
                         OpResult::Continue
                     }
                     Op::GoSub { address } => {
@@ -110,9 +113,19 @@ impl WorldScript {
                     Op::GoTo { address } => {
                         OpResult::ContinueFrom { address }
                     }
+                    Op::DecrementAndJumpIfNonZero { src, dest, offset } => {
+                        let mut value = src.get_world_u8(ctx, world_state, &mut state);
+                        value = value.wrapping_sub(1);
+                        dest.put_world_u8(ctx, world_state, &mut state, value);
+                        if value != 0 {
+                            OpResult::ContinueFrom { address: (state.current_address as i64 + offset) as u64 }
+                        } else {
+                            OpResult::Continue
+                        }
+                    }
                     Op::JumpConditional { lhs, cmp, rhs, offset } => {
-                        let lhs_value = lhs.get_world_u8(ctx, world_state, actor_index);
-                        let rhs_value = rhs.get_world_u8(ctx, world_state, actor_index);
+                        let lhs_value = lhs.get_world_u8(ctx, world_state, &mut state);
+                        let rhs_value = rhs.get_world_u8(ctx, world_state, &mut state);
                         let result = match cmp {
                             CompareOp::Eq => lhs_value == rhs_value,
                             CompareOp::NotEq => lhs_value != rhs_value,
@@ -123,7 +136,7 @@ impl WorldScript {
                             CompareOp::And => (lhs_value & rhs_value) > 0,
                             CompareOp::Or => (lhs_value | rhs_value) > 0,
                         };
-                        if !result {
+                        if result {
                             OpResult::ContinueFrom {
                                 address: (state.current_address as i64 + offset) as u64,
                             }
@@ -182,8 +195,8 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::BitMath { dest, lhs, op, rhs } => {
-                        let lhs_value = lhs.get_world_u8(ctx, world_state, actor_index);
-                        let rhs_value = rhs.get_world_u8(ctx, world_state, actor_index);
+                        let lhs_value = lhs.get_world_u8(ctx, world_state, &mut state);
+                        let rhs_value = rhs.get_world_u8(ctx, world_state, &mut state);
                         let result = match op {
                             BitMathOp::And => lhs_value & rhs_value,
                             BitMathOp::Or => lhs_value | rhs_value,
@@ -191,19 +204,19 @@ impl WorldScript {
                             BitMathOp::ShiftLeft => lhs_value << rhs_value,
                             BitMathOp::ShiftRight => lhs_value >> rhs_value,
                         };
-                        dest.put_world_u8(ctx, world_state, result);
+                        dest.put_world_u8(ctx, world_state, &mut state, result);
 
                         OpResult::Continue
                     }
                     Op::ByteMath { dest, lhs, op ,rhs } => {
-                        let lhs_value = lhs.get_world_u8(ctx, world_state, actor_index);
-                        let rhs_value = rhs.get_world_u8(ctx, world_state, actor_index);
+                        let lhs_value = lhs.get_world_u8(ctx, world_state, &mut state);
+                        let rhs_value = rhs.get_world_u8(ctx, world_state, &mut state);
 
                         let result = match op {
                             ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
                             ByteMathOp::Subtract => lhs_value.overflowing_sub(rhs_value).0,
                         };
-                        dest.put_world_u8(ctx, world_state, result);
+                        dest.put_world_u8(ctx, world_state, &mut state, result);
 
                         OpResult::Continue
                     }
@@ -220,7 +233,7 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::WaitThenAnimate { delay } => {
-                        OpResult::Continue
+                        OpResult::Yield
                     }
                     Op::VectorX { magnitude } => {
                         OpResult::Continue
@@ -229,13 +242,13 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::Scroll { steps } => {
-                        OpResult::Continue
+                        OpResult::Yield
                     }
                     Op::ChangeLocation { destination } => {
                         OpResult::Continue
                     }
                     Op::Move { steps } => {
-                        OpResult::Continue
+                        OpResult::Yield
                     }
                     Op::PaletteLoad { address, palette_index, mode } => {
                         OpResult::Continue

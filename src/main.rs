@@ -145,13 +145,7 @@ fn main() -> Result<(), String> {
     let ui_theme = fs.read_ui_theme(args.ui_theme);
     let screen_fade = ScreenFade::new(0.0);
     let mode = fs.mode;
-
-    // Init some of the same variables that scene 0 does.
-    let mut memory = Memory::new();
-    // memory.write_bytes(0x7E028F, &[0x00, 0xA0, 0x00, 0xA0, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
-    memory.write_u16(0x7F01CD, 0x0100);
-    memory.write_u8(0x7F0054, 0x80);
-    // memory.write_u8(0x7F0000, 0x85);
+    let memory = Memory::new();
 
     let mut text_processor = TextProcessor::new();
     let party = Party::new();

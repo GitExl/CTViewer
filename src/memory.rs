@@ -5,6 +5,7 @@ use crate::gamestate::gamestate_scene::SceneState;
 use crate::gamestate::gamestate_world::WorldState;
 use crate::party::CharacterPartyState;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
+use crate::world_script::world_script::WorldActorState;
 
 #[derive(Clone)]
 pub struct Memory {
@@ -101,12 +102,6 @@ impl Memory {
         } else if address == 0x7E2982 {
             return *scene_state.player_actors.get(&2).unwrap_or(&0) as u8;
         }
-
-        // Fall-through to memory.
-        self.read_u8(address)
-    }
-
-    pub fn read_world_u8(&self, address: usize, _world_state: &WorldState) -> u8 {
 
         // Fall-through to memory.
         self.read_u8(address)
@@ -236,13 +231,15 @@ impl DataSource {
         }
     }
 
-    pub fn get_world_u8(self, ctx: &Context, world_state: &WorldState, _current_actor: usize) -> u8 {
+    pub fn get_world_u8(self, ctx: &Context, _world_state: &WorldState, actor_state: &mut WorldActorState) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
-            DataSource::Memory(address) => ctx.memory.read_world_u8(address, world_state),
+            DataSource::Memory(address) => ctx.memory.read_u8(address),
 
             // World
-            DataSource::WorldActor(_actor_address) => 0,
+            DataSource::WorldActor(address) => {
+                actor_state.memory[address]
+            },
 
             _ => panic!("Unhandled get_u8 for world."),
         }
@@ -329,8 +326,11 @@ impl DataDest {
         }
     }
 
-    pub fn put_world_u8(&self, ctx: &mut Context, _world_state: &mut WorldState, value: u8) {
+    pub fn put_world_u8(&self, ctx: &mut Context, _world_state: &mut WorldState, actor_state: &mut WorldActorState, value: u8) {
         match self {
+            DataDest::WorldActor(address) => {
+                actor_state.memory[*address] = value;
+            }
             _ => self.put_u8(ctx, value),
         }
     }

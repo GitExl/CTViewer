@@ -55,8 +55,9 @@ pub enum Op {
         height: u8,
     },
     DecrementAndJumpIfNonZero {
-        address: DataDest,
-        offset: isize,
+        src: DataSource,
+        dest: DataDest,
+        offset: i64,
     },
     End,
     FadeIn {

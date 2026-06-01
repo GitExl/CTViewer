@@ -219,12 +219,16 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // Jumps.
         // "jp"
         0x1A => Op::GoTo {
-            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
+            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400 + 1,
         },
         // "jdjnz"
-        0x1B => Op::DecrementAndJumpIfNonZero {
-            address: DataDest::for_world_actor_memory(data.read_u8().unwrap() as usize),
-            offset: data.read_i8().unwrap() as isize,
+        0x1B => {
+            let address = data.read_u8().unwrap() as usize;
+            Op::DecrementAndJumpIfNonZero {
+                src: DataSource::for_world_actor_memory(address),
+                dest: DataDest::for_world_actor_memory(address),
+                offset: data.read_i8().unwrap() as i64,
+            }
         },
         // "jz"
         0x1C => Op::JumpConditional {
