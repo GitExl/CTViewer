@@ -8,6 +8,52 @@ use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::world_script::world_script::WorldActorState;
 
 #[derive(Clone)]
+pub struct MemoryRegion {
+    data: Vec<u8>,
+}
+
+impl MemoryRegion {
+    pub fn new(size: usize) -> MemoryRegion {
+        MemoryRegion {
+            data: vec![0; size],
+        }
+    }
+
+    pub fn put_bytes(&mut self, address: usize, bytes: &[u8]) {
+        for index in 0..bytes.len() {
+            self.data[address + index] = bytes[index];
+        }
+    }
+
+    pub fn put_u8(&mut self, address: usize, value: u8) {
+        self.data[address] = value;
+    }
+
+    pub fn get_u8(&self, address: usize) -> u8 {
+        self.data[address]
+    }
+
+    pub fn put_u16(&mut self, address: usize, value: u16) {
+        self.data[address + 0] = ((value >> 8) & 0xFF) as u8;
+        self.data[address + 1] = (value        & 0xFF) as u8;
+    }
+
+    pub fn get_u16(&self, address: usize) -> u16 {
+        self.data[address + 1] as u16 | self.data[address] as u16 >> 8
+    }
+
+    pub fn put_u24(&mut self, address: usize, value: u32) {
+        self.data[address + 0] = ((value >> 16) & 0xFF) as u8;
+        self.data[address + 1] = ((value >> 8)  & 0xFF) as u8;
+        self.data[address + 2] = (value         & 0xFF) as u8;
+    }
+
+    pub fn get_u24(&self, address: usize) -> u32 {
+        self.data[address + 2] as u32 | (self.data[address + 1] as u32) << 8 | (self.data[address] as u32) << 16
+    }
+}
+
+#[derive(Clone)]
 pub struct Memory {
     pub system: [u8; 0x10000],
     pub global: [u8; 0x200],
@@ -127,13 +173,13 @@ impl Memory {
 
     pub fn read_u16(&self, address: usize, _scene_state: &SceneState) -> u16 {
         if address >= 0x7E0000 && address < 0x7F0000 {
-            return self.system[address - 0x7E0000 + 1] as u16 | self.system[address - 0x7E0000] as u16 >> 8;
+            return self.system[address - 0x7E0000 + 1] as u16 | (self.system[address - 0x7E0000] as u16) << 8;
         } else if address >= 0x7F0000 && address < 0x7F0200 {
-            return self.global[address - 0x7F0000 + 1] as u16 | self.global[address - 0x7F0000] as u16 >> 8;
+            return self.global[address - 0x7F0000 + 1] as u16 | (self.global[address - 0x7F0000] as u16) << 8;
         } else if address >= 0x7F0200 && address < 0x7F0400 {
-            return self.local[address - 0x7F0200 + 1] as u16 | self.local[address - 0x7F0200] as u16 >> 8;
+            return self.local[address - 0x7F0200 + 1] as u16 | (self.local[address - 0x7F0200] as u16) << 8;
         } else if address >= 0x9F0200 && address < 0x9F0400 {
-            return self.extended[address - 0x9F0200 + 1] as u16 | self.extended[address - 0x9F0200] as u16 >> 8;
+            return self.extended[address - 0x9F0200 + 1] as u16 | (self.extended[address - 0x9F0200] as u16) << 8;
         }
 
         println!("Unhandled u16 memory read at 0x{:06X}.", address);
@@ -238,7 +284,7 @@ impl DataSource {
 
             // World
             DataSource::WorldActor(address) => {
-                actor_state.memory[address]
+                actor_state.memory.get_u8(address)
             },
 
             _ => panic!("Unhandled get_u8 for world."),
@@ -329,7 +375,7 @@ impl DataDest {
     pub fn put_world_u8(&self, ctx: &mut Context, _world_state: &mut WorldState, actor_state: &mut WorldActorState, value: u8) {
         match self {
             DataDest::WorldActor(address) => {
-                actor_state.memory[*address] = value;
+                actor_state.memory.put_u8(*address, value);
             }
             _ => self.put_u8(ctx, value),
         }

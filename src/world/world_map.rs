@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 
 bitflags! {
-    #[derive(Clone, Default)]
+    #[derive(Copy, Clone, Default)]
     pub struct WorldChipFlags: u32 {
         const HAS_EXIT     = 0x01;
         const BLOCK_WALK   = 0x02;
@@ -10,7 +10,7 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Copy, Clone, Default)]
 pub struct WorldChip {
     pub flags: WorldChipFlags,
     pub music: usize,

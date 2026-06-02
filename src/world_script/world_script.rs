@@ -2,9 +2,10 @@ use std::io::Cursor;
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_world::WorldState;
 use crate::map::Map;
+use crate::memory::MemoryRegion;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::tileset::TileSet;
-use crate::world::world_map::WorldMap;
+use crate::world::world_map::{WorldChip, WorldMap};
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_disassembler::WorldScriptDisassembler;
 use crate::world_script::world_script_ops::Op;
@@ -12,6 +13,8 @@ use crate::world_script::world_script_ops::Op;
 const ACTION_FUNC_RUN_SCRIPT: u64 = 0x0F63;
 const ACTION_FUNC_FADE_IN: u64 = 0x2105;
 const ACTION_FUNC_FADE_OUT: u64 = 0x20A2;
+const ACTION_FUNC_PALETTE_LOAD: u64 = 0x1DD4;
+const ACTION_FUNC_PALETTE_LOAD_MODES: u64 = 0x1E38;
 
 enum OpResult {
     Yield,
@@ -21,7 +24,7 @@ enum OpResult {
     },
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct WorldActorState {
     pub action_function: u64,
     pub unknown: u8,
@@ -32,7 +35,7 @@ pub struct WorldActorState {
     pub animation_address: u64,
     pub animation_counter: u8,
     pub palette_priority: u8,
-    pub memory: [u8; 64],
+    pub memory: MemoryRegion,
 }
 
 impl WorldActorState {
@@ -41,12 +44,12 @@ impl WorldActorState {
         println!();
     }
 
-    pub fn default() -> Self {
+    pub fn new() -> Self {
         Self {
             counter: 0,
             timer: 0,
             current_address: 0,
-            memory: [0; 64],
+            memory: MemoryRegion::new(64),
             return_address: 0,
             unknown: 0,
             animation_counter: 0,
@@ -80,9 +83,19 @@ impl WorldScript {
 
     pub fn run(&mut self, ctx: &mut Context, world_state: &mut WorldState) {
         for actor_index in 0..world_state.actors.len() {
-            let state = world_state.actors[actor_index];
+            let state = &world_state.actors[actor_index];
+            if state.action_function == 0 {
+                continue;
+            }
+
             if state.action_function == ACTION_FUNC_RUN_SCRIPT {
                 self.run_script(ctx, actor_index, world_state);
+
+            } else if state.action_function == ACTION_FUNC_PALETTE_LOAD {
+                self.run_palette_load(actor_index, world_state);
+
+            // } else {
+            //     println!("Unknown action function 0x{:04X}", state.action_function);
             }
         }
         // println!("-------------");
@@ -232,9 +245,11 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::SetPriority { priority } => {
+                        state.palette_priority |= priority & 0x4F;
                         OpResult::Continue
                     }
                     Op::SetPalette { index } => {
+                        state.palette_priority |= index & 0xF1;
                         OpResult::Continue
                     }
                     Op::SetAnimation { anim_index } => {
@@ -259,6 +274,13 @@ impl WorldScript {
                         OpResult::Yield
                     }
                     Op::PaletteLoad { address, palette_index, mode } => {
+                        let new_index = self.add_actor(world_state, ACTION_FUNC_PALETTE_LOAD);
+                        let new_state = world_state.actors.get_mut(new_index).unwrap();
+                        new_state.memory.put_u8(0x32, palette_index);
+                        new_state.memory.put_u8(0x33, 0);
+                        new_state.memory.put_u8(0x34, mode);
+                        new_state.memory.put_u24(0x35, address as u32);
+
                         OpResult::Continue
                     },
 
@@ -287,11 +309,35 @@ impl WorldScript {
         world_state.actors[actor_index] = state;
     }
 
+    fn run_palette_load(&mut self, actor_index: usize, world_state: &mut WorldState) {
+        let state = world_state.actors.get_mut(actor_index).unwrap();
+        state.action_function = 0;
+
+        let palette_index = state.memory.get_u8(0x32);
+        let mode = state.memory.get_u8(0x34);
+        let address = state.memory.get_u24(0x35) as usize;
+
+        // Mode 0 copies palette data from palette animations.
+        if mode == 0 {
+            if address < 0x7EC000 {
+                println!("Invalid palette copy mode 0 address 0x{:06X}", address);
+            } else {
+                let src_start = ((address - 0x7EC000) / 32) * 16;
+                let dest_start = palette_index as usize * 16;
+                world_state.palette.palette.colors[dest_start..dest_start + 16].copy_from_slice(&world_state.palette_animation.palette.colors[src_start..src_start + 16]);
+            }
+
+        // Other modes.
+        } else {
+            self.add_actor(world_state, ACTION_FUNC_PALETTE_LOAD_MODES);
+        }
+    }
+
     pub fn add_special_actor(&mut self, world_state: &mut WorldState, action_func: u64) -> usize {
         for index in 0..4 {
-            let state = world_state.actors[index];
+            let state = &world_state.actors[index];
             if state.action_function == 0 {
-                let mut new_state = WorldActorState::default();
+                let mut new_state = WorldActorState::new();
                 new_state.action_function = action_func;
                 world_state.actors[index] = new_state;
                 return index;
@@ -303,9 +349,9 @@ impl WorldScript {
 
     pub fn add_actor(&mut self, world_state: &mut WorldState, action_func: u64) -> usize {
         for index in 4..world_state.actors.len() {
-            let state = world_state.actors[index];
+            let state = &world_state.actors[index];
             if state.action_function == 0 {
-                let mut new_state = WorldActorState::default();
+                let mut new_state = WorldActorState::new();
                 new_state.action_function = action_func;
                 world_state.actors[index] = new_state;
                 return index;
@@ -327,24 +373,31 @@ impl WorldScript {
         let layer_src = &map.layers[src_layer];
         let src_len = layer_src.tiles.len();
         let src_tile_width = layer_src.tile_width;
-        let mut buffer = vec![0usize; width * height];
-
-        // TODO: Copy properties.
-        // let world_map = &world_state.world_map;
-        // let chip_index = x * 2 + ((y * 2) * world_map.width);
-        // world_map.chips[chip_index];
+        let mut buffer_tiles = vec![0usize; width * height];
+        let mut buffer_chips = vec![WorldChip::default(); width * height * 4];
 
         for tile_y in 0..height {
             for tile_x in 0..width  {
+
+                // Copy tile.
                 let src_tile_x = src_x + tile_x;
                 let src_tile_y = src_y + tile_y;
                 let src_tile_index = src_tile_x + src_tile_y * src_tile_width as usize;
                 if src_tile_index >= src_len {
                     continue;
                 }
-
                 let dest_tile_index = tile_x + tile_y * width;
-                buffer[dest_tile_index] = layer_src.tiles[src_tile_index];
+                buffer_tiles[dest_tile_index] = layer_src.tiles[src_tile_index];
+
+                // Copy chip properties.
+                let src_chip_x = src_tile_x * 2;
+                let src_chip_y = src_tile_y * 2;
+                let src_chip_index = src_chip_x + src_chip_y * world_map.width as usize;
+                let dest_chip_index = (tile_x * 2) + (tile_y * 2) * width * 2;
+                buffer_chips[dest_chip_index + 0] = world_map.chips[src_chip_index + 0];
+                buffer_chips[dest_chip_index + 1] = world_map.chips[src_chip_index + 1];
+                buffer_chips[dest_chip_index + (width * 2) + 0] = world_map.chips[src_chip_index + world_map.width as usize + 0];
+                buffer_chips[dest_chip_index + (width * 2) + 1] = world_map.chips[src_chip_index + world_map.width as usize + 1];
             }
         }
 
@@ -355,15 +408,26 @@ impl WorldScript {
 
         for tile_y in 0..height {
             for tile_x in 0..width  {
+
+                // Copy tile.
                 let dest_tile_x = dest_x + tile_x;
                 let dest_tile_y = dest_y + tile_y;
                 let dest_tile_index = dest_tile_x + dest_tile_y * dest_tile_width as usize;
                 if dest_tile_index >= dest_len {
                     continue;
                 }
-
                 let src_tile_index = tile_x + tile_y * width;
-                layer_dest.tiles[dest_tile_index] = buffer[src_tile_index];
+                layer_dest.tiles[dest_tile_index] = buffer_tiles[src_tile_index];
+
+                // Copy chip properties.
+                let dest_chip_x = dest_tile_x * 2;
+                let dest_chip_y = dest_tile_y * 2;
+                let dest_chip_index = dest_chip_x + dest_chip_y * world_map.width as usize;
+                let src_chip_index = (tile_x * 2) + (tile_y * 2) * width * 2;
+                world_map.chips[dest_chip_index + 0] = buffer_chips[src_chip_index + 0];
+                world_map.chips[dest_chip_index + 1] = buffer_chips[src_chip_index + 1];
+                world_map.chips[dest_chip_index + world_map.width as usize + 0] = buffer_chips[src_chip_index + (width * 2) + 0];
+                world_map.chips[dest_chip_index + world_map.width as usize + 1] = buffer_chips[src_chip_index + (width * 2) + 1];
             }
         }
 

@@ -58,15 +58,17 @@ impl WorldAnimationScript {
         let op = self.decode(state.animation_address);
         match op {
             WorldAnimationOp::Set { value } => {
-                state.memory[0x26] = value;
+                state.memory.put_u8(0x26, value);
                 state.animation_address += 2;
             },
             WorldAnimationOp::Increment => {
-                state.memory[0x26] += 1;
+                let value = state.memory.get_u8(0x26);
+                state.memory.put_u8(0x26, value + 1);
                 state.animation_address += 1;
             },
             WorldAnimationOp::Decrement => {
-                state.memory[0x26] -= 1;
+                let value = state.memory.get_u8(0x26);
+                state.memory.put_u8(0x26, value - 1);
                 state.animation_address += 1;
             },
             WorldAnimationOp::Goto { offset } => {
