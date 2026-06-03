@@ -51,6 +51,17 @@ impl MemoryRegion {
     pub fn get_u24(&self, address: usize) -> u32 {
         self.data[address + 2] as u32 | (self.data[address + 1] as u32) << 8 | (self.data[address] as u32) << 16
     }
+
+    pub fn put_u32(&mut self, address: usize, value: u32) {
+        self.data[address + 0] = ((value >> 24) & 0xFF) as u8;
+        self.data[address + 1] = ((value >> 16) & 0xFF) as u8;
+        self.data[address + 2] = ((value >> 8)  & 0xFF) as u8;
+        self.data[address + 3] = (value         & 0xFF) as u8;
+    }
+
+    pub fn get_u32(&self, address: usize) -> u32 {
+        self.data[address + 3] as u32 | (self.data[address + 2] as u32) << 8 | (self.data[address + 1] as u32) << 16 | (self.data[address] as u32) << 24
+    }
 }
 
 #[derive(Clone)]

@@ -41,26 +41,14 @@ impl FileSystem {
         let mut layer_2 = MapLayer::new(192, 128);
         let mut layer_3 = MapLayer::new(64, 32);
 
-        // todo fix hardcoded layer animation. Where is this stored or set? World script calling 0x22F0F?
+        // TODO: un-hardcode layer visibility, where is this set?
         let mut screen_flags = ScreenFlags::SCREEN_L1_MAIN | ScreenFlags::SCREEN_L2_MAIN | ScreenFlags::SCREEN_L3_SUB | ScreenFlags::SCREEN_SPR_MAIN;
         let effect_flags = EffectFlags::EFFECT_L1 | EffectFlags::EFFECT_L2 | EffectFlags::EFFECT_SPR | EffectFlags::EFFECT_HALF_INTENSITY;
-        if index == 0 {
-            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
-        } else if index == 1 {
-            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
-        } else if index == 2 {
+        if index == 2 {
             screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
             screen_flags.insert(ScreenFlags::SCREEN_L3_MAIN);
-        } else if index == 3 {
-            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
         } else if index == 4 {
             screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
-        } else if index == 5 {
-            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
-        } else if index == 6 {
-            layer_3.scroll_speed = Vec2Df64::new(-16.0, 8.0);
-        } else if index == 7 {
-            layer_1.scroll_speed = Vec2Df64::new(16.0, 0.0);
         }
 
         // Read 2x2 chip map tiles and assemble chips from them.

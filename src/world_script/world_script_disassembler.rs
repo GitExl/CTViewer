@@ -106,8 +106,8 @@ impl WorldScriptDisassembler {
                     Op::JumpConditional { lhs, cmp, rhs, offset } => {
                         format!("if {} {} {} goto jp_{:04X}", lhs.as_string(), cmp.as_string(), rhs.as_string(), op_address as i64 + offset)
                     },
-                    Op::Link { address } => format!("link 0xC2{:04X}", address),
-                    Op::LinkSpecial { address } => format!("link_special 0xC2{:04X}", address),
+                    Op::Link { address } => format!("link 0xC2{:04X}    // Action: {}", address, action_func_as_string(address)),
+                    Op::LinkSpecial { address } => format!("link_special 0xC2{:04X}    // Action: {}", address, action_func_as_string(address)),
                     Op::MosaicIn { mode } => format!("mosaic_in {}", mode),
                     Op::MosaicOut { mode } => format!("mosaic_out {}", mode),
                     Op::Move { steps } => format!("move {}", steps),

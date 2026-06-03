@@ -3,7 +3,7 @@
 | Offset | Width | Description                                                                                  |
 |--------|-------|----------------------------------------------------------------------------------------------|
 | `$00`  | `W`   | Address of the action function that runs this actor, in bank `$C20000`.                      |
-| `$02`  | `B`   | Unknown, either 01 or 00. Fade in/out related?                                               |
+| `$02`  | `B`   | Unknown, either 01 or 00. Fade in/out related? Used by `palette_load` and maybe others.      |
 | `$03`  | `W`   | Op timer/countdown? Used by `timer`.                                                         |
 | `$05`  | `W`   | The op address to continue from when returning from a `gosub` op.                            |
 | `$07`  | `BBB` | The current script op execution address.                                                     |
@@ -13,14 +13,10 @@
 | `$0F`  | `B`   | Palette and sprite priority. Bits `$F1` are set by `colofs`, bits `$4F` are set by `priset`. |
 | `$10`  | `?`   |                                                                                              |
 | `$11`  | `?`   |                                                                                              |
-| `$12`  | `?`   |                                                                                              |
-| `$13`  | `?`   |                                                                                              |
-| `$14`  | `W`   | Current sprite X pixel                                                                       |
-| `$16`  | `?`   |                                                                                              |
-| `$17`  | `?`   |                                                                                              |
-| `$18`  | `W`   | Current sprite Y pixel                                                                       |
-| `$1A`  | `L`   | 16.16 fixed point X movement vector                                                          |
-| `$1E`  | `L`   | 16.16 fixed point Y movement vector                                                          |
+| `$12`  | `L`   | Current sprite X pixel in 16.16 fixed point                                                  |
+| `$16`  | `L`   | Current sprite Y pixel in 16.16 fixed point                                                  |
+| `$1A`  | `L`   | X movement vector in 16.16 fixed point                                                       |
+| `$1E`  | `L`   | Y movement vector in 16.16 fixed point                                                       |
 | `$22`  | `?`   |                                                                                              |
 | `$23`  | `?`   |                                                                                              |
 | `$24`  | `?`   |                                                                                              |
