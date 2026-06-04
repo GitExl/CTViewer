@@ -22,6 +22,10 @@ pub struct WorldMap {
 
     pub width: u32,
     pub height: u32,
+
+    pub pixel_width: u32,
+    pub pixel_height: u32,
+
     pub chips: Vec<WorldChip>,
 }
 

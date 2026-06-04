@@ -33,8 +33,7 @@ enum OpResult {
 #[derive(Clone)]
 pub struct WorldActorState {
     pub action_function: u64,
-    pub unknown: u8,
-    pub timer: u8,
+    pub cycles: u16,
     pub return_address: u64,
     pub current_address: u64,
     pub counter: u8,
@@ -42,6 +41,10 @@ pub struct WorldActorState {
     pub animation_counter: u8,
     pub palette_priority: u8,
     pub memory: MemoryRegion,
+    pub x: f64,
+    pub y: f64,
+    pub vector_x: f64,
+    pub vector_y: f64,
 }
 
 impl WorldActorState {
@@ -52,16 +55,21 @@ impl WorldActorState {
 
     pub fn new() -> Self {
         Self {
-            counter: 0,
-            timer: 0,
-            current_address: 0,
             memory: MemoryRegion::new(64),
-            return_address: 0,
-            unknown: 0,
-            animation_counter: 0,
-            palette_priority: 0,
+
             action_function: 0,
+            cycles: 0,
+            counter: 0,
+            current_address: 0,
+            return_address: 0,
+            animation_counter: 0,
             animation_address: 0,
+            palette_priority: 0,
+
+            x: 0.0,
+            y: 0.0,
+            vector_x: 0.0,
+            vector_y: 0.0,
         }
     }
 }
@@ -93,6 +101,7 @@ impl WorldScript {
             if state.action_function == 0 {
                 continue;
             }
+            let cycles = state.cycles.wrapping_add(1);
 
             if state.action_function == ACTION_FUNC_RUN_SCRIPT {
                 self.run_script(ctx, actor_index, world_state);
@@ -116,6 +125,8 @@ impl WorldScript {
             // } else {
             //     println!("Unknown action function 0x{:04X}", state.action_function);
             }
+
+            world_state.actors.get_mut(actor_index).unwrap().cycles = cycles;
         }
         // println!("-------------");
     }
@@ -261,11 +272,8 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::SetPosition { x, y } => {
-                        state.memory.put_u16(0x12, 0);
-                        state.memory.put_u16(0x14, x);
-
-                        state.memory.put_u16(0x16, 0);
-                        state.memory.put_u16(0x18, y);
+                        state.x = x as f64;
+                        state.y = y as f64;
                         OpResult::Continue
                     }
                     Op::SetPriority { priority } => {
@@ -283,11 +291,11 @@ impl WorldScript {
                         OpResult::Yield
                     }
                     Op::VectorX { magnitude } => {
-                        state.memory.put_u32(0x1A, magnitude as u32);
+                        state.vector_x = magnitude as f64 / 65536.0;
                         OpResult::Continue
                     }
                     Op::VectorY { magnitude } => {
-                        state.memory.put_u32(0x1E, magnitude as u32);
+                        state.vector_y = magnitude as f64 / 65536.0;
                         OpResult::Continue
                     }
                     Op::Scroll { steps } => {
@@ -297,7 +305,27 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::Move { steps } => {
-                        OpResult::Yield
+                        if state.counter != 0 {
+                            state.counter -= 1;
+                        } else {
+                            state.counter = steps;
+                        }
+                        if state.counter != 0 {
+
+                            // Move actor by vector.
+                            state.x += state.vector_x;
+                            state.y += state.vector_y;
+
+                            // Clamp to map.
+                            state.x = state.x.min(world_state.world_map.pixel_width as f64).max(0.0);
+                            state.y = state.y.min(world_state.world_map.pixel_height as f64).max(0.0);
+
+                            // TODO: fn_overworld_object_animate
+
+                            OpResult::Yield
+                        } else {
+                            OpResult::Continue
+                        }
                     }
                     Op::PaletteLoad { address, palette_index, mode } => {
                         let new_index = self.add_actor(world_state, ACTION_FUNC_PALETTE_LOAD);

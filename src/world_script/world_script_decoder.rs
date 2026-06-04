@@ -427,13 +427,13 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             steps: data.read_u8().unwrap(),
         },
         // "tpxmove"
-        0x3F => Op::TpMoveX {
+        0x3F => Op::MoveToX {
             steps: data.read_u16::<LittleEndian>().unwrap(),
             animation1: data.read_u8().unwrap(),
             animation2: data.read_u8().unwrap(),
         },
         // "tpymove"
-        0x40 => Op::TpMoveY {
+        0x40 => Op::MoveToY {
             steps: data.read_u16::<LittleEndian>().unwrap(),
             animation1: data.read_u8().unwrap(),
             animation2: data.read_u8().unwrap(),

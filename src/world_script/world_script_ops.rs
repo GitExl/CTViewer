@@ -173,12 +173,12 @@ pub enum Op {
     Timer {
         value: u8,
     },
-    TpMoveX {
+    MoveToX {
         steps: u16,
         animation1: u8,
         animation2: u8,
     },
-    TpMoveY {
+    MoveToY {
         steps: u16,
         animation1: u8,
         animation2: u8,

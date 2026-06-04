@@ -133,11 +133,11 @@ impl WorldScriptDisassembler {
                     Op::VectorX { magnitude } => format!("vector_x {:.03}", (magnitude as f64) / 65536.0),
                     Op::VectorY { magnitude } => format!("vector_y {:.03}", (magnitude as f64) / 65536.0),
                     Op::Timer { value } => format!("timer {}", value),
-                    Op::TpMoveX { steps, animation1, animation2 } => {
-                        format!("tp_move_x {}, {}, {}    // Animation: {}, Animation: {}", steps, animation1, animation2, get_animation_description(animation1), get_animation_description(animation2))
+                    Op::MoveToX { steps, animation1, animation2 } => {
+                        format!("move_to_x {}, {}, {}    // Move left anim: {}, move right anim: {}", steps, animation1, animation2, get_animation_description(animation1), get_animation_description(animation2))
                     },
-                    Op::TpMoveY { steps, animation1, animation2 } => {
-                        format!("tp_move_y {}, {}, {}    // Animation: {}, Animation: {}", steps, animation1, animation2, get_animation_description(animation1), get_animation_description(animation2))
+                    Op::MoveToY { steps, animation1, animation2 } => {
+                        format!("move_to_y {}, {}, {}    // Move left anim: {}, move right anim: {}", steps, animation1, animation2, get_animation_description(animation1), get_animation_description(animation2))
                     },
                     Op::Unknown03 { i0, i1, i2, i3, i4, i5, i6, i7, i8 } => {
                         format!("unknown03 {}, {}, {}, {}, {}, {}, {}, {}, {}", i0, i1, i2, i3, i4, i5, i6, i7, i8)

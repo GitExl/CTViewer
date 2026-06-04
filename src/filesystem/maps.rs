@@ -108,6 +108,8 @@ impl FileSystem {
                 index,
                 width: layer_1.chip_width,
                 height: layer_1.chip_height,
+                pixel_width: layer_1.chip_width * 8,
+                pixel_height: layer_1.chip_height * 8,
                 chips,
             },
             Map {
