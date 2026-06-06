@@ -362,6 +362,7 @@ impl WorldScript {
                         }
                     }
                     Op::ChangeLocation { destination } => {
+                        world_state.next_destination.set(destination, true);
                         OpResult::Continue
                     }
                     Op::Move { steps } => {
