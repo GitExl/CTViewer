@@ -358,11 +358,11 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "anmseq"
         0x30 => Op::SetAnimation {
-            anim_index: data.read_u8().unwrap(),
+            anim_index: data.read_u8().unwrap() as usize,
         },
         // "anmwait"
-        0x39 => Op::WaitThenAnimate {
-            delay: data.read_u8().unwrap(),
+        0x39 => Op::WaitAndAnimate {
+            steps: data.read_u8().unwrap(),
         },
 
         // Map changes.
@@ -429,14 +429,14 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // "tpxmove"
         0x3F => Op::MoveToX {
             steps: data.read_u16::<LittleEndian>().unwrap(),
-            animation1: data.read_u8().unwrap(),
-            animation2: data.read_u8().unwrap(),
+            animation1: data.read_u8().unwrap() as usize,
+            animation2: data.read_u8().unwrap() as usize,
         },
         // "tpymove"
         0x40 => Op::MoveToY {
             steps: data.read_u16::<LittleEndian>().unwrap(),
-            animation1: data.read_u8().unwrap(),
-            animation2: data.read_u8().unwrap(),
+            animation1: data.read_u8().unwrap() as usize,
+            animation2: data.read_u8().unwrap() as usize,
         },
 
         // Function calls/new objects.

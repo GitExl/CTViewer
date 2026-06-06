@@ -6,17 +6,22 @@ use crate::util::data_read::read_24_bit_address;
 use crate::world_script::world_script::WorldActorState;
 
 pub struct WorldAnimationScript {
-    offsets: Vec<usize>,
+    offsets: Vec<u64>,
     data: Cursor<Vec<u8>>,
-    frame_cache: HashMap<usize, SpriteAssemblyFrame>,
+    frame_cache: HashMap<u64, SpriteAssemblyFrame>,
 }
 
+#[derive(Debug)]
 pub enum WorldAnimationOp {
-    Set {
-        value: u8,
+    Reset {
+        address: usize,
     },
-    Increment,
-    Decrement,
+    Increment {
+        address: usize,
+    },
+    Decrement {
+        address: usize,
+    },
     Goto {
         offset: i64,
     },
@@ -44,7 +49,7 @@ impl WorldAnimationScript {
 
         let mut offsets = Vec::new();
         for _ in 0..count {
-            offsets.push(local_data.read_u16::<LittleEndian>().unwrap() as usize - 0xE000);
+            offsets.push(local_data.read_u16::<LittleEndian>().unwrap() as u64 - 0xE000);
         }
 
         WorldAnimationScript {
@@ -54,22 +59,30 @@ impl WorldAnimationScript {
         }
     }
 
+    pub fn get_animation_address(&self, animation_index: usize) -> u64 {
+        self.offsets[animation_index]
+    }
+
     pub fn run(&mut self, state: &mut WorldActorState) {
+        if state.animation_address == 0 {
+            return;
+        }
+
         let op = self.decode(state.animation_address);
         match op {
-            WorldAnimationOp::Set { value } => {
-                state.memory.put_u8(0x26, value);
+            WorldAnimationOp::Reset { address } => {
+                state.memory.put_u8(address, 0);
                 state.animation_address += 2;
             },
-            WorldAnimationOp::Increment => {
-                let value = state.memory.get_u8(0x26);
-                state.memory.put_u8(0x26, value + 1);
-                state.animation_address += 1;
+            WorldAnimationOp::Increment { address } => {
+                let value = state.memory.get_u8(address);
+                state.memory.put_u8(address, value + 1);
+                state.animation_address += 2;
             },
-            WorldAnimationOp::Decrement => {
-                let value = state.memory.get_u8(0x26);
-                state.memory.put_u8(0x26, value - 1);
-                state.animation_address += 1;
+            WorldAnimationOp::Decrement { address } => {
+                let value = state.memory.get_u8(address);
+                state.memory.put_u8(address, value - 1);
+                state.animation_address += 2;
             },
             WorldAnimationOp::Goto { offset } => {
                 state.animation_address = (state.animation_address as i64 + offset) as u64
@@ -78,7 +91,7 @@ impl WorldAnimationScript {
 
                 // Always set frame.
                 if state.palette_priority & 0x40 != 0 {
-                    self.set_sprite_assembly(assembly_address);
+                    state.sprite_assembly_address = self.load_sprite_assembly(assembly_address);
 
                 // Countdown.
                 } else if state.animation_counter != 0 {
@@ -86,15 +99,13 @@ impl WorldAnimationScript {
 
                     // Countdown complete, advance to next op.
                     if state.animation_counter == 0 {
-                        state.animation_address += 5;
-                    } else {
-                        self.set_sprite_assembly(assembly_address);
+                        state.animation_address += 4;
                     }
 
                 // Start wait.
                 } else {
                     state.animation_counter = duration;
-                    self.set_sprite_assembly(assembly_address);
+                    state.sprite_assembly_address = self.load_sprite_assembly(assembly_address);
                 }
             },
             WorldAnimationOp::Wait { duration } => {
@@ -125,17 +136,21 @@ impl WorldAnimationScript {
     fn decode(&mut self, address: u64) -> WorldAnimationOp {
         self.data.set_position(address);
         let opcode = self.data.read_u8().unwrap();
-        match opcode {
-            0 => WorldAnimationOp::Set {
-                value: self.data.read_u8().unwrap(),
+        let decoded = match opcode {
+            0 => WorldAnimationOp::Reset {
+                address: self.data.read_u8().unwrap() as usize,
             },
-            1 => WorldAnimationOp::Increment,
-            2 => WorldAnimationOp::Decrement,
+            1 => WorldAnimationOp::Increment {
+                address: self.data.read_u8().unwrap() as usize,
+            },
+            2 => WorldAnimationOp::Decrement {
+                address: self.data.read_u8().unwrap() as usize,
+            },
             3 => WorldAnimationOp::Goto {
                 offset: self.data.read_i8().unwrap() as i64,
             },
             4 => WorldAnimationOp::Animate {
-                assembly_address: read_24_bit_address(&mut self.data) as u64,
+                assembly_address: self.data.read_u16::<LittleEndian>().unwrap() as u64,
                 duration: self.data.read_u8().unwrap(),
             },
             5 => WorldAnimationOp::Wait {
@@ -147,12 +162,67 @@ impl WorldAnimationScript {
                 unknown2: self.data.read_u16::<LittleEndian>().unwrap(),
             },
             7 => WorldAnimationOp::Unknown7,
-            _ => panic!("Unknown world animation opcode {}", opcode),
+            _ => panic!("Unknown world animation opcode {} at 0x{:04X}", opcode, address),
+        };
+        decoded
+    }
+
+    pub fn disassemble(&mut self) {
+        let offsets = self.offsets.clone();
+        for (index, offset) in offsets.iter().enumerate() {
+            let mut op_address = *offset;
+
+            println!("Anim {} @ {:04X}", index, offset);
+            loop {
+                self.data.set_position(op_address);
+                let op = self.decode(op_address);
+
+                match op {
+                    WorldAnimationOp::Reset { address } => {
+                        println!("  {:04X} reset 0x{:02X}", op_address, address);
+                    }
+                    WorldAnimationOp::Increment { address } => {
+                        println!("  {:04X} inc 0x{:02X}", op_address, address);
+                    }
+                    WorldAnimationOp::Decrement { address } => {
+                        println!("  {:04X} dec 0x{:02X}", op_address, address);
+                    }
+                    WorldAnimationOp::Goto { offset } => {
+                        println!("  {:04X} goto 0x{:04X}", op_address, op_address as i64 + offset);
+                        break;
+                    }
+                    WorldAnimationOp::Wait { duration } => {
+                        println!("  {:04X} wait {}", op_address, duration);
+                        if duration == 0 {
+                            break;
+                        }
+                    }
+                    WorldAnimationOp::Animate { duration, assembly_address } => {
+                        println!("  {:04X} animate 0x{:02X} {}", op_address, assembly_address, duration);
+                        if duration == 0 {
+                            break;
+                        }
+                    }
+                    WorldAnimationOp::Transfer { address, unknown1, unknown2 } => {
+                        println!("  {:04X} transfer 0x{:06X} {} {}", op_address, address, unknown1, unknown2);
+                    }
+                    WorldAnimationOp::Unknown7 => {
+                        println!("  {:04X} unknown07", op_address);
+                    }
+                }
+
+                op_address = self.data.position()
+            }
+            println!();
         }
     }
 
-    fn set_sprite_assembly(&mut self, assembly_address: u64) {
-        println!("set anim frame assembly {}", assembly_address);
+    fn load_sprite_assembly(&mut self, assembly_address: u64) -> u64 {
+
+        // Skip if already loaded.
+        if self.frame_cache.contains_key(&assembly_address) {
+            return assembly_address;
+        }
 
         // Read frame assembly data from the position, but keep track of the current position so we
         // can return here later.
@@ -199,14 +269,15 @@ impl WorldAnimationScript {
             });
         }
 
-        // TODO: actually do something with the assembly frame
-        println!("Set sprite assembly {}", assembly_address);
-
         self.data.set_position(old_pos);
+        self.frame_cache.insert(assembly_address, frame);
+
+        assembly_address
     }
+
 }
 
-pub fn get_animation_description(index: u8) -> String {
+pub fn get_animation_description(index: usize) -> String {
     let description = match index {
         0 => "PC facing down",
         1 => "PC walk down",

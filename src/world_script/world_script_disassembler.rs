@@ -82,7 +82,7 @@ impl WorldScriptDisassembler {
                 let statement = match op {
                     Op::AddActor { address, unused } => format!("add_actor actor_{:04X}, {}", address, unused),
                     Op::AddActorSpecial { address, i0 } => format!("add_special_actor actor_special_{:04X}, {}", address, i0),
-                    Op::WaitThenAnimate { delay } => format!("wait_animate {}", delay),
+                    Op::WaitAndAnimate { steps: delay } => format!("wait_animate {}", delay),
                     Op::Bind { address, pc } => format!("bind_pc pc_{:04X}, {}", address, pc_index(pc)),
                     Op::BitMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::ByteMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),

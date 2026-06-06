@@ -34,12 +34,16 @@ enum OpResult {
 pub struct WorldActorState {
     pub action_function: u64,
     pub cycles: u16,
-    pub return_address: u64,
-    pub current_address: u64,
     pub counter: u8,
+
+    pub script_return_address: u64,
+    pub script_current_address: u64,
+
+    pub palette_priority: u8,
     pub animation_address: u64,
     pub animation_counter: u8,
-    pub palette_priority: u8,
+    pub sprite_assembly_address: u64,
+
     pub memory: MemoryRegion,
     pub x: f64,
     pub y: f64,
@@ -55,17 +59,19 @@ impl WorldActorState {
 
     pub fn new() -> Self {
         Self {
-            memory: MemoryRegion::new(64),
-
             action_function: 0,
             cycles: 0,
             counter: 0,
-            current_address: 0,
-            return_address: 0,
+
+            script_current_address: 0,
+            script_return_address: 0,
+
+            palette_priority: 0,
             animation_counter: 0,
             animation_address: 0,
-            palette_priority: 0,
+            sprite_assembly_address: 0,
 
+            memory: MemoryRegion::new(64),
             x: 0.0,
             y: 0.0,
             vector_x: 0.0,
@@ -112,15 +118,15 @@ impl WorldScript {
                 self.run_palette_load_mode(actor_index, world_state);
 
             } else if state.action_function == ACTION_FUNC_SCROLL_LAYERS_WORLD0 {
-                self.run_layer_animation(actor_index, world_state, 0);
+                self.run_layer_animation(world_state, 0);
             } else if state.action_function == ACTION_FUNC_SCROLL_LAYERS_WORLD1 {
-                self.run_layer_animation(actor_index, world_state, 1);
+                self.run_layer_animation(world_state, 1);
             } else if state.action_function == ACTION_FUNC_SCROLL_LAYERS_WORLD2 {
-                self.run_layer_animation(actor_index, world_state, 2);
+                self.run_layer_animation(world_state, 2);
             } else if state.action_function == ACTION_FUNC_SCROLL_LAYERS_WORLD4 {
-                self.run_layer_animation(actor_index, world_state, 4);
+                self.run_layer_animation(world_state, 4);
             } else if state.action_function == ACTION_FUNC_SCROLL_LAYERS_WORLD5 {
-                self.run_layer_animation(actor_index, world_state, 5);
+                self.run_layer_animation(world_state, 5);
 
             } else if state.action_function == ACTION_FUNC_FADE_IN {
                 self.run_fade_in(ctx, actor_index, world_state);
@@ -140,7 +146,7 @@ impl WorldScript {
         let mut state = world_state.actors[actor_index].clone();
 
         loop {
-            self.data.set_position(state.current_address);
+            self.data.set_position(state.script_current_address);
 
             let result;
             if let Some(op) = op_decode(&mut self.data, self.mode) {
@@ -155,11 +161,11 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::GoSub { address } => {
-                        state.return_address = self.data.position();
+                        state.script_return_address = self.data.position();
                         OpResult::ContinueFrom { address }
                     }
                     Op::Return => {
-                        OpResult::ContinueFrom { address: state.return_address }
+                        OpResult::ContinueFrom { address: state.script_return_address }
                     },
                     Op::GoTo { address } => {
                         OpResult::ContinueFrom { address }
@@ -169,7 +175,7 @@ impl WorldScript {
                         value = value.wrapping_sub(1);
                         dest.put_world_u8(ctx, world_state, &mut state, value);
                         if value != 0 {
-                            OpResult::ContinueFrom { address: (state.current_address as i64 + offset) as u64 }
+                            OpResult::ContinueFrom { address: (state.script_current_address as i64 + offset) as u64 }
                         } else {
                             OpResult::Continue
                         }
@@ -190,7 +196,7 @@ impl WorldScript {
                         };
                         if result {
                             OpResult::ContinueFrom {
-                                address: (state.current_address as i64 + offset) as u64,
+                                address: (state.script_current_address as i64 + offset) as u64,
                             }
                         } else {
                             OpResult::Continue
@@ -199,13 +205,13 @@ impl WorldScript {
                     Op::AddActor { address, .. } => {
                         let index = self.add_actor(world_state, ACTION_FUNC_RUN_SCRIPT);
                         let new_state = world_state.actors.get_mut(index).unwrap();
-                        new_state.current_address = address;
+                        new_state.script_current_address = address;
                         OpResult::Continue
                     }
                     Op::AddActorSpecial { address, .. } => {
                         let index = self.add_special_actor(world_state, ACTION_FUNC_RUN_SCRIPT);
                         let new_state = world_state.actors.get_mut(index).unwrap();
-                        new_state.current_address = address;
+                        new_state.script_current_address = address;
                         OpResult::Continue
                     }
                     Op::Link { address } => {
@@ -295,10 +301,21 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::SetAnimation { anim_index } => {
+                        state.animation_address = world_state.animations.get_animation_address(anim_index);
                         OpResult::Continue
                     }
-                    Op::WaitThenAnimate { delay } => {
-                        OpResult::Yield
+                    Op::WaitAndAnimate { steps } => {
+                        if state.counter != 0 {
+                            state.counter -= 1;
+                        } else {
+                            state.counter = steps;
+                        }
+                        if state.counter != 0 {
+                            world_state.animations.run(&mut state);
+                            OpResult::Yield
+                        } else {
+                            OpResult::Continue
+                        }
                     }
                     Op::VectorX { magnitude } => {
                         state.vector_x = magnitude as f64 / 65536.0;
@@ -363,7 +380,7 @@ impl WorldScript {
                             state.x = state.x.min(world_state.world_map.pixel_width as f64).max(0.0);
                             state.y = state.y.min(world_state.world_map.pixel_height as f64).max(0.0);
 
-                            // TODO: fn_overworld_object_animate
+                            world_state.animations.run(&mut state);
 
                             OpResult::Yield
                         } else {
@@ -392,10 +409,10 @@ impl WorldScript {
 
             match result {
                 OpResult::Continue => {
-                    state.current_address = self.data.position();
+                    state.script_current_address = self.data.position();
                 }
                 OpResult::ContinueFrom { address }=> {
-                    state.current_address = address;
+                    state.script_current_address = address;
                 }
                 OpResult::Yield => {
                     break;
@@ -430,7 +447,7 @@ impl WorldScript {
         }
     }
 
-    fn run_layer_animation(&mut self, actor_index: usize, world_state: &mut WorldState, world_index: usize) {
+    fn run_layer_animation(&mut self, world_state: &mut WorldState, world_index: usize) {
         match world_index {
             0 => {
                 world_state.map.layers[2].scroll.x -= 0.25;

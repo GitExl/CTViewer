@@ -334,6 +334,7 @@ impl GameStateTrait for GameStateWorld {
     fn dump(&mut self, ctx: &Context) {
         self.world.dump(ctx);
         self.state.sprites.dump(&self.world.palette.palette);
+        self.state.animations.disassemble();
     }
 }
 

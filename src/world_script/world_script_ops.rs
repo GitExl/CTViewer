@@ -12,8 +12,8 @@ pub enum Op {
         address: u64,
         i0: u8,
     },
-    WaitThenAnimate {
-        delay: u8,
+    WaitAndAnimate {
+        steps: u8,
     },
     Bind {
         address: u64,
@@ -137,7 +137,7 @@ pub enum Op {
         steps: u8,
     },
     SetAnimation {
-        anim_index: u8,
+        anim_index: usize,
     },
     SetPosition {
         x: u16,
@@ -175,13 +175,13 @@ pub enum Op {
     },
     MoveToX {
         steps: u16,
-        animation1: u8,
-        animation2: u8,
+        animation1: usize,
+        animation2: usize,
     },
     MoveToY {
         steps: u16,
-        animation1: u8,
-        animation2: u8,
+        animation1: usize,
+        animation2: usize,
     },
     Unknown03 {
         i0: u8,

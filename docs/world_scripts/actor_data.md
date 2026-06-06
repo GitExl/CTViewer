@@ -3,7 +3,7 @@
 | Offset | Width | Description                                                                                  |
 |--------|-------|----------------------------------------------------------------------------------------------|
 | `$00`  | `W`   | Address of the action function that runs this actor, in bank `$C20000`.                      |
-| `$02`  | `B`   | Unknown, either 01 or 00. Fade in/out related? Used by `palette_load` and maybe others.      |
+| `$02`  | `B`   | Used for state tracking by `fade_*` amongst others.                                          |
 | `$03`  | `W`   | Incremented every time the action function is run.                                           |
 | `$05`  | `W`   | The op address to continue from when returning from a `gosub` op.                            |
 | `$07`  | `BBB` | The current script op execution address.                                                     |
