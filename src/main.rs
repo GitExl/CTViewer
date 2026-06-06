@@ -161,7 +161,8 @@ fn main() -> Result<(), String> {
     // Steamboat travel test.
     // memory.system[0x1BA7] |= 4;
 
-    // Normal start.
+    // Normal start (scene 0 => world 0).
+    memory.global[0x0060] |= 1;
     memory.system[0x0104] |= 128;
 
     let mut text_processor = TextProcessor::new();

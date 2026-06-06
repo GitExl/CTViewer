@@ -61,10 +61,10 @@ pub enum Op {
     },
     End,
     FadeIn {
-        mode: u8,
+        delay: u8,
     },
     FadeOut {
-        mode: u8,
+        delay: u8,
     },
     CallFunction {
         address: u64,
@@ -89,10 +89,10 @@ pub enum Op {
         address: u64,
     },
     MosaicIn {
-        mode: u8,
+        mode: u16,
     },
     MosaicOut {
-        mode: u8,
+        mode: u16
     },
     Move {
         steps: u8,
@@ -133,7 +133,7 @@ pub enum Op {
         steps: u8,
     },
     ScrollLayer {
-        layer: u8,
+        layer: usize,
         steps: u8,
     },
     SetAnimation {

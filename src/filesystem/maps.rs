@@ -49,6 +49,8 @@ impl FileSystem {
             screen_flags.insert(ScreenFlags::SCREEN_L3_MAIN);
         } else if index == 4 {
             screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
+        } else if index == 6 {
+            screen_flags.remove(ScreenFlags::SCREEN_L3_SUB);
         }
 
         // Read 2x2 chip map tiles and assemble chips from them.

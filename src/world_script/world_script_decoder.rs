@@ -332,19 +332,19 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // Reveal/show.
         // "fadeout"
         0x28 => Op::FadeOut {
-            mode: data.read_u8().unwrap(),
+            delay: data.read_u8().unwrap(),
         },
         // "fadein"
         0x29 => Op::FadeIn {
-            mode: data.read_u8().unwrap(),
+            delay: data.read_u8().unwrap(),
         },
         // "mozin"
         0x2A => Op::MosaicIn {
-            mode: data.read_u8().unwrap(),
+            mode: data.read_u16::<LittleEndian>().unwrap(),
         },
         // "mozout"
         0x2B => Op::MosaicOut {
-            mode: data.read_u8().unwrap(),
+            mode: data.read_u16::<LittleEndian>().unwrap(),
         },
 
         // Sprite/appearance.
@@ -423,7 +423,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "scrollr
         0x51 => Op::ScrollLayer {
-            layer: data.read_u8().unwrap() - 1,
+            layer: (data.read_u8().unwrap() - 1) as usize,
             steps: data.read_u8().unwrap(),
         },
         // "tpxmove"

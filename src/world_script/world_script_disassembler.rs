@@ -97,8 +97,8 @@ impl WorldScriptDisassembler {
                         format!("if --{} != 0 goto jpnz_{:04X}", src.as_string(), op_address as i64 + offset)
                     },
                     Op::End => String::from("end"),
-                    Op::FadeIn { mode } => format!("fade_in {}", mode),
-                    Op::FadeOut { mode } => format!("fade_out {}", mode),
+                    Op::FadeIn { delay: mode } => format!("fade_in {}", mode),
+                    Op::FadeOut { delay: mode } => format!("fade_out {}", mode),
                     Op::CallFunction { address } => format!("function 0xC2{:04X}    // Function: {}", address, action_func_as_string(address)),
                     Op::InitBackgroundLayer { layer } => format!("init_bg_layer {}", layer),
                     Op::InitMemory => String::from("init_memory"),

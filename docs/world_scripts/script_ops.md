@@ -60,7 +60,7 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 47  | `$2f` | X | `vecy`       | i32 magnitude                                          | Set Y movement vector. 16.16 fixed point value.                                      |
 | 48  | `$30` |   | `anmseq`     | u8 animation                                           | Set sprite animation.                                                                |
 | 49  | `$31` | X | `move`       | u8 steps                                               | Move actor by vector components for given amount of cycles. Animates on every cycle. |
-| 50  | `$32` |   | `scroll`     | u8 steps                                               | Scroll map by vector components for given amount of cycles.                          |
+| 50  | `$32` | X | `scroll`     | u8 steps                                               | Scroll map by vector components for given amount of cycles.                          |
 | 51  | `$33` |   | `bganm`      | u8 unknown, u16[3] unknown                             | Sets up DMA copy, to animate background tiles?                                       |
 | 52  | `$34` | X | `func`       | u16 address                                            | Directly calls a native function, with a 16 bit address.                             |
 | 53  | `$35` | X | `link`       | u16 address                                            | Creates a new actor with the specified action function.                              |
@@ -91,7 +91,7 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 78  | `$4e` |   | `func2`      | u8[3] address                                          | Directly calls a native function, with a 24 bit address.                             |
 | 79  | `$4f` | X | `copymap`    | u8 src, u8[2] srcpos, u8 dst, u8[2] dstpos, u8[2] size | Copy map tiles from a source layer to a destination layer.                           |
 | 80  | `$50` |   | `putmapr`    | u8 layer, u8 x, u8 y, u8 tile                          | Changes a single map tile like `putmap`, but different somehow.                      |
-| 81  | `$51` |   | `scrollr`    | u8 layer, u8 steps                                     | Like `scroll`, but only for a single layer.                                          |
+| 81  | `$51` | X | `scrollr`    | u8 layer, u8 steps                                     | Like `scroll`, but only scrolls a single layer.                                      |
 | 82  | `$52` | X | `taskend`    |                                                        | Terminates the current actor.                                                        |
 | 83  | `$53` |   | `moveEX`     | ?                                                      | PC/DS specific, unknown.                                                             |
 | 84  | `$54` |   | `palEX`      | ?                                                      | PC/DS specific, unknown.                                                             |

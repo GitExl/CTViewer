@@ -122,6 +122,11 @@ impl WorldScript {
             } else if state.action_function == ACTION_FUNC_SCROLL_LAYERS_WORLD5 {
                 self.run_layer_animation(actor_index, world_state, 5);
 
+            } else if state.action_function == ACTION_FUNC_FADE_IN {
+                self.run_fade_in(ctx, actor_index, world_state);
+            } else if state.action_function == ACTION_FUNC_FADE_OUT {
+                self.run_fade_out(ctx, actor_index, world_state);
+
             // } else {
             //     println!("Unknown action function 0x{:04X}", state.action_function);
             }
@@ -211,12 +216,16 @@ impl WorldScript {
                         self.add_special_actor(world_state, address);
                         OpResult::Continue
                     }
-                    Op::FadeIn { mode } => {
-                        self.add_special_actor(world_state, ACTION_FUNC_FADE_IN);
+                    Op::FadeIn { delay } => {
+                        let index = self.add_special_actor(world_state, ACTION_FUNC_FADE_IN);
+                        let new_state = world_state.actors.get_mut(index).unwrap();
+                        new_state.memory.put_u8(0x0A, delay);
                         OpResult::Continue
                     }
-                    Op::FadeOut { mode } => {
-                        self.add_special_actor(world_state, ACTION_FUNC_FADE_OUT);
+                    Op::FadeOut { delay } => {
+                        let index = self.add_special_actor(world_state, ACTION_FUNC_FADE_OUT);
+                        let new_state = world_state.actors.get_mut(index).unwrap();
+                        new_state.memory.put_u8(0x0A, delay);
                         OpResult::Continue
                     }
                     Op::Wait { steps } => {
@@ -306,13 +315,29 @@ impl WorldScript {
                             state.counter = steps;
                         }
                         if state.counter != 0 {
-
-                            // Move actor by vector.
                             state.x += state.vector_x;
                             state.y += state.vector_y;
 
                             world_state.camera.pos.x += state.vector_x;
                             world_state.camera.pos.y += state.vector_y;
+
+                            OpResult::Yield
+                        } else {
+                            OpResult::Continue
+                        }
+                    }
+                    Op::ScrollLayer { layer, steps } => {
+                        if state.counter != 0 {
+                            state.counter -= 1;
+                        } else {
+                            state.counter = steps;
+                        }
+                        if state.counter != 0 {
+                            state.x += state.vector_x;
+                            state.y += state.vector_y;
+
+                            world_state.map.layers[layer].scroll.x += state.vector_x;
+                            world_state.map.layers[layer].scroll.y += state.vector_x;
 
                             OpResult::Yield
                         } else {
@@ -442,6 +467,22 @@ impl WorldScript {
         let state = world_state.actors.get_mut(actor_index).unwrap();
         state.action_function = 0;
         // TODO: full palette_load behaviour is unknown
+    }
+
+    fn run_fade_in(&mut self, ctx: &mut Context, actor_index: usize, world_state: &mut WorldState) {
+        let state = world_state.actors.get_mut(actor_index).unwrap();
+        state.action_function = 0;
+
+        let delay = state.memory.get_u8(0x0A) as usize;
+        ctx.screen_fade.start(1.0, delay);
+    }
+
+    fn run_fade_out(&mut self, ctx: &mut Context, actor_index: usize, world_state: &mut WorldState) {
+        let state = world_state.actors.get_mut(actor_index).unwrap();
+        state.action_function = 0;
+
+        let delay = state.memory.get_u8(0x0A) as usize;
+        ctx.screen_fade.start(0.0, delay);
     }
 
     pub fn add_special_actor(&mut self, world_state: &mut WorldState, action_func: u64) -> usize {

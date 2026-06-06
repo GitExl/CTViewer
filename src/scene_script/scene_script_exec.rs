@@ -746,6 +746,9 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         // Special scenes and effects.
         Op::SpecialScene { scene, flags } => {
             println!("Unimplemented: special scene {} with flags {:?}", scene, flags);
+            // This skips the title screen as if the user pressed a button, so that the
+            // intro sequence doesn't start.
+            ctx.memory.write_u8(0x7F0060, 1);
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::SpecialOpenPortal { value1, value2, value3 } => {
