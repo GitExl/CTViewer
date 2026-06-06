@@ -181,6 +181,7 @@ impl WorldScript {
                             CompareOp::LtEq => lhs_value <= rhs_value,
                             CompareOp::And => (lhs_value & rhs_value) > 0,
                             CompareOp::Or => (lhs_value | rhs_value) > 0,
+                            CompareOp::AndZero => (lhs_value & rhs_value) == 0,
                         };
                         if result {
                             OpResult::ContinueFrom {
@@ -299,7 +300,24 @@ impl WorldScript {
                         OpResult::Continue
                     }
                     Op::Scroll { steps } => {
-                        OpResult::Yield
+                        if state.counter != 0 {
+                            state.counter -= 1;
+                        } else {
+                            state.counter = steps;
+                        }
+                        if state.counter != 0 {
+
+                            // Move actor by vector.
+                            state.x += state.vector_x;
+                            state.y += state.vector_y;
+
+                            world_state.camera.pos.x += state.vector_x;
+                            world_state.camera.pos.y += state.vector_y;
+
+                            OpResult::Yield
+                        } else {
+                            OpResult::Continue
+                        }
                     }
                     Op::ChangeLocation { destination } => {
                         OpResult::Continue
@@ -400,10 +418,18 @@ impl WorldScript {
             2 => {
                 world_state.map.layers[2].scroll.x -= 30414.00006103516;
                 world_state.map.layers[2].scroll.y += 2.0;
+
+                // Do not interpolate this because of the fast scrolling effect.
+                world_state.map.layers[2].scroll_last = world_state.map.layers[2].scroll;
+                world_state.map.layers[2].scroll_lerp = world_state.map.layers[2].scroll;
             }
             4 => {
                 world_state.map.layers[2].scroll.x -= 21003.0002746582;
-                world_state.map.layers[2].scroll.y += 10.0;
+                world_state.map.layers[2].scroll.y -= 10.0;
+
+                // Do not interpolate this because of the fast scrolling effect.
+                world_state.map.layers[2].scroll_last = world_state.map.layers[2].scroll;
+                world_state.map.layers[2].scroll_lerp = world_state.map.layers[2].scroll;
             }
             5 => {
                 world_state.map.layers[0].scroll.x -= 0.25;

@@ -147,14 +147,22 @@ fn main() -> Result<(), String> {
     let mode = fs.mode;
 
     let mut memory = Memory::new();
+
+    // Post forest regrowth test.
+    // memory.system[0x0104] |= 128;
+    // memory.system[0x0104] |= 64;
+    // memory.system[0x1BA7] |= 4;
+    // memory.system[0x1BA7] |= 8;
+    // memory.system[0x1BAA] |= 4;
+    // memory.system[0x1BAB] |= 1;
+    // memory.system[0x1BA8] |= 16;
+    // memory.system[0x1BA7] |= 2;
+
+    // Steamboat travel test.
+    // memory.system[0x1BA7] |= 4;
+
+    // Normal start.
     memory.system[0x0104] |= 128;
-    memory.system[0x0104] |= 64;
-    memory.system[0x1BA7] |= 4;
-    memory.system[0x1BA7] |= 8;
-    memory.system[0x1BAA] |= 4;
-    memory.system[0x1BAB] |= 1;
-    memory.system[0x1BA8] |= 16;
-    memory.system[0x1BA7] |= 2;
 
     let mut text_processor = TextProcessor::new();
     let party = Party::new();
@@ -179,10 +187,10 @@ fn main() -> Result<(), String> {
     if args.scene > -1 {
         gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(128.0, 112.0), Facing::Down, true));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(384.0, 288.0), true));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(504.0, 448.0), true));
     } else {
         println!("No scene or world specified, loading world 0.");
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(768.0, 512.0), true));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(504.0, 448.0), true));
     }
 
     let title = format!("Chrono Trigger - {}", gamestate.get_title(&ctx));

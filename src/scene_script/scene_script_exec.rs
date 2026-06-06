@@ -93,6 +93,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 CompareOp::LtEq => lhs_value <= rhs_value,
                 CompareOp::And => (lhs_value & rhs_value) > 0,
                 CompareOp::Or => (lhs_value | rhs_value) > 0,
+                CompareOp::AndZero => (lhs_value & rhs_value) == 0,
             };
             if !result {
                 state.current_address = (state.current_address as i64 + offset) as u64;
@@ -113,6 +114,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 CompareOp::LtEq => lhs_value <= rhs_value,
                 CompareOp::And => (lhs_value & rhs_value) > 0,
                 CompareOp::Or => (lhs_value | rhs_value) > 0,
+                CompareOp::AndZero => (lhs_value & rhs_value) == 0,
             };
             if !result {
                 state.current_address = (state.current_address as i64 + offset) as u64;

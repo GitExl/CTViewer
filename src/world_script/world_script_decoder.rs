@@ -269,7 +269,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x21 => Op::JumpConditional {
             lhs: DataSource::for_world_actor_memory(data.read_u8().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            cmp: CompareOp::Or,
+            cmp: CompareOp::AndZero,
             offset: data.read_i8().unwrap() as i64,
         },
         // "jz_g"
@@ -311,7 +311,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x27 => Op::JumpConditional {
             lhs: DataSource::for_system_memory(data.read_u16::<LittleEndian>().unwrap() as usize),
             rhs: DataSource::Immediate(data.read_u8().unwrap() as i32),
-            cmp: CompareOp::Or,
+            cmp: CompareOp::AndZero,
             offset: data.read_i8().unwrap() as i64,
         },
         // "jcpcc"

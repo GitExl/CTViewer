@@ -118,6 +118,15 @@ impl Camera {
         self.pos = center - self.size / 2.0;
     }
 
+    pub fn set_to(&mut self, pos: Vec2Df64) {
+        self.pos = pos;
+
+        self.clamp();
+
+        self.pos_last = self.pos;
+        self.pos_lerp = self.pos;
+    }
+
     pub fn center_to(&mut self, center: Vec2Df64) {
         self.pos = center - self.size / 2.0;
 

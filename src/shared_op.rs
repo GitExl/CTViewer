@@ -9,6 +9,7 @@ pub enum CompareOp {
     GtEq,
     And,
     Or,
+    AndZero,
 }
 
 impl CompareOp {
@@ -40,6 +41,7 @@ impl CompareOp {
             CompareOp::GtEq => ">=",
             CompareOp::And => "&",
             CompareOp::Or => "|",
+            CompareOp::AndZero => "!&",
         }
     }
 }

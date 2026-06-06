@@ -5,6 +5,7 @@ use crate::gamestate::gamestate_scene::SceneState;
 use crate::gamestate::gamestate_world::WorldState;
 use crate::party::CharacterPartyState;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
+use crate::util::vec2df64::Vec2Df64;
 use crate::world_script::world_script::WorldActorState;
 
 #[derive(Clone)]
@@ -383,12 +384,28 @@ impl DataDest {
         }
     }
 
-    pub fn put_world_u8(&self, ctx: &mut Context, _world_state: &mut WorldState, actor_state: &mut WorldActorState, value: u8) {
+    pub fn put_world_u8(&self, ctx: &mut Context, world_state: &mut WorldState, actor_state: &mut WorldActorState, value: u8) {
         match self {
             DataDest::WorldActor(address) => {
                 actor_state.memory.put_u8(*address, value);
             }
-            _ => self.put_u8(ctx, value),
+            DataDest::Memory(address) => {
+
+                // Layer 1 X and Y.
+                if *address == 0x7E00E3 {
+                    world_state.camera.set_to(Vec2Df64::new(value as f64 * 8.0, world_state.camera.pos.y));
+                } else if *address == 0x7E00E7 {
+                    world_state.camera.set_to(Vec2Df64::new(world_state.camera.pos.x, value as f64 * 8.0));
+
+                // Layer 2 X and Y.
+                } else if *address == 0x7E00E5 {
+                    world_state.camera.set_to(Vec2Df64::new(value as f64 * 8.0, world_state.camera.pos.y));
+                } else if *address == 0x7E00E9 {
+                    world_state.camera.set_to(Vec2Df64::new(world_state.camera.pos.x, value as f64 * 8.0));
+                } else {
+                    self.put_u8(ctx, value);
+                }
+            },
         }
     }
 

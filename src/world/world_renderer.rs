@@ -1,17 +1,11 @@
 use std::path::Path;
 
-use crate::camera::Camera;
 use crate::gamestate::gamestate_world::WorldState;
-use crate::map::Map;
 use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::software_renderer::palette::render_palette;
 use crate::software_renderer::surface::Surface;
-use crate::world::world::WorldExit;
-use crate::world::world::ScriptedWorldExit;
-use crate::world::world::World;
 use crate::world::world_map::WorldChipFlags;
-use crate::world::world_map::WorldMap;
 
 #[derive(PartialEq, Eq)]
 pub enum WorldDebugLayer {
@@ -36,7 +30,7 @@ impl WorldRenderer {
         }
     }
 
-    pub fn render(&mut self, lerp: f64, state: &WorldState, surface: &mut Surface) {
+    pub fn render(&mut self, _lerp: f64, state: &WorldState, surface: &mut Surface) {
         self.render_debug(state, surface);
     }
 
