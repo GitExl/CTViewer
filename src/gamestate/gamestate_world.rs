@@ -71,8 +71,8 @@ impl GameStateWorld {
     pub fn new(ctx: &mut Context, world_index: usize, pos: Vec2Df64, fade_in: bool) -> GameStateWorld {
         let mut world = ctx.fs.read_world(world_index);
 
-        let mut sprites = WorldSprites::new(&ctx.fs, world_index, world.sprite_graphics);
-        sprites.load_player_sprites(&ctx.fs, [0, 1, 2]);
+        let mut sprites = WorldSprites::new(ctx, world_index, world.sprite_graphics);
+        sprites.load_player_sprites(ctx, [0, 1, 2]);
 
         ctx.sprite_states.clear();
 
@@ -143,13 +143,20 @@ impl GameStateTrait for GameStateWorld {
 
         self.world.script.run(ctx, &mut self.state);
 
-        // ctx.sprites_states.clear();
-        // for actor in self.state.actors.iter() {
-        //     let state = ctx.sprites_states.add_state();
-        //     state.pos.x = actor.x;
-        //     state.pos.y = actor.y;
-        //     state.palette = self.world.palette.palette.clone();
-        // }
+        ctx.sprite_states.clear();
+        for actor in self.state.actors.iter() {
+            if actor.sprite_assembly_key == 0 {
+                continue;
+            }
+
+            let state = ctx.sprite_states.add_state();
+            state.pos.x = actor.x;
+            state.pos.y = actor.y;
+            state.palette = self.world.palette.palette.clone();
+            state.assembly_key = actor.sprite_assembly_key;
+            state.enabled = true;
+            state.bitmap_key = self.state.sprites.get_bitmap_key();
+        }
 
         self.state.camera.tick(delta);
         if self.key_up {
@@ -335,7 +342,7 @@ impl GameStateTrait for GameStateWorld {
 
     fn dump(&mut self, ctx: &Context) {
         self.world.dump(ctx);
-        self.state.sprites.dump(&self.world.palette.palette);
+        self.state.sprites.dump(ctx, &self.world.palette.palette);
         self.state.animations.disassemble();
     }
 }

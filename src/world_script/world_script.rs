@@ -42,7 +42,7 @@ pub struct WorldActorState {
     pub palette_priority: u8,
     pub animation_address: u64,
     pub animation_counter: u8,
-    pub sprite_assembly_address: u64,
+    pub sprite_assembly_key: u64,
 
     pub memory: MemoryRegion,
     pub x: f64,
@@ -69,7 +69,7 @@ impl WorldActorState {
             palette_priority: 0,
             animation_counter: 0,
             animation_address: 0,
-            sprite_assembly_address: 0,
+            sprite_assembly_key: 0,
 
             memory: MemoryRegion::new(64),
             x: 0.0,
@@ -311,7 +311,7 @@ impl WorldScript {
                             state.counter = steps;
                         }
                         if state.counter != 0 {
-                            world_state.animations.run(&mut state);
+                            world_state.animations.run(ctx, &mut state);
                             OpResult::Yield
                         } else {
                             OpResult::Continue
@@ -381,7 +381,7 @@ impl WorldScript {
                             state.x = state.x.min(world_state.world_map.pixel_width as f64).max(0.0);
                             state.y = state.y.min(world_state.world_map.pixel_height as f64).max(0.0);
 
-                            world_state.animations.run(&mut state);
+                            world_state.animations.run(ctx, &mut state);
 
                             OpResult::Yield
                         } else {

@@ -53,12 +53,28 @@ impl Assets {
         self.assembly_frames.get(&assembly_frame_key).unwrap()
     }
 
+    pub fn has_assembly_frame(&self, assembly_frame_key: u64) -> bool {
+        self.assembly_frames.contains_key(&assembly_frame_key)
+    }
+
+    pub fn add_assembly_frame(&mut self, assembly_frame_key: u64, frame: SpriteAssemblyFrame) {
+        self.assembly_frames.insert(assembly_frame_key, frame);
+    }
+
     pub fn get_assembly(&self, assembly_key: u64) -> &SpriteAssembly {
         self.assemblies.get(&assembly_key).unwrap()
     }
 
     pub fn get_bitmap(&self, bitmap_key: u64) -> &Bitmap {
         self.bitmaps.get(&bitmap_key).unwrap()
+    }
+
+    pub fn get_bitmap_mut(&mut self, bitmap_key: u64) -> &mut Bitmap {
+        self.bitmaps.get_mut(&bitmap_key).unwrap()
+    }
+
+    pub fn add_bitmap(&mut self, bitmap_key: u64, bitmap: Bitmap) {
+        self.bitmaps.insert(bitmap_key, bitmap);
     }
 
     pub fn get_palette(&self, palette_key: u64) -> &Palette {
@@ -161,5 +177,9 @@ impl Assets {
 
     pub fn asset_key_bitmap_sprite_tiles(sprite_index: usize) -> u64 {
         0x1000000000000000 | (sprite_index as u64)
+    }
+
+    pub fn asset_key_bitmap_sprite_tiles_world() -> u64 {
+        0x2000000000000000
     }
 }

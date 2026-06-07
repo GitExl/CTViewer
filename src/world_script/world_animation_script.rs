@@ -1,6 +1,7 @@
-use std::collections::HashMap;
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
+use crate::assets::Assets;
+use crate::Context;
 use crate::sprites::sprite_assembly::{SpriteAssemblyChip, SpriteAssemblyChipFlags, SpriteAssemblyFrame};
 use crate::util::data_read::read_24_bit_address;
 use crate::world_script::world_script::WorldActorState;
@@ -8,7 +9,6 @@ use crate::world_script::world_script::WorldActorState;
 pub struct WorldAnimationScript {
     offsets: Vec<u64>,
     data: Cursor<Vec<u8>>,
-    frame_cache: HashMap<u64, SpriteAssemblyFrame>,
 }
 
 #[derive(Debug)]
@@ -55,7 +55,6 @@ impl WorldAnimationScript {
         WorldAnimationScript {
             offsets,
             data: local_data,
-            frame_cache: HashMap::new(),
         }
     }
 
@@ -63,7 +62,7 @@ impl WorldAnimationScript {
         self.offsets[animation_index]
     }
 
-    pub fn run(&mut self, state: &mut WorldActorState) {
+    pub fn run(&mut self, ctx: &mut Context, state: &mut WorldActorState) {
         if state.animation_address == 0 {
             return;
         }
@@ -91,7 +90,7 @@ impl WorldAnimationScript {
 
                 // Always set frame.
                 if state.palette_priority & 0x40 != 0 {
-                    state.sprite_assembly_address = self.load_sprite_assembly(assembly_address);
+                    state.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
 
                 // Countdown.
                 } else if state.animation_counter != 0 {
@@ -105,7 +104,7 @@ impl WorldAnimationScript {
                 // Start wait.
                 } else {
                     state.animation_counter = duration;
-                    state.sprite_assembly_address = self.load_sprite_assembly(assembly_address);
+                    state.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
                 }
             },
             WorldAnimationOp::Wait { duration } => {
@@ -217,11 +216,12 @@ impl WorldAnimationScript {
         }
     }
 
-    fn load_sprite_assembly(&mut self, assembly_address: u64) -> u64 {
+    fn read_sprite_assembly(&mut self, ctx: &mut Context, assembly_address: u64) -> u64 {
 
-        // Skip if already loaded.
-        if self.frame_cache.contains_key(&assembly_address) {
-            return assembly_address;
+        // Re-use already loaded frame assembly.
+        let assembly_frame_key = Assets::asset_key_sprite_assembly_frame_world(assembly_address);
+        if ctx.assets.has_assembly_frame(assembly_frame_key) {
+            return assembly_frame_key;
         }
 
         // Read frame assembly data from the position, but keep track of the current position so we
@@ -270,9 +270,9 @@ impl WorldAnimationScript {
         }
 
         self.data.set_position(old_pos);
-        self.frame_cache.insert(assembly_address, frame);
+        ctx.assets.add_assembly_frame(assembly_frame_key, frame);
 
-        assembly_address
+        assembly_frame_key
     }
 
 }
