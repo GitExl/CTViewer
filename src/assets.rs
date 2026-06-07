@@ -94,6 +94,7 @@ impl Assets {
         let (assembly, frames) = fs.read_sprite_assembly(assembly_index, size_flags);
         self.assembly_frames.extend(frames);
         self.assemblies.insert(assembly_key, assembly);
+        println!("Loaded sprite assembly {}", assembly_index);
 
         assembly_key
     }
@@ -106,6 +107,7 @@ impl Assets {
 
         let palette = fs.read_sprite_palette(palette_index, 0).unwrap();
         self.palettes.insert(palette_key, palette);
+        println!("Loaded sprite palette {}", palette_index);
 
         palette_key
     }
@@ -118,6 +120,7 @@ impl Assets {
 
         let bitmap = fs.read_sprite_tiles(sprite_index, max_chip_count);
         self.bitmaps.insert(bitmap_key, bitmap);
+        println!("Loaded sprite tiles for sprite {}", sprite_index);
 
         bitmap_key
     }
@@ -140,6 +143,7 @@ impl Assets {
             anim_set_index: info.anim_index,
         };
         self.sprite_info.insert(sprite_info_key, sprite);
+        println!("Loaded sprite info for sprite {}", sprite_index);
 
         sprite_info_key
     }

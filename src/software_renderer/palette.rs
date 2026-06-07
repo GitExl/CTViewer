@@ -32,6 +32,13 @@ impl Palette {
             0xFF
         ]
     }
+
+    pub fn extend_to(&mut self, count: usize) {
+        if self.colors.len() >= count {
+            return;
+        }
+        self.colors.resize(count, [0, 0, 0, 0xFF]);
+    }
 }
 
 pub fn render_palette(palette: &Palette, surface: &mut Surface, scale: i32) {

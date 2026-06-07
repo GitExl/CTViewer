@@ -387,7 +387,12 @@ impl DataDest {
     pub fn put_world_u8(&self, ctx: &mut Context, world_state: &mut WorldState, actor_state: &mut WorldActorState, value: u8) {
         match self {
             DataDest::WorldActor(address) => {
-                actor_state.memory.put_u8(*address, value);
+                if *address == 0x14 {
+                    // actor pixel x 3rd byte
+                    actor_state.x += 1.0;
+                } else {
+                    actor_state.memory.put_u8(*address, value);
+                }
             }
             DataDest::Memory(address) => {
 

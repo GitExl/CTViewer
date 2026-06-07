@@ -270,7 +270,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
 
     fn get_world_palette(&self, world_palette_index: usize) -> Palette {
         let data = self.get_bytes_cursor_lz(self.world_palette_entries[world_palette_index].address);
-        self.read_palette(data, 0, 16, 8, 0, 0)
+        self.read_palette(data, 0, 16, 16, 0, 0)
     }
 
     fn get_world_palette_anim_data(&self, world_palette_index: usize) -> Cursor<Vec<u8>> {

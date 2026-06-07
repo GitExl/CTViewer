@@ -1,4 +1,4 @@
-pub fn action_func_as_string(address: u64) -> String {
+pub fn action_func_as_string(address: u32) -> String {
     match address {
         0x0F38 => String::from("CODE_FN_C20F38"),
         0x0F63 => String::from("fn_overworld_execute_next_event_commands"),
@@ -42,8 +42,8 @@ pub fn action_func_as_string(address: u64) -> String {
         0x74AE => String::from("overworld_events_C274AE"),
         0x7504 => String::from("overworld_events_C27504"),
         0x754D => String::from("fn_overword_subroutine_event_call_c2754d"),
-        0x7575 => String::from("fn_overword_subroutine_event_call_c27575"),
-        0x7598 => String::from("fn_overword_subroutine_event_call_c27598"),
+        0x7575 => String::from("World 0 set seagull random position"),
+        0x7598 => String::from("World 0 set seagull random vector"),
         0x75C3 => String::from("world 0, scroll layer 3"),
         0x75FD => String::from("world 1, scroll layer 3"),
         0x7652 => String::from("world 1 layer 3 scanline effect"),
@@ -51,7 +51,7 @@ pub fn action_func_as_string(address: u64) -> String {
         0x7759 => String::from("world 2 layer 3 scanline effect"),
         0x77F2 => String::from("world 4, scroll layer 3"),
         0x7849 => String::from("world 5, scroll background layer"),
-        0x78A1 => String::from("fn_overword_subroutine_event_call_c278a1"),
+        0x78A1 => String::from("World 0 seagull is off-screen"),
         0x786F => String::from("transfer pc indices"),
         0x7911 => String::from("something_dma_or_other"),
         0x7957 => String::from("does_something_with_dma"),

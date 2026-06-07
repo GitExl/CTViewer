@@ -452,11 +452,11 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "func"
         0x34 => Op::CallFunction {
-            address: data.read_u16::<LittleEndian>().unwrap() as u64,
+            address: data.read_u16::<LittleEndian>().unwrap() as u32,
         },
         // "link"
         0x35 => Op::Link {
-            address: data.read_u16::<LittleEndian>().unwrap() as u64,
+            address: data.read_u16::<LittleEndian>().unwrap() as u32,
         },
         // "call"
         0x36 => Op::GoSub {
@@ -466,7 +466,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x37 => Op::Return,
         // "slink"
         0x42 => Op::LinkSpecial {
-            address: data.read_u16::<LittleEndian>().unwrap() as u64,
+            address: data.read_u16::<LittleEndian>().unwrap() as u32,
         },
         // "s_newevent"
         0x43 => Op::AddActorSpecial {
@@ -475,7 +475,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "func2"
         0x4E => Op::CallFunctionFar {
-            address: read_24_bit_address(data),
+            address: read_24_bit_address(data) as u32,
         },
         // "taskend"
         0x52 => Op::End,

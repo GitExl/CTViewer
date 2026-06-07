@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::thread::{sleep, sleep_ms};
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
@@ -16,6 +17,7 @@ use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
+use crate::sprites::sprite_renderer::SpritePriority;
 use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
@@ -145,7 +147,7 @@ impl GameStateTrait for GameStateWorld {
 
         ctx.sprite_states.clear();
         for actor in self.state.actors.iter() {
-            if actor.sprite_assembly_key == 0 {
+            if actor.sprite_assembly_key == 0 || actor.action_function == 0 {
                 continue;
             }
 
@@ -153,8 +155,11 @@ impl GameStateTrait for GameStateWorld {
             state.pos.x = actor.x;
             state.pos.y = actor.y;
             state.palette = self.world.palette.palette.clone();
+            state.palette_offset = 128 + ((actor.palette_priority & 0x0F) as usize / 2) * 16;
             state.assembly_key = actor.sprite_assembly_key;
             state.enabled = true;
+            state.priority_top = SpritePriority::AboveAll;
+            state.priority_bottom = SpritePriority::AboveAll;
             state.bitmap_key = self.state.sprites.get_bitmap_key();
         }
 

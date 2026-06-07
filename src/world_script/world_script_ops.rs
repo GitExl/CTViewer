@@ -35,7 +35,7 @@ pub enum Op {
         address: u64,
     },
     CallFunctionFar {
-        address: usize,
+        address: u32,
     },
     ChangeLocation {
         destination: Destination,
@@ -67,7 +67,7 @@ pub enum Op {
         delay: u8,
     },
     CallFunction {
-        address: u64,
+        address: u32,
     },
     InitBackgroundLayer {
         layer: u8,
@@ -83,10 +83,10 @@ pub enum Op {
         offset: i64,
     },
     Link {
-        address: u64,
+        address: u32,
     },
     LinkSpecial {
-        address: u64,
+        address: u32,
     },
     MosaicIn {
         mode: u16,

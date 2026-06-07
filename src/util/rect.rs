@@ -36,6 +36,10 @@ impl Rect {
         }
     }
 
+    pub fn intersects(&self, other: &Rect) -> bool {
+        !(self.right < other.left || self.left > other.right || self.bottom < other.top || self.top > other.bottom)
+    }
+
     pub fn contains_vec2(&self, other: &Vec2Di32) -> bool {
         !(self.left > other.x || self.top > other.y || self.right < other.x || self.bottom < other.y)
     }
