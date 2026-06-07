@@ -37,17 +37,20 @@ pub fn exec_load_character(ctx: &mut Context, scene_state: &mut SceneState, acto
     }
 
     // Sprite and animation defaults.
-    let sprite_info = ctx.assets.load_sprite_info(&ctx.fs, sprite_index);
-    actor.sprite_index = sprite_index;
+    let sprite_info_key = ctx.assets.load_sprite_info(&ctx.fs, sprite_index);
+    let sprite_info = ctx.assets.get_sprite_info(sprite_info_key);
+    actor.sprite_info_key = Some(sprite_info_key);
+
+    actor.palette_key = Some(sprite_info.palette_key);
     actor.palette_offset = 0;
-    actor.palette_key = sprite_info.palette_key;
+
     actor.anim_set_index = sprite_info.anim_set_index;
     actor.anim_index = 0;
     actor.anim_frame = 0;
 
     let palette_key = sprite_info.palette_key;
     let palette = ctx.assets.get_palette(palette_key);
-    actor.local_palette.clone_from(&palette);
+    actor.local_palette = palette.clone();
 
     OpResult::COMPLETE
 }
@@ -78,10 +81,13 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     }
 
     // Sprite and animation defaults.
-    let sprite_info = ctx.assets.load_sprite_info(&ctx.fs, character_index);
-    actor.sprite_index = character_index;
+    let sprite_info_key = ctx.assets.load_sprite_info(&ctx.fs, character_index);
+    let sprite_info = ctx.assets.get_sprite_info(sprite_info_key);
+    actor.sprite_info_key = Some(sprite_info_key);
+
+    actor.palette_key = Some(sprite_info.palette_key);
     actor.palette_offset = 0;
-    actor.palette_key = sprite_info.palette_key;
+
     actor.anim_set_index = sprite_info.anim_set_index;
     actor.anim_index = 0;
     actor.anim_frame = 0;
@@ -89,7 +95,7 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
 
     let palette_key = sprite_info.palette_key;
     let palette = ctx.assets.get_palette(palette_key);
-    actor.local_palette.clone_from(&palette);
+    actor.local_palette = palette.clone();
 
     // Actor defaults.
     actor.battle_index = battle_index;

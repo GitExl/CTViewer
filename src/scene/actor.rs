@@ -5,7 +5,7 @@ use crate::scene::scene_map::SceneMap;
 use crate::scene_script::scene_script::ActorScriptState;
 use crate::software_renderer::palette::Palette;
 use crate::sprites::sprite_anim::SpriteAnim;
-use crate::sprites::sprite_assets::Assets;
+use crate::assets::Assets;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::sprites::sprite_state::{AnimationMode, SpriteState};
 use crate::util::vec2df64::Vec2Df64;
@@ -146,12 +146,12 @@ pub struct SceneActor {
     pub task: SceneActorTask,
     pub debug_sprite: DebugSprite,
 
-    pub sprite_index: usize,
+    pub sprite_info_key: Option<u64>,
     pub sprite_frame: usize,
     pub sprite_priority_top: SpritePriority,
     pub sprite_priority_bottom: SpritePriority,
 
-    pub palette_key: u64,
+    pub palette_key: Option<u64>,
     pub palette_offset: usize,
     pub local_palette: Palette,
 
@@ -197,12 +197,13 @@ impl SceneActor {
             flags: SceneActorFlags::COLLISION_WITH_TILES | SceneActorFlags::COLLISION_AVOID_PC | SceneActorFlags::DEAD,
             draw_mode: DrawMode::Draw,
             result: 0,
-            sprite_index: 0,
+
+            sprite_info_key: None,
             sprite_frame: 0,
 
-            palette_key: 0,
+            palette_key: None,
             palette_offset: 0,
-            local_palette: Palette::new(16),
+            local_palette: Palette::new(256),
 
             anim_set_index: 0,
             anim_delay: 0,
@@ -347,10 +348,12 @@ impl SceneActor {
         sprite_state.palette.clone_from(&self.local_palette);
         sprite_state.palette_offset = self.palette_offset;
 
-        let sprite = assets.get_sprite_info(self.sprite_index);
-        let assembly = assets.get_assembly(sprite.assembly_index);
-        sprite_state.assembly_key = assembly.frame_keys[self.sprite_frame];
-        sprite_state.bitmap_index = sprite.tiles_bitmap_index;
+        if let Some(sprite_info_key) = self.sprite_info_key {
+            let sprite = assets.get_sprite_info(sprite_info_key);
+            let assembly = assets.get_assembly(sprite.assembly_key);
+            sprite_state.assembly_key = assembly.frame_keys[self.sprite_frame];
+            sprite_state.bitmap_key = sprite.tiles_bitmap_key;
+        }
     }
 
     pub fn face_towards(&mut self, pos: Vec2Df64) {
@@ -433,9 +436,13 @@ impl SceneActor {
         println!("  Sprite priority top / bottom: {:?} {:?}", self.sprite_priority_top, self.sprite_priority_bottom);
         println!("  Flags: {:?}", self.flags);
         println!("  Draw mode: {:?}", self.draw_mode);
-        println!("  Sprite {} frame {}", self.sprite_index, self.sprite_frame);
         println!("  At {}", self.pos);
-        println!("  Palette {:X} offset {}", self.palette_key, self.palette_offset);
+        if let Some(sprite_info_key) = self.sprite_info_key {
+            println!("  Sprite {:X} frame {}", sprite_info_key, self.sprite_frame);
+        }
+        if let Some(palette_key) = self.palette_key {
+            println!("  Palette {:X} offset {}", palette_key, self.palette_offset);
+        }
         println!("  Animation mode {:?}", self.anim_mode);
         println!("    Index {}, looped index {}", self.anim_index, self.anim_index_looped);
         println!("    Frame {} at {} ticks", self.anim_frame, self.anim_delay);

@@ -18,7 +18,7 @@ use crate::memory::Memory;
 use crate::party::Party;
 use crate::renderer::Renderer;
 use crate::screen_fade::ScreenFade;
-use crate::sprites::sprite_assets::Assets;
+use assets::Assets;
 use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::text_processor::TextProcessor;
 use crate::ui_theme::UiTheme;
@@ -55,6 +55,7 @@ mod world_script;
 mod shared_op;
 mod music_list;
 mod sound_list;
+pub mod assets;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;

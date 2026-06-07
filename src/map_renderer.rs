@@ -12,7 +12,7 @@ use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
-use crate::sprites::sprite_assets::Assets;
+use crate::assets::Assets;
 use crate::sprites::sprite_renderer::{render_sprite, SpritePriority};
 use crate::sprites::sprite_state::SpriteState;
 use crate::sprites::sprite_state_list::SpriteStateList;
@@ -337,7 +337,7 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
         if render_top || render_bottom {
             let pos = (sprite_state.pos.floor() - camera.pos_lerp.floor()).as_vec2d_i32();
             let assembly_frame = sprite_assets.get_assembly_frame(sprite_state.assembly_key);
-            let bitmap = sprite_assets.get_bitmap(sprite_state.bitmap_index);
+            let bitmap = sprite_assets.get_bitmap(sprite_state.bitmap_key);
             render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, assembly_frame, bitmap, pos.x, pos.y, &sprite_state.palette, sprite_state.palette_offset);
         }
     }

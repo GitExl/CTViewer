@@ -655,15 +655,17 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
         Op::PaletteRestore => {
             let actor = scene_state.actors.get_mut(this_actor).unwrap();
-            let sprite_info = ctx.assets.get_sprite_info(actor.sprite_index);
-            let palette = ctx.assets.get_palette(sprite_info.palette_key);
-            actor.local_palette.clone_from(&palette);
+            if let Some(sprite_info_key) = actor.sprite_info_key {
+                let sprite_info = ctx.assets.get_sprite_info(sprite_info_key);
+                let palette = ctx.assets.get_palette(sprite_info.palette_key);
+                actor.local_palette.clone_from(&palette);
+            }
 
             OpResult::COMPLETE
         },
         Op::PaletteSetIndex { palette_index } => {
             let actor = scene_state.actors.get_mut(this_actor).unwrap();
-            let palette_key = ctx.assets.load_palette(&ctx.fs, palette_index);
+            let palette_key = ctx.assets.load_sprite_palette(&ctx.fs, palette_index);
             let palette = ctx.assets.get_palette(palette_key);
             actor.local_palette.clone_from(&palette);
 

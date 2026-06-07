@@ -294,7 +294,6 @@ impl GameStateTrait for GameStateScene {
                 SurfaceBlendOps::Blend,
             );
 
-            let sprite_state = ctx.sprite_states.get_state(debug_actor);
             let script_state = &self.state.script_states[debug_actor];
             let op: String = if let Some(current_op) = script_state.current_op {
                 format!("{:?}", current_op)
@@ -304,15 +303,15 @@ impl GameStateTrait for GameStateScene {
 
             // Spit out a bunch of internal actor state.
             let text_actor = format!(
-                "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}\nSprite {}, frame {}\nPalette {}\nTop: {:?}\nBottom: {:?}\nAnim {} frame {} delay {}\nAnimationMode::{:?}\nLoop anim {}, {} loops",
+                "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}\nSprite {:?}, frame {}\nPalette {}\nTop: {:?}\nBottom: {:?}\nAnim {} frame {} delay {}\nAnimationMode::{:?}\nLoop anim {}, {} loops",
                 debug_actor, actor.class,
                 actor.pos, actor.move_speed, actor.facing,
                 actor.draw_mode,
                 actor.flags,
-                actor.sprite_index, actor.sprite_frame,
-                sprite_state.palette_offset,
-                sprite_state.priority_top,
-                sprite_state.priority_bottom,
+                actor.sprite_info_key, actor.sprite_frame,
+                actor.palette_offset,
+                actor.sprite_priority_top,
+                actor.sprite_priority_bottom,
                 actor.anim_index, actor.anim_frame, actor.anim_delay,
                 actor.anim_mode,
                 actor.anim_index_looped, actor.anim_loops_remaining,

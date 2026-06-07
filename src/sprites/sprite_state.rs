@@ -20,7 +20,7 @@ pub struct SpriteState {
     pub priority_bottom: SpritePriority,
 
     pub assembly_key: u64,
-    pub bitmap_index: usize,
+    pub bitmap_key: u64,
 
     pub palette: Palette,
     pub palette_offset: usize,
@@ -37,7 +37,7 @@ impl SpriteState {
             priority_bottom: SpritePriority::default(),
 
             assembly_key: 0,
-            bitmap_index: 0,
+            bitmap_key: 0,
 
             palette: Palette::new(0),
             palette_offset: 0,

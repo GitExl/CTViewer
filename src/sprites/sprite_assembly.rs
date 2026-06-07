@@ -1,5 +1,5 @@
 use bitflags::bitflags;
-use crate::sprites::sprite_assets::Assets;
+use crate::assets::Assets;
 
 bitflags! {
     #[derive(Copy, Clone, Default)]
@@ -39,14 +39,6 @@ impl SpriteAssemblyFrame {
         SpriteAssemblyFrame {
             chips: Vec::new(),
         }
-    }
-
-    pub fn key_for_scene_frame(assembly_index: usize, frame_index: usize) -> u64 {
-        0x10000000 | (frame_index as u64) | ((assembly_index as u64) << 16)
-    }
-
-    pub fn key_for_world_frame(frame_address: u64) -> u64 {
-        0x20000000 | frame_address
     }
 }
 

@@ -3,7 +3,7 @@ use std::io::{Cursor, Seek};
 use std::io::SeekFrom;
 use byteorder::LittleEndian;
 use byteorder::ReadBytesExt;
-
+use crate::assets::Assets;
 use crate::filesystem::filesystem::FileSystem;
 use crate::GameMode;
 use crate::software_renderer::bitmap::Bitmap;
@@ -74,7 +74,7 @@ impl FileSystem {
     }
 
     // Reads a sprite's assembly data.
-    pub fn read_sprite_assembly(&self, index: usize, sprite_header: &SpriteHeader) -> (SpriteAssembly, HashMap<u64, SpriteAssemblyFrame>) {
+    pub fn read_sprite_assembly(&self, index: usize, size_flags: u32) -> (SpriteAssembly, HashMap<u64, SpriteAssemblyFrame>) {
         let mut data = self.backend.get_sprite_assembly_data(index);
 
         let (assembly, frames) = match self.mode {
@@ -83,7 +83,7 @@ impl FileSystem {
                 parse_pc_sprite_assembly(index, &mut data)
             },
             GameMode::Snes => {
-                let (groups_per_frame, tiles_per_group) = match sprite_header.size_flags & 0x3 {
+                let (groups_per_frame, tiles_per_group) = match size_flags & 0x3 {
                     0 => (1, 4),
                     1 => (1, 8),
                     2 => (3, 4),
@@ -325,7 +325,7 @@ fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -
             });
         }
 
-        let key = SpriteAssemblyFrame::key_for_scene_frame(assembly_index, frame_index);
+        let key = Assets::asset_key_sprite_assembly_frame_scene(assembly_index, frame_index);
         assembly.frame_keys.push(key);
         frames.insert(key, frame);
     }
@@ -396,7 +396,7 @@ fn parse_snes_sprite_assembly(assembly_index: usize, groups_per_frame: usize, ti
             assembly.chip_max = assembly.chip_max.max(tile.src_index);
         }
 
-        let key = SpriteAssemblyFrame::key_for_scene_frame(assembly_index, frame_index);
+        let key = Assets::asset_key_sprite_assembly_frame_scene(assembly_index, frame_index);
         assembly.frame_keys.push(key);
         frames.insert(key, frame);
     }
