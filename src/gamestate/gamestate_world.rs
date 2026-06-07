@@ -19,7 +19,8 @@ use crate::software_renderer::text::TextDrawFlags;
 use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
-use crate::world::world::{ScriptedWorldExit, World, WorldExit};
+use crate::world::world::World;
+use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
 use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 use crate::world::world_sprites::WorldSprites;
@@ -73,7 +74,7 @@ impl GameStateWorld {
         let mut sprites = WorldSprites::new(&ctx.fs, world_index, world.sprite_graphics);
         sprites.load_player_sprites(&ctx.fs, [0, 1, 2]);
 
-        ctx.sprites_states.clear();
+        ctx.sprite_states.clear();
 
         // Create new shared world state.
         let mut state = WorldState {
@@ -142,11 +143,12 @@ impl GameStateTrait for GameStateWorld {
 
         self.world.script.run(ctx, &mut self.state);
 
-        // for (index, actor) in self.state.actors.iter_mut().enumerate() {
-        //     // /actor.tick(delta, &self.state.scene_map);
-        //     let state = ctx.sprites_states.get_state_mut(index);
-        //     actor.update_sprite_state(state);
-        //     ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
+        // ctx.sprites_states.clear();
+        // for actor in self.state.actors.iter() {
+        //     let state = ctx.sprites_states.add_state();
+        //     state.pos.x = actor.x;
+        //     state.pos.y = actor.y;
+        //     state.palette = self.world.palette.palette.clone();
         // }
 
         self.state.camera.tick(delta);
@@ -192,8 +194,8 @@ impl GameStateTrait for GameStateWorld {
             &self.state.tileset_l12,
             &self.state.tileset_l3,
             &self.state.palette,
-            &ctx.sprites_states,
-            &ctx.sprite_assets,
+            &ctx.sprite_states,
+            &ctx.assets,
         );
         self.world_renderer.render(
             lerp,

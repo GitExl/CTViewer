@@ -8,9 +8,8 @@ use crate::facing::Facing;
 use crate::filesystem::filesystem::FileSystem;
 use crate::GameMode;
 use crate::util::vec2di32::Vec2Di32;
-use crate::world::world::WorldExit;
-use crate::world::world::ScriptedWorldExit;
 use crate::world::world::World;
+use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
 use crate::world_script::world_script::WorldScript;
 
 #[derive(Default)]

@@ -74,10 +74,10 @@ impl FileSystem {
     }
 
     // Reads a sprite's assembly data.
-    pub fn read_sprite_assembly(&self, index: usize, sprite_header: &SpriteHeader) -> SpriteAssembly {
+    pub fn read_sprite_assembly(&self, index: usize, sprite_header: &SpriteHeader) -> (SpriteAssembly, HashMap<u64, SpriteAssemblyFrame>) {
         let mut data = self.backend.get_sprite_assembly_data(index);
 
-        let assembly = match self.mode {
+        let (assembly, frames) = match self.mode {
             GameMode::Pc => {
                 data.seek(SeekFrom::Start(3)).unwrap();
                 parse_pc_sprite_assembly(index, &mut data)
@@ -94,11 +94,11 @@ impl FileSystem {
             },
         };
 
-        if assembly.frames.len() == 0 {
+        if frames.len() == 0 {
             panic!("Sprite assembly {} has no frames.", assembly.index);
         }
 
-        assembly
+        (assembly, frames)
     }
 
     // Read all sprite animations.
@@ -263,18 +263,20 @@ fn parse_sprite_animation_frames(slot_data: &Vec<u8>, start_slot_offset: usize, 
     frames
 }
 
-fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -> SpriteAssembly {
+fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -> (SpriteAssembly, HashMap<u64, SpriteAssemblyFrame>) {
 
     // Number of frames in this assembly.
-    let frame_count = data.read_u16::<LittleEndian>().unwrap();
+    let frame_count = data.read_u16::<LittleEndian>().unwrap() as usize;
     data.read_u16::<LittleEndian>().unwrap();
     let mut assembly = SpriteAssembly {
         index: assembly_index,
         chip_max: 0,
-        frames: vec![SpriteAssemblyFrame::new(); frame_count as usize],
+        frame_keys: Vec::new(),
     };
+    let mut frames: HashMap<u64, SpriteAssemblyFrame> = HashMap::new();
 
-    for frame in assembly.frames.iter_mut() {
+    for frame_index in 0..frame_count {
+        let mut frame = SpriteAssemblyFrame::new();
 
         // Number of tiles in this assembly frame.
         let tile_count = data.read_u8().unwrap();
@@ -322,23 +324,29 @@ fn parse_pc_sprite_assembly(assembly_index: usize, data: &mut Cursor<Vec<u8>>) -
                 flags,
             });
         }
+
+        let key = SpriteAssemblyFrame::key_for_scene_frame(assembly_index, frame_index);
+        assembly.frame_keys.push(key);
+        frames.insert(key, frame);
     }
 
-    assembly
+    (assembly, frames)
 }
 
-fn parse_snes_sprite_assembly(assembly_index: usize, groups_per_frame: usize, tiles_per_group: usize, data: &mut Cursor<Vec<u8>>) -> SpriteAssembly {
+fn parse_snes_sprite_assembly(assembly_index: usize, groups_per_frame: usize, tiles_per_group: usize, data: &mut Cursor<Vec<u8>>) -> (SpriteAssembly, HashMap<u64, SpriteAssemblyFrame>) {
     let tiles_per_frame = groups_per_frame * tiles_per_group;
     let chips_per_group = tiles_per_group * 4;
     let frame_count = data.get_ref().len() / (tiles_per_frame * 10);
     let mut assembly = SpriteAssembly {
         index: assembly_index,
         chip_max: 0,
-        frames: vec![SpriteAssemblyFrame::new(); frame_count],
+        frame_keys: Vec::new(),
     };
+    let mut frames: HashMap<u64, SpriteAssemblyFrame> = HashMap::new();
 
     // Read chip data.
-    for frame in assembly.frames.iter_mut() {
+    for frame_index in 0..frame_count {
+        let mut frame = SpriteAssemblyFrame::new();
         frame.chips.resize(tiles_per_frame * 4, SpriteAssemblyChip::default());
 
         for group in 0..groups_per_frame {
@@ -387,9 +395,13 @@ fn parse_snes_sprite_assembly(assembly_index: usize, groups_per_frame: usize, ti
         for tile in frame.chips.iter() {
             assembly.chip_max = assembly.chip_max.max(tile.src_index);
         }
+
+        let key = SpriteAssemblyFrame::key_for_scene_frame(assembly_index, frame_index);
+        assembly.frame_keys.push(key);
+        frames.insert(key, frame);
     }
 
-    assembly
+    (assembly, frames)
 }
 
 fn parse_snes_sprite_assembly_chip(data: &mut Cursor<Vec<u8>>, x: i32, y: i32) -> SpriteAssemblyChip {

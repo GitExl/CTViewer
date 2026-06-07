@@ -1,4 +1,4 @@
-use crate::actor::{Actor, ActorFlags, ActorTask};
+use crate::scene::actor::{SceneActor, SceneActorFlags, SceneActorTask};
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 
 pub fn exec_call_return(state: &mut ActorScriptState) -> OpResult {
@@ -25,16 +25,16 @@ pub fn exec_call_return(state: &mut ActorScriptState) -> OpResult {
     OpResult::COMPLETE | OpResult::JUMPED
 }
 
-pub fn exec_call(target_actor: &mut Actor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
+pub fn exec_call(target_actor: &mut SceneActor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
 
     // Complete immediately if the object is not interactive, dead or disabled.
-    if target_actor.flags.contains(ActorFlags::CALLS_DISABLED) {
+    if target_actor.flags.contains(SceneActorFlags::CALLS_DISABLED) {
         return OpResult::COMPLETE;
     }
-    if target_actor.flags.contains(ActorFlags::DEAD) {
+    if target_actor.flags.contains(SceneActorFlags::DEAD) {
         return OpResult::COMPLETE;
     }
-    if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+    if target_actor.flags.contains(SceneActorFlags::SCRIPT_DISABLED) {
         return OpResult::COMPLETE;
     }
 
@@ -62,22 +62,22 @@ pub fn exec_call(target_actor: &mut Actor, target_state: &mut ActorScriptState, 
     target_state.current_priority = priority;
 
     // The new function must interrupt any active movement/task.
-    target_actor.task = ActorTask::None;
+    target_actor.task = SceneActorTask::None;
 
     OpResult::COMPLETE
 }
 
-pub fn exec_call_wait_completion(target_actor: &mut Actor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
+pub fn exec_call_wait_completion(target_actor: &mut SceneActor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
     // Wait until a non-interactive target object becomes interactive.
-    if target_actor.flags.contains(ActorFlags::CALLS_DISABLED) {
+    if target_actor.flags.contains(SceneActorFlags::CALLS_DISABLED) {
         return OpResult::YIELD;
     }
 
     // Complete immediately if the object is dead or disabled.
-    if target_actor.flags.contains(ActorFlags::DEAD) {
+    if target_actor.flags.contains(SceneActorFlags::DEAD) {
         return OpResult::COMPLETE;
     }
-    if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+    if target_actor.flags.contains(SceneActorFlags::SCRIPT_DISABLED) {
         return OpResult::COMPLETE;
     }
 
@@ -93,24 +93,24 @@ pub fn exec_call_wait_completion(target_actor: &mut Actor, target_state: &mut Ac
     target_state.current_priority = priority;
 
     // The new function must interrupt any active movement/task.
-    target_actor.task = ActorTask::None;
+    target_actor.task = SceneActorTask::None;
 
     OpResult::COMPLETE
 }
 
-pub fn exec_call_wait_return(state: &mut ActorScriptState, target_actor: &mut Actor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
+pub fn exec_call_wait_return(state: &mut ActorScriptState, target_actor: &mut SceneActor, target_state: &mut ActorScriptState, function: usize, priority: usize) -> OpResult {
     if !state.call_waiting {
 
         // Wait until a non-interactive target object becomes interactive.
-        if target_actor.flags.contains(ActorFlags::CALLS_DISABLED) {
+        if target_actor.flags.contains(SceneActorFlags::CALLS_DISABLED) {
             return OpResult::YIELD;
         }
 
         // Complete immediately if the object is dead or disabled.
-        if target_actor.flags.contains(ActorFlags::DEAD) {
+        if target_actor.flags.contains(SceneActorFlags::DEAD) {
             return OpResult::COMPLETE;
         }
-        if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+        if target_actor.flags.contains(SceneActorFlags::SCRIPT_DISABLED) {
             return OpResult::COMPLETE;
         }
 
@@ -127,7 +127,7 @@ pub fn exec_call_wait_return(state: &mut ActorScriptState, target_actor: &mut Ac
         target_state.current_priority = priority;
 
         // The new function must interrupt any active movement.
-        target_actor.task = ActorTask::None;
+        target_actor.task = SceneActorTask::None;
 
         // We are now waiting on the target object to finish their function.
         state.call_waiting = true;
@@ -136,11 +136,11 @@ pub fn exec_call_wait_return(state: &mut ActorScriptState, target_actor: &mut Ac
     }
 
     // Complete immediately if the object is dead or disabled.
-    if target_actor.flags.contains(ActorFlags::DEAD) {
+    if target_actor.flags.contains(SceneActorFlags::DEAD) {
         state.call_waiting = false;
         return OpResult::COMPLETE;
     }
-    if target_actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+    if target_actor.flags.contains(SceneActorFlags::SCRIPT_DISABLED) {
         state.call_waiting = false;
         return OpResult::COMPLETE;
     }

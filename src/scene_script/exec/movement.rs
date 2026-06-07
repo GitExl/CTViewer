@@ -1,16 +1,15 @@
 use std::f64::consts::PI;
-use crate::actor::{ActorFlags, ActorTask, DebugSprite};
-use crate::Context;
+use crate::scene::actor::{SceneActorFlags, SceneActorTask, DebugSprite};
 use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
-pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, tile_dest_pos: Vec2Di32, cycle_count: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
+pub fn exec_movement_to_tile(scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, tile_dest_pos: Vec2Di32, cycle_count: Option<u32>, update_facing: bool, animated: bool) -> OpResult {
     let actor = scene_state.actors.get_mut(actor_index).unwrap();
 
     // Only match tile movements.
-    if let ActorTask::MoveToTile { cycles, .. } = actor.task {
+    if let SceneActorTask::MoveToTile { cycles, .. } = actor.task {
 
         // Wait for destination to be reached.
         if cycles > 0 {
@@ -26,7 +25,7 @@ pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, sc
     if actor_tile_pos == tile_dest_pos {
 
         // If enabled, slowly move the actor to the bottom center of the tile, x first.
-        if actor.flags.contains(ActorFlags::MOVE_ONTO_TILE) {
+        if actor.flags.contains(SceneActorFlags::MOVE_ONTO_TILE) {
             let actor_pos = actor.pos.as_vec2d_i32();
             let dest_pos = tile_dest_pos * 16 + Vec2Di32::new(7, 15);
 
@@ -75,15 +74,15 @@ pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, sc
     // No more steps to be taken, complete op.
     if move_cycle_count == 0 {
         if animated {
-            ctx.sprites_states.get_state_mut(actor_index).reset_animation();
+            actor.reset_animation();
         }
-        actor.task = ActorTask::None;
+        actor.task = SceneActorTask::None;
         actor.debug_sprite = DebugSprite::None;
         return OpResult::COMPLETE;
     }
 
     // Set new movement task.
-    actor.task = ActorTask::MoveToTile {
+    actor.task = SceneActorTask::MoveToTile {
         tile_pos: tile_dest_pos,
         move_by,
         cycles: move_cycle_count,
@@ -95,17 +94,17 @@ pub fn exec_movement_to_tile(ctx: &mut Context, scene_state: &mut SceneState, sc
         actor.face_towards(actor.pos + move_by);
     }
     if animated {
-        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_by);
+        actor.animate_for_movement(actor.class, move_by);
     }
 
     OpResult::YIELD
 }
 
-pub fn exec_movement_by_vector(ctx: &mut Context, scene_state: &mut SceneState, actor_index: usize, angle: f64, cycles: u32, update_facing: bool, animated: bool) -> OpResult {
+pub fn exec_movement_by_vector(scene_state: &mut SceneState, actor_index: usize, angle: f64, cycles: u32, update_facing: bool, animated: bool) -> OpResult {
     let actor = scene_state.actors.get_mut(actor_index).unwrap();
 
     // Only match angle movement tasks.
-    if let ActorTask::MoveByAngle { cycles, .. } = actor.task {
+    if let SceneActorTask::MoveByAngle { cycles, .. } = actor.task {
 
         // Wait for steps to run out.
         if cycles > 0 {
@@ -114,10 +113,10 @@ pub fn exec_movement_by_vector(ctx: &mut Context, scene_state: &mut SceneState, 
 
         // End op.
         if animated {
-            ctx.sprites_states.get_state_mut(actor_index).reset_animation();
+            actor.reset_animation();
         }
         actor.pos = actor.pos.floor();
-        actor.task = ActorTask::None;
+        actor.task = SceneActorTask::None;
         actor.debug_sprite = DebugSprite::None;
         return OpResult::COMPLETE;
     }
@@ -132,7 +131,7 @@ pub fn exec_movement_by_vector(ctx: &mut Context, scene_state: &mut SceneState, 
     actor.update_sprite_priority(&scene_state.scene_map);
 
     // Set new movement task.
-    actor.task = ActorTask::MoveByAngle {
+    actor.task = SceneActorTask::MoveByAngle {
         angle,
         move_by,
         cycles,
@@ -144,25 +143,25 @@ pub fn exec_movement_by_vector(ctx: &mut Context, scene_state: &mut SceneState, 
         actor.face_towards(actor.pos + move_by);
     }
     if animated {
-        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_by);
+        actor.animate_for_movement(actor.class, move_by);
     }
 
     OpResult::YIELD
 }
 
-pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, target_actor_index: usize, cycle_count: Option<u32>, update_facing: bool, animated: bool, into_battle_range: bool) -> OpResult {
+pub fn exec_movement_to_actor(scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, target_actor_index: usize, cycle_count: Option<u32>, update_facing: bool, animated: bool, into_battle_range: bool) -> OpResult {
+    let actor = scene_state.actors.get_mut(actor_index).unwrap();
 
     // Ignore dead target actor.
-    if scene_state.actors[target_actor_index].flags.contains(ActorFlags::DEAD) {
-        ctx.sprites_states.get_state_mut(actor_index).reset_animation();
+    if actor.flags.contains(SceneActorFlags::DEAD) {
+        actor.reset_animation();
         return OpResult::COMPLETE;
     }
 
-    let target_pos = scene_state.actors[target_actor_index].pos;
-    let actor = scene_state.actors.get_mut(actor_index).unwrap();
+    let target_pos = actor.pos;
 
     // Only match actor movements.
-    if let ActorTask::MoveToActor { cycles, .. } = actor.task {
+    if let SceneActorTask::MoveToActor { cycles, .. } = actor.task {
 
         // Wait for destination to be reached.
         if cycles > 0 {
@@ -187,7 +186,7 @@ pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, s
     if tile_pos == target_tile_pos {
 
         // If enabled, slowly move the actor to the target object, x first.
-        if actor.flags.contains(ActorFlags::MOVE_ONTO_OBJECT) {
+        if actor.flags.contains(SceneActorFlags::MOVE_ONTO_OBJECT) {
             let actor_pos = actor.pos.as_vec2d_i32();
             let dest_pos = target_pos.as_vec2d_i32();
 
@@ -238,15 +237,15 @@ pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, s
     // No more steps to be taken, complete op.
     if move_cycles == 0 {
         if animated {
-            ctx.sprites_states.get_state_mut(actor_index).reset_animation();
+            actor.reset_animation();
         }
-        actor.task = ActorTask::None;
+        actor.task = SceneActorTask::None;
         actor.debug_sprite = DebugSprite::None;
         return OpResult::COMPLETE;
     }
 
     // Set new movement task.
-    actor.task = ActorTask::MoveToActor {
+    actor.task = SceneActorTask::MoveToActor {
         actor_index: target_actor_index,
         move_by,
         cycles: move_cycles,
@@ -258,7 +257,7 @@ pub fn exec_movement_to_actor(ctx: &mut Context, scene_state: &mut SceneState, s
         actor.face_towards(actor.pos + move_by);
     }
     if animated {
-        ctx.sprites_states.get_state_mut(actor_index).animate_for_movement(actor.class, move_by);
+        actor.animate_for_movement(actor.class, move_by);
     }
 
     OpResult::YIELD

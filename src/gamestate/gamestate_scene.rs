@@ -5,7 +5,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
-use crate::actor::{Actor, ActorClass, ActorFlags, ActorTask, DrawMode};
+use crate::scene::actor::{SceneActor, SceneActorClass, SceneActorFlags, SceneActorTask, DrawMode};
 use crate::character::CharacterId;
 use crate::facing::Facing;
 use crate::gamestate::gamestate::GameStateTrait;
@@ -32,7 +32,7 @@ pub struct SceneState {
     pub script_states: Vec<ActorScriptState>,
     pub textbox: TextBox,
     pub textbox_strings: Vec<String>,
-    pub actors: Vec<Actor>,
+    pub actors: Vec<SceneActor>,
     pub player_actors: HashMap<CharacterId, usize>,
     pub next_destination: NextDestination,
     pub camera: Camera,
@@ -97,7 +97,7 @@ impl GameStateScene {
         };
 
         // Initialize rendering.
-        ctx.sprites_states.clear();
+        ctx.sprite_states.clear();
         let scene_renderer = SceneRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut state.map);
@@ -110,13 +110,13 @@ impl GameStateScene {
 
         // Create actors and setup their state.
         for (actor_index, actor_script) in scene.script.get_actor_scripts().iter().enumerate() {
-            let mut actor = Actor::new(actor_index);
-            actor.flags.remove(ActorFlags::DEAD);
-            actor.class = ActorClass::Undefined;
+            let mut actor = SceneActor::new(actor_index);
+            actor.flags.remove(SceneActorFlags::DEAD);
+            actor.class = SceneActorClass::Undefined;
 
             let script_state = actor_script.get_initial_state();
             state.script_states.push(script_state);
-            ctx.sprites_states.add_state();
+            ctx.sprite_states.add_state();
 
             state.actors.push(actor);
         }
@@ -128,8 +128,8 @@ impl GameStateScene {
 
         // Update sprite state after script init.
         for (actor_index, actor) in state.actors.iter_mut().enumerate() {
-            let sprite_state = ctx.sprites_states.get_state_mut(actor_index);
-            actor.update_sprite_state(sprite_state);
+            let sprite_state = ctx.sprite_states.get_state_mut(actor_index);
+            actor.update_sprite_state(sprite_state, &ctx.assets);
         }
 
         GameStateScene {
@@ -169,10 +169,9 @@ impl GameStateTrait for GameStateScene {
 
         // Tick actors.
         for (index, actor) in self.state.actors.iter_mut().enumerate() {
-            actor.tick(delta, &self.state.scene_map);
-            let state = ctx.sprites_states.get_state_mut(index);
-            actor.update_sprite_state(state);
-            ctx.sprites_states.tick(&ctx.sprite_assets, index, actor);
+            actor.tick(delta, &self.state.scene_map, &ctx.assets);
+            let state = ctx.sprite_states.get_state_mut(index);
+            actor.update_sprite_state(state, &ctx.assets);
         }
 
         self.scene.tileset_l12.tick(delta);
@@ -234,7 +233,7 @@ impl GameStateTrait for GameStateScene {
 
             actor.lerp(lerp);
 
-            let state = ctx.sprites_states.get_state_mut(actor_index);
+            let state = ctx.sprite_states.get_state_mut(actor_index);
             state.pos = actor.pos_lerp;
         }
 
@@ -249,8 +248,8 @@ impl GameStateTrait for GameStateScene {
             &self.scene.tileset_l12,
             &self.scene.tileset_l3,
             &self.scene.palette,
-            &ctx.sprites_states,
-            &ctx.sprite_assets,
+            &ctx.sprite_states,
+            &ctx.assets,
         );
 
         self.scene_renderer.render(
@@ -295,7 +294,7 @@ impl GameStateTrait for GameStateScene {
                 SurfaceBlendOps::Blend,
             );
 
-            let sprite_state = ctx.sprites_states.get_state(debug_actor);
+            let sprite_state = ctx.sprite_states.get_state(debug_actor);
             let script_state = &self.state.script_states[debug_actor];
             let op: String = if let Some(current_op) = script_state.current_op {
                 format!("{:?}", current_op)
@@ -305,21 +304,18 @@ impl GameStateTrait for GameStateScene {
 
             // Spit out a bunch of internal actor state.
             let text_actor = format!(
-                "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}",
+                "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}\nSprite {}, frame {}\nPalette {}\nTop: {:?}\nBottom: {:?}\nAnim {} frame {} delay {}\nAnimationMode::{:?}\nLoop anim {}, {} loops",
                 debug_actor, actor.class,
                 actor.pos, actor.move_speed, actor.facing,
                 actor.draw_mode,
                 actor.flags,
-            );
-            let text_sprite = format!(
-                "Sprite {}, frame {}\nPalette {}\nTop: {:?}\nBottom: {:?}\nAnim {} frame {} delay {}\nAnimationMode::{:?}\nLoop anim {}, {} loops",
-                sprite_state.sprite_index, sprite_state.sprite_frame,
+                actor.sprite_index, actor.sprite_frame,
                 sprite_state.palette_offset,
                 sprite_state.priority_top,
                 sprite_state.priority_bottom,
-                sprite_state.anim_index, sprite_state.anim_frame, sprite_state.anim_delay,
-                sprite_state.anim_mode,
-                sprite_state.anim_index_looped, sprite_state.anim_loops_remaining,
+                actor.anim_index, actor.anim_frame, actor.anim_delay,
+                actor.anim_mode,
+                actor.anim_index_looped, actor.anim_loops_remaining,
             );
             let text_script = format!(
                 "0x{:04X}, d {} / {}, p {}\nPrio {}, waiting: {}\n{:04X?}\n\n{}",
@@ -329,7 +325,7 @@ impl GameStateTrait for GameStateScene {
                 op,
             );
 
-            let mut header = TextRenderable::new(format!("{}\n\n{}\n\n{}", text_actor, text_sprite, text_script), TextFont::Small, [255, 255, 255, 255], TextDrawFlags::empty(), 124);
+            let mut header = TextRenderable::new(format!("{}\n\n{}", text_actor, text_script), TextFont::Small, [255, 255, 255, 255], TextDrawFlags::empty(), 124);
             ctx.render.render_text(&mut header, 2, 2, TextFlags::empty());
         }
 
@@ -473,15 +469,15 @@ impl GameStateTrait for GameStateScene {
                         let actor = &mut self.state.actors[index];
                         let script_state = &mut self.state.script_states[index];
                         if actor.draw_mode == DrawMode::Draw &&
-                         !actor.flags.contains(ActorFlags::SCRIPT_DISABLED) &&
-                         !actor.flags.contains(ActorFlags::DEAD) &&
-                         !actor.flags.contains(ActorFlags::CALLS_DISABLED) {
+                         !actor.flags.contains(SceneActorFlags::SCRIPT_DISABLED) &&
+                         !actor.flags.contains(SceneActorFlags::DEAD) &&
+                         !actor.flags.contains(SceneActorFlags::CALLS_DISABLED) {
                             if script_state.current_priority >= 2 {
                                 script_state.priority_return_ptrs[script_state.current_priority] = script_state.current_address;
                                 script_state.current_address = script_state.function_ptrs[1];
                                 script_state.current_priority = 1;
                                 script_state.delay_counter = 0;
-                                actor.task = ActorTask::None;
+                                actor.task = SceneActorTask::None;
                             }
                         }
 
@@ -505,15 +501,15 @@ impl GameStateTrait for GameStateScene {
                         let actor = &mut self.state.actors[index];
                         let script_state = &mut self.state.script_states[index];
                         if actor.draw_mode == DrawMode::Draw &&
-                            !actor.flags.contains(ActorFlags::SCRIPT_DISABLED) &&
-                            !actor.flags.contains(ActorFlags::DEAD) &&
-                            !actor.flags.contains(ActorFlags::CALLS_DISABLED) {
+                            !actor.flags.contains(SceneActorFlags::SCRIPT_DISABLED) &&
+                            !actor.flags.contains(SceneActorFlags::DEAD) &&
+                            !actor.flags.contains(SceneActorFlags::CALLS_DISABLED) {
                             if script_state.current_priority >= 3 {
                                 script_state.priority_return_ptrs[script_state.current_priority] = script_state.current_address;
                                 script_state.current_address = script_state.function_ptrs[2];
                                 script_state.current_priority = 2;
                                 script_state.delay_counter = 0;
-                                actor.task = ActorTask::None;
+                                actor.task = SceneActorTask::None;
                             }
                         }
                     }

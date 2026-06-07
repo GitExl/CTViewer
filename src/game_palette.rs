@@ -12,4 +12,8 @@ impl GamePalette {
         println!("  Colors: {}", self.palette.colors.len());
         println!();
     }
+
+    pub fn key_for_sprite_palette(palette_index: usize) -> u64 {
+        0x10000000 | (palette_index as u64)
+    }
 }

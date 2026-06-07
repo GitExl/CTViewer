@@ -1,59 +1,20 @@
 use std::path::Path;
 use crate::Context;
-use crate::destination::Destination;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::map::Map;
 use crate::palette_anim::PaletteAnimSet;
+use crate::scene::scene_exit::SceneExit;
 use crate::scene::scene_map::SceneMap;
+use crate::scene::treasure::Treasure;
 use crate::scene_script::scene_script::SceneScript;
 use crate::tileset::TileSet;
-use crate::util::vec2di32::Vec2Di32;
 
 pub struct ScrollMask {
     pub left: isize,
     pub top: isize,
     pub right: isize,
     pub bottom: isize,
-}
-
-pub struct SceneExit {
-    pub index: usize,
-
-    pub pos: Vec2Di32,
-    pub size: Vec2Di32,
-    pub destination: Destination
-}
-
-impl SceneExit {
-    pub fn dump(&self, ctx: &Context) {
-        println!("Scene exit {}", self.index);
-        println!("  At {}, size {}", self.pos, self.size);
-        self.destination.dump(ctx);
-
-        println!();
-    }
-}
-
-pub struct SceneTreasure {
-    pub id: String,
-    pub tile_pos: Vec2Di32,
-    pub gold: u32,
-    pub item: usize,
-}
-
-impl SceneTreasure {
-    pub fn dump(&self, ctx: &Context) {
-        println!("Treasure '{}'", self.id);
-        println!("  At tile {}", self.tile_pos);
-        if self.gold > 0 {
-            println!("  Contains {} gold", self.gold);
-        }
-        if self.item > 0 {
-            println!("  Contains '{}'", ctx.l10n.get_indexed(IndexedType::Item, self.item));
-        }
-        println!();
-    }
 }
 
 pub struct Scene {
@@ -71,7 +32,7 @@ pub struct Scene {
     pub palette: GamePalette,
     pub palette_anims: PaletteAnimSet,
     pub exits: Vec<SceneExit>,
-    pub treasure: Vec<SceneTreasure>,
+    pub treasure: Vec<Treasure>,
     pub script: SceneScript,
 }
 
@@ -89,7 +50,7 @@ impl Scene {
         palette: GamePalette,
         palette_anims: PaletteAnimSet,
         exits: Vec<SceneExit>,
-        treasure: Vec<SceneTreasure>,
+        treasure: Vec<Treasure>,
         script: SceneScript,
     ) -> Scene {
         Scene {

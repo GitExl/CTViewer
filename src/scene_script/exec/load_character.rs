@@ -1,4 +1,4 @@
-use crate::actor::{ActorClass, ActorFlags, ActorTask, DrawMode};
+use crate::scene::actor::{SceneActorClass, SceneActorFlags, SceneActorTask, DrawMode};
 use crate::Context;
 use crate::facing::Facing;
 use crate::gamestate::gamestate_scene::SceneState;
@@ -18,10 +18,10 @@ pub fn exec_load_character(ctx: &mut Context, scene_state: &mut SceneState, acto
 
     // todo: set remaining actor classes
     if char_type == CharacterType::PCAsNPC || char_type == CharacterType::NPC {
-        actor.class = ActorClass::NPC;
+        actor.class = SceneActorClass::NPC;
     }
     if char_type == CharacterType::Enemy {
-        actor.class = ActorClass::Enemy;
+        actor.class = SceneActorClass::Enemy;
     }
 
     // Defaults.
@@ -30,21 +30,24 @@ pub fn exec_load_character(ctx: &mut Context, scene_state: &mut SceneState, acto
     actor.sprite_priority_bottom = SpritePriority::BelowL2AboveL1;
     actor.draw_mode = DrawMode::Draw;
     actor.battle_index = battle_index;
-    actor.flags |= ActorFlags::SOLID;
-    actor.flags.remove(ActorFlags::PUSHABLE);
+    actor.flags |= SceneActorFlags::SOLID;
+    actor.flags.remove(SceneActorFlags::PUSHABLE);
     if is_static {
-        actor.flags |= ActorFlags::BATTLE_STATIC;
+        actor.flags |= SceneActorFlags::BATTLE_STATIC;
     }
 
     // Sprite and animation defaults.
-    let sprite_state = &mut ctx.sprites_states.get_state_mut(actor_index);
-    let sprite_asset = ctx.sprite_assets.load(&ctx.fs, sprite_index);
-    sprite_state.sprite_index = sprite_index;
-    sprite_state.anim_set_index = sprite_asset.anim_set_index;
-    sprite_state.palette_offset = 0;
-    sprite_state.palette = sprite_asset.palette.clone();
-    sprite_state.anim_index = 0;
-    sprite_state.anim_frame = 0;
+    let sprite_info = ctx.assets.load_sprite_info(&ctx.fs, sprite_index);
+    actor.sprite_index = sprite_index;
+    actor.palette_offset = 0;
+    actor.palette_key = sprite_info.palette_key;
+    actor.anim_set_index = sprite_info.anim_set_index;
+    actor.anim_index = 0;
+    actor.anim_frame = 0;
+
+    let palette_key = sprite_info.palette_key;
+    let palette = ctx.assets.get_palette(palette_key);
+    actor.local_palette.clone_from(&palette);
 
     OpResult::COMPLETE
 }
@@ -70,29 +73,31 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     let is_active = ctx.party.is_character_active(character_index);
     let is_recruited = ctx.party.is_character_recruited(character_index);
     if !is_recruited || (must_be_active && !is_active) {
-        actor.flags.insert(ActorFlags::DEAD);
+        actor.flags.insert(SceneActorFlags::DEAD);
         return OpResult::COMPLETE;
     }
 
     // Sprite and animation defaults.
-    let sprite_state = &mut ctx.sprites_states.get_state_mut(actor_index);
-    let sprite_asset = ctx.sprite_assets.load(&ctx.fs, character_index);
-    sprite_state.sprite_index = character_index;
-    sprite_state.palette = sprite_asset.palette.clone();
-    sprite_state.palette_index = sprite_asset.palette_index;
-    sprite_state.palette_offset = 0;
-    sprite_state.anim_set_index = sprite_asset.anim_set_index;
-    sprite_state.anim_index = 0;
-    sprite_state.anim_frame = 0;
-    sprite_state.anim_delay = 0;
+    let sprite_info = ctx.assets.load_sprite_info(&ctx.fs, character_index);
+    actor.sprite_index = character_index;
+    actor.palette_offset = 0;
+    actor.palette_key = sprite_info.palette_key;
+    actor.anim_set_index = sprite_info.anim_set_index;
+    actor.anim_index = 0;
+    actor.anim_frame = 0;
+    actor.anim_delay = 0;
+
+    let palette_key = sprite_info.palette_key;
+    let palette = ctx.assets.get_palette(palette_key);
+    actor.local_palette.clone_from(&palette);
 
     // Actor defaults.
     actor.battle_index = battle_index;
     actor.player_index = Some(character_index);
     actor.draw_mode = DrawMode::Draw;
-    actor.flags.remove(ActorFlags::MOVE_ONTO_OBJECT | ActorFlags::MOVE_ONTO_TILE | ActorFlags::PUSHABLE);
-    actor.flags.insert(ActorFlags::SOLID);
-    actor.task = ActorTask::None;
+    actor.flags.remove(SceneActorFlags::MOVE_ONTO_OBJECT | SceneActorFlags::MOVE_ONTO_TILE | SceneActorFlags::PUSHABLE);
+    actor.flags.insert(SceneActorFlags::SOLID);
+    actor.task = SceneActorTask::None;
 
     // Script state defaults.
     let script_state = &mut scene_state.script_states.get_mut(actor_index).unwrap();
@@ -108,14 +113,14 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     }
 
     if !must_be_active {
-        actor.class = ActorClass::PCOutOfParty;
+        actor.class = SceneActorClass::PCOutOfParty;
     } else {
         // todo set actual pc index from party active order
         actor.class = match character_index {
-            0 => ActorClass::PC1,
-            1 => ActorClass::PC2,
-            2 => ActorClass::PC3,
-            _ => ActorClass::PC1
+            0 => SceneActorClass::PC1,
+            1 => SceneActorClass::PC2,
+            2 => SceneActorClass::PC3,
+            _ => SceneActorClass::PC1
         };
         scene_state.player_actors.insert(character_index, actor_index);
     }

@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use crate::sprites::sprite_assets::Assets;
 
 bitflags! {
     #[derive(Copy, Clone, Default)]
@@ -39,6 +40,14 @@ impl SpriteAssemblyFrame {
             chips: Vec::new(),
         }
     }
+
+    pub fn key_for_scene_frame(assembly_index: usize, frame_index: usize) -> u64 {
+        0x10000000 | (frame_index as u64) | ((assembly_index as u64) << 16)
+    }
+
+    pub fn key_for_world_frame(frame_address: u64) -> u64 {
+        0x20000000 | frame_address
+    }
 }
 
 // A sprite assembly lists sprite frames, which in turn are assembled from 16x16 tiles of
@@ -46,7 +55,7 @@ impl SpriteAssemblyFrame {
 pub struct SpriteAssembly {
     pub index: usize,
     pub chip_max: usize,
-    pub frames: Vec<SpriteAssemblyFrame>,
+    pub frame_keys: Vec<u64>,
 }
 
 impl SpriteAssembly {
@@ -54,24 +63,22 @@ impl SpriteAssembly {
         SpriteAssembly {
             index,
             chip_max: 0,
-            frames: Vec::new(),
+            frame_keys: Vec::new(),
         }
     }
 
-    pub fn dump(&self) {
+    pub fn dump(&self, assets: &Assets) {
         println!("Sprite assembly {}", self.index);
 
         println!("  Chip max {}, {} frames",
             self.chip_max,
-            self.frames.len(),
+            self.frame_keys.len(),
         );
 
-        for (frame_index, frame) in self.frames.iter().enumerate() {
-            println!("    Frame {}, {} tiles",
-                     frame_index,
-                     frame.chips.len(),
-            );
+        for frame_key in self.frame_keys.iter() {
+            println!("    Frame {:X}", frame_key);
 
+            let frame = assets.get_assembly_frame(*frame_key);
             for tile in &frame.chips {
                 println!("      Tile {:>5} {:0>16b}, x {:>4}, y {:>4}, {:>2}x{:>2} {:>6} {:>6} {:>6} {:>7}",
                          tile.src_index, tile.src_index,

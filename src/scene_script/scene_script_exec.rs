@@ -1,4 +1,4 @@
-use crate::actor::{ActorClass, ActorFlags, DebugSprite, DrawMode};
+use crate::scene::actor::{SceneActorClass, SceneActorFlags, DebugSprite, DrawMode};
 use crate::camera::CameraMoveTo;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::Context;
@@ -203,7 +203,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         Op::ActorRemove { actor } => {
             let actor_index = actor.deref(scene_state, this_actor);
 
-            scene_state.actors[actor_index].flags |= ActorFlags::DEAD;
+            scene_state.actors[actor_index].flags |= SceneActorFlags::DEAD;
             scene_state.actors[actor_index].draw_mode = DrawMode::Hidden;
 
             OpResult::COMPLETE
@@ -247,10 +247,10 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         Op::ActorFacingSet { actor, facing } => {
             let actor_index = actor.deref(scene_state, this_actor);
             let facing = Facing::from_index(facing.get_scene_u8(ctx, scene_state, this_actor) as usize);
-            let state = ctx.sprites_states.get_state_mut(actor_index);
 
-            scene_state.actors[actor_index].facing = facing;
-            state.anim_delay = 0;
+            let actor = scene_state.actors.get_mut(actor_index).unwrap();
+            actor.facing = facing;
+            actor.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE
         },
@@ -266,15 +266,14 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             let actor_to_index = to.deref(scene_state, this_actor);
 
             let actor_to = &scene_state.actors[actor_to_index];
-            if actor_to.flags.contains(ActorFlags::DEAD) {
+            if actor_to.flags.contains(SceneActorFlags::DEAD) {
                 return OpResult::COMPLETE;
             }
 
             let other_pos = actor_to.pos;
-            scene_state.actors[actor_index].face_towards(other_pos);
-
-            let state = ctx.sprites_states.get_state_mut(actor_index);
-            state.anim_delay = 0;
+            let actor = scene_state.actors.get_mut(actor_index).unwrap();
+            actor.face_towards(other_pos);
+            actor.anim_delay = 0;
 
             OpResult::YIELD | OpResult::COMPLETE
         },
@@ -284,12 +283,12 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             let actor_index = actor.deref(scene_state, this_actor);
 
             if set_and_lock {
-                scene_state.actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, true);
+                scene_state.actors[actor_index].flags.set(SceneActorFlags::SPRITE_PRIORITY_LOCKED, true);
                 scene_state.actors[actor_index].sprite_priority_top = top;
                 scene_state.actors[actor_index].sprite_priority_bottom = bottom;
             } else {
                 scene_state.actors[actor_index].update_sprite_priority(&scene_state.scene_map);
-                scene_state.actors[actor_index].flags.set(ActorFlags::SPRITE_PRIORITY_LOCKED, false);
+                scene_state.actors[actor_index].flags.set(SceneActorFlags::SPRITE_PRIORITY_LOCKED, false);
             }
 
             OpResult::COMPLETE
@@ -317,33 +316,33 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         Op::Animation { actor, animation } => {
             let actor_index = actor.deref(scene_state, this_actor);
             let anim_index = animation.get_scene_u8(ctx, scene_state, this_actor) as usize;
-            let state = ctx.sprites_states.get_state_mut(actor_index);
+            let mut actor = scene_state.actors.get_mut(actor_index).unwrap();
 
-            exec_animation(state, anim_index)
+            exec_animation(&mut actor, anim_index)
         },
 
         Op::AnimationLoopCount { actor, animation, loops } => {
             let actor_index = actor.deref(scene_state, this_actor);
             let anim_index = animation.get_scene_u8(ctx, scene_state, this_actor) as usize;
             let loop_count = loops.get_scene_u8(ctx, scene_state, this_actor) as u32;
-            let state = ctx.sprites_states.get_state_mut(actor_index);
+            let mut actor = scene_state.actors.get_mut(actor_index).unwrap();
 
-            exec_animation_loop_count(state, &mut scene_state.actors[actor_index], anim_index, loop_count)
+            exec_animation_loop_count(&mut actor, anim_index, loop_count)
         },
 
         Op::AnimationReset { actor } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            let state = ctx.sprites_states.get_state_mut(actor_index);
+            let mut actor = scene_state.actors.get_mut(actor_index).unwrap();
 
-            exec_animation_reset(state)
+            exec_animation_reset(&mut actor)
         },
 
         Op::AnimationStaticFrame { actor, frame} => {
             let actor_index = actor.deref(scene_state, this_actor);
             let frame_index = frame.get_scene_u8(ctx, scene_state, this_actor) as usize;
-            let state = ctx.sprites_states.get_state_mut(actor_index);
+            let mut actor = scene_state.actors.get_mut(actor_index).unwrap();
 
-            exec_animation_static_frame(state, frame_index)
+            exec_animation_static_frame(&mut actor, frame_index)
         },
 
         // Movement ops.
@@ -351,12 +350,12 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             let angle = angle.get_scene_u8(ctx, scene_state, this_actor) as f64 * 1.40625;
             let steps = steps.get_scene_u8(ctx, scene_state, this_actor) as u32;
 
-            exec_movement_by_vector(ctx, scene_state, this_actor, angle, steps, update_facing, animated)
+            exec_movement_by_vector(scene_state, this_actor, angle, steps, update_facing, animated)
         },
         Op::ActorMoveToActor { to_actor, script_cycle_count, update_facing, animated, forever, into_battle_range } => {
             let target_actor_index = to_actor.deref(scene_state, this_actor);
 
-            let result = exec_movement_to_actor(ctx, scene_state, state, this_actor, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
+            let result = exec_movement_to_actor(scene_state, state, this_actor, target_actor_index, script_cycle_count, update_facing, animated, into_battle_range);
             if forever {
                 OpResult::YIELD
             } else {
@@ -368,7 +367,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             let dest_tile_y = y.get_scene_u8(ctx, scene_state, this_actor) as i32;
             let steps = if let Some(steps) = steps { Some(steps.get_scene_u8(ctx, scene_state, this_actor) as u32) } else { None };
 
-            exec_movement_to_tile(ctx, scene_state, state, this_actor, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
+            exec_movement_to_tile(scene_state, state, this_actor, Vec2Di32::new(dest_tile_x, dest_tile_y), steps, update_facing, animated)
         }
         Op::MovePartyTo { .. } => {
             println!("Unimplemented: move party");
@@ -388,9 +387,9 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         Op::SetScriptProcessing { actor, enabled } => {
             let actor_index = actor.deref(scene_state, this_actor);
             if enabled {
-                scene_state.actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, false);
+                scene_state.actors[actor_index].flags.set(SceneActorFlags::SCRIPT_DISABLED, false);
             } else {
-                scene_state.actors[actor_index].flags.set(ActorFlags::SCRIPT_DISABLED, true);
+                scene_state.actors[actor_index].flags.set(SceneActorFlags::SCRIPT_DISABLED, true);
                 if actor_index == this_actor {
                     return OpResult::COMPLETE | OpResult::YIELD;
                 }
@@ -445,10 +444,10 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             println!("Battle time! {:?}", flags);
 
             for actor in scene_state.actors.iter_mut() {
-                if actor.class != ActorClass::Enemy {
+                if actor.class != SceneActorClass::Enemy {
                     continue;
                 }
-                if actor.flags.contains(ActorFlags::DEAD) || actor.flags.contains(ActorFlags::SCRIPT_DISABLED) {
+                if actor.flags.contains(SceneActorFlags::DEAD) || actor.flags.contains(SceneActorFlags::SCRIPT_DISABLED) {
                     continue;
                 }
                 if actor.draw_mode != DrawMode::Draw {
@@ -457,11 +456,11 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 if !battle_range.contains_vec2(&actor.pos.as_vec2d_i32()) {
                     continue;
                 }
-                if actor.flags.contains(ActorFlags::BATTLE_STATIC) {
+                if actor.flags.contains(SceneActorFlags::BATTLE_STATIC) {
                     continue;
                 }
 
-                actor.flags.insert(ActorFlags::DEAD | ActorFlags::SCRIPT_DISABLED);
+                actor.flags.insert(SceneActorFlags::DEAD | SceneActorFlags::SCRIPT_DISABLED);
                 actor.draw_mode = DrawMode::Removed;
 
                 println!("Actor {} was killed in a very real battle.", actor.index);
@@ -487,14 +486,14 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             // End op if the textbox was closed.
             let actor = &mut scene_state.actors[this_actor];
-            if actor.flags.contains(ActorFlags::TEXTBOX_ACTIVE) {
-                actor.flags.remove(ActorFlags::TEXTBOX_ACTIVE);
+            if actor.flags.contains(SceneActorFlags::TEXTBOX_ACTIVE) {
+                actor.flags.remove(SceneActorFlags::TEXTBOX_ACTIVE);
                 if scene_state.textbox.has_choices() {
                     actor.result = scene_state.textbox.get_choice() as u32;
                 }
                 return OpResult::COMPLETE;
             }
-            actor.flags.insert(ActorFlags::TEXTBOX_ACTIVE);
+            actor.flags.insert(SceneActorFlags::TEXTBOX_ACTIVE);
 
             // Determine position of player character vs camera top or bottom half to position
             // the textbox in auto mode.
@@ -635,12 +634,12 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Palette changes.
         Op::PaletteSetImmediate { sub_palette, color_index, data, length } => {
-            let sprite_state = ctx.sprites_states.get_state_mut(this_actor);
             match sub_palette {
                 SubPalette::This => {
+                    let actor = scene_state.actors.get_mut(this_actor).unwrap();
                     for i in 0..length / 2 {
                         let color = (data[i * 2 + 1] as u16) << 8 | data[i * 2] as u16;
-                        sprite_state.palette.colors[color_index + i] = Palette::decode_snes_color(color);
+                        actor.local_palette.colors[color_index + i] = Palette::decode_snes_color(color);
                     }
                 },
                 SubPalette::Index(sub_palette) => {
@@ -655,21 +654,18 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PaletteRestore => {
-            let sprite_state = ctx.sprites_states.get_state_mut(this_actor);
-            let palette = ctx.fs.read_sprite_palette(sprite_state.palette_index, 0);
-            if let Some(palette) = palette {
-                sprite_state.palette = palette;
-            }
+            let actor = scene_state.actors.get_mut(this_actor).unwrap();
+            let sprite_info = ctx.assets.get_sprite_info(actor.sprite_index);
+            let palette = ctx.assets.get_palette(sprite_info.palette_key);
+            actor.local_palette.clone_from(&palette);
 
             OpResult::COMPLETE
         },
         Op::PaletteSetIndex { palette_index } => {
-            let palette = ctx.fs.read_sprite_palette(palette_index, 0);
-            if let Some(palette) = palette {
-                let sprite_state = ctx.sprites_states.get_state_mut(this_actor);
-                sprite_state.palette = palette;
-                sprite_state.palette_index = palette_index;
-            }
+            let actor = scene_state.actors.get_mut(this_actor).unwrap();
+            let palette_key = ctx.assets.load_palette(&ctx.fs, palette_index);
+            let palette = ctx.assets.get_palette(palette_key);
+            actor.local_palette.clone_from(&palette);
 
             OpResult::COMPLETE
         },
@@ -707,7 +703,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             ctx.party.character_remove_from_active(pc);
             let pc_actor_index = scene_state.player_actors.get(&pc).unwrap();
             let pc_actor = &mut scene_state.actors[*pc_actor_index];
-            pc_actor.class = ActorClass::PCOutOfParty;
+            pc_actor.class = SceneActorClass::PCOutOfParty;
             OpResult::YIELD | OpResult::COMPLETE
         },
 

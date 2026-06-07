@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::actor::DrawMode;
+use crate::scene::actor::DrawMode;
 use crate::character::CharacterId;
 use crate::GameMode;
 use crate::shared_op::CompareOp;

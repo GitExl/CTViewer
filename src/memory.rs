@@ -1,4 +1,4 @@
-use crate::actor::ActorFlags;
+use crate::scene::actor::SceneActorFlags;
 use crate::character::CharacterId;
 use crate::Context;
 use crate::gamestate::gamestate_scene::SceneState;
@@ -149,7 +149,7 @@ impl Memory {
         if address >= 0x7E1100 && address < 0x7E1180 {
             let actor = &scene_state.actors[(address - 0x7E1100) / 2];
             let class = actor.class.to_index();
-            let dead = if actor.flags.contains(ActorFlags::DEAD) { 0x80 } else { 0 };
+            let dead = if actor.flags.contains(SceneActorFlags::DEAD) { 0x80 } else { 0 };
             return class & dead;
 
         // Player character actor index.
@@ -221,7 +221,7 @@ pub enum DataSource {
     PartyCharacter(usize),
 
     // A flag of an actor.
-    ActorFlag(ActorRef, ActorFlags),
+    ActorFlag(ActorRef, SceneActorFlags),
 
     // Button state.
     // Since last check?

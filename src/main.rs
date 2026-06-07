@@ -18,14 +18,13 @@ use crate::memory::Memory;
 use crate::party::Party;
 use crate::renderer::Renderer;
 use crate::screen_fade::ScreenFade;
-use crate::sprites::sprite_assets::SpriteAssets;
+use crate::sprites::sprite_assets::Assets;
 use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::text_processor::TextProcessor;
 use crate::ui_theme::UiTheme;
 use crate::util::random::Random;
 use crate::util::vec2df64::Vec2Df64;
 
-mod actor;
 mod camera;
 mod filesystem;
 mod game_palette;
@@ -117,8 +116,8 @@ struct Args {
 pub struct Context<'a> {
     fs: FileSystem,
     l10n: L10n<'a>,
-    sprites_states: SpriteStateList,
-    sprite_assets: SpriteAssets,
+    sprite_states: SpriteStateList,
+    assets: Assets,
     render: Renderer<'a>,
     random: Random,
     ui_theme: UiTheme,
@@ -139,8 +138,8 @@ fn main() -> Result<(), String> {
     let l10n = L10n::new("en", &fs);
     let sdl = sdl3::init().unwrap();
     let render = Renderer::new(&sdl, args.scale, args.scale_linear, args.pixel_aspect_ratio, args.display_aspect_ratio, !args.no_vsync);
-    let sprite_assets = SpriteAssets::new(&fs);
-    let sprites = SpriteStateList::new();
+    let assets = Assets::new(&fs);
+    let sprite_states = SpriteStateList::new();
     let random = Random::new();
     let ui_theme = fs.read_ui_theme(args.ui_theme);
     let screen_fade = ScreenFade::new(0.0);
@@ -172,8 +171,8 @@ fn main() -> Result<(), String> {
     let mut ctx = Context {
         fs,
         l10n,
-        sprites_states: sprites,
-        sprite_assets,
+        sprite_states,
+        assets,
         render,
         random,
         ui_theme,
@@ -223,7 +222,7 @@ fn main() -> Result<(), String> {
                     match keycode {
                         Some(Keycode::Escape) => break 'running,
                         Some(Keycode::Backspace) => {
-                            ctx.sprite_assets.dump();
+                            ctx.assets.dump();
                             ctx.ui_theme.dump();
                             gamestate.dump(&ctx)
                         },

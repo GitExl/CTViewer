@@ -1,30 +1,30 @@
-use crate::actor::{Actor, DebugSprite};
+use crate::scene::actor::{SceneActor, DebugSprite};
 use crate::scene_script::scene_script::OpResult;
-use crate::sprites::sprite_state::{AnimationMode, SpriteState};
+use crate::sprites::sprite_state::AnimationMode;
 
-pub fn exec_animation(state: &mut SpriteState, anim_index: usize) -> OpResult {
-    state.anim_index = anim_index;
-    state.anim_delay = 0;
-    state.anim_loops_remaining = 0;
-    state.anim_frame = 0;
-    state.anim_mode = AnimationMode::Loop;
+pub fn exec_animation(actor: &mut SceneActor, anim_index: usize) -> OpResult {
+    actor.anim_index = anim_index;
+    actor.anim_delay = 0;
+    actor.anim_loops_remaining = 0;
+    actor.anim_frame = 0;
+    actor.anim_mode = AnimationMode::Loop;
 
     OpResult::COMPLETE
 }
 
-pub fn exec_animation_loop_count(state: &mut SpriteState, actor: &mut Actor, anim_index: usize, loop_count: u32) -> OpResult {
+pub fn exec_animation_loop_count(actor: &mut SceneActor, anim_index: usize, loop_count: u32) -> OpResult {
 
     // Stop playback.
-    if state.anim_loops_remaining == 1 {
-        state.anim_loops_remaining = 0;
-        state.anim_delay = 0;
-        state.anim_frame = 0;
+    if actor.anim_loops_remaining == 1 {
+        actor.anim_loops_remaining = 0;
+        actor.anim_delay = 0;
+        actor.anim_frame = 0;
 
-        if state.anim_index == 0xFF {
-            state.anim_index = 0;
-            state.anim_mode = AnimationMode::None;
+        if actor.anim_index == 0xFF {
+            actor.anim_index = 0;
+            actor.anim_mode = AnimationMode::None;
         } else {
-            state.anim_mode = AnimationMode::Loop;
+            actor.anim_mode = AnimationMode::Loop;
         }
 
         actor.debug_sprite = DebugSprite::None;
@@ -33,16 +33,16 @@ pub fn exec_animation_loop_count(state: &mut SpriteState, actor: &mut Actor, ani
     }
 
     // Start playback.
-    if state.anim_loops_remaining == 0 || state.anim_index_looped != anim_index {
-        state.anim_index_looped = anim_index;
-        state.anim_frame = 0;
-        state.anim_delay = 0;
+    if actor.anim_loops_remaining == 0 || actor.anim_index_looped != anim_index {
+        actor.anim_index_looped = anim_index;
+        actor.anim_frame = 0;
+        actor.anim_delay = 0;
 
-        if state.anim_mode == AnimationMode::None {
-            state.anim_index = 0xFF;
+        if actor.anim_mode == AnimationMode::None {
+            actor.anim_index = 0xFF;
         }
-        state.anim_mode = AnimationMode::LoopCount;
-        state.anim_loops_remaining = loop_count + 1;
+        actor.anim_mode = AnimationMode::LoopCount;
+        actor.anim_loops_remaining = loop_count + 1;
 
         actor.debug_sprite = DebugSprite::Animating;
     }
@@ -50,24 +50,24 @@ pub fn exec_animation_loop_count(state: &mut SpriteState, actor: &mut Actor, ani
     OpResult::YIELD
 }
 
-pub fn exec_animation_reset(state: &mut SpriteState) -> OpResult {
-    state.anim_index = 0;
-    state.anim_delay = 0;
-    state.anim_loops_remaining = 0;
-    state.anim_frame = 0;
-    state.anim_mode = AnimationMode::None;
+pub fn exec_animation_reset(actor: &mut SceneActor) -> OpResult {
+    actor.anim_index = 0;
+    actor.anim_delay = 0;
+    actor.anim_loops_remaining = 0;
+    actor.anim_frame = 0;
+    actor.anim_mode = AnimationMode::None;
 
     OpResult::COMPLETE
 }
 
-pub fn exec_animation_static_frame(state: &mut SpriteState, frame_index: usize) -> OpResult {
-    state.anim_frame_static = frame_index;
-    state.anim_frame = 0;
-    state.anim_delay = 0;
-    if state.anim_mode == AnimationMode::None {
-        state.anim_index = 0xFF;
+pub fn exec_animation_static_frame(actor: &mut SceneActor, frame_index: usize) -> OpResult {
+    actor.anim_frame_static = frame_index;
+    actor.anim_frame = 0;
+    actor.anim_delay = 0;
+    if actor.anim_mode == AnimationMode::None {
+        actor.anim_index = 0xFF;
     }
-    state.anim_mode = AnimationMode::Static;
+    actor.anim_mode = AnimationMode::Static;
 
     OpResult::YIELD | OpResult::COMPLETE
 }

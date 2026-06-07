@@ -1,4 +1,4 @@
-use crate::actor::{ActorFlags, DrawMode};
+use crate::scene::actor::{SceneActorFlags, DrawMode};
 use crate::character::CharacterId;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::destination::Destination;
@@ -54,8 +54,8 @@ pub enum Op {
     // Actor properties.
     ActorUpdateFlags {
         actor: ActorRef,
-        set: ActorFlags,
-        remove: ActorFlags,
+        set: SceneActorFlags,
+        remove: SceneActorFlags,
     },
     ActorSetSpeed {
         actor: ActorRef,

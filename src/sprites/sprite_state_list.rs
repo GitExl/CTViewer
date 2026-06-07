@@ -1,6 +1,4 @@
-use crate::actor::Actor;
-use crate::sprites::sprite_assets::SpriteAssets;
-use crate::sprites::sprite_state::{AnimationMode, SpriteState};
+use crate::sprites::sprite_state::SpriteState;
 
 pub struct SpriteStateList {
     states: Vec<SpriteState>,
@@ -33,27 +31,5 @@ impl SpriteStateList {
 
     pub fn get_all(&self) -> &Vec<SpriteState> {
         &self.states
-    }
-
-    pub fn tick(&mut self, assets: &SpriteAssets, actor_index: usize, actor: &Actor) {
-        let state = self.states.get_mut(actor_index).unwrap();
-
-        if state.anim_mode == AnimationMode::Static {
-            state.sprite_frame = state.anim_frame_static;
-        } else {
-            let anim_index = if state.anim_mode == AnimationMode::LoopCount {
-                state.anim_index_looped
-            } else {
-                state.anim_index
-            };
-
-            let anim_set = assets.get_anim_set(state.anim_set_index);
-            let anim = &anim_set.get_anim(anim_index);
-            if let Some(anim) = anim {
-                state.tick_animation(&anim);
-                let frame = &anim.frames[state.anim_frame];
-                state.sprite_frame = frame.sprite_frames[actor.facing.to_index()];
-            }
-        }
     }
 }

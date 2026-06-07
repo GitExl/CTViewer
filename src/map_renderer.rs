@@ -12,7 +12,7 @@ use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
-use crate::sprites::sprite_assets::SpriteAssets;
+use crate::sprites::sprite_assets::Assets;
 use crate::sprites::sprite_renderer::{render_sprite, SpritePriority};
 use crate::sprites::sprite_state::SpriteState;
 use crate::sprites::sprite_state_list::SpriteStateList;
@@ -140,7 +140,7 @@ impl MapRenderer {
         }
     }
 
-    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, sprite_states: &SpriteStateList, sprite_assets: &SpriteAssets) {
+    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, sprite_states: &SpriteStateList, sprite_assets: &Assets) {
         self.screen_sub.fill(self.layer_blend_color);
         self.pixels_main.clear();
         self.pixels_sub.clear();
@@ -265,7 +265,7 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
     }
 }
 
-fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprite_assets: &SpriteAssets, layers: LayerFlags) {
+fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprite_assets: &Assets, layers: LayerFlags) {
 
     // Layer 3, priority 0.
     if layers.contains(LayerFlags::Layer3) && render_data.map.layers[2].chips.len() > 0 {
@@ -319,7 +319,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
     }
 }
 
-fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, camera: &Camera, sprite_assets: &SpriteAssets) {
+fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, camera: &Camera, sprite_assets: &Assets) {
 
     // Sort enabled sprites by Y coordinate.
     let mut sorted: Vec<&SpriteState> = Vec::new();
@@ -336,7 +336,9 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
         let render_bottom = sprite_state.priority_bottom == priority;
         if render_top || render_bottom {
             let pos = (sprite_state.pos.floor() - camera.pos_lerp.floor()).as_vec2d_i32();
-            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, &sprite_assets.get(sprite_state.sprite_index), sprite_state.sprite_frame, pos.x, pos.y, &sprite_state.palette, sprite_state.palette_offset);
+            let assembly_frame = sprite_assets.get_assembly_frame(sprite_state.assembly_key);
+            let bitmap = sprite_assets.get_bitmap(sprite_state.bitmap_index);
+            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, assembly_frame, bitmap, pos.x, pos.y, &sprite_state.palette, sprite_state.palette_offset);
         }
     }
 }

@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::actor::{ActorFlags, DrawMode};
+use crate::scene::actor::{SceneActorFlags, DrawMode};
 use crate::scene_script::scene_script_ops::Op;
 use crate::scene_script::scene_script_decoder::ActorRef;
 use crate::memory::{DataDest, DataSource};
@@ -13,14 +13,14 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // "lock"
         0x08 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::CALLS_DISABLED,
-            remove: ActorFlags::empty(),
+            set: SceneActorFlags::CALLS_DISABLED,
+            remove: SceneActorFlags::empty(),
         },
         // "unlock"
         0x09 => Op::ActorUpdateFlags {
             actor: ActorRef::This,
-            set: ActorFlags::empty(),
-            remove: ActorFlags::CALLS_DISABLED,
+            set: SceneActorFlags::empty(),
+            remove: SceneActorFlags::CALLS_DISABLED,
         },
 
         // Set actor result from 0x7F0200.
@@ -92,14 +92,14 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // "hitcheck"
         0x84 => {
             let bits = data.read_u8().unwrap();
-            let mut flags_set = ActorFlags::empty();
-            let mut flags_remove = ActorFlags::empty();
+            let mut flags_set = SceneActorFlags::empty();
+            let mut flags_remove = SceneActorFlags::empty();
 
-            flags_set.set(ActorFlags::SOLID, bits & 0x01 > 0);
-            flags_set.set(ActorFlags::PUSHABLE, bits & 0x02 > 0);
+            flags_set.set(SceneActorFlags::SOLID, bits & 0x01 > 0);
+            flags_set.set(SceneActorFlags::PUSHABLE, bits & 0x02 > 0);
 
-            flags_remove.set(ActorFlags::SOLID, bits & 0x01 == 0);
-            flags_remove.set(ActorFlags::PUSHABLE, bits & 0x02 == 0);
+            flags_remove.set(SceneActorFlags::SOLID, bits & 0x01 == 0);
+            flags_remove.set(SceneActorFlags::PUSHABLE, bits & 0x02 == 0);
 
             Op::ActorUpdateFlags {
                 actor: ActorRef::This,
@@ -112,14 +112,14 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // "movecheck"
         0x0D => {
             let flags = data.read_u8().unwrap();
-            let mut flags_set = ActorFlags::empty();
-            let mut flags_remove = ActorFlags::empty();
+            let mut flags_set = SceneActorFlags::empty();
+            let mut flags_remove = SceneActorFlags::empty();
 
-            flags_set.set(ActorFlags::COLLISION_WITH_TILES, flags & 0x01 > 0);
-            flags_set.set(ActorFlags::COLLISION_AVOID_PC, flags & 0x02 > 0);
+            flags_set.set(SceneActorFlags::COLLISION_WITH_TILES, flags & 0x01 > 0);
+            flags_set.set(SceneActorFlags::COLLISION_AVOID_PC, flags & 0x02 > 0);
 
-            flags_remove.set(ActorFlags::COLLISION_WITH_TILES, flags & 0x01 == 0);
-            flags_remove.set(ActorFlags::COLLISION_AVOID_PC, flags & 0x02 == 0);
+            flags_remove.set(SceneActorFlags::COLLISION_WITH_TILES, flags & 0x01 == 0);
+            flags_remove.set(SceneActorFlags::COLLISION_AVOID_PC, flags & 0x02 == 0);
 
             Op::ActorUpdateFlags {
                 actor: ActorRef::This,
@@ -132,14 +132,14 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // "moveadjust"
         0x0E => {
             let flags = data.read_u8().unwrap();
-            let mut flags_set = ActorFlags::empty();
-            let mut flags_remove = ActorFlags::empty();
+            let mut flags_set = SceneActorFlags::empty();
+            let mut flags_remove = SceneActorFlags::empty();
 
-            flags_set.set(ActorFlags::MOVE_ONTO_TILE, flags & 0x01 > 0);
-            flags_set.set(ActorFlags::MOVE_ONTO_OBJECT, flags & 0x02 > 0);
+            flags_set.set(SceneActorFlags::MOVE_ONTO_TILE, flags & 0x01 > 0);
+            flags_set.set(SceneActorFlags::MOVE_ONTO_OBJECT, flags & 0x02 > 0);
 
-            flags_remove.set(ActorFlags::MOVE_ONTO_TILE, flags & 0x01 == 0);
-            flags_remove.set(ActorFlags::MOVE_ONTO_OBJECT, flags & 0x02 == 0);
+            flags_remove.set(SceneActorFlags::MOVE_ONTO_TILE, flags & 0x01 == 0);
+            flags_remove.set(SceneActorFlags::MOVE_ONTO_OBJECT, flags & 0x02 == 0);
 
             Op::ActorUpdateFlags {
                 actor: ActorRef::This,

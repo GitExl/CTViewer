@@ -5,7 +5,9 @@ use crate::destination::Destination;
 use crate::facing::Facing;
 use crate::filesystem::filesystem::FileSystem;
 use crate::GameMode;
-use crate::scene::scene::{Scene, SceneExit, SceneTreasure, ScrollMask};
+use crate::scene::scene::{Scene, ScrollMask};
+use crate::scene::scene_exit::SceneExit;
+use crate::scene::treasure::Treasure;
 use crate::scene_script::scene_script::{SceneActorScript, SceneScript};
 use crate::util::vec2di32::Vec2Di32;
 
@@ -249,14 +251,14 @@ impl FileSystem {
         exits
     }
 
-    pub fn read_scene_treasure(&self, scene_index: usize) -> Vec<SceneTreasure> {
+    pub fn read_scene_treasure(&self, scene_index: usize) -> Vec<Treasure> {
         let (pointers, mut data) = self.backend.get_scene_treasure_data();
         let treasure_count = match self.mode {
             GameMode::Pc => (pointers[scene_index + 1] - pointers[scene_index]) / 6,
             GameMode::Snes => (pointers[scene_index + 1] - pointers[scene_index]) / 4,
         };
 
-        let mut treasure: Vec<SceneTreasure> = Vec::new();
+        let mut treasure: Vec<Treasure> = Vec::new();
         data.seek(SeekFrom::Start(pointers[scene_index] as u64)).unwrap();
         for index in 0..treasure_count {
             let id = format!("{}_{}", scene_index, index);
@@ -287,7 +289,7 @@ impl FileSystem {
     }
 }
 
-fn parse_pc_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> SceneTreasure {
+fn parse_pc_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> Treasure {
 
     let mut gold = 0;
     let mut item = 0;
@@ -316,7 +318,7 @@ fn parse_pc_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> SceneTrea
         item = (contents & 0x1FF) as usize;
     }
 
-    SceneTreasure {
+    Treasure {
         id,
         tile_pos,
         gold,
@@ -324,7 +326,7 @@ fn parse_pc_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> SceneTrea
     }
 }
 
-fn parse_snes_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> SceneTreasure {
+fn parse_snes_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> Treasure {
     let mut gold = 0;
     let mut item = 0;
 
@@ -334,7 +336,7 @@ fn parse_snes_treasure(id: String, tile_pos: Vec2Di32, contents: u16) -> SceneTr
         item = (contents & 0x1FF) as usize
     }
 
-    SceneTreasure {
+    Treasure {
         id,
         tile_pos,
         gold,

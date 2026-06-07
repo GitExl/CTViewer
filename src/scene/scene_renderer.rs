@@ -1,12 +1,12 @@
 use std::path::Path;
-use crate::actor::{Actor, DebugSprite, ActorTask, ActorFlags};
+use crate::scene::actor::{SceneActor, DebugSprite, SceneActorTask, SceneActorFlags};
 use crate::camera::Camera;
-use crate::scene::scene::SceneTreasure;
-use crate::scene::scene::SceneExit;
+use crate::scene::scene_exit::SceneExit;
 use crate::scene::scene_map::SceneMap;
 use crate::scene::scene_map::SceneMoveDirection;
 use crate::scene::scene_map::SceneTileCollision;
 use crate::scene::scene_map::SceneTileFlags;
+use crate::scene::treasure::Treasure;
 use crate::software_renderer::blit::blit_surface_to_surface;
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
@@ -46,7 +46,7 @@ impl SceneRenderer {
         }
     }
 
-    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene_map: &SceneMap, exits: &Vec<SceneExit>, treasure: &Vec<SceneTreasure>, actors: &Vec<Actor>, palette: &Palette, surface: &mut Surface) {
+    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene_map: &SceneMap, exits: &Vec<SceneExit>, treasure: &Vec<Treasure>, actors: &Vec<SceneActor>, palette: &Palette, surface: &mut Surface) {
         if self.debug_layer != SceneDebugLayer::Disabled {
             self.render_debug_layer(&scene_map, &camera, surface);
         }
@@ -71,14 +71,14 @@ impl SceneRenderer {
         }
     }
 
-    fn render_debug_treasure(&mut self, treasure: &Vec<SceneTreasure>, camera: &Camera, surface: &mut Surface) {
+    fn render_debug_treasure(&mut self, treasure: &Vec<Treasure>, camera: &Camera, surface: &mut Surface) {
         for item in treasure {
             let pos = item.tile_pos * 16 - camera.pos_lerp.as_vec2d_i32();
             draw_box_filled(surface, Rect::new(pos.x, pos.y, pos.x + 16, pos.y + 16), [0, 255, 0, 127], SurfaceBlendOps::Blend);
         }
     }
 
-    fn render_debug_actors(&mut self, actors: &Vec<Actor>, camera: &Camera, surface: &mut Surface) {
+    fn render_debug_actors(&mut self, actors: &Vec<SceneActor>, camera: &Camera, surface: &mut Surface) {
         for actor in actors {
             let x = (actor.pos_lerp.x.floor() - camera.pos_lerp.x.floor()) as i32;
             let y = (actor.pos_lerp.y.floor() - camera.pos_lerp.y.floor()) as i32;
@@ -87,13 +87,13 @@ impl SceneRenderer {
 
             // If the actor is moving, draw the movement data.
             match actor.task {
-                ActorTask::MoveByAngle { move_by, .. } => {
+                SceneActorTask::MoveByAngle { move_by, .. } => {
                     draw_line(surface, x, y, x + (move_by.x * 8.0) as i32, y + (move_by.y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
                 },
-                ActorTask::MoveToActor { move_by, .. } => {
+                SceneActorTask::MoveToActor { move_by, .. } => {
                     draw_line(surface, x, y, x + (move_by.x * 8.0) as i32, y + (move_by.y *8.0) as i32, [255, 0, 0, 191], SurfaceBlendOps::Blend);
                 },
-                ActorTask::MoveToTile { tile_pos, move_by, .. } => {
+                SceneActorTask::MoveToTile { tile_pos, move_by, .. } => {
                     let (x2, y2) = (
                         (tile_pos.x as f64 * 16.0 + 8.0 - camera.pos_lerp.x.floor()) as i32,
                         (tile_pos.y as f64 * 16.0 + 15.0 - camera.pos_lerp.y.floor()) as i32,
@@ -105,7 +105,7 @@ impl SceneRenderer {
             }
 
             // Draw debug sprite.
-            let (src_x, src_y) = if actor.flags.contains(ActorFlags::DEAD) {
+            let (src_x, src_y) = if actor.flags.contains(SceneActorFlags::DEAD) {
                 (24, 0)
             } else {
                 match actor.debug_sprite {

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 use bitflags::bitflags;
-use crate::actor::ActorFlags;
+use crate::scene::actor::SceneActorFlags;
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::scene_script_ops::Op;
@@ -121,7 +121,7 @@ impl SceneScript {
 
     pub fn run_object_initialization(&self, ctx: &mut Context, scene_state: &mut SceneState) {
         for state_index in 0..scene_state.script_states.len() {
-            if scene_state.actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
+            if scene_state.actors[state_index].flags.contains(SceneActorFlags::SCRIPT_DISABLED) {
                 continue;
             }
 
@@ -184,7 +184,7 @@ impl SceneScript {
 
     pub fn run(&self, ctx: &mut Context, scene_state: &mut SceneState) {
         for state_index in 0..scene_state.script_states.len() {
-            if scene_state.actors[state_index].flags.contains(ActorFlags::SCRIPT_DISABLED) {
+            if scene_state.actors[state_index].flags.contains(SceneActorFlags::SCRIPT_DISABLED) {
                 continue;
             }
 

@@ -3,8 +3,7 @@ use crate::software_renderer::blit::blit_bitmap_to_surface_and_source;
 use crate::software_renderer::blit::BitmapBlitFlags;
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
-use crate::sprites::sprite_assets::SpriteAsset;
-use super::sprite_assembly::SpriteAssemblyChipFlags;
+use super::sprite_assembly::{SpriteAssemblyChipFlags, SpriteAssemblyFrame};
 
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum SpritePriority {
@@ -27,10 +26,8 @@ impl SpritePriority {
     }
 }
 
-pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, render_top: bool, render_bottom: bool, sprite: &SpriteAsset, frame: usize, x: i32, y: i32, palette: &Palette, palette_offset: usize) {
-    let frame = &sprite.assembly.frames[frame];
-
-    for tile in frame.chips.iter().rev() {
+pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, render_top: bool, render_bottom: bool, assembly_frame: &SpriteAssemblyFrame, bitmap: &Bitmap, x: i32, y: i32, palette: &Palette, palette_offset: usize) {
+    for tile in assembly_frame.chips.iter().rev() {
         if tile.flags.contains(SpriteAssemblyChipFlags::UNUSED) {
             continue;
         }
@@ -40,7 +37,7 @@ pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_va
         if tile.flags.contains(SpriteAssemblyChipFlags::IS_BOTTOM) && !render_bottom {
             continue;
         }
-        if tile.src_x >= sprite.tiles.width as i32 || tile.src_y >= sprite.tiles.height as i32 {
+        if tile.src_x >= bitmap.width as i32 || tile.src_y >= bitmap.height as i32 {
             continue;
         }
 
@@ -53,7 +50,7 @@ pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_va
         }
 
         blit_bitmap_to_surface_and_source(
-            &sprite.tiles,
+            &bitmap,
             surface,
             pixel_source,
             tile.src_x, tile.src_y,
