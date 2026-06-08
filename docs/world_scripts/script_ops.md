@@ -11,8 +11,8 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | Dec | Hex   | I | Name         | Arguments                                              | Description                                                                          |
 |-----|-------|---|--------------|--------------------------------------------------------|--------------------------------------------------------------------------------------|
 | 0   | `$00` |   | `initialize` |                                                        | Clears local memory.                                                                 |
-| 1   | `$01` | / | `colofs`     | u8 palette                                             | Sets current actor palette.                                                          |
-| 2   | `$02` | / | `priset`     | u8 priority                                            | Sets current actor priority.                                                         |
+| 1   | `$01` | X | `colofs`     | u8 palette                                             | Sets current actor palette.                                                          |
+| 2   | `$02` | X | `priset`     | u8 priority                                            | Sets current actor priority.                                                         |
 | 3   | `$03` |   | `grp`        | u8[9] ?                                                | Unknown.                                                                             |
 | 4   | `$04` | / | `pal`        | u8 address, u8 pal_index, u8 mode                      | Copies palette data into this actor's palette. 3 modes?                              |
 | 5   | `$05` |   | `mapjump`    | destination                                            | Changes location.                                                                    |
@@ -50,15 +50,15 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 37  | `$25` | X | `jcpz_g`     | u16 address, u8 value, i8 offset                       | Jump if global byte is equal to value.                                               |
 | 38  | `$26` | X | `jandnz_g`   | u16 address, u8 value, i8 offset                       | Jump if global byte has one or more bits from value set.                             |
 | 39  | `$27` | X | `jandz_g`    | u16 address, u8 value, i8 offset                       | Jump if global byte has no bits from value set.                                      |
-| 40  | `$28` |   | `fadeout`    | u8 mode                                                | Fade to black.                                                                       |
-| 41  | `$29` |   | `fadein`     | u8 mode                                                | Fade from black.                                                                     |
-| 42  | `$2a` |   | `mozin`      | u8 mode                                                | Mosaic in                                                                            |
-| 43  | `$2b` |   | `mozout`     | u8 mode                                                | Mosaic out                                                                           |
+| 40  | `$28` | X | `fadeout`    | u8 delay                                               | Fade to black.                                                                       |
+| 41  | `$29` | X | `fadein`     | u8 delay                                               | Fade from black.                                                                     |
+| 42  | `$2a` |   | `mozin`      | u8 delay                                               | Mosaic in.                                                                           |
+| 43  | `$2b` |   | `mozout`     | u8 delay                                               | Mosaic out.                                                                          |
 | 44  | `$2c` | X | `pos`        | u16 x, u16 y                                           | Sets sprite position.                                                                |
 | 45  | `$2d` |   |              |                                                        | Skips 1 byte.                                                                        |
 | 46  | `$2e` | X | `vecx`       | i32 magnitude                                          | Set X movement vector. 16.16 fixed point value.                                      |
 | 47  | `$2f` | X | `vecy`       | i32 magnitude                                          | Set Y movement vector. 16.16 fixed point value.                                      |
-| 48  | `$30` |   | `anmseq`     | u8 animation                                           | Set sprite animation.                                                                |
+| 48  | `$30` | X | `anmseq`     | u8 animation                                           | Set sprite animation.                                                                |
 | 49  | `$31` | X | `move`       | u8 steps                                               | Move actor by vector components for given amount of cycles. Animates on every cycle. |
 | 50  | `$32` | X | `scroll`     | u8 steps                                               | Scroll map by vector components for given amount of cycles.                          |
 | 51  | `$33` |   | `bganm`      | u8 unknown, u16[3] unknown                             | Sets up DMA copy, to animate background tiles?                                       |
@@ -67,12 +67,12 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 54  | `$36` | X | `call`       | u16 address                                            | Stores the next op address and jumps to a new address.                               |
 | 55  | `$37` | X | `return`     |                                                        | Jumps back to the stored op address.                                                 |
 | 56  | `$38` | X | `wait`       | u8 delay                                               | Waits for a given number of cycles.                                                  |
-| 57  | `$39` |   | `anmwait`    | u8 delay                                               | Waits for a given number of cycles. Animates on every cycle.                         |
+| 57  | `$39` | X | `anmwait`    | u8 delay                                               | Waits for a given number of cycles. Animates on every cycle.                         |
 | 58  | `$3a` |   | `timer`      | u8 unknown                                             | Waits for actor timer to reach zero? Unused.                                         |
 | 59  | `$3b` |   | `effect1`    | u8 sound, i8 panning                                   | Play sound effect with sound command `$18`?                                          |
 | 60  | `$3c` |   | `effect2`    | u8 sound, i8 panning                                   | Play sound effect with sound command `$19`?                                          |
 | 61  | `$3d` |   | `sound`      | u8 music                                               | Play music. Does nothing if it is already playing.                                   |
-| 62  | `$3e` |   | `initscreen` | u8 layer                                               | Prepares tiles for the given camera position for the specified layer?                |
+| 62  | `$3e` |   | `initscreen` | u8 layer                                               | Prepares tiles for the given camera position for the specified layer.                |
 | 63  | `$3f` |   | `tpxmove`    | u16 x, u8 anim_l, u8 anim_r                            | Move actor to X, animate for moving left or right.                                   |
 | 64  | `$40` |   | `tpymove`    | u16 y, u8 anim_u, u8 anim_d                            | Move actor to Y, animate for moving up or down.                                      |
 | 65  | `$41` |   | `trigger`    |                                                        | Unused.                                                                              |
@@ -88,7 +88,7 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 75  | `$4b` |   | `musiccmd`   | u8 flags1, u8 music, u8 flags2, u8 extra               | Plays music, with additional data sent to sound command?                             |
 | 76  | `$4c` | X | `jcpcc`      | u16 address, u8 value, i8 offset                       | Jump if global byte is less than the value.                                          |
 | 77  | `$4d` | X | `jcpcs`      | u16 address, u8 value, i8 offset                       | Jump if global byte is equal to or greater than the value.                           |
-| 78  | `$4e` |   | `func2`      | u8[3] address                                          | Directly calls a native function, with a 24 bit address.                             |
+| 78  | `$4e` | X | `func2`      | u8[3] address                                          | Directly calls a native function, with a 24 bit address.                             |
 | 79  | `$4f` | X | `copymap`    | u8 src, u8[2] srcpos, u8 dst, u8[2] dstpos, u8[2] size | Copy map tiles from a source layer to a destination layer.                           |
 | 80  | `$50` |   | `putmapr`    | u8 layer, u8 x, u8 y, u8 tile                          | Changes a single map tile like `putmap`, but different somehow.                      |
 | 81  | `$51` | X | `scrollr`    | u8 layer, u8 steps                                     | Like `scroll`, but only scrolls a single layer.                                      |

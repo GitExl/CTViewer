@@ -1,6 +1,15 @@
+use bitflags::bitflags;
 use crate::software_renderer::palette::Palette;
 use crate::sprites::sprite_renderer::SpritePriority;
 use crate::util::vec2df64::Vec2Df64;
+
+bitflags! {
+    #[derive(Copy, Clone, Default)]
+    pub struct SpriteStateFlags: u8 {
+        const ENABLED = 0x01;
+        const CAMERA_RELATIVE = 0x02;
+    }
+}
 
 #[derive(Clone,PartialEq,Debug)]
 pub enum AnimationMode {
@@ -12,7 +21,7 @@ pub enum AnimationMode {
 
 #[derive(Clone)]
 pub struct SpriteState {
-    pub enabled: bool,
+    pub flags: SpriteStateFlags,
 
     pub pos: Vec2Df64,
 
@@ -29,7 +38,7 @@ pub struct SpriteState {
 impl SpriteState {
     pub fn new() -> SpriteState {
         SpriteState {
-            enabled: false,
+            flags: SpriteStateFlags::empty(),
 
             pos: Vec2Df64::default(),
 
@@ -47,7 +56,7 @@ impl SpriteState {
 
 
     pub fn dump(&self) {
-        println!("Sprite state - {}", if self.enabled { "enabled" } else { "disabled" });
+        println!("Sprite state - {}", if self.flags.contains(SpriteStateFlags::ENABLED) { "enabled" } else { "disabled" });
         println!("  Assembly key 0x{:X}", self.assembly_key);
         println!("  At {}", self.pos);
         println!("  Priority top {:?}", self.priority_top);

@@ -5,9 +5,10 @@ use crate::GameMode;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::memory::{DataDest, DataSource};
 use crate::util::data_read::read_24_bit_address;
+use crate::world_script::function_dispatch::WorldActorFunction;
+use crate::world_script::task_dispatch::WorldActorTask;
 use crate::world_script::world_script_ops::Op;
 
-/// Opcodes.
 pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
     let op_byte = match data.read_u8() {
         Ok(op_byte) => op_byte,
@@ -451,12 +452,20 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             unused: data.read_u8().unwrap(),
         },
         // "func"
-        0x34 => Op::CallFunction {
-            address: data.read_u16::<LittleEndian>().unwrap() as u32,
+        0x34 => {
+            let address = data.read_u16::<LittleEndian>().unwrap() as u32;
+            Op::CallFunction {
+                function: WorldActorFunction::from_address(address),
+                address,
+            }
         },
         // "link"
-        0x35 => Op::Link {
-            address: data.read_u16::<LittleEndian>().unwrap() as u32,
+        0x35 => {
+            let address = data.read_u16::<LittleEndian>().unwrap() as u32;
+            Op::Link {
+                task: WorldActorTask::from_address(address),
+                address,
+            }
         },
         // "call"
         0x36 => Op::GoSub {
@@ -465,17 +474,27 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // "return"
         0x37 => Op::Return,
         // "slink"
-        0x42 => Op::LinkSpecial {
-            address: data.read_u16::<LittleEndian>().unwrap() as u32,
+        0x42 => {
+            let address = data.read_u16::<LittleEndian>().unwrap() as u32;
+            Op::LinkSpecial {
+                task: WorldActorTask::from_address(address),
+                address,
+            }
         },
         // "s_newevent"
-        0x43 => Op::AddActorSpecial {
-            address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
-            i0: data.read_u8().unwrap(),
+        0x43 => {
+            Op::AddActorSpecial {
+                address: data.read_u16::<LittleEndian>().unwrap() as u64 - 0x400,
+                i0: data.read_u8().unwrap(),
+            }
         },
         // "func2"
-        0x4E => Op::CallFunctionFar {
-            address: read_24_bit_address(data) as u32,
+        0x4E => {
+            let address = read_24_bit_address(data) as u32;
+            Op::CallFunctionFar {
+                function: WorldActorFunction::from_address(address),
+                address,
+            }
         },
         // "taskend"
         0x52 => Op::End,

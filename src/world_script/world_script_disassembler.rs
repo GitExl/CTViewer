@@ -3,7 +3,7 @@ use std::io::Cursor;
 use crate::GameMode;
 use crate::music_list::get_music_title;
 use crate::sound_list::get_sound_name;
-use crate::world_script::world_action_funcs::action_func_as_string;
+use crate::world_script::function_addresses::function_address_to_string;
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_ops::Op;
 use crate::world_script::world_animation_script::get_animation_description;
@@ -39,8 +39,8 @@ impl WorldScriptDisassembler {
 
                 // Generate labels.
                 match op {
-                    Op::AddActor { address, .. } => self.add_label(address, format!("actor_{:04X}", address)),
-                    Op::AddActorSpecial { address, .. } => self.add_label(address, format!("actor_special_{:04X}", address)),
+                    Op::AddActor { address, .. } => self.add_label(address as u64, format!("actor_{:04X}", address)),
+                    Op::AddActorSpecial { address, .. } => self.add_label(address as u64, format!("actor_special_{:04X}", address)),
                     Op::Bind { address, .. } => self.add_label(address, format!("pc_{:04X}", address)),
                     Op::DecrementAndJumpIfNonZero { offset, .. } => self.add_label((op_address as i64 + offset) as u64, format!("jpnz_{:04X}", op_address as i64 + offset)),
                     Op::GoTo { address } => self.add_label(address, format!("jp_{:04X}", address)),
@@ -87,7 +87,7 @@ impl WorldScriptDisassembler {
                     Op::BitMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::ByteMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::GoSub { address } => format!("gosub sub_{:04X}", address),
-                    Op::CallFunctionFar { address } => format!("function_far 0x{:06X}", address),
+                    Op::CallFunctionFar { function, address } => format!("function_far {:?}    // Far function: {}", function, function_address_to_string(address)),
                     Op::ChangeLocation { destination } => format!("location {}", destination.as_string()),
                     Op::Copy8 { lhs, rhs } => format!("{} = {}", lhs.as_string(), rhs.as_string()),
                     Op::CopyTiles { source_layer, source_x, source_y, dest_layer, dest_x, dest_y, width, height } => {
@@ -99,15 +99,15 @@ impl WorldScriptDisassembler {
                     Op::End => String::from("end"),
                     Op::FadeIn { delay: mode } => format!("fade_in {}", mode),
                     Op::FadeOut { delay: mode } => format!("fade_out {}", mode),
-                    Op::CallFunction { address } => format!("function 0xC2{:04X}    // Function: {}", address, action_func_as_string(address)),
+                    Op::CallFunction { function, address } => format!("function {:?}    // Function: {}", function, function_address_to_string(address)),
                     Op::InitBackgroundLayer { layer } => format!("init_bg_layer {}", layer),
                     Op::InitMemory => String::from("init_memory"),
                     Op::GoTo { address } => format!("goto jp_{:04X}", address),
                     Op::JumpConditional { lhs, cmp, rhs, offset } => {
                         format!("if {} {} {} goto jp_{:04X}", lhs.as_string(), cmp.as_string(), rhs.as_string(), op_address as i64 + offset)
                     },
-                    Op::Link { address } => format!("link 0xC2{:04X}    // Action: {}", address, action_func_as_string(address)),
-                    Op::LinkSpecial { address } => format!("link_special 0xC2{:04X}    // Action: {}", address, action_func_as_string(address)),
+                    Op::Link { task, address } => format!("link {:?}    // Task: {}", task, function_address_to_string(address)),
+                    Op::LinkSpecial { task, address } => format!("link_special {:?}    // Task: {}", task, function_address_to_string(address)),
                     Op::MosaicIn { mode } => format!("mosaic_in {}", mode),
                     Op::MosaicOut { mode } => format!("mosaic_out {}", mode),
                     Op::Move { steps } => format!("move {}", steps),

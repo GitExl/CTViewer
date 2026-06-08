@@ -10,7 +10,6 @@ use crate::GameMode;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
 use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
-use crate::world_script::world_script::WorldScript;
 
 #[derive(Default)]
 struct WorldHeader {
@@ -101,7 +100,7 @@ impl FileSystem {
         let palette = self.read_world_palette(header.palette_index);
         let palette_anim = self.read_world_palette_anim_data(header.palette_anim_index);
         let (exits, scripted_exits, script_offsets) = self.read_world_exits(header.script_index);
-        let script = self.read_world_script(header.script_index);
+        let script_data = self.backend.get_world_script_data(header.script_index);
 
         World {
             index,
@@ -118,14 +117,8 @@ impl FileSystem {
             exits,
             scripted_exits,
             script_offsets,
-            script,
+            script_data,
         }
-    }
-
-    fn read_world_script(&self, script_index: usize) -> WorldScript {
-        let script_data = self.backend.get_world_script_data(script_index);
-
-        WorldScript::new(script_index, script_data, self.mode)
     }
 
     // Read world exit data.

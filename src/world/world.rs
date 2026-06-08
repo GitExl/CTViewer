@@ -5,7 +5,6 @@ use crate::map::Map;
 use crate::tileset::TileSet;
 use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
 use crate::world::world_map::WorldMap;
-use crate::world_script::world_script::WorldScript;
 
 pub struct World {
     pub index: usize,
@@ -19,7 +18,7 @@ pub struct World {
     pub map: Map,
     pub world_map: WorldMap,
 
-    pub script: WorldScript,
+    pub script_data: Vec<u8>,
 
     pub exits: Vec<WorldExit>,
     pub scripted_exits: Vec<ScriptedWorldExit>,
@@ -51,8 +50,6 @@ impl World {
         for scripted_exit in &self.scripted_exits {
             scripted_exit.dump();
         }
-
-        self.script.disassemble();
 
         self.tileset_l12.render_chips_to_surface(&self.tileset_l12.chip_bitmaps).write_to_bmp(Path::new("debug_output/world_chips_l12.bmp"));
         self.tileset_l3.render_chips_to_surface(&self.tileset_l3.chip_bitmaps).write_to_bmp(Path::new("debug_output/world_chips_l3.bmp"));

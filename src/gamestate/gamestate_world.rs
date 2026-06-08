@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::thread::{sleep, sleep_ms};
+use std::io::Cursor;
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
@@ -18,6 +18,7 @@ use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
 use crate::software_renderer::text::TextDrawFlags;
 use crate::sprites::sprite_renderer::SpritePriority;
+use crate::sprites::sprite_state::SpriteStateFlags;
 use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
@@ -26,8 +27,10 @@ use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
 use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 use crate::world::world_sprites::WorldSprites;
+use crate::world_script::task_dispatch::WorldActorTask;
+use crate::world_script::world_actor::WorldActor;
 use crate::world_script::world_animation_script::WorldAnimationScript;
-use crate::world_script::world_script::WorldActorState;
+use crate::world_script::world_script::{world_script_disassemble, world_script_initialize, world_script_run};
 
 /// Mutable state for a world.
 pub struct WorldState {
@@ -44,7 +47,8 @@ pub struct WorldState {
     pub palette_animation: GamePalette,
     pub exits: Vec<WorldExit>,
     pub scripted_exits: Vec<ScriptedWorldExit>,
-    pub actors: [WorldActorState; 64],
+    pub script_data: Cursor<Vec<u8>>,
+    pub actors: [WorldActor; 64],
 }
 
 pub struct GameStateWorld {
@@ -87,7 +91,7 @@ impl GameStateWorld {
                 0.0, 0.0,
                 (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
             ),
-            actors: std::array::from_fn::<_, 64, _>(|_| WorldActorState::new()),
+            actors: std::array::from_fn::<_, 64, _>(|_| WorldActor::new()),
             player_actors: HashMap::new(),
             world_map: world.world_map.clone(),
             map: world.map.clone(),
@@ -99,9 +103,10 @@ impl GameStateWorld {
             scripted_exits: world.scripted_exits.clone(),
             animations: ctx.fs.read_world_animation_script(),
             sprites,
+            script_data: Cursor::new(world.script_data.clone()),
         };
 
-        world.script.initialize(&mut state);
+        world_script_initialize(&mut state);
 
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
@@ -143,11 +148,11 @@ impl GameStateTrait for GameStateWorld {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.state.map.tick(delta);
 
-        self.world.script.run(ctx, &mut self.state);
+        world_script_run(ctx, &mut self.state);
 
         ctx.sprite_states.clear();
         for actor in self.state.actors.iter() {
-            if actor.sprite_assembly_key == 0 || actor.action_function == 0 {
+            if actor.sprite_assembly_key == 0 || matches!(actor.task, WorldActorTask::None) {
                 continue;
             }
 
@@ -157,9 +162,23 @@ impl GameStateTrait for GameStateWorld {
             state.palette = self.world.palette.palette.clone();
             state.palette_offset = 128 + ((actor.palette_priority & 0x0F) as usize / 2) * 16;
             state.assembly_key = actor.sprite_assembly_key;
-            state.enabled = true;
-            state.priority_top = SpritePriority::AboveAll;
-            state.priority_bottom = SpritePriority::AboveAll;
+
+            if actor.palette_priority & 0x01 != 0 {
+                state.flags.insert(SpriteStateFlags::CAMERA_RELATIVE);
+            } else {
+                state.flags.remove(SpriteStateFlags::CAMERA_RELATIVE);
+            }
+            state.flags.insert(SpriteStateFlags::ENABLED);
+
+            let priority = match actor.palette_priority & 0x30 {
+                0x30 => SpritePriority::AboveAll,
+                0x20 => SpritePriority::BelowL2AboveL1,
+                0x10 => SpritePriority::BelowL1L2,
+                _ => SpritePriority::BelowAll,
+            };
+            state.priority_top = priority;
+            state.priority_bottom = priority;
+
             state.bitmap_key = self.state.sprites.get_bitmap_key();
         }
 
@@ -347,8 +366,10 @@ impl GameStateTrait for GameStateWorld {
 
     fn dump(&mut self, ctx: &Context) {
         self.world.dump(ctx);
+
         self.state.sprites.dump(ctx, &self.world.palette.palette);
         self.state.animations.disassemble();
+        world_script_disassemble(&ctx, self.state.script_data.get_ref());
     }
 }
 

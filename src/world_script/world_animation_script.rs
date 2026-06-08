@@ -4,7 +4,7 @@ use crate::assets::Assets;
 use crate::Context;
 use crate::sprites::sprite_assembly::{SpriteAssemblyChip, SpriteAssemblyChipFlags, SpriteAssemblyFrame};
 use crate::util::data_read::read_24_bit_address;
-use crate::world_script::world_script::WorldActorState;
+use crate::world_script::world_actor::WorldActor;
 
 pub struct WorldAnimationScript {
     offsets: Vec<u64>,
@@ -62,7 +62,7 @@ impl WorldAnimationScript {
         self.offsets[animation_index]
     }
 
-    pub fn run(&mut self, ctx: &mut Context, state: &mut WorldActorState) {
+    pub fn run(&mut self, ctx: &mut Context, state: &mut WorldActor) {
         if state.animation_address == 0 {
             return;
         }

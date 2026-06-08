@@ -1,4 +1,4 @@
-pub fn action_func_as_string(address: u32) -> String {
+pub fn function_address_to_string(address: u32) -> String {
     match address {
         0x0F38 => String::from("CODE_FN_C20F38"),
         0x0F63 => String::from("fn_overworld_execute_next_event_commands"),

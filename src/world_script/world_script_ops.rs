@@ -1,6 +1,8 @@
 use crate::destination::Destination;
 use crate::memory::{DataDest, DataSource};
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
+use crate::world_script::function_dispatch::WorldActorFunction;
+use crate::world_script::task_dispatch::WorldActorTask;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum Op {
@@ -35,6 +37,7 @@ pub enum Op {
         address: u64,
     },
     CallFunctionFar {
+        function: WorldActorFunction,
         address: u32,
     },
     ChangeLocation {
@@ -67,6 +70,7 @@ pub enum Op {
         delay: u8,
     },
     CallFunction {
+        function: WorldActorFunction,
         address: u32,
     },
     InitBackgroundLayer {
@@ -83,9 +87,11 @@ pub enum Op {
         offset: i64,
     },
     Link {
+        task: WorldActorTask,
         address: u32,
     },
     LinkSpecial {
+        task: WorldActorTask,
         address: u32,
     },
     MosaicIn {

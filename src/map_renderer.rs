@@ -14,7 +14,7 @@ use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
 use crate::assets::Assets;
 use crate::sprites::sprite_renderer::{render_sprite, SpritePriority};
-use crate::sprites::sprite_state::SpriteState;
+use crate::sprites::sprite_state::{SpriteState, SpriteStateFlags};
 use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::tileset::TileSet;
 
@@ -324,7 +324,7 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
     // Sort enabled sprites by Y coordinate.
     let mut sorted: Vec<&SpriteState> = Vec::new();
     for sprite_state in sprite_states.get_all().iter().rev() {
-        if !sprite_state.enabled {
+        if !sprite_state.flags.contains(SpriteStateFlags::ENABLED) {
             continue;
         }
         sorted.push(&sprite_state);
@@ -335,7 +335,13 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
         let render_top = sprite_state.priority_top == priority;
         let render_bottom = sprite_state.priority_bottom == priority;
         if render_top || render_bottom {
-            let pos = (sprite_state.pos.floor() - camera.pos_lerp.floor()).as_vec2d_i32();
+
+            let pos = if sprite_state.flags.contains(SpriteStateFlags::CAMERA_RELATIVE) {
+                sprite_state.pos.floor().as_vec2d_i32()
+            } else {
+                (sprite_state.pos.floor() - camera.pos_lerp.floor()).as_vec2d_i32()
+            };
+
             let assembly_frame = sprite_assets.get_assembly_frame(sprite_state.assembly_key);
             let bitmap = sprite_assets.get_bitmap(sprite_state.bitmap_key);
             render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, assembly_frame, bitmap, pos.x, pos.y, &sprite_state.palette, sprite_state.palette_offset);

@@ -6,7 +6,7 @@ use crate::gamestate::gamestate_world::WorldState;
 use crate::party::CharacterPartyState;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::util::vec2df64::Vec2Df64;
-use crate::world_script::world_script::WorldActorState;
+use crate::world_script::world_actor::WorldActor;
 
 #[derive(Clone)]
 pub struct MemoryRegion {
@@ -289,14 +289,14 @@ impl DataSource {
         }
     }
 
-    pub fn get_world_u8(self, ctx: &Context, _world_state: &WorldState, actor_state: &mut WorldActorState) -> u8 {
+    pub fn get_world_u8(self, ctx: &Context, _world_state: &WorldState, actor: &mut WorldActor) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
             DataSource::Memory(address) => ctx.memory.read_u8(address),
 
             // World
             DataSource::WorldActor(address) => {
-                actor_state.memory.get_u8(address)
+                actor.memory.get_u8(address)
             },
 
             _ => panic!("Unhandled get_u8 for world."),
@@ -384,14 +384,14 @@ impl DataDest {
         }
     }
 
-    pub fn put_world_u8(&self, ctx: &mut Context, world_state: &mut WorldState, actor_state: &mut WorldActorState, value: u8) {
+    pub fn put_world_u8(&self, ctx: &mut Context, world_state: &mut WorldState, actor: &mut WorldActor, value: u8) {
         match self {
             DataDest::WorldActor(address) => {
                 if *address == 0x14 {
                     // actor pixel x 3rd byte
-                    actor_state.x += 1.0;
+                    actor.x += 1.0;
                 } else {
-                    actor_state.memory.put_u8(*address, value);
+                    actor.memory.put_u8(*address, value);
                 }
             }
             DataDest::Memory(address) => {

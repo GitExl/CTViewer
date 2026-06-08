@@ -7,7 +7,7 @@ use crate::software_renderer::palette::Palette;
 use crate::sprites::sprite_anim::SpriteAnim;
 use crate::assets::Assets;
 use crate::sprites::sprite_renderer::SpritePriority;
-use crate::sprites::sprite_state::{AnimationMode, SpriteState};
+use crate::sprites::sprite_state::{AnimationMode, SpriteState, SpriteStateFlags};
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 
@@ -342,7 +342,12 @@ impl SceneActor {
         sprite_state.pos = self.pos_lerp;
         sprite_state.priority_top = self.sprite_priority_top;
         sprite_state.priority_bottom = self.sprite_priority_bottom;
-        sprite_state.enabled = self.draw_mode == DrawMode::Draw && !self.flags.contains(SceneActorFlags::DEAD) && self.class != SceneActorClass::Undefined;
+
+        if self.draw_mode == DrawMode::Draw && !self.flags.contains(SceneActorFlags::DEAD) && self.class != SceneActorClass::Undefined {
+            sprite_state.flags.insert(SpriteStateFlags::ENABLED);
+        } else {
+            sprite_state.flags.remove(SpriteStateFlags::ENABLED);
+        }
 
         // TODO: something faster than copying the entire thing every frame?
         sprite_state.palette.clone_from(&self.local_palette);
