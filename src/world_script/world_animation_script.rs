@@ -3,7 +3,6 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use crate::assets::Assets;
 use crate::Context;
 use crate::sprites::sprite_assembly::{SpriteAssemblyChip, SpriteAssemblyChipFlags, SpriteAssemblyFrame};
-use crate::util::data_read::read_24_bit_address;
 use crate::world_script::world_actor::WorldActor;
 
 pub struct WorldAnimationScript {
@@ -32,12 +31,12 @@ pub enum WorldAnimationOp {
     Wait {
         duration: u8,
     },
-    Transfer {
-        address: u64,
-        unknown1: u16,
-        unknown2: u16,
+    CopyToVram {
+        source_address: u64,
+        vram_dest_address: u16,
+        byte_count: u16,
     },
-    Unknown7,
+    Nop,
 }
 
 // World animation scripts mix animation frame and sprite assembly data. The world loads the
@@ -123,10 +122,11 @@ impl WorldAnimationScript {
                     state.animation_counter = duration;
                 }
             },
-            WorldAnimationOp::Transfer { .. } => {
+            WorldAnimationOp::CopyToVram { source_address, vram_dest_address, byte_count } => {
+                // Copies from source_address to vram_dest_address for byte_count bytes
                 state.animation_address += 8;
             },
-            WorldAnimationOp::Unknown7 => {
+            WorldAnimationOp::Nop => {
                 state.animation_address += 1;
             },
         }
@@ -155,12 +155,16 @@ impl WorldAnimationScript {
             5 => WorldAnimationOp::Wait {
                 duration: self.data.read_u8().unwrap(),
             },
-            6 => WorldAnimationOp::Transfer {
-                address: read_24_bit_address(&mut self.data) as u64,
-                unknown1: self.data.read_u16::<LittleEndian>().unwrap(),
-                unknown2: self.data.read_u16::<LittleEndian>().unwrap(),
+            6 => {
+                let bank = self.data.read_u8().unwrap() as u64;
+                let local_address = self.data.read_u16::<LittleEndian>().unwrap() as u64;
+                WorldAnimationOp::CopyToVram {
+                    source_address: bank << 16 | local_address,
+                    vram_dest_address: self.data.read_u16::<LittleEndian>().unwrap(),
+                    byte_count: self.data.read_u16::<LittleEndian>().unwrap(),
+                }
             },
-            7 => WorldAnimationOp::Unknown7,
+            7 => WorldAnimationOp::Nop,
             _ => panic!("Unknown world animation opcode {} at 0x{:04X}", opcode, address),
         };
         decoded
@@ -202,10 +206,10 @@ impl WorldAnimationScript {
                             break;
                         }
                     }
-                    WorldAnimationOp::Transfer { address, unknown1, unknown2 } => {
-                        println!("  {:04X} transfer 0x{:06X} {} {}", op_address, address, unknown1, unknown2);
+                    WorldAnimationOp::CopyToVram { source_address, vram_dest_address, byte_count } => {
+                        println!("  {:04X} transfer 0x{:06X} 0x{:04X} {}", op_address, source_address, vram_dest_address, byte_count);
                     }
-                    WorldAnimationOp::Unknown7 => {
+                    WorldAnimationOp::Nop => {
                         println!("  {:04X} unknown07", op_address);
                     }
                 }
@@ -305,13 +309,13 @@ pub fn get_animation_description(index: usize) -> String {
         22 => "PC walking right",
         23 => "PC walking right (half)",
 
-        24 => "Unknown",
-        25 => "Unknown",
-        26 => "Unknown",
-        27 => "Unknown",
-        28 => "Unknown",
-        29 => "Unknown",
-        30 => "Unknown",
+        24 => "Epoch related",
+        25 => "Epoch related",
+        26 => "Epoch related",
+        27 => "Epoch related",
+        28 => "Epoch related",
+        29 => "Epoch related",
+        30 => "Epoch related",
         31 => "Shadow",
         32 => "Smoke puff",
         33 => "Smoke puff",
@@ -326,7 +330,7 @@ pub fn get_animation_description(index: usize) -> String {
         42 => "Dactyl down",
         43 => "Dactyl up",
         44 => "Dactyl left",
-        45 => "Unknown",
+        45 => "Epoch related?",
         46 => "Null",
         47 => "Null",
         48 => "Null",
