@@ -143,7 +143,7 @@ impl WorldScriptDisassembler {
                         format!("unknown03 {}, {}, {}, {}, {}, {}, {}, {}, {}", i0, i1, i2, i3, i4, i5, i6, i7, i8)
                     },
                     Op::PaletteLoad { address, palette_index: count, mode } => format!("palette_load 0x{:04X}, {}, {}", address, count, mode),
-                    Op::BgAnimate { i0, i1, i2, i3 } => format!("bg_anim {}, {}, {}, {}", i0, i1, i2, i3),
+                    Op::CopyToVram { source_address, vram_dest_address, byte_count } => format!("copy_to_vram 0x{:06X}, 0x{:04X}, {}", source_address, vram_dest_address, byte_count),
                     Op::Wait { steps } => format!("wait {}", steps),
                     Op::ExitOpen { address } => format!("exit_open 0x{:04X}", address),
                 };

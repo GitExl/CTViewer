@@ -146,7 +146,7 @@ fn main() -> Result<(), String> {
     let screen_fade = ScreenFade::new(0.0);
     let mode = fs.mode;
 
-    let memory = Memory::new();
+    let mut memory = Memory::new();
 
     // Post forest regrowth test.
     // memory.system[0x0104] |= 128;
@@ -162,8 +162,9 @@ fn main() -> Result<(), String> {
     // memory.system[0x1BA7] |= 4;
 
     // Normal start (scene 0 => world 0).
-    // memory.global[0x0060] |= 1;
-    // memory.system[0x0104] |= 128;
+    memory.global[0x0060] |= 1;
+    memory.system[0x0104] |= 128;
+
 
     let mut text_processor = TextProcessor::new();
     let party = Party::new();

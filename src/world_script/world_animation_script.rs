@@ -61,73 +61,75 @@ impl WorldAnimationScript {
         self.offsets[animation_index]
     }
 
-    pub fn run(&mut self, ctx: &mut Context, state: &mut WorldActor) {
-        if state.animation_address == 0 {
+    pub fn run(&mut self, ctx: &mut Context, actor: &mut WorldActor) {
+        if actor.animation_address == 0 {
             return;
         }
 
-        let op = self.decode(state.animation_address);
+        let op = self.decode(actor.animation_address);
         match op {
             WorldAnimationOp::Reset { address } => {
-                state.memory.put_u8(address, 0);
-                state.animation_address += 2;
+                actor.memory.put_u8(address, 0);
+                actor.animation_address += 2;
             },
             WorldAnimationOp::Increment { address } => {
-                let value = state.memory.get_u8(address);
-                state.memory.put_u8(address, value + 1);
-                state.animation_address += 2;
+                let value = actor.memory.get_u8(address);
+                actor.memory.put_u8(address, value + 1);
+                actor.animation_address += 2;
             },
             WorldAnimationOp::Decrement { address } => {
-                let value = state.memory.get_u8(address);
-                state.memory.put_u8(address, value - 1);
-                state.animation_address += 2;
+                let value = actor.memory.get_u8(address);
+                actor.memory.put_u8(address, value - 1);
+                actor.animation_address += 2;
             },
             WorldAnimationOp::Goto { offset } => {
-                state.animation_address = (state.animation_address as i64 + offset) as u64
+                actor.animation_address = (actor.animation_address as i64 + offset) as u64
             },
             WorldAnimationOp::Animate { assembly_address, duration } => {
 
                 // Always set frame.
-                if state.palette_priority & 0x40 != 0 {
-                    state.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
+                if actor.palette_priority & 0x40 != 0 {
+                    actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
 
                 // Countdown.
-                } else if state.animation_counter != 0 {
-                    state.animation_counter -= 1;
+                } else if actor.animation_counter != 0 {
+                    actor.animation_counter -= 1;
 
                     // Countdown complete, advance to next op.
-                    if state.animation_counter == 0 {
-                        state.animation_address += 4;
+                    if actor.animation_counter == 0 {
+                        actor.animation_address += 4;
+                    } else {
+                        actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
                     }
 
                 // Start wait.
                 } else {
-                    state.animation_counter = duration;
-                    state.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
+                    actor.animation_counter = duration;
+                    actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
                 }
             },
             WorldAnimationOp::Wait { duration } => {
 
                 // Countdown.
-                if state.animation_counter != 0 {
-                    state.animation_counter -= 1;
+                if actor.animation_counter != 0 {
+                    actor.animation_counter -= 1;
 
                     // Countdown complete, advance to next op.
-                    if state.animation_counter == 0 {
-                        state.animation_address += 2;
+                    if actor.animation_counter == 0 {
+                        actor.animation_address += 2;
                     }
 
                 // Start wait.
                 } else {
-                    state.animation_counter = duration;
+                    actor.animation_counter = duration;
                 }
             },
-            WorldAnimationOp::CopyToVram { source_address, vram_dest_address, byte_count } => {
+            WorldAnimationOp::CopyToVram { .. } => {
                 // Copies from source_address to vram_dest_address for byte_count bytes
-                state.animation_address += 8;
+                actor.animation_address += 8;
             },
             WorldAnimationOp::Nop => {
-                state.animation_address += 1;
+                actor.animation_address += 1;
             },
         }
     }
@@ -207,7 +209,7 @@ impl WorldAnimationScript {
                         }
                     }
                     WorldAnimationOp::CopyToVram { source_address, vram_dest_address, byte_count } => {
-                        println!("  {:04X} transfer 0x{:06X} 0x{:04X} {}", op_address, source_address, vram_dest_address, byte_count);
+                        println!("  {:04X} copy_to_vram 0x{:06X} 0x{:04X} {}", op_address, source_address, vram_dest_address, byte_count);
                     }
                     WorldAnimationOp::Nop => {
                         println!("  {:04X} unknown07", op_address);

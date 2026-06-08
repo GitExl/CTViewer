@@ -375,11 +375,14 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
             tile_index: data.read_u8().unwrap() as usize,
         },
         // "bganm"
-        0x33 => Op::BgAnimate {
-            i0: data.read_u8().unwrap(),
-            i1: data.read_u16::<LittleEndian>().unwrap(),
-            i2: data.read_u16::<LittleEndian>().unwrap(),
-            i3: data.read_u16::<LittleEndian>().unwrap(),
+        0x33 => {
+            let bank = data.read_u8().unwrap() as u64;
+            let local_address = data.read_u16::<LittleEndian>().unwrap() as u64;
+            Op::CopyToVram {
+                source_address: bank << 16 | local_address,
+                vram_dest_address: data.read_u16::<LittleEndian>().unwrap(),
+                byte_count: data.read_u16::<LittleEndian>().unwrap(),
+            }
         },
         // "copymap"
         0x4F => Op::CopyTiles {

@@ -296,7 +296,11 @@ impl DataSource {
 
             // World
             DataSource::WorldActor(address) => {
-                actor.memory.get_u8(address)
+                if address == 0x0F {
+                    actor.palette_priority
+                } else {
+                    actor.memory.get_u8(address)
+                }
             },
 
             _ => panic!("Unhandled get_u8 for world."),
@@ -308,8 +312,8 @@ impl DataSource {
             DataSource::Immediate(value) => value as u16,
             DataSource::Memory(address) => ctx.memory.read_u16(address, scene_state),
             DataSource::ActorResult(actor) => scene_state.actors[actor.deref(scene_state, current_actor)].result as u16,
-            DataSource::GoldCount => 0,
-            DataSource::ItemCount(..) => 0,
+            DataSource::GoldCount => 9999,
+            DataSource::ItemCount(..) => 1,
             DataSource::ActorFlag(actor, flags) => (scene_state.actors[actor.deref(scene_state, current_actor)].flags.bits() & flags.bits()) as u16,
             DataSource::PartyCharacter(index) => *scene_state.player_actors.get(&index).unwrap_or(&0) as u16,
             DataSource::Input(..) => 0,
@@ -387,7 +391,9 @@ impl DataDest {
     pub fn put_world_u8(&self, ctx: &mut Context, world_state: &mut WorldState, actor: &mut WorldActor, value: u8) {
         match self {
             DataDest::WorldActor(address) => {
-                if *address == 0x14 {
+                if *address == 0x0F {
+                    actor.palette_priority = value;
+                } else if *address == 0x14 {
                     // actor pixel x 3rd byte
                     actor.x += 1.0;
                 } else {

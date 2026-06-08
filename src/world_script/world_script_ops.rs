@@ -205,11 +205,10 @@ pub enum Op {
         palette_index: u8,
         mode: u8,
     },
-    BgAnimate {
-        i0: u8,
-        i1: u16,
-        i2: u16,
-        i3: u16,
+    CopyToVram {
+        source_address: u64,
+        vram_dest_address: u16,
+        byte_count: u16,
     },
     Wait {
         steps: u8,

@@ -40,8 +40,7 @@ pub fn world_script_add_actor(world_state: &mut WorldState, source_actor_index: 
     for index in 4..world_state.actors.len() {
         let actor = &world_state.actors[index];
         if matches!(actor.task, WorldActorTask::None) {
-            let source_actor = &world_state.actors[source_actor_index];
-            world_state.actors[index] = source_actor.clone();
+            world_state.actors[index] = world_state.actors[source_actor_index].clone();
             world_state.actors[index].task = task;
             // Clear what is in $02 once we know what it is.
             world_state.actors[index].cycles = 0;

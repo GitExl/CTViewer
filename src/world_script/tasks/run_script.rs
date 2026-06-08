@@ -17,15 +17,15 @@ enum OpResult {
 }
 
 pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_actor_index: usize) {
-    let mut actor = world_state.actors[current_actor_index].clone();
-
     loop {
+        let mut actor = world_state.actors[current_actor_index].clone();
+
         world_state.script_data.set_position(actor.script_current_address);
 
         let result;
         if let Some(op) = op_decode(&mut world_state.script_data, ctx.mode) {
 
-            // println!("{:02} {:04X} {:?}", actor_index, actor.script_current_address, op);
+            // println!("{:02} {:04X} {:?}", current_actor_index, actor.script_current_address, op);
 
             result = match op {
                 Op::InitMemory => {
@@ -295,18 +295,18 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
             result = OpResult::Continue;
         }
 
+        world_state.actors[current_actor_index] = actor;
+
         match result {
             OpResult::Continue => {
-                actor.script_current_address = world_state.script_data.position();
+                world_state.actors[current_actor_index].script_current_address = world_state.script_data.position();
             }
             OpResult::ContinueFrom { address }=> {
-                actor.script_current_address = address;
+                world_state.actors[current_actor_index].script_current_address = address;
             }
             OpResult::Yield => {
                 break;
             }
         }
     }
-
-    world_state.actors[current_actor_index] = actor;
 }
