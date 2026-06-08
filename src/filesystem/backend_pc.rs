@@ -246,7 +246,8 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
             _ => return None,
         };
 
-        let bitmap = Bmp::from_cursor(&mut self.file_get(&name.to_string()));
+        let mut bitmap = Bmp::from_cursor(&mut self.file_get(&name.to_string()));
+        bitmap.map_down();
         Some(bitmap.pixels)
     }
 

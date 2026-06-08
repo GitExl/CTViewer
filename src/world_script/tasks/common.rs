@@ -1,15 +1,15 @@
 use crate::Context;
 use crate::gamestate::gamestate_world::WorldState;
 use crate::world_script::task_dispatch::WorldActorTask;
+use crate::world_script::world_actor::WorldActor;
 use crate::world_script::world_script::world_script_add_actor;
 
-pub fn task_palette_load(world_state: &mut WorldState, actor_index: usize) {
-    let state = world_state.actors.get_mut(actor_index).unwrap();
-    state.task = WorldActorTask::None;
+pub fn task_palette_load(world_state: &mut WorldState, actor: &mut WorldActor) {
+    actor.task = WorldActorTask::None;
 
-    let palette_index = state.memory.get_u8(0x32);
-    let mode = state.memory.get_u8(0x34);
-    let address = state.memory.get_u24(0x35) as usize;
+    let palette_index = actor.memory.get_u8(0x32);
+    let mode = actor.memory.get_u8(0x34);
+    let address = actor.memory.get_u24(0x35) as usize;
 
     // Mode 0 copies palette data from palette animations.
     if mode == 0 {
@@ -23,7 +23,7 @@ pub fn task_palette_load(world_state: &mut WorldState, actor_index: usize) {
 
     // Other modes.
     } else {
-        world_script_add_actor(world_state, actor_index, WorldActorTask::PaletteLoadModes);
+        world_script_add_actor(world_state, &actor, WorldActorTask::PaletteLoadModes);
     }
 }
 
@@ -60,25 +60,22 @@ pub fn task_layer_animation(world_state: &mut WorldState, world_index: usize) {
     }
 }
 
-pub fn task_palette_load_mode(world_state: &mut WorldState, actor_index: usize) {
-    let state = world_state.actors.get_mut(actor_index).unwrap();
-    state.task = WorldActorTask::None;
+pub fn task_palette_load_mode(actor: &mut WorldActor) {
+    actor.task = WorldActorTask::None;
     // TODO: full palette_load behaviour is unknown
 }
 
-pub fn task_fade_in(ctx: &mut Context, world_state: &mut WorldState, actor_index: usize) {
-    let state = world_state.actors.get_mut(actor_index).unwrap();
-    state.task = WorldActorTask::None;
+pub fn task_fade_in(ctx: &mut Context, actor: &mut WorldActor) {
+    actor.task = WorldActorTask::None;
 
-    let delay = state.memory.get_u8(0x0A) as usize;
+    let delay = actor.memory.get_u8(0x0A) as usize;
     ctx.screen_fade.start(1.0, delay);
 }
 
-pub fn task_fade_out(ctx: &mut Context, world_state: &mut WorldState, actor_index: usize) {
-    let state = world_state.actors.get_mut(actor_index).unwrap();
-    state.task = WorldActorTask::None;
+pub fn task_fade_out(ctx: &mut Context, actor: &mut WorldActor) {
+    actor.task = WorldActorTask::None;
 
-    let delay = state.memory.get_u8(0x0A) as usize;
+    let delay = actor.memory.get_u8(0x0A) as usize;
     ctx.screen_fade.start(0.0, delay);
 }
 

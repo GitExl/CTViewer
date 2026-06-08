@@ -458,7 +458,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x34 => {
             let address = data.read_u16::<LittleEndian>().unwrap() as u32;
             Op::CallFunction {
-                function: WorldActorFunction::from_address(address),
+                function: WorldActorFunction::from_address(address, mode),
                 address,
             }
         },
@@ -466,7 +466,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x35 => {
             let address = data.read_u16::<LittleEndian>().unwrap() as u32;
             Op::Link {
-                task: WorldActorTask::from_address(address),
+                task: WorldActorTask::from_address(address, mode),
                 address,
             }
         },
@@ -480,7 +480,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x42 => {
             let address = data.read_u16::<LittleEndian>().unwrap() as u32;
             Op::LinkSpecial {
-                task: WorldActorTask::from_address(address),
+                task: WorldActorTask::from_address(address, mode),
                 address,
             }
         },
@@ -495,7 +495,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x4E => {
             let address = read_24_bit_address(data) as u32;
             Op::CallFunctionFar {
-                function: WorldActorFunction::from_address(address),
+                function: WorldActorFunction::from_address(address, mode),
                 address,
             }
         },

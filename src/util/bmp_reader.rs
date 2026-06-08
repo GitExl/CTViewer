@@ -123,6 +123,12 @@ impl Bmp {
             pixels,
         }
     }
+
+    pub fn map_down(&mut self) {
+        for pixel in self.pixels.iter_mut() {
+            *pixel %= 16;
+        }
+    }
 }
 
 fn read_pixels(reader: &mut Cursor<Vec<u8>>, width: u32, height: u32, bpp: &BPP) -> Vec<u8> {

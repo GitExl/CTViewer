@@ -3,7 +3,6 @@ use std::io::Cursor;
 use crate::GameMode;
 use crate::music_list::get_music_title;
 use crate::sound_list::get_sound_name;
-use crate::world_script::function_addresses::function_address_to_string;
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_ops::Op;
 use crate::world_script::world_animation_script::get_animation_description;
@@ -87,7 +86,7 @@ impl WorldScriptDisassembler {
                     Op::BitMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::ByteMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::GoSub { address } => format!("gosub sub_{:04X}", address),
-                    Op::CallFunctionFar { function, address } => format!("function_far {:?}    // Far function: {}", function, function_address_to_string(address)),
+                    Op::CallFunctionFar { function, address } => format!("function_far {:?}", function),
                     Op::ChangeLocation { destination } => format!("location {}", destination.as_string()),
                     Op::Copy8 { lhs, rhs } => format!("{} = {}", lhs.as_string(), rhs.as_string()),
                     Op::CopyTiles { source_layer, source_x, source_y, dest_layer, dest_x, dest_y, width, height } => {
@@ -99,15 +98,15 @@ impl WorldScriptDisassembler {
                     Op::End => String::from("end"),
                     Op::FadeIn { delay: mode } => format!("fade_in {}", mode),
                     Op::FadeOut { delay: mode } => format!("fade_out {}", mode),
-                    Op::CallFunction { function, address } => format!("function {:?}    // Function: {}", function, function_address_to_string(address)),
+                    Op::CallFunction { function, address } => format!("function {:?}", function),
                     Op::InitBackgroundLayer { layer } => format!("init_bg_layer {}", layer),
                     Op::InitMemory => String::from("init_memory"),
                     Op::GoTo { address } => format!("goto jp_{:04X}", address),
                     Op::JumpConditional { lhs, cmp, rhs, offset } => {
                         format!("if {} {} {} goto jp_{:04X}", lhs.as_string(), cmp.as_string(), rhs.as_string(), op_address as i64 + offset)
                     },
-                    Op::Link { task, address } => format!("link {:?}    // Task: {}", task, function_address_to_string(address)),
-                    Op::LinkSpecial { task, address } => format!("link_special {:?}    // Task: {}", task, function_address_to_string(address)),
+                    Op::Link { task, address } => format!("link {:?}", task),
+                    Op::LinkSpecial { task, address } => format!("link_special {:?}", task),
                     Op::MosaicIn { mode } => format!("mosaic_in {}", mode),
                     Op::MosaicOut { mode } => format!("mosaic_out {}", mode),
                     Op::Move { steps } => format!("move {}", steps),

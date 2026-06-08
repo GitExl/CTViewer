@@ -2,7 +2,6 @@ pub mod world_script;
 pub mod world_script_ops;
 mod world_script_decoder;
 mod world_script_disassembler;
-mod function_addresses;
 pub mod world_animation_script;
 mod exec;
 mod functions;

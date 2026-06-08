@@ -4,6 +4,7 @@ use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::world_script::exec::tile_copy::exec_tile_copy;
 use crate::world_script::function_dispatch::function_dispatch;
 use crate::world_script::task_dispatch::WorldActorTask;
+use crate::world_script::world_actor::WorldActor;
 use crate::world_script::world_script::{world_script_add_actor, world_script_add_special_actor};
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_ops::Op;
@@ -16,24 +17,19 @@ enum OpResult {
     },
 }
 
-pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_actor_index: usize) {
+pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &mut WorldActor) {
     loop {
-        let mut actor = world_state.actors[current_actor_index].clone();
-
         world_state.script_data.set_position(actor.script_current_address);
 
         let result;
         if let Some(op) = op_decode(&mut world_state.script_data, ctx.mode) {
-
-            // println!("{:02} {:04X} {:?}", current_actor_index, actor.script_current_address, op);
-
             result = match op {
                 Op::InitMemory => {
                     OpResult::Continue
                 }
                 Op::Copy8 { lhs, rhs } => {
-                    let value = rhs.get_world_u8(ctx, world_state, &mut actor);
-                    lhs.put_world_u8(ctx, world_state, &mut actor, value);
+                    let value = rhs.get_world_u8(ctx, world_state, actor);
+                    lhs.put_world_u8(ctx, world_state, actor, value);
                     OpResult::Continue
                 }
                 Op::GoSub { address } => {
@@ -47,9 +43,9 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                     OpResult::ContinueFrom { address }
                 }
                 Op::DecrementAndJumpIfNonZero { src, dest, offset } => {
-                    let mut value = src.get_world_u8(ctx, world_state, &mut actor);
+                    let mut value = src.get_world_u8(ctx, world_state, actor);
                     value = value.wrapping_sub(1);
-                    dest.put_world_u8(ctx, world_state, &mut actor, value);
+                    dest.put_world_u8(ctx, world_state, actor, value);
                     if value != 0 {
                         OpResult::ContinueFrom { address: (actor.script_current_address as i64 + offset) as u64 }
                     } else {
@@ -57,8 +53,8 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                     }
                 }
                 Op::JumpConditional { lhs, cmp, rhs, offset } => {
-                    let lhs_value = lhs.get_world_u8(ctx, world_state, &mut actor);
-                    let rhs_value = rhs.get_world_u8(ctx, world_state, &mut actor);
+                    let lhs_value = lhs.get_world_u8(ctx, world_state, actor);
+                    let rhs_value = rhs.get_world_u8(ctx, world_state, actor);
                     let result = match cmp {
                         CompareOp::Eq => lhs_value == rhs_value,
                         CompareOp::NotEq => lhs_value != rhs_value,
@@ -79,35 +75,35 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                     }
                 }
                 Op::AddActor { address, .. } => {
-                    let index = world_script_add_actor(world_state, current_actor_index, WorldActorTask::RunScript);
-                    let new_state = world_state.actors.get_mut(index).unwrap();
-                    new_state.script_current_address = address;
+                    let index = world_script_add_actor(world_state, &actor, WorldActorTask::RunScript);
+                    let new_actor = &mut world_state.actors[index];
+                    new_actor.script_current_address = address;
                     OpResult::Continue
                 }
                 Op::AddActorSpecial { address, .. } => {
-                    let index = world_script_add_special_actor(world_state, current_actor_index, WorldActorTask::RunScript);
-                    let new_state = world_state.actors.get_mut(index).unwrap();
-                    new_state.script_current_address = address;
+                    let index = world_script_add_special_actor(world_state, &actor, WorldActorTask::RunScript);
+                    let new_actor = &mut world_state.actors[index];
+                    new_actor.script_current_address = address;
                     OpResult::Continue
                 }
                 Op::Link { task, .. } => {
-                    world_script_add_actor(world_state, current_actor_index, task);
+                    world_script_add_actor(world_state, &actor, task);
                     OpResult::Continue
                 }
                 Op::LinkSpecial { task, .. } => {
-                    world_script_add_special_actor(world_state, current_actor_index, task);
+                    world_script_add_special_actor(world_state, &actor, task);
                     OpResult::Continue
                 }
                 Op::FadeIn { delay } => {
-                    let index = world_script_add_special_actor(world_state, current_actor_index, WorldActorTask::FadeIn);
-                    let new_state = world_state.actors.get_mut(index).unwrap();
-                    new_state.memory.put_u8(0x0A, delay);
+                    let index = world_script_add_special_actor(world_state, &actor, WorldActorTask::FadeIn);
+                    let new_actor = &mut world_state.actors[index];
+                    new_actor.memory.put_u8(0x0A, delay);
                     OpResult::Continue
                 }
                 Op::FadeOut { delay } => {
-                    let index = world_script_add_special_actor(world_state, current_actor_index, WorldActorTask::FadeOut);
-                    let new_state = world_state.actors.get_mut(index).unwrap();
-                    new_state.memory.put_u8(0x0A, delay);
+                    let index = world_script_add_special_actor(world_state, &actor, WorldActorTask::FadeOut);
+                    let new_actor = &mut world_state.actors[index];
+                    new_actor.memory.put_u8(0x0A, delay);
                     OpResult::Continue
                 }
                 Op::Wait { steps } => {
@@ -138,8 +134,8 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                     OpResult::Continue
                 }
                 Op::BitMath { dest, lhs, op, rhs } => {
-                    let lhs_value = lhs.get_world_u8(ctx, world_state, &mut actor);
-                    let rhs_value = rhs.get_world_u8(ctx, world_state, &mut actor);
+                    let lhs_value = lhs.get_world_u8(ctx, world_state, actor);
+                    let rhs_value = rhs.get_world_u8(ctx, world_state, actor);
                     let result = match op {
                         BitMathOp::And => lhs_value & rhs_value,
                         BitMathOp::Or => lhs_value | rhs_value,
@@ -147,19 +143,19 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                         BitMathOp::ShiftLeft => lhs_value << rhs_value,
                         BitMathOp::ShiftRight => lhs_value >> rhs_value,
                     };
-                    dest.put_world_u8(ctx, world_state, &mut actor, result);
+                    dest.put_world_u8(ctx, world_state, actor, result);
 
                     OpResult::Continue
                 }
                 Op::ByteMath { dest, lhs, op ,rhs } => {
-                    let lhs_value = lhs.get_world_u8(ctx, world_state, &mut actor);
-                    let rhs_value = rhs.get_world_u8(ctx, world_state, &mut actor);
+                    let lhs_value = lhs.get_world_u8(ctx, world_state, actor);
+                    let rhs_value = rhs.get_world_u8(ctx, world_state, actor);
 
                     let result = match op {
                         ByteMathOp::Add => lhs_value.overflowing_add(rhs_value).0,
                         ByteMathOp::Subtract => lhs_value.overflowing_sub(rhs_value).0,
                     };
-                    dest.put_world_u8(ctx, world_state, &mut actor, result);
+                    dest.put_world_u8(ctx, world_state, actor, result);
 
                     OpResult::Continue
                 }
@@ -184,14 +180,14 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                     if actor.counter != 0 {
                         actor.counter -= 1;
                         if actor.counter != 0 {
-                            world_state.animations.run(ctx, &mut actor);
+                            world_state.animations.run(ctx, actor);
                             OpResult::Yield
                         } else {
                             OpResult::Continue
                         }
                     } else {
                         actor.counter = steps;
-                        world_state.animations.run(ctx, &mut actor);
+                        world_state.animations.run(ctx, actor);
                         OpResult::Yield
                     }
                 }
@@ -260,7 +256,7 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                         actor.x = actor.x.min(world_state.world_map.pixel_width as f64).max(0.0);
                         actor.y = actor.y.min(world_state.world_map.pixel_height as f64).max(0.0);
 
-                        world_state.animations.run(ctx, &mut actor);
+                        world_state.animations.run(ctx, actor);
 
                         OpResult::Yield
                     } else {
@@ -268,21 +264,21 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                     }
                 }
                 Op::PaletteLoad { address, palette_index, mode } => {
-                    let new_index = world_script_add_actor(world_state, current_actor_index, WorldActorTask::PaletteLoad);
-                    let new_state = world_state.actors.get_mut(new_index).unwrap();
-                    new_state.memory.put_u8(0x32, palette_index);
-                    new_state.memory.put_u8(0x33, 0);
-                    new_state.memory.put_u8(0x34, mode);
-                    new_state.memory.put_u24(0x35, address as u32);
+                    let new_index = world_script_add_actor(world_state, &actor, WorldActorTask::PaletteLoad);
+                    let new_actor = &mut world_state.actors[new_index];
+                    new_actor.memory.put_u8(0x32, palette_index);
+                    new_actor.memory.put_u8(0x33, 0);
+                    new_actor.memory.put_u8(0x34, mode);
+                    new_actor.memory.put_u24(0x35, address as u32);
 
                     OpResult::Continue
                 }
                 Op::CallFunction { function, .. } => {
-                    function_dispatch(ctx, world_state, current_actor_index, function);
+                    function_dispatch(ctx, world_state, actor, function);
                     OpResult::Continue
                 }
                 Op::CallFunctionFar { function, .. } => {
-                    function_dispatch(ctx, world_state, current_actor_index, function);
+                    function_dispatch(ctx, world_state, actor, function);
                     OpResult::Continue
                 }
 
@@ -295,14 +291,12 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
             result = OpResult::Continue;
         }
 
-        world_state.actors[current_actor_index] = actor;
-
         match result {
             OpResult::Continue => {
-                world_state.actors[current_actor_index].script_current_address = world_state.script_data.position();
+                actor.script_current_address = world_state.script_data.position();
             }
             OpResult::ContinueFrom { address }=> {
-                world_state.actors[current_actor_index].script_current_address = address;
+                actor.script_current_address = address;
             }
             OpResult::Yield => {
                 break;

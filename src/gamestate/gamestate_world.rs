@@ -163,12 +163,11 @@ impl GameStateTrait for GameStateWorld {
             state.palette_offset = 128 + ((actor.palette_priority & 0x0F) as usize / 2) * 16;
             state.assembly_key = actor.sprite_assembly_key;
 
+            state.flags = SpriteStateFlags::empty();
+            state.flags.insert(SpriteStateFlags::ENABLED);
             if actor.palette_priority & 0x01 != 0 {
                 state.flags.insert(SpriteStateFlags::CAMERA_RELATIVE);
-            } else {
-                state.flags.remove(SpriteStateFlags::CAMERA_RELATIVE);
             }
-            state.flags.insert(SpriteStateFlags::ENABLED);
 
             let priority = match actor.palette_priority & 0x30 {
                 0x30 => SpritePriority::AboveAll,

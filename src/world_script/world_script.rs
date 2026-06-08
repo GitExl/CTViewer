@@ -1,10 +1,11 @@
 use crate::Context;
 use crate::gamestate::gamestate_world::WorldState;
 use crate::world_script::task_dispatch::{task_dispatch, WorldActorTask};
+use crate::world_script::world_actor::WorldActor;
 use crate::world_script::world_script_disassembler::WorldScriptDisassembler;
 
 pub fn world_script_initialize(world_state: &mut WorldState) {
-    world_script_add_actor(world_state, 0, WorldActorTask::RunScript);
+    world_state.actors[0].task = WorldActorTask::RunScript;
 }
 
 pub fn world_script_run(ctx: &mut Context, world_state: &mut WorldState) {
@@ -14,35 +15,34 @@ pub fn world_script_run(ctx: &mut Context, world_state: &mut WorldState) {
             continue;
         }
 
-        let cycles = actor.cycles.wrapping_add(1);
-        task_dispatch(ctx, world_state, actor_index, actor.task);
-        world_state.actors.get_mut(actor_index).unwrap().cycles = cycles;
+        // Clone actor, update it, then place it back into the actor list.
+        let mut actor_dup = actor.clone();
+        task_dispatch(ctx, world_state, &mut actor_dup);
+        actor_dup.cycles += 1;
+        world_state.actors[actor_index] = actor_dup;
     }
 }
 
-pub fn world_script_add_special_actor(world_state: &mut WorldState, source_actor_index: usize, task: WorldActorTask, ) -> usize {
+pub fn world_script_add_special_actor(world_state: &mut WorldState, source_actor: &WorldActor, task: WorldActorTask, ) -> usize {
     for index in 0..4 {
         let state = &world_state.actors[index];
         if matches!(state.task, WorldActorTask::None) {
-            let source_actor = &world_state.actors[source_actor_index];
             world_state.actors[index] = source_actor.clone();
             world_state.actors[index].task = task;
-            // Clear what is in $02 once we know what it is.
             world_state.actors[index].cycles = 0;
             return index;
         }
     }
 
-    panic!("Out of world special actor slots!");
+    panic!("Out of special world actor slots!");
 }
 
-pub fn world_script_add_actor(world_state: &mut WorldState, source_actor_index: usize, task: WorldActorTask) -> usize {
+pub fn world_script_add_actor(world_state: &mut WorldState, source_actor: &WorldActor, task: WorldActorTask) -> usize {
     for index in 4..world_state.actors.len() {
         let actor = &world_state.actors[index];
         if matches!(actor.task, WorldActorTask::None) {
-            world_state.actors[index] = world_state.actors[source_actor_index].clone();
+            world_state.actors[index] = source_actor.clone();
             world_state.actors[index].task = task;
-            // Clear what is in $02 once we know what it is.
             world_state.actors[index].cycles = 0;
             return index;
         }
