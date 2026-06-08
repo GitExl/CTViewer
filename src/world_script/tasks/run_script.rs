@@ -183,14 +183,16 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, current_
                 Op::WaitAndAnimate { steps } => {
                     if actor.counter != 0 {
                         actor.counter -= 1;
+                        if actor.counter != 0 {
+                            world_state.animations.run(ctx, &mut actor);
+                            OpResult::Yield
+                        } else {
+                            OpResult::Continue
+                        }
                     } else {
                         actor.counter = steps;
-                    }
-                    if actor.counter != 0 {
                         world_state.animations.run(ctx, &mut actor);
                         OpResult::Yield
-                    } else {
-                        OpResult::Continue
                     }
                 }
                 Op::VectorX { magnitude } => {
