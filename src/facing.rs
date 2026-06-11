@@ -17,8 +17,8 @@ impl Facing {
         }
     }
 
-    pub fn from_index(index: usize) -> Facing {
-        match index {
+    pub fn from_data(index: u8) -> Facing {
+        match index & 0x3 {
             0 => Facing::Up,
             1 => Facing::Down,
             2 => Facing::Left,

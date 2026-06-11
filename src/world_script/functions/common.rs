@@ -48,8 +48,8 @@ pub fn func_actor_is_offscreen(ctx: &mut Context, actor: &mut WorldActor, world_
     );
 
     if actor_rect.intersects(&camera_rect) {
-        ctx.memory.write_u8(0x7E0000, 1);
+        ctx.memory.put_u8(0x7E0000, 1);
     } else {
-        ctx.memory.write_u8(0x7E0000, 0);
+        ctx.memory.put_u8(0x7E0000, 0);
     }
 }

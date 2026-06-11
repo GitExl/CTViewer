@@ -26,6 +26,10 @@ impl MemoryRegion {
         }
     }
 
+    pub fn clear(&mut self) {
+        self.data.fill(0);
+    }
+
     pub fn put_u8(&mut self, address: usize, value: u8) {
         self.data[address] = value;
     }
@@ -35,73 +39,72 @@ impl MemoryRegion {
     }
 
     pub fn put_u16(&mut self, address: usize, value: u16) {
-        self.data[address + 0] = ((value >> 8) & 0xFF) as u8;
-        self.data[address + 1] = (value        & 0xFF) as u8;
+        self.data[address + 0] = (value        & 0xFF) as u8;
+        self.data[address + 1] = ((value >> 8) & 0xFF) as u8;
     }
 
     pub fn get_u16(&self, address: usize) -> u16 {
-        self.data[address + 1] as u16 | self.data[address] as u16 >> 8
+        self.data[address + 0] as u16 | (self.data[address + 1] as u16) << 8
     }
 
     pub fn put_u24(&mut self, address: usize, value: u32) {
-        self.data[address + 0] = ((value >> 16) & 0xFF) as u8;
+        self.data[address + 0] = (value         & 0xFF) as u8;
         self.data[address + 1] = ((value >> 8)  & 0xFF) as u8;
-        self.data[address + 2] = (value         & 0xFF) as u8;
+        self.data[address + 2] = ((value >> 16) & 0xFF) as u8;
     }
 
     pub fn get_u24(&self, address: usize) -> u32 {
-        self.data[address + 2] as u32 | (self.data[address + 1] as u32) << 8 | (self.data[address] as u32) << 16
+        self.data[address + 0] as u32 | (self.data[address + 1] as u32) << 8 | (self.data[address + 2] as u32) << 16
     }
 
     pub fn put_u32(&mut self, address: usize, value: u32) {
-        self.data[address + 0] = ((value >> 24) & 0xFF) as u8;
-        self.data[address + 1] = ((value >> 16) & 0xFF) as u8;
-        self.data[address + 2] = ((value >> 8)  & 0xFF) as u8;
-        self.data[address + 3] = (value         & 0xFF) as u8;
+        self.data[address + 0] = (value         & 0xFF) as u8;
+        self.data[address + 1] = ((value >> 8)  & 0xFF) as u8;
+        self.data[address + 2] = ((value >> 16) & 0xFF) as u8;
+        self.data[address + 3] = ((value >> 24) & 0xFF) as u8;
     }
 
     pub fn get_u32(&self, address: usize) -> u32 {
-        self.data[address + 3] as u32 | (self.data[address + 2] as u32) << 8 | (self.data[address + 1] as u32) << 16 | (self.data[address] as u32) << 24
+        self.data[address + 0] as u32 | (self.data[address + 1] as u32) << 8 | (self.data[address + 2] as u32) << 16 | (self.data[address + 3] as u32) << 24
     }
 }
 
-#[derive(Clone)]
 pub struct Memory {
-    pub system: [u8; 0x10000],
-    pub global: [u8; 0x200],
-    pub local: [u8; 0x200],
-    pub extended: [u8; 0x200],
+    pub system: MemoryRegion,
+    pub global: MemoryRegion,
+    pub local: MemoryRegion,
+    pub extended: MemoryRegion,
 }
 
 impl Memory {
     pub fn new() -> Memory {
         Memory {
-            system: [0; 0x10000],
-            global: [0; 0x200],
-            local: [0; 0x200],
-            extended: [0; 0x200],
+            system: MemoryRegion::new(0x10000),
+            global: MemoryRegion::new(0x200),
+            local: MemoryRegion::new(0x200),
+            extended: MemoryRegion::new(0x200),
         }
     }
 
     pub fn clear_local(&mut self) {
-        self.local = [0; 0x200];
+        self.local.clear()
     }
 
-    pub fn write_u8(&mut self, address: usize, value: u8) {
+    pub fn put_u8(&mut self, address: usize, value: u8) {
         if address >= 0x7E0000 && address < 0x7F0000 {
-            self.system[address - 0x7E0000] = value;
+            self.system.put_u8(address - 0x7E0000, value);
         } else if address >= 0x7F0000 && address < 0x7F0200 {
-            self.global[address - 0x7F0000] = value;
+            self.global.put_u8(address - 0x7F0000, value);
         } else if address >= 0x7F0200 && address < 0x7F0400 {
-            self.local[address - 0x7F0200] = value;
+            self.local.put_u8(address - 0x7F0200, value);
         } else if address >= 0x9F0200 && address < 0x9F0400 {
-            self.extended[address - 0x9F0200] = value;
+            self.extended.put_u8(address - 0x9F0200, value);
         } else {
             println!("Unhandled u8 memory write of 0x{:02X} to 0x{:06X}.", value, address)
         }
     }
 
-    pub fn write_scene_u8(&mut self, address: usize, value: u8, _scene_state: &SceneState) {
+    pub fn put_scene_u8(&mut self, address: usize, value: u8, _scene_state: &SceneState) {
         if address == 0x0001FA {
             println!("Unimplemented: Set battle music track to {}", value);
 
@@ -124,26 +127,26 @@ impl Memory {
 
         // Fall-through to memory.
         } else {
-            self.write_u8(address, value);
+            self.put_u8(address, value);
         }
     }
 
-    pub fn read_u8(&self, address: usize) -> u8 {
+    pub fn get_u8(&self, address: usize) -> u8 {
         if address >= 0x7E0000 && address < 0x7F0000 {
-            return self.system[address - 0x7E0000];
+            return self.system.get_u8(address - 0x7E0000);
         } else if address >= 0x7F0000 && address < 0x7F0200 {
-            return self.global[address - 0x7F0000];
+            return self.global.get_u8(address - 0x7F0000);
         } else if address >= 0x7F0200 && address < 0x7F0400 {
-            return self.local[address - 0x7F0200];
+            return self.local.get_u8(address - 0x7F0200);
         } else if address >= 0x9F0200 && address < 0x9F0400 {
-            return self.extended[address - 0x9F0200];
+            return self.extended.get_u8(address - 0x9F0200);
         }
 
         println!("Unhandled u8 memory read at 0x{:06X}.", address);
         0
     }
 
-    pub fn read_scene_u8(&self, address: usize, scene_state: &SceneState) -> u8 {
+    pub fn get_scene_u8(&self, address: usize, scene_state: &SceneState) -> u8 {
 
         // Actor type value.
         if address >= 0x7E1100 && address < 0x7E1180 {
@@ -162,46 +165,50 @@ impl Memory {
         }
 
         // Fall-through to memory.
-        self.read_u8(address)
+        self.get_u8(address)
     }
 
-    pub fn write_u16(&mut self, address: usize, value: u16) {
+    pub fn put_u16(&mut self, address: usize, value: u16) {
         if address >= 0x7E0000 && address < 0x7F0000 {
-            self.system[address - 0x7E0000 + 0] = (value >> 8) as u8;
-            self.system[address - 0x7E0000 + 1] = value as u8;
+            self.system.put_u16(address - 0x7E0000, value);
         } else if address >= 0x7F0000 && address < 0x7F0200 {
-            self.global[address - 0x7F0000 + 0] = (value >> 8) as u8;
-            self.global[address - 0x7F0000 + 1] = value as u8;
+            self.global.put_u16(address - 0x7F0000, value);
         } else if address >= 0x7F0200 && address < 0x7F0400 {
-            self.local[address - 0x7F0200 + 0] = (value >> 8) as u8;
-            self.local[address - 0x7F0200 + 1] = value as u8;
+            self.local.put_u16(address - 0x7F0200, value);
         } else if address >= 0x9F0200 && address < 0x9F0400 {
-            self.extended[address - 0x9F0200 + 0] = (value >> 8) as u8;
-            self.extended[address - 0x9F0200 + 1] = value as u8;
+            self.extended.put_u16(address - 0x9F0200, value);
         } else {
             println!("Unhandled u16 memory write of 0x{:04X} to 0x{:06X}.", value, address)
         }
     }
 
-    pub fn read_u16(&self, address: usize, _scene_state: &SceneState) -> u16 {
+    pub fn get_u16(&self, address: usize, _scene_state: &SceneState) -> u16 {
         if address >= 0x7E0000 && address < 0x7F0000 {
-            return self.system[address - 0x7E0000 + 1] as u16 | (self.system[address - 0x7E0000] as u16) << 8;
+            return self.system.get_u16(address - 0x7E0000);
         } else if address >= 0x7F0000 && address < 0x7F0200 {
-            return self.global[address - 0x7F0000 + 1] as u16 | (self.global[address - 0x7F0000] as u16) << 8;
+            return self.global.get_u16(address - 0x7F0000);
         } else if address >= 0x7F0200 && address < 0x7F0400 {
-            return self.local[address - 0x7F0200 + 1] as u16 | (self.local[address - 0x7F0200] as u16) << 8;
+            return self.local.get_u16(address - 0x7F0200);
         } else if address >= 0x9F0200 && address < 0x9F0400 {
-            return self.extended[address - 0x9F0200 + 1] as u16 | (self.extended[address - 0x9F0200] as u16) << 8;
+            return self.extended.get_u16(address - 0x9F0200);
         }
 
         println!("Unhandled u16 memory read at 0x{:06X}.", address);
         0
     }
 
-    pub fn write_bytes(&mut self, address: usize, bytes: &[u8]) {
+    pub fn put_bytes(&mut self, address: usize, bytes: &[u8]) {
         for index in 0..bytes.len() {
-            self.write_u8(address + index, bytes[index]);
+            self.put_u8(address + index, bytes[index]);
         }
+    }
+
+    pub fn get_bytes(&mut self, address: usize, count: usize) -> Vec<u8> {
+        let mut out = vec![0u8; count];
+        for index in 0..count {
+            out[index] = self.get_u8(address + index);
+        }
+        out
     }
 }
 
@@ -272,7 +279,7 @@ impl DataSource {
     pub fn get_scene_u8(self, ctx: &Context, scene_state: &SceneState, current_actor: usize) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
-            DataSource::Memory(address) => ctx.memory.read_scene_u8(address, scene_state),
+            DataSource::Memory(address) => ctx.memory.get_scene_u8(address, scene_state),
 
             // Scene
             DataSource::ActorResult(actor) => scene_state.actors[actor.deref(scene_state, current_actor)].result as u8,
@@ -292,7 +299,7 @@ impl DataSource {
     pub fn get_world_u8(self, ctx: &Context, _world_state: &WorldState, actor: &mut WorldActor) -> u8 {
         match self {
             DataSource::Immediate(value) => value as u8,
-            DataSource::Memory(address) => ctx.memory.read_u8(address),
+            DataSource::Memory(address) => ctx.memory.get_u8(address),
 
             // World
             DataSource::WorldActor(address) => {
@@ -310,7 +317,7 @@ impl DataSource {
     pub fn get_u16(self, ctx: &Context, scene_state: &SceneState, current_actor: usize) -> u16 {
         match self {
             DataSource::Immediate(value) => value as u16,
-            DataSource::Memory(address) => ctx.memory.read_u16(address, scene_state),
+            DataSource::Memory(address) => ctx.memory.get_u16(address, scene_state),
             DataSource::ActorResult(actor) => scene_state.actors[actor.deref(scene_state, current_actor)].result as u16,
             DataSource::GoldCount => 9999,
             DataSource::ItemCount(..) => 1,
@@ -377,7 +384,7 @@ impl DataDest {
 
     pub fn put_u8(&self, ctx: &mut Context, value: u8) {
         match self {
-            DataDest::Memory(address) => ctx.memory.write_u8(*address, value),
+            DataDest::Memory(address) => ctx.memory.put_u8(*address, value),
             _ => panic!("Unhandled put_u8"),
         }
     }
@@ -422,14 +429,14 @@ impl DataDest {
 
     pub fn put_u16(&self, ctx: &mut Context, _scene_state: &mut SceneState, value: u16) {
         match self {
-            DataDest::Memory(address) => ctx.memory.write_u16(*address, value),
+            DataDest::Memory(address) => ctx.memory.put_u16(*address, value),
             DataDest::WorldActor(_address) => {},
         }
     }
 
     pub fn put_bytes(&self, ctx: &mut Context, _scene_state: &mut SceneState, bytes: [u8; 64], length: usize) {
         match self {
-            DataDest::Memory(address) => ctx.memory.write_bytes(*address, &bytes[0..length]),
+            DataDest::Memory(address) => ctx.memory.put_bytes(*address, &bytes[0..length]),
             DataDest::WorldActor(_address) => {},
         }
     }

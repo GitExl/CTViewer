@@ -185,6 +185,7 @@ impl FileSystem {
             let tile_y;
             let shift_x;
             let shift_y;
+            let facing_byte;
 
             match self.mode {
                 GameMode::Pc => {
@@ -197,7 +198,8 @@ impl FileSystem {
                     dest_index = data.read_u16::<LittleEndian>().unwrap() as usize;
                     tile_x = data.read_u8().unwrap() as i32;
                     tile_y = data.read_u8().unwrap() as i32;
-                    facing = Facing::from_index(facing_shift as usize & 0x3);
+                    facing = Facing::from_data(facing_shift);
+                    facing_byte = facing_shift;
 
                     let side = (((size_bits & 0x7F) + 1) * 16) as i32;
                     size = if size_bits & 0x80 > 0 {
@@ -224,7 +226,8 @@ impl FileSystem {
                     tile_y = data.read_u8().unwrap() as i32;
 
                     dest_index = dest_index_facing & 0x1FF;
-                    facing = Facing::from_index((dest_index_facing & 0x600) >> 9);
+                    facing_byte = (dest_index_facing >> 8) as u8;
+                    facing = Facing::from_data(((facing_byte >> 1) & 0x0F) | (facing_byte & 0x80));
 
                     let side = (((size_bits & 0x7F) + 1) * 16) as i32;
                     size = if size_bits & 0x80 > 0 {
@@ -239,7 +242,7 @@ impl FileSystem {
                 },
             };
 
-            let destination = Destination::from_data(dest_index, facing, tile_x, tile_y, shift_x, shift_y);
+            let destination = Destination::from_data(dest_index, facing, tile_x, tile_y, shift_x, shift_y, facing_byte);
 
             exits.push(SceneExit {
                 index: exit_index,

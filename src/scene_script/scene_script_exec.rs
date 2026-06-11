@@ -246,7 +246,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         // Actor facing.
         Op::ActorFacingSet { actor, facing } => {
             let actor_index = actor.deref(scene_state, this_actor);
-            let facing = Facing::from_index(facing.get_scene_u8(ctx, scene_state, this_actor) as usize);
+            let facing = Facing::from_data(facing.get_scene_u8(ctx, scene_state, this_actor));
 
             let actor = scene_state.actors.get_mut(actor_index).unwrap();
             actor.facing = facing;
@@ -515,13 +515,13 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
             // Set textbox result variable.
             let result_value =
-                ctx.memory.read_scene_u8(0x7E0200, scene_state) as u32 |
-                (ctx.memory.read_scene_u8(0x7E0201, scene_state) as u32) << 8 |
-                (ctx.memory.read_scene_u8(0x7E0202, scene_state) as u32) << 16;
+                ctx.memory.get_scene_u8(0x7E0200, scene_state) as u32 |
+                (ctx.memory.get_scene_u8(0x7E0201, scene_state) as u32) << 8 |
+                (ctx.memory.get_scene_u8(0x7E0202, scene_state) as u32) << 16;
 
             // Set textbox item index variable.
             // todo read proper item index, categorized for PC?
-            let result_item = ctx.memory.read_scene_u8(0x7F0200, scene_state) as usize;
+            let result_item = ctx.memory.get_scene_u8(0x7F0200, scene_state) as usize;
             let result_item_name = ctx.l10n.get_indexed(IndexedType::Item, result_item);
 
             scene_state.textbox.show(ctx, text, real_position, this_actor, choice_lines, result_value, result_item_name);
@@ -744,9 +744,13 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         // Special scenes and effects.
         Op::SpecialScene { scene, flags } => {
             println!("Unimplemented: special scene {} with flags {:?}", scene, flags);
-            // This skips the title screen as if the user pressed a button, so that the
+
+            // Skip the title screen as if the user pressed a button, so that the
             // intro sequence doesn't start.
-            ctx.memory.write_u8(0x7F0060, 1);
+            if scene == 2 {
+                ctx.memory.put_u8(0x7F0062, 0xFF);
+            }
+            
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::SpecialOpenPortal { value1, value2, value3 } => {

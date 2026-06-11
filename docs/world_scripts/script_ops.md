@@ -63,7 +63,7 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 50  | `$32` | X | `scroll`     | u8 steps                                               | Scroll map by vector components for given amount of cycles.                                    |
 | 51  | `$33` |   | `bganm`      | u8 bank, u16 address, u16 vram_address, u16 len        | Sets up a DMA transfer of data from the source address into VRAM.                              |
 | 52  | `$34` | X | `func`       | u16 address                                            | Directly calls a native function, with a 16 bit address.                                       |
-| 53  | `$35` | X | `link`       | u16 address                                            | Creates a new actor with the specified action function.                                        |
+| 53  | `$35` | X | `link`       | u16 address                                            | Creates a new actor with the specified task function.                                          |
 | 54  | `$36` | X | `call`       | u16 address                                            | Stores the next op address and jumps to a new address.                                         |
 | 55  | `$37` | X | `return`     |                                                        | Jumps back to the stored op address.                                                           |
 | 56  | `$38` | X | `wait`       | u8 delay                                               | Waits for a given number of cycles.                                                            |
@@ -76,7 +76,7 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 63  | `$3f` |   | `tpxmove`    | u16 x, u8 anim_l, u8 anim_r                            | Move actor to X, animate for moving left or right.                                             |
 | 64  | `$40` |   | `tpymove`    | u16 y, u8 anim_u, u8 anim_d                            | Move actor to Y, animate for moving up or down.                                                |
 | 65  | `$41` |   | `trigger`    |                                                        | Unused.                                                                                        |
-| 66  | `$42` | X | `slink`      | u16 address                                            | Creates a new special actor with the specified action function.                                |
+| 66  | `$42` | X | `slink`      | u16 address                                            | Creates a new special actor with the specified task function.                                  |
 | 67  | `$43` | X | `s_newevent` | u16 address, u8 unused                                 | Creates a new special actor executing script ops from the address.                             |
 | 68  | `$44` |   | `wake`       | u16 address                                            | Open up a (scripted) exit by address.                                                          |
 | 69  | `$45` |   | `sleep`      | u16 address                                            | Close down a (scripted) exit by address.                                                       |

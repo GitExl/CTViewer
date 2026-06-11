@@ -160,18 +160,21 @@ impl FileSystem {
 
             let scene_index;
             let facing;
+            let facing_byte;
             let shift_left;
             let shift_up;
             match self.mode {
                 GameMode::Pc => {
                     scene_index = exit_data.scene_index as usize;
-                    facing = ((exit_data.scene_facing & 0x6) >> 1) as usize;
+                    facing = (exit_data.scene_facing & 0x6) >> 1;
+                    facing_byte = exit_data.scene_facing;
                     shift_left = exit_data.scene_facing & 0x8 > 0;
                     shift_up = exit_data.scene_facing & 0x10 > 0;
                 },
                 GameMode::Snes => {
                     scene_index = (exit_data.scene_index & 0x1FF) as usize;
-                    facing = ((exit_data.scene_index & 0x600) >> 9) as usize;
+                    facing_byte = (exit_data.scene_index >> 8) as u8;
+                    facing = ((facing_byte >> 1) & 0x0F) | (facing_byte & 0x80);
                     shift_left = exit_data.scene_index & 0x800 > 0;
                     shift_up = exit_data.scene_index & 0x1000 > 0;
                 },
@@ -179,7 +182,7 @@ impl FileSystem {
 
             let shift_x = if shift_left { -8 } else { 0 };
             let shift_y = if shift_up { -8 } else { 0 };
-            let destination = Destination::from_data(scene_index, Facing::from_index(facing), exit_data.scene_tile_x, exit_data.scene_tile_y, shift_x, shift_y);
+            let destination = Destination::from_data(scene_index, Facing::from_data(facing), exit_data.scene_tile_x, exit_data.scene_tile_y, shift_x, shift_y, facing_byte);
 
             exits.push(WorldExit {
                 index: exit_index,

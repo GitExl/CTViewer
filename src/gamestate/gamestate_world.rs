@@ -75,12 +75,18 @@ pub struct GameStateWorld {
 
 impl GameStateWorld {
     pub fn new(ctx: &mut Context, world_index: usize, pos: Vec2Df64, fade_in: bool) -> GameStateWorld {
+        ctx.memory.put_u8(0x7E1B59, 0);
+        ctx.memory.put_u8(0x7E1BF7, 0);
+
+        // Copy storyflags from scene memory to world memory.
+        let story_flags = ctx.memory.get_bytes(0x7F01F0, 0x0F);
+        ctx.memory.put_bytes(0x7E1BA7, &story_flags);
+        ctx.memory.put_u8(0x7E1BA6, ctx.memory.get_u8(0x7F0000));
+
         let mut world = ctx.fs.read_world(world_index);
 
         let mut sprites = WorldSprites::new(ctx, world_index, world.sprite_graphics);
         sprites.load_player_sprites(ctx, [0, 1, 2]);
-
-        ctx.sprite_states.clear();
 
         // Create new shared world state.
         let mut state = WorldState {
@@ -160,7 +166,7 @@ impl GameStateTrait for GameStateWorld {
             state.pos.x = actor.x;
             state.pos.y = actor.y;
             state.palette = self.world.palette.palette.clone();
-            state.palette_offset = 128 + ((actor.palette_priority & 0x0F) as usize / 2) * 16;
+            state.palette_offset = 128 + ((actor.palette_priority >> 1) & 0x07) as usize * 16;
             state.assembly_key = actor.sprite_assembly_key;
 
             state.flags = SpriteStateFlags::empty();
@@ -203,10 +209,18 @@ impl GameStateTrait for GameStateWorld {
             }
         }
 
-        if self.next_game_event.is_some() {
-            let event = self.next_game_event;
+        if let Some(next_game_event) = self.next_game_event {
+            match next_game_event {
+                // Copy storyflags back to scene memory.
+                GameEvent::GotoDestination { .. } => {
+
+                    let story_flags = ctx.memory.get_bytes(0x7E1BA7, 0x0F);
+                    ctx.memory.put_bytes(0x7F01F0, &story_flags);
+                }
+            }
+
             self.next_game_event = None;
-            return event;
+            return Some(next_game_event);
         }
 
         None

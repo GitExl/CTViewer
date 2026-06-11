@@ -136,7 +136,7 @@ fn main() -> Result<(), String> {
     let args = Args::parse();
 
     let fs = create_filesystem(args.path);
-    let l10n = L10n::new("en", &fs);
+    let l10n = L10n::new("it", &fs);
     let sdl = sdl3::init().unwrap();
     let render = Renderer::new(&sdl, args.scale, args.scale_linear, args.pixel_aspect_ratio, args.display_aspect_ratio, !args.no_vsync);
     let assets = Assets::new(&fs);
@@ -147,6 +147,7 @@ fn main() -> Result<(), String> {
     let mode = fs.mode;
 
     let mut memory = Memory::new();
+    memory.put_u8(0x7F0061, 1);     // Initialized at 0xC28D8A.
 
     // Post forest regrowth test.
     // memory.system[0x0104] |= 128;
@@ -160,10 +161,6 @@ fn main() -> Result<(), String> {
 
     // Steamboat travel test.
     // memory.system[0x1BA7] |= 4;
-
-    // Normal start (scene 0 => world 0).
-    memory.global[0x0060] |= 1;
-    memory.system[0x0104] |= 128;
 
 
     let mut text_processor = TextProcessor::new();
@@ -257,15 +254,18 @@ fn main() -> Result<(), String> {
             if game_event.is_some() {
                 match game_event.unwrap() {
                     GameEvent::GotoDestination { destination, fade_in } => {
+                        println!("Heading to {}...", destination.as_string());
 
                         // Store previous location.
-                        ctx.memory.write_u16(0x7E0105, destination.get_index() as u16);
+                        ctx.memory.put_u16(0x7E0105, destination.get_index() as u16);
 
                         match destination {
-                            Destination::Scene { index, pos, facing } => {
+                            Destination::Scene { index, pos, facing, data } => {
+                                ctx.memory.put_u8(0x7E0104, data);
                                 gamestate = Box::new(GameStateScene::new(&mut ctx, index, pos.as_vec2d_f64(), facing, fade_in));
                             },
-                            Destination::World { index, pos } => {
+                            Destination::World { index, pos, data } => {
+                                ctx.memory.put_u8(0x7E0104, data);
                                 gamestate = Box::new(GameStateWorld::new(&mut ctx, index, pos.as_vec2d_f64(), fade_in));
                             },
                         };
