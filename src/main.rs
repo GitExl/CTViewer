@@ -162,6 +162,9 @@ fn main() -> Result<(), String> {
     // Steamboat travel test.
     // memory.system[0x1BA7] |= 4;
 
+    // Run intro.
+    memory.put_u8(0x7F0057, 4);
+
 
     let mut text_processor = TextProcessor::new();
     let party = Party::new();
@@ -181,6 +184,7 @@ fn main() -> Result<(), String> {
         screen_fade,
         mode,
     };
+
 
     let mut gamestate: Box<dyn GameStateTrait>;
     if args.scene > -1 {

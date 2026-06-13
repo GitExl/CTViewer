@@ -20,12 +20,6 @@ impl MemoryRegion {
         }
     }
 
-    pub fn put_bytes(&mut self, address: usize, bytes: &[u8]) {
-        for index in 0..bytes.len() {
-            self.data[address + index] = bytes[index];
-        }
-    }
-
     pub fn clear(&mut self) {
         self.data.fill(0);
     }
@@ -413,13 +407,13 @@ impl DataDest {
                 if *address == 0x7E00E3 {
                     world_state.camera.set_to(Vec2Df64::new(value as f64 * 8.0, world_state.camera.pos.y));
                 } else if *address == 0x7E00E7 {
-                    world_state.camera.set_to(Vec2Df64::new(world_state.camera.pos.x, value as f64 * 8.0));
+                    world_state.camera.set_to(Vec2Df64::new(world_state.camera.pos.x, value as f64 * 8.0 + 1.0));
 
                 // Layer 2 X and Y.
                 } else if *address == 0x7E00E5 {
                     world_state.camera.set_to(Vec2Df64::new(value as f64 * 8.0, world_state.camera.pos.y));
                 } else if *address == 0x7E00E9 {
-                    world_state.camera.set_to(Vec2Df64::new(world_state.camera.pos.x, value as f64 * 8.0));
+                    world_state.camera.set_to(Vec2Df64::new(world_state.camera.pos.x, value as f64 * 8.0 + 1.0));
                 } else {
                     self.put_u8(ctx, value);
                 }

@@ -14,6 +14,7 @@ use crate::scene_script::decoder::ops_palette::SubPalette;
 use crate::scene_script::exec::load_character::{exec_load_character, exec_load_character_player};
 use crate::scene_script::exec::tile_copy::exec_tile_copy;
 use crate::scene_script::scene_script::{ActorScriptState, OpResult};
+use crate::scene_script::scene_script_decoder::{ScrollLayerFlags, SpecialEffect};
 use crate::software_renderer::palette::Palette;
 use crate::util::rect::Rect;
 use crate::util::vec2df64::Vec2Df64;
@@ -181,7 +182,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             exec_load_character(ctx, scene_state, this_actor, char_type, index, is_static, battle_index)
         },
         Op::LoadCharacterPlayer { character_index, battle_index, must_be_active } => {
-            exec_load_character_player(ctx, scene_state, this_actor, character_index, battle_index, must_be_active)
+            exec_load_character_player(ctx, scene_state, state, this_actor, character_index, battle_index, must_be_active)
         },
 
         Op::ActorUpdateFlags { actor, set, remove } => {
@@ -279,17 +280,23 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         // todo rest of bits
-        Op::ActorSetSpritePriority { actor, top, bottom, set_and_lock, .. } => {
+        Op::ActorSetSpritePriority { actor, top, bottom, set_from_map, unknown_bits, sprite_sort_weight } => {
             let actor_index = actor.deref(scene_state, this_actor);
 
-            if set_and_lock {
-                scene_state.actors[actor_index].flags.set(SceneActorFlags::SPRITE_PRIORITY_LOCKED, true);
-                scene_state.actors[actor_index].sprite_priority_top = top;
-                scene_state.actors[actor_index].sprite_priority_bottom = bottom;
+            println!("{}: top {:?}, bottom {:?}, from map {}, weight {}, unknown {:02X}", actor_index, top, bottom, set_from_map, sprite_sort_weight, unknown_bits);
+
+            let actor = scene_state.actors.get_mut(actor_index).unwrap();
+            if set_from_map {
+                actor.flags.set(SceneActorFlags::SPRITE_PRIORITY_LOCKED, false);
+                actor.update_sprite_priority(&scene_state.scene_map);
             } else {
-                scene_state.actors[actor_index].update_sprite_priority(&scene_state.scene_map);
-                scene_state.actors[actor_index].flags.set(SceneActorFlags::SPRITE_PRIORITY_LOCKED, false);
+                actor.flags.set(SceneActorFlags::SPRITE_PRIORITY_LOCKED, true);
+                actor.sprite_priority_top = top;
+                actor.sprite_priority_bottom = bottom;
             }
+
+            actor.sprite_sort_weight = sprite_sort_weight;
+            actor.anim_delay = 0;
 
             OpResult::COMPLETE
         },
@@ -571,8 +578,22 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         // Layer/camera ops.
-        Op::ScrollLayers { x, y, duration, flags } => {
-            println!("Unimplemented: scroll layers to {}x{} for {} seconds with {:?}", x, y, duration, flags);
+        Op::ScrollLayers { x, y, cycles, flags } => {
+            if flags.contains(ScrollLayerFlags::SCROLL_L1) {
+                scene_state.map.layers[0].scroll_states[1].speed.x = x * 60.0;
+                scene_state.map.layers[0].scroll_states[1].speed.y = y * 60.0;
+                scene_state.map.layers[0].scroll_states[1].time = cycles as f64 / 60.0;
+            }
+            if flags.contains(ScrollLayerFlags::SCROLL_L2) {
+                scene_state.map.layers[1].scroll_states[1].speed.x = x * 60.0;
+                scene_state.map.layers[1].scroll_states[1].speed.y = y * 60.0;
+                scene_state.map.layers[1].scroll_states[1].time = cycles as f64 / 60.0;
+            }
+            if flags.contains(ScrollLayerFlags::SCROLL_L3) {
+                scene_state.map.layers[2].scroll_states[1].speed.x = x * 60.0;
+                scene_state.map.layers[2].scroll_states[1].speed.y = y * 60.0;
+                scene_state.map.layers[2].scroll_states[1].time = cycles as f64 / 60.0;
+            }
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::MoveCameraTo { x, y } => {
@@ -744,13 +765,6 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         // Special scenes and effects.
         Op::SpecialScene { scene, flags } => {
             println!("Unimplemented: special scene {} with flags {:?}", scene, flags);
-
-            // Skip the title screen as if the user pressed a button, so that the
-            // intro sequence doesn't start.
-            if scene == 2 {
-                ctx.memory.put_u8(0x7F0062, 0xFF);
-            }
-            
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::SpecialOpenPortal { value1, value2, value3 } => {
@@ -758,8 +772,68 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::SpecialEffect { effect } => {
-            println!("Unimplemented: special effect {:?}", effect);
-            OpResult::YIELD | OpResult::COMPLETE
+            match effect {
+                SpecialEffect::ScreenCloseLeftRight => {
+                    if state.pause_counter > 0 {
+                        state.pause_counter -= 1;
+                        if state.pause_counter == 0 {
+                            OpResult::YIELD | OpResult::COMPLETE
+                        } else {
+                            OpResult::YIELD
+                        }
+                    } else {
+                        state.pause_counter = 30;
+                        println!("Dummied special effect {:?}", effect);
+                        OpResult::YIELD
+                    }
+                },
+                SpecialEffect::ScreenCloseRightLeft => {
+                    if state.pause_counter > 0 {
+                        state.pause_counter -= 1;
+                        if state.pause_counter == 0 {
+                            OpResult::YIELD | OpResult::COMPLETE
+                        } else {
+                            OpResult::YIELD
+                        }
+                    } else {
+                        state.pause_counter = 30;
+                        println!("Dummied special effect {:?}", effect);
+                        OpResult::YIELD
+                    }
+                },
+                SpecialEffect::ScreenOpenLeftRight => {
+                    if state.pause_counter > 0 {
+                        state.pause_counter -= 1;
+                        if state.pause_counter == 0 {
+                            OpResult::YIELD | OpResult::COMPLETE
+                        } else {
+                            OpResult::YIELD
+                        }
+                    } else {
+                        state.pause_counter = 30;
+                        println!("Dummied special effect {:?}", effect);
+                        OpResult::YIELD
+                    }
+                },
+                SpecialEffect::ScreenOpenRightLeft => {
+                    if state.pause_counter > 0 {
+                        state.pause_counter -= 1;
+                        if state.pause_counter == 0 {
+                            OpResult::YIELD | OpResult::COMPLETE
+                        } else {
+                            OpResult::YIELD
+                        }
+                    } else {
+                        state.pause_counter = 30;
+                        println!("Dummied special effect {:?}", effect);
+                        OpResult::YIELD
+                    }
+                },
+                _ => {
+                    println!("Unimplemented: special effect {:?}", effect);
+                    OpResult::YIELD | OpResult::COMPLETE
+                },
+            }
         },
 
         _ => {

@@ -27,6 +27,7 @@ pub struct SpriteState {
 
     pub priority_top: SpritePriority,
     pub priority_bottom: SpritePriority,
+    pub sort_weight: i32,
 
     pub assembly_key: u64,
     pub bitmap_key: u64,
@@ -44,6 +45,7 @@ impl SpriteState {
 
             priority_top: SpritePriority::default(),
             priority_bottom: SpritePriority::default(),
+            sort_weight: 0,
 
             assembly_key: 0,
             bitmap_key: 0,
@@ -61,6 +63,7 @@ impl SpriteState {
         println!("  At {}", self.pos);
         println!("  Priority top {:?}", self.priority_top);
         println!("  Priority bottom {:?}", self.priority_bottom);
+        println!("  Sort weight {}", self.sort_weight);
         println!("  Palette {} colors", self.palette.colors.len());
         println!();
     }

@@ -64,6 +64,12 @@ pub struct MapChip {
     pub palette: usize,
 }
 
+#[derive(Default, Copy, Clone)]
+pub struct ScrollState {
+    pub speed: Vec2Df64,
+    pub time: f64,
+}
+
 #[derive(Clone)]
 pub struct MapLayer {
     pub chip_width: u32,
@@ -75,10 +81,11 @@ pub struct MapLayer {
     pub tiles: Vec<usize>,
 
     pub scroll_mode: LayerScrollMode,
-    pub scroll_speed: Vec2Df64,
     pub scroll: Vec2Df64,
     pub scroll_last: Vec2Df64,
     pub scroll_lerp: Vec2Df64,
+
+    pub scroll_states: [ScrollState; 2],
 }
 
 impl MapLayer {
@@ -95,16 +102,30 @@ impl MapLayer {
             tiles: vec![0; len / 4],
 
             scroll_mode: LayerScrollMode::Normal,
-            scroll_speed: Vec2Df64::default(),
             scroll: Vec2Df64::default(),
             scroll_last: Vec2Df64::default(),
             scroll_lerp: Vec2Df64::default(),
+            scroll_states: [ScrollState::default(); 2],
         }
     }
 
     pub fn tick(&mut self, delta: f64) {
         self.scroll_last = self.scroll;
-        self.scroll = self.scroll + self.scroll_speed * delta;
+        self.scroll = self.scroll + (self.scroll_states[0].speed + self.scroll_states[1].speed) * delta;
+
+        for state in self.scroll_states.iter_mut() {
+            if state.time <= 0.0 {
+                continue;
+            }
+
+            state.time -= delta;
+            if state.time <= 0.0 {
+                state.speed.x = 0.0;
+                state.speed.y = 0.0;
+                state.time = 0.0;
+            }
+        }
+
     }
 
     pub fn lerp(&mut self, lerp: f64) {
@@ -171,7 +192,8 @@ impl Map {
             println!("    {} x {} tiles", layer.tile_width, layer.tile_height);
             println!("    {} x {} chips", layer.chip_width, layer.chip_height);
             println!("    {} scroll mode", layer.scroll_mode.to_string());
-            println!("    Scroll at {} by {} pixels/s", layer.scroll, layer.scroll_speed);
+            println!("    Scroll 0 at {} by {} pixels/s", layer.scroll, layer.scroll_states[0].speed);
+            println!("    Scroll 1 at {} by {} pixels/s", layer.scroll, layer.scroll_states[1].speed);
         }
 
         println!();

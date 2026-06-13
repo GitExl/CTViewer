@@ -3,7 +3,7 @@ use crate::Context;
 use crate::facing::Facing;
 use crate::gamestate::gamestate_scene::SceneState;
 use crate::scene_script::decoder::ops_char_load::CharacterType;
-use crate::scene_script::scene_script::OpResult;
+use crate::scene_script::scene_script::{ActorScriptState, OpResult};
 use crate::sprites::sprite_renderer::SpritePriority;
 
 pub fn exec_load_character(ctx: &mut Context, scene_state: &mut SceneState, actor_index: usize, char_type: CharacterType, index: usize, is_static: bool, battle_index: usize) -> OpResult {
@@ -55,7 +55,7 @@ pub fn exec_load_character(ctx: &mut Context, scene_state: &mut SceneState, acto
     OpResult::COMPLETE
 }
 
-pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneState, actor_index: usize, character_index: usize, battle_index: usize, must_be_active: bool) -> OpResult {
+pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneState, script_state: &mut ActorScriptState, actor_index: usize, character_index: usize, battle_index: usize, must_be_active: bool) -> OpResult {
 
     // We need to borrow the actors list mutably, so determine the enter position and facing based
     // off of either PC0 or the scene entrance here.
@@ -105,9 +105,8 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     actor.flags.insert(SceneActorFlags::SOLID);
     actor.task = SceneActorTask::None;
 
-    // Script state defaults.
-    let script_state = &mut scene_state.script_states.get_mut(actor_index).unwrap();
-    script_state.delay |= 1;
+    // Player characters get faster script execution by default.
+    script_state.delay = 1;
 
     // Inherit coordinates and facing from PC 0, unless this is PC 0 then use scene enter data.
     if character_index != 0 {

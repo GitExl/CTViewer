@@ -23,8 +23,8 @@ impl ScreenFade {
 
     pub fn start(&mut self, target: f64, delay: usize) {
         self.target = target;
-        self.delay = delay - 1;
-        self.delay_counter = delay - 1;
+        self.delay = delay.saturating_sub(1);
+        self.delay_counter = delay.saturating_sub(1);
         self.active = true;
     }
 

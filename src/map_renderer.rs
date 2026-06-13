@@ -323,19 +323,24 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
 
     // Sort enabled sprites by Y coordinate.
     let mut sorted: Vec<&SpriteState> = Vec::new();
-    for sprite_state in sprite_states.get_all().iter().rev() {
+    for sprite_state in sprite_states.get_all().iter() {
         if !sprite_state.flags.contains(SpriteStateFlags::ENABLED) {
             continue;
         }
         sorted.push(&sprite_state);
     }
-    sorted.sort_by(|a, b| a.pos.y.partial_cmp(&b.pos.y).unwrap());
+
+    sorted.sort_by(|a, b| {
+        let c = (a.sort_weight << 16) + a.pos.y as i32;
+        let d = (b.sort_weight << 16) + b.pos.y as i32;
+        c.partial_cmp(&d).unwrap()
+    });
 
     for sprite_state in sorted.iter() {
         let render_top = sprite_state.priority_top == priority;
         let render_bottom = sprite_state.priority_bottom == priority;
-        if render_top || render_bottom {
 
+        if render_top || render_bottom {
             let pos = if sprite_state.flags.contains(SpriteStateFlags::CAMERA_RELATIVE) {
                 sprite_state.pos.floor().as_vec2d_i32()
             } else {

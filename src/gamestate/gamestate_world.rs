@@ -121,6 +121,8 @@ impl GameStateWorld {
         state.camera.center_to(pos);
         if fade_in {
             ctx.screen_fade.start(1.0, 2);
+        } else {
+            ctx.screen_fade.set(1.0);
         }
 
         println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));

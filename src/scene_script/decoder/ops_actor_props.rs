@@ -74,16 +74,24 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
         // "pri"
         0x8E => {
             let bits = data.read_u8().unwrap();
-            let set_and_lock = bits & 0x80 == 0;
+            let set_from_map = bits & 0x80 != 0;
             let top = bits & 0x3;
-            let bottom = (bits & 0x30) >> 4;
-            let unknown_bits = bits & 0x4C;
+            let bottom = (bits >> 4) & 0x3;
+            let unknown_bits = bits & 0x40;
+            let sprite_sort_weight = if bits & 0x0C == 0 {
+                0
+            } else if bits & 0x04 != 0 {
+                1
+            } else {
+                2
+            };
 
             Op::ActorSetSpritePriority {
                 actor: ActorRef::This,
                 top: SpritePriority::from_value(top),
                 bottom: SpritePriority::from_value(bottom),
-                set_and_lock,
+                set_from_map,
+                sprite_sort_weight,
                 unknown_bits,
             }
         },

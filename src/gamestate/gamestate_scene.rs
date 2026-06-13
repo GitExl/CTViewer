@@ -105,8 +105,12 @@ impl GameStateScene {
         // Initialize state.
         if fade_in {
             ctx.screen_fade.start(1.0, 2);
+        } else {
+            ctx.screen_fade.set(1.0);
         }
-        state.camera.center_to(pos);
+
+        // Center to target position. Offset by 0, -26 to match the SNES version.
+        state.camera.center_to(pos - Vec2Df64::new(0.0, 26.0));
 
         // Create actors and setup their state.
         for (actor_index, actor_script) in scene.script.get_actor_scripts().iter().enumerate() {

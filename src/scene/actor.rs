@@ -150,6 +150,7 @@ pub struct SceneActor {
     pub sprite_frame: usize,
     pub sprite_priority_top: SpritePriority,
     pub sprite_priority_bottom: SpritePriority,
+    pub sprite_sort_weight: i32,
 
     pub palette_key: Option<u64>,
     pub palette_offset: usize,
@@ -188,8 +189,6 @@ impl SceneActor {
 
             task: SceneActorTask::None,
             debug_sprite: DebugSprite::None,
-            sprite_priority_top: SpritePriority::default(),
-            sprite_priority_bottom: SpritePriority::default(),
             class: SceneActorClass::Undefined,
             player_index: None,
             facing: Facing::default(),
@@ -200,6 +199,9 @@ impl SceneActor {
 
             sprite_info_key: None,
             sprite_frame: 0,
+            sprite_priority_top: SpritePriority::default(),
+            sprite_priority_bottom: SpritePriority::default(),
+            sprite_sort_weight: 0,
 
             palette_key: None,
             palette_offset: 0,
@@ -342,6 +344,7 @@ impl SceneActor {
         sprite_state.pos = self.pos_lerp;
         sprite_state.priority_top = self.sprite_priority_top;
         sprite_state.priority_bottom = self.sprite_priority_bottom;
+        sprite_state.sort_weight = self.sprite_sort_weight;
 
         if self.draw_mode == DrawMode::Draw && !self.flags.contains(SceneActorFlags::DEAD) && self.class != SceneActorClass::Undefined {
             sprite_state.flags.insert(SpriteStateFlags::ENABLED);

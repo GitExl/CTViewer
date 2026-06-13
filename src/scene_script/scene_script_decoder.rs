@@ -332,10 +332,10 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         // Scroll map layers.
         // "scroll"
         0xE6 => Op::ScrollLayers {
-            x: data.read_i8().unwrap() as i32,
-            y: data.read_i8().unwrap() as i32,
+            x: (data.read_i8().unwrap() as f64) / 16.0,
+            y: (data.read_i8().unwrap() as f64) / 16.0,
             flags: ScrollLayerFlags::from_bits_truncate(data.read_u8().unwrap() as u32),
-            duration: data.read_u8().unwrap() as u32,
+            cycles: data.read_u8().unwrap() as u32,
         },
 
         // Move camera.
@@ -440,10 +440,10 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         },
         // "staffrollxy"
         0x2F => Op::ScrollLayers {
-            x: data.read_i8().unwrap() as i32,
-            y: data.read_i8().unwrap() as i32,
+            x: (data.read_i8().unwrap() as f64) / 16.0,
+            y: (data.read_i8().unwrap() as f64) / 16.0,
             flags: ScrollLayerFlags::SCROLL_L1 | ScrollLayerFlags::SCROLL_L2 | ScrollLayerFlags::SCROLL_L3,
-            duration: 0,
+            cycles: 0,
         },
         // "staffroll1page", advance staff roll maybe?
         0x32 => Op::BitMath {

@@ -1,6 +1,6 @@
 # World script action functions
 
-All located in the `$C20000` segment.
+All located in the `$C20000` segment, for the North American SNES version.
 
 - `0F38` CODE_FN_C20F38
 - `0F63` fn_overworld_execute_next_event_commands

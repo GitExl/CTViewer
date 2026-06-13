@@ -2,20 +2,13 @@ use std::f64::consts::PI;
 use std::{fmt, ops};
 use crate::util::vec2di32::Vec2Di32;
 
-#[derive(Clone, Copy)]
+#[derive(Default, Clone, Copy)]
 pub struct Vec2Df64 {
     pub x: f64,
     pub y: f64,
 }
 
 impl Vec2Df64 {
-    pub fn default() -> Vec2Df64 {
-        Vec2Df64 {
-            x: 0.0,
-            y: 0.0,
-        }
-    }
-
     pub fn new(x: f64, y: f64) -> Vec2Df64 {
         Vec2Df64 {
             x, y,

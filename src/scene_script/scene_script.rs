@@ -191,10 +191,7 @@ impl SceneScript {
             let mut state_dup = scene_state.script_states[state_index].clone();
 
             // Countdown until next time this actor's script needs to be processed.
-            if state_dup.delay_counter > 1 {
-                state_dup.delay_counter -= 1;
-            } else {
-                state_dup.delay_counter = state_dup.delay;
+            if state_dup.delay_counter == 0 || state_dup.delay_counter == 1 {
 
                 // Execute up to 5 instructions, unless one yields.
                 for _ in 0..5 {
@@ -221,6 +218,10 @@ impl SceneScript {
                         break;
                     }
                 }
+
+                state_dup.delay_counter = state_dup.delay;
+            } else {
+                state_dup.delay_counter -= 1;
             }
 
             scene_state.script_states[state_index] = state_dup;

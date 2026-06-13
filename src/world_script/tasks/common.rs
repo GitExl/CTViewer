@@ -9,12 +9,18 @@ pub fn task_palette_load(world_state: &mut WorldState, actor: &mut WorldActor) {
 
     let palette_index = actor.memory.get_u8(0x32);
     let mode = actor.memory.get_u8(0x34);
-    let address = actor.memory.get_u24(0x35) as usize;
+    let mut address = actor.memory.get_u24(0x35) as usize;
+    if address >= 0xC60000 {
+        address -= 0xC00000;
+    }
 
     // Mode 0 copies palette data from palette animations.
     if mode == 0 {
+
+        // Gate world palette animation data.
+        // Palette data exists at 0xC6F5E0 as well, used during Epoch warp.
         if address < 0x7EC000 {
-            println!("Invalid palette copy mode 0 address 0x{:06X}", address);
+            println!("Unhandled palette copy mode 0 address 0x{:06X}", address);
         } else {
             let src_start = ((address - 0x7EC000) / 32) * 16;
             let dest_start = palette_index as usize * 16;

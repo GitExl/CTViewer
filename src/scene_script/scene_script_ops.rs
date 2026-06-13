@@ -84,7 +84,8 @@ pub enum Op {
         actor: ActorRef,
         top: SpritePriority,
         bottom: SpritePriority,
-        set_and_lock: bool,
+        set_from_map: bool,
+        sprite_sort_weight: i32,
         unknown_bits: u8,
     },
     ActorSetResult8 {
@@ -374,10 +375,10 @@ pub enum Op {
 
     // Scroll map layers.
     ScrollLayers {
-        x: i32,
-        y: i32,
+        x: f64,
+        y: f64,
         flags: ScrollLayerFlags,
-        duration: u32,
+        cycles: u32,
     },
     MoveCameraTo {
         x: i32,

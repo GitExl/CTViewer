@@ -23,7 +23,7 @@ ops inside the script are sometimes offset by `+$400`.
 
 ## Memory
 
-Global memory refers to the range of `$000000` to `$00FFFF`. Local memory refers to the 64 bytes that stores each
+Global memory refers to the range of `$000000` to `$00FFFF`. Local memory refers to the 64 bytes that store each
 actor's data. In theory local memory ops can access memory past their own, up to and including the next 3 actors.
 
 ## Execution
