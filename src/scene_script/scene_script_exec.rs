@@ -280,10 +280,8 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
         },
 
         // todo rest of bits
-        Op::ActorSetSpritePriority { actor, top, bottom, set_from_map, unknown_bits, sprite_sort_weight } => {
+        Op::ActorSetSpritePriority { actor, top, bottom, set_from_map, sprite_sort_weight, .. } => {
             let actor_index = actor.deref(scene_state, this_actor);
-
-            println!("{}: top {:?}, bottom {:?}, from map {}, weight {}, unknown {:02X}", actor_index, top, bottom, set_from_map, sprite_sort_weight, unknown_bits);
 
             let actor = scene_state.actors.get_mut(actor_index).unwrap();
             if set_from_map {
@@ -579,20 +577,23 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
 
         // Layer/camera ops.
         Op::ScrollLayers { x, y, cycles, flags } => {
-            if flags.contains(ScrollLayerFlags::SCROLL_L1) {
-                scene_state.map.layers[0].scroll_states[1].speed.x = x * 60.0;
-                scene_state.map.layers[0].scroll_states[1].speed.y = y * 60.0;
-                scene_state.map.layers[0].scroll_states[1].time = cycles as f64 / 60.0;
+            if flags.contains(ScrollLayerFlags::SCROLL_L1_SPRITES) {
+                scene_state.map.layers[0].scroll_states[1].start(
+                    Vec2Df64::new(x * 60.0, y * 60.0),
+                    cycles as f64 / 60.0
+                );
             }
             if flags.contains(ScrollLayerFlags::SCROLL_L2) {
-                scene_state.map.layers[1].scroll_states[1].speed.x = x * 60.0;
-                scene_state.map.layers[1].scroll_states[1].speed.y = y * 60.0;
-                scene_state.map.layers[1].scroll_states[1].time = cycles as f64 / 60.0;
+                scene_state.map.layers[1].scroll_states[1].start(
+                    Vec2Df64::new(x * 60.0, y * 60.0),
+                    cycles as f64 / 60.0
+                );
             }
             if flags.contains(ScrollLayerFlags::SCROLL_L3) {
-                scene_state.map.layers[2].scroll_states[1].speed.x = x * 60.0;
-                scene_state.map.layers[2].scroll_states[1].speed.y = y * 60.0;
-                scene_state.map.layers[2].scroll_states[1].time = cycles as f64 / 60.0;
+                scene_state.map.layers[2].scroll_states[1].start(
+                    Vec2Df64::new(x * 60.0, y * 60.0),
+                    cycles as f64 / 60.0
+                );
             }
             OpResult::YIELD | OpResult::COMPLETE
         },

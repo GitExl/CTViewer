@@ -56,6 +56,7 @@ mod shared_op;
 mod music_list;
 mod sound_list;
 pub mod assets;
+mod scroll_state;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
@@ -148,19 +149,6 @@ fn main() -> Result<(), String> {
 
     let mut memory = Memory::new();
     memory.put_u8(0x7F0061, 1);     // Initialized at 0xC28D8A.
-
-    // Post forest regrowth test.
-    // memory.system[0x0104] |= 128;
-    // memory.system[0x0104] |= 64;
-    // memory.system[0x1BA7] |= 4;
-    // memory.system[0x1BA7] |= 8;
-    // memory.system[0x1BAA] |= 4;
-    // memory.system[0x1BAB] |= 1;
-    // memory.system[0x1BA8] |= 16;
-    // memory.system[0x1BA7] |= 2;
-
-    // Steamboat travel test.
-    // memory.system[0x1BA7] |= 4;
 
     // Run intro.
     memory.put_u8(0x7F0057, 4);

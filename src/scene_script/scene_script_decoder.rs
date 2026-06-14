@@ -39,7 +39,7 @@ pub enum SpecialEffect {
 bitflags! {
     #[derive(Clone, Default, Copy, Debug, PartialEq)]
     pub struct ScrollLayerFlags: u32 {
-        const SCROLL_L1 = 0x01;
+        const SCROLL_L1_SPRITES = 0x01;
         const SCROLL_L2 = 0x02;
         const SCROLL_L3 = 0x04;
     }
@@ -442,7 +442,7 @@ pub fn op_decode(data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Option<Op> {
         0x2F => Op::ScrollLayers {
             x: (data.read_i8().unwrap() as f64) / 16.0,
             y: (data.read_i8().unwrap() as f64) / 16.0,
-            flags: ScrollLayerFlags::SCROLL_L1 | ScrollLayerFlags::SCROLL_L2 | ScrollLayerFlags::SCROLL_L3,
+            flags: ScrollLayerFlags::SCROLL_L1_SPRITES | ScrollLayerFlags::SCROLL_L2 | ScrollLayerFlags::SCROLL_L3,
             cycles: 0,
         },
         // "staffroll1page", advance staff roll maybe?

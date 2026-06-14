@@ -17,6 +17,7 @@ use crate::sprites::sprite_renderer::{render_sprite, SpritePriority};
 use crate::sprites::sprite_state::{SpriteState, SpriteStateFlags};
 use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::tileset::TileSet;
+use crate::util::vec2df64::Vec2Df64;
 
 // Data used in a main or subscreen render pass.
 struct RenderData<'a> {
@@ -140,7 +141,7 @@ impl MapRenderer {
         }
     }
 
-    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, sprite_states: &SpriteStateList, sprite_assets: &Assets) {
+    pub fn render(&mut self, _: f64, camera: &Camera, surface: &mut Surface, map: &Map, tileset_l12: &TileSet, tileset_l3: &TileSet, palette: &GamePalette, sprite_states: &SpriteStateList, sprite_scroll: Vec2Df64, sprite_assets: &Assets) {
         self.screen_sub.fill(self.layer_blend_color);
         self.pixels_main.clear();
         self.pixels_sub.clear();
@@ -154,8 +155,8 @@ impl MapRenderer {
             sprite_states,
             layer3_priority: self.layer3_priority,
         };
-        render_to_target(surface, &mut self.pixels_main, &mut render_data, sprite_assets, self.layer_enabled & self.layer_target_main);
-        render_to_target(&mut self.screen_sub, &mut self.pixels_sub, &mut render_data, sprite_assets, self.layer_enabled & self.layer_target_sub);
+        render_to_target(surface, &mut self.pixels_main, &mut render_data, sprite_assets, sprite_scroll, self.layer_enabled & self.layer_target_main);
+        render_to_target(&mut self.screen_sub, &mut self.pixels_sub, &mut render_data, sprite_assets, sprite_scroll, self.layer_enabled & self.layer_target_sub);
 
         self.blend_surfaces(surface);
     }
@@ -265,7 +266,7 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
     }
 }
 
-fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprite_assets: &Assets, layers: LayerFlags) {
+fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mut RenderData, sprite_assets: &Assets, sprite_scroll: Vec2Df64, layers: LayerFlags) {
 
     // Layer 3, priority 0.
     if layers.contains(LayerFlags::Layer3) && render_data.map.layers[2].chips.len() > 0 {
@@ -274,7 +275,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 0.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowAll, &render_data.camera, &sprite_assets);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowAll, sprite_scroll, &render_data.camera, &sprite_assets);
     }
 
     // Layer 3, priority 1, if layer 3 does not have priority.
@@ -284,7 +285,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 1.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL1L2, &render_data.camera, &sprite_assets);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL1L2, sprite_scroll, &render_data.camera, &sprite_assets);
     }
 
     // Layer 2 and layer 1, priority 0.
@@ -297,7 +298,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 2.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL2AboveL1, &render_data.camera, &sprite_assets);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::BelowL2AboveL1, sprite_scroll, &render_data.camera, &sprite_assets);
     }
 
     // Layer 2 and layer 1, priority 1.
@@ -310,7 +311,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
 
     // Sprites, priority 3.
     if layers.contains(LayerFlags::Sprites) {
-        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::AboveAll, &render_data.camera, &sprite_assets);
+        render_sprites(surface, pixels, &render_data.sprite_states, SpritePriority::AboveAll, sprite_scroll, &render_data.camera, &sprite_assets);
     }
 
     // Layer 3, priority 1, if layer 3 has priority.
@@ -319,7 +320,7 @@ fn render_to_target(surface: &mut Surface, pixels: &mut Bitmap, render_data: &mu
     }
 }
 
-fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, camera: &Camera, sprite_assets: &Assets) {
+fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states: &SpriteStateList, priority: SpritePriority, scroll: Vec2Df64, camera: &Camera, assets: &Assets) {
 
     // Sort enabled sprites by Y coordinate.
     let mut sorted: Vec<&SpriteState> = Vec::new();
@@ -331,8 +332,8 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
     }
 
     sorted.sort_by(|a, b| {
-        let c = (a.sort_weight << 16) + a.pos.y as i32;
-        let d = (b.sort_weight << 16) + b.pos.y as i32;
+        let c = (a.sort_weight << 16) + (a.pos.y - scroll.y) as i32;
+        let d = (b.sort_weight << 16) + (b.pos.y - scroll.y) as i32;
         c.partial_cmp(&d).unwrap()
     });
 
@@ -344,11 +345,11 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
             let pos = if sprite_state.flags.contains(SpriteStateFlags::CAMERA_RELATIVE) {
                 sprite_state.pos.floor().as_vec2d_i32()
             } else {
-                (sprite_state.pos.floor() - camera.pos_lerp.floor()).as_vec2d_i32()
+                (sprite_state.pos.floor() - scroll.floor() - camera.pos_lerp.floor()).as_vec2d_i32()
             };
 
-            let assembly_frame = sprite_assets.get_assembly_frame(sprite_state.assembly_key);
-            let bitmap = sprite_assets.get_bitmap(sprite_state.bitmap_key);
+            let assembly_frame = assets.get_assembly_frame(sprite_state.assembly_key);
+            let bitmap = assets.get_bitmap(sprite_state.bitmap_key);
             render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, assembly_frame, bitmap, pos.x, pos.y, &sprite_state.palette, sprite_state.palette_offset);
         }
     }

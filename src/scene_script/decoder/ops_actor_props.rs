@@ -78,12 +78,12 @@ pub fn op_decode_actor_props(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
             let top = bits & 0x3;
             let bottom = (bits >> 4) & 0x3;
             let unknown_bits = bits & 0x40;
-            let sprite_sort_weight = if bits & 0x0C == 0 {
+            let sprite_sort_weight = if bits & 0x8 != 0 {
                 0
             } else if bits & 0x04 != 0 {
-                1
-            } else {
                 2
+            } else {
+                1
             };
 
             Op::ActorSetSpritePriority {

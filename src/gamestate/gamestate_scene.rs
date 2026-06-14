@@ -226,8 +226,6 @@ impl GameStateTrait for GameStateScene {
     }
 
     fn render(&mut self, ctx: &mut Context, lerp: f64) {
-
-        // Interpolate movement.
         self.state.map.lerp(lerp);
 
         for (actor_index, actor) in self.state.actors.iter_mut().enumerate() {
@@ -253,6 +251,7 @@ impl GameStateTrait for GameStateScene {
             &self.scene.tileset_l3,
             &self.scene.palette,
             &ctx.sprite_states,
+            self.state.map.layers[0].scroll_lerp,
             &ctx.assets,
         );
 
@@ -264,6 +263,7 @@ impl GameStateTrait for GameStateScene {
             &self.scene.treasure,
             &self.state.actors,
             &self.scene.palette.palette,
+            self.state.map.layers[0].scroll_lerp,
             &mut ctx.render.target,
         );
 

@@ -241,6 +241,7 @@ impl GameStateTrait for GameStateWorld {
             &self.state.tileset_l3,
             &self.state.palette,
             &ctx.sprite_states,
+            Vec2Df64::default(),
             &ctx.assets,
         );
         self.world_renderer.render(

@@ -1,4 +1,5 @@
 use bitflags::bitflags;
+use crate::scroll_state::ScrollState;
 use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 
@@ -64,12 +65,6 @@ pub struct MapChip {
     pub palette: usize,
 }
 
-#[derive(Default, Copy, Clone)]
-pub struct ScrollState {
-    pub speed: Vec2Df64,
-    pub time: f64,
-}
-
 #[derive(Clone)]
 pub struct MapLayer {
     pub chip_width: u32,
@@ -111,19 +106,10 @@ impl MapLayer {
 
     pub fn tick(&mut self, delta: f64) {
         self.scroll_last = self.scroll;
-        self.scroll = self.scroll + (self.scroll_states[0].speed + self.scroll_states[1].speed) * delta;
+        self.scroll = self.scroll + (self.scroll_states[0].get_speed() + self.scroll_states[1].get_speed()) * delta;
 
         for state in self.scroll_states.iter_mut() {
-            if state.time <= 0.0 {
-                continue;
-            }
-
-            state.time -= delta;
-            if state.time <= 0.0 {
-                state.speed.x = 0.0;
-                state.speed.y = 0.0;
-                state.time = 0.0;
-            }
+            state.tick(delta);
         }
 
     }
@@ -192,8 +178,8 @@ impl Map {
             println!("    {} x {} tiles", layer.tile_width, layer.tile_height);
             println!("    {} x {} chips", layer.chip_width, layer.chip_height);
             println!("    {} scroll mode", layer.scroll_mode.to_string());
-            println!("    Scroll 0 at {} by {} pixels/s", layer.scroll, layer.scroll_states[0].speed);
-            println!("    Scroll 1 at {} by {} pixels/s", layer.scroll, layer.scroll_states[1].speed);
+            println!("    Scroll 0 at {} by {} pixels/s", layer.scroll, layer.scroll_states[0].get_speed());
+            println!("    Scroll 1 at {} by {} pixels/s", layer.scroll, layer.scroll_states[1].get_speed());
         }
 
         println!();

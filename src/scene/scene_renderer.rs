@@ -14,6 +14,7 @@ use crate::software_renderer::draw::{draw_box_filled, draw_line};
 use crate::software_renderer::palette::{render_palette, Palette};
 use crate::software_renderer::surface::Surface;
 use crate::sprites::sprite_renderer::SpritePriority;
+use crate::util::vec2df64::Vec2Df64;
 
 #[derive(PartialEq, Eq)]
 pub enum SceneDebugLayer {
@@ -46,7 +47,7 @@ impl SceneRenderer {
         }
     }
 
-    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene_map: &SceneMap, exits: &Vec<SceneExit>, treasure: &Vec<Treasure>, actors: &Vec<SceneActor>, palette: &Palette, surface: &mut Surface) {
+    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene_map: &SceneMap, exits: &Vec<SceneExit>, treasure: &Vec<Treasure>, actors: &Vec<SceneActor>, palette: &Palette, sprite_scroll: Vec2Df64, surface: &mut Surface) {
         if self.debug_layer != SceneDebugLayer::Disabled {
             self.render_debug_layer(&scene_map, &camera, surface);
         }
@@ -56,7 +57,7 @@ impl SceneRenderer {
         } else if self.debug_layer == SceneDebugLayer::Treasure {
             self.render_debug_treasure(&treasure, &camera, surface);
         } else if self.debug_layer == SceneDebugLayer::Actors {
-            self.render_debug_actors(&actors, &camera, surface);
+            self.render_debug_actors(&actors, &camera, sprite_scroll, surface);
         }
 
         if self.debug_palette {
@@ -78,10 +79,10 @@ impl SceneRenderer {
         }
     }
 
-    fn render_debug_actors(&mut self, actors: &Vec<SceneActor>, camera: &Camera, surface: &mut Surface) {
+    fn render_debug_actors(&mut self, actors: &Vec<SceneActor>, camera: &Camera, sprite_scroll: Vec2Df64, surface: &mut Surface) {
         for actor in actors {
-            let x = (actor.pos_lerp.x.floor() - camera.pos_lerp.x.floor()) as i32;
-            let y = (actor.pos_lerp.y.floor() - camera.pos_lerp.y.floor()) as i32;
+            let x = (actor.pos_lerp.x.floor() + sprite_scroll.x.floor() - camera.pos_lerp.x.floor()) as i32;
+            let y = (actor.pos_lerp.y.floor() + sprite_scroll.y.floor() - camera.pos_lerp.y.floor()) as i32;
 
             draw_box_filled(surface, Rect::new(x - 8, y - 16, x + 8, y), [0, 255, 255, 127], SurfaceBlendOps::Blend);
 

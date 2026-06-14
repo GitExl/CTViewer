@@ -207,7 +207,7 @@ impl FileSystem {
             };
         }
         layer_2.scroll_mode = scroll_mode;
-        layer_2.scroll_states[0].speed = Vec2Df64::new(scroll_speed_x, scroll_speed_y);
+        layer_2.scroll_states[0].set_speed(Vec2Df64::new(scroll_speed_x, scroll_speed_y));
 
         // Set layer 3 scrolling properties.
         let (scroll_speed_x, scroll_speed_y) = decode_scene_layer_scroll_speed(header.scroll_l3);
@@ -216,7 +216,7 @@ impl FileSystem {
             _ => LayerScrollMode::Normal,
         };
         layer_3.scroll_mode = scroll_mode;
-        layer_3.scroll_states[0].speed = Vec2Df64::new(scroll_speed_x, scroll_speed_y);
+        layer_3.scroll_states[0].set_speed(Vec2Df64::new(scroll_speed_x, scroll_speed_y));
 
         // Read some unknown layer priority data per map.
         // These are unique to the PC version, so might be related to how it renders maps, where it
