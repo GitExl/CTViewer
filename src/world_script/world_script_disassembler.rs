@@ -3,6 +3,7 @@ use std::io::Cursor;
 use crate::GameMode;
 use crate::music_list::get_music_title;
 use crate::sound_list::get_sound_name;
+use crate::world::world_exit::ScriptedWorldExit;
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_ops::Op;
 use crate::world_script::world_animation_script::get_animation_description;
@@ -11,15 +12,22 @@ pub struct WorldScriptDisassembler {
     data: Cursor<Vec<u8>>,
     ops: Vec<Op>,
     mode: GameMode,
+    scripted_exit_map: HashMap<u64, usize>,
     labels: HashMap<u64, HashSet<String>>,
 }
 
 impl WorldScriptDisassembler {
-    pub fn new(data: &Vec<u8>, mode: GameMode) -> WorldScriptDisassembler {
+    pub fn new(data: &Vec<u8>, scripted_exits: &Vec<ScriptedWorldExit>, mode: GameMode) -> WorldScriptDisassembler {
+        let mut scripted_exit_map = HashMap::new();
+        for scripted_exit in scripted_exits {
+            scripted_exit_map.insert(scripted_exit.address, scripted_exit.index);
+        }
+
         WorldScriptDisassembler {
             data: Cursor::new(data.clone()),
             ops: vec![],
             mode,
+            scripted_exit_map,
             labels: HashMap::new(),
         }
     }
@@ -38,8 +46,8 @@ impl WorldScriptDisassembler {
 
                 // Generate labels.
                 match op {
-                    Op::AddActor { address, .. } => self.add_label(address as u64, format!("actor_{:04X}", address)),
-                    Op::AddActorSpecial { address, .. } => self.add_label(address as u64, format!("actor_special_{:04X}", address)),
+                    Op::AddActor { address, .. } => self.add_label(address, format!("actor_{:04X}", address)),
+                    Op::AddActorSpecial { address, .. } => self.add_label(address, format!("actor_special_{:04X}", address)),
                     Op::Bind { address, .. } => self.add_label(address, format!("pc_{:04X}", address)),
                     Op::DecrementAndJumpIfNonZero { offset, .. } => self.add_label((op_address as i64 + offset) as u64, format!("jpnz_{:04X}", op_address as i64 + offset)),
                     Op::GoTo { address } => self.add_label(address, format!("jp_{:04X}", address)),
@@ -47,6 +55,10 @@ impl WorldScriptDisassembler {
                     Op::GoSub { address } => self.add_label(address, format!("sub_{:04X}", address)),
                     _ => {}
                 };
+
+                if let Some(script_index) = self.scripted_exit_map.get(&op_address) {
+                    self.add_label(op_address, format!("exit_{:02}", script_index));
+                }
             }
 
             op_address = self.data.position();
@@ -71,7 +83,7 @@ impl WorldScriptDisassembler {
             if self.labels.contains_key(&op_address) {
                 println!();
                 for label in self.labels[&op_address].iter() {
-                    println!("{:04X} {}:", op_address, label);
+                    println!("{:<48}    // {:04X}", format!("{}:", label), op_address);
                 }
             }
 
@@ -86,7 +98,7 @@ impl WorldScriptDisassembler {
                     Op::BitMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::ByteMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::GoSub { address } => format!("gosub sub_{:04X}", address),
-                    Op::CallFunctionFar { function, .. } => format!("function_far {:?}", function),
+                    Op::CallFunctionFar { function, .. } => function.as_string(),
                     Op::ChangeLocation { destination } => format!("location {}", destination.as_string()),
                     Op::Copy8 { lhs, rhs } => format!("{} = {}", lhs.as_string(), rhs.as_string()),
                     Op::CopyTiles { source_layer, source_x, source_y, dest_layer, dest_x, dest_y, width, height } => {
@@ -98,15 +110,15 @@ impl WorldScriptDisassembler {
                     Op::End => String::from("end"),
                     Op::FadeIn { delay: mode } => format!("fade_in {}", mode),
                     Op::FadeOut { delay: mode } => format!("fade_out {}", mode),
-                    Op::CallFunction { function, .. } => format!("function {:?}", function),
+                    Op::CallFunction { function, .. } => function.as_string(),
                     Op::InitBackgroundLayer { layer } => format!("init_bg_layer {}", layer),
                     Op::InitMemory => String::from("init_memory"),
                     Op::GoTo { address } => format!("goto jp_{:04X}", address),
                     Op::JumpConditional { lhs, cmp, rhs, offset } => {
                         format!("if {} {} {} goto jp_{:04X}", lhs.as_string(), cmp.as_string(), rhs.as_string(), op_address as i64 + offset)
                     },
-                    Op::Link { task, .. } => format!("link {:?}", task),
-                    Op::LinkSpecial { task, .. } => format!("link_special {:?}", task),
+                    Op::Link { task, .. } => format!("link {}", task.as_string()),
+                    Op::LinkSpecial { task, .. } => format!("link_special {}", task.as_string()),
                     Op::MosaicIn { mode } => format!("mosaic_in {}", mode),
                     Op::MosaicOut { mode } => format!("mosaic_out {}", mode),
                     Op::Move { steps } => format!("move {}", steps),
@@ -147,7 +159,7 @@ impl WorldScriptDisassembler {
                     Op::ExitOpen { address } => format!("exit_open 0x{:04X}", address),
                 };
 
-                println!("{:04X}   {}", op_address, statement);
+                println!("  {:<48}  // {:04X}", statement, op_address);
             }
 
             op_address = self.data.position();

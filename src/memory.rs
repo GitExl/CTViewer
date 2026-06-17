@@ -329,7 +329,7 @@ impl DataSource {
     pub fn as_string(&self) -> String {
         match self {
             DataSource::Immediate(value) => format!("{}", value),
-            DataSource::Memory(address) => format!("0x{:06X}", address),
+            DataSource::Memory(address) => address_to_variable(*address),
             DataSource::ActorResult(actor) => format!("ActorResult({:?})", actor),
             DataSource::GoldCount => String::from("Gold"),
             DataSource::ItemCount(item) => format!("ItemCount({})", item),
@@ -437,8 +437,54 @@ impl DataDest {
 
     pub fn as_string(&self) -> String {
         match self {
-            DataDest::Memory(address) => format!("0x{:06X}", address),
+            DataDest::Memory(address) => address_to_variable(*address),
             DataDest::WorldActor(address) => format!("self.0x{:02X}", address),
         }
     }
 }
+
+fn address_to_variable(address: usize) -> String {
+    match address {
+        0x7E0000 .. 0x7E0080 => format!("Temp{:02X}", address - 0x7E0000),
+
+        0x7E00E3 => String::from("L1ScrollXH"),
+        0x7E00E4 => String::from("L1ScrollXL"),
+        0x7E00E5 => String::from("L1ScrollYH"),
+        0x7E00E6 => String::from("L1ScrollYL"),
+
+        0x7E00E7 => String::from("L2ScrollXH"),
+        0x7E00E8 => String::from("L2ScrollXL"),
+        0x7E00E9 => String::from("L2ScrollYH"),
+        0x7E00EA => String::from("L2ScrollYL"),
+
+        0x7E00F0 => format!("Unknown{:06X}", address),
+        0x7E00F1 => format!("Unknown{:06X}", address),
+
+        0x7E0104 => String::from("DestinationFacing"),
+
+        0x7E0294 => String::from("EpochStateFlags"),
+        0x7E029E => String::from("DactylStateFlags"),
+        0x7E027C => String::from("WorldMasterAction"),
+        0x7E029F => String::from("EpochMapX"),
+        0x7E02A0 => String::from("EpochMapY"),
+
+        0x7E0920 => format!("WorldUnknown{:06X}", address),
+        0x7E0921 => format!("WorldUnknown{:06X}", address),
+
+        0x7E1B48 => format!("WorldUnknown{:04X}", address),
+        0x7E1B9B => String::from("WorldMusic"),
+
+        0x7E1BA3 => format!("WorldFlags{:04X}", address - 0x7E0000),
+        0x7E1BA4 => format!("WorldFlags{:04X}", address - 0x7E0000),
+        0x7E1BA6 => format!("WorldFlags{:04X}", address - 0x7E0000),
+        0x7E1BA7 .. 0x7E1BBB => format!("WorldStoryFlags{:02X}", address - 0x7E1BA7),
+
+        0x7EA214 => format!("WorldUnknown{:06X}", address),
+        0x7EA315 => format!("WorldUnknown{:06X}", address),
+        0x7EA418 => format!("WorldUnknown{:06X}", address),
+        0x7EA519 => format!("WorldUnknown{:06X}", address),
+
+        _ => format!("0x{:06X}", address),
+    }
+}
+

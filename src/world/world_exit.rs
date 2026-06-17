@@ -31,6 +31,7 @@ impl WorldExit {
 pub struct ScriptedWorldExit {
     pub index: usize,
     pub pos: Vec2Di32,
+    pub address: u64,
     pub script_offset_index: usize,
 }
 
@@ -38,7 +39,7 @@ impl ScriptedWorldExit {
     pub fn dump(&self) {
         println!("Scripted world exit {}", self.index);
         println!("  At {}", self.pos);
-        println!("  Script offset index: {}", self.script_offset_index);
+        println!("  Script address: 0x{:04X} (index {})", self.address, self.script_offset_index);
         println!();
     }
 }

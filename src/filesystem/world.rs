@@ -99,7 +99,7 @@ impl FileSystem {
         let (world_map, map) = self.read_world_map(header.map_index, header.map_props_index, header.music_props_index, &tileset_l12, &tileset_l3);
         let palette = self.read_world_palette(header.palette_index);
         let palette_anim = self.read_world_palette_anim_data(header.palette_anim_index);
-        let (exits, scripted_exits, script_offsets) = self.read_world_exits(header.script_index);
+        let (exits, scripted_exits) = self.read_world_exits(header.script_index);
         let script_data = self.backend.get_world_script_data(header.script_index);
 
         World {
@@ -116,13 +116,12 @@ impl FileSystem {
             world_map,
             exits,
             scripted_exits,
-            script_offsets,
             script_data,
         }
     }
 
     // Read world exit data.
-    fn read_world_exits(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<ScriptedWorldExit>, Vec<usize>) {
+    fn read_world_exits(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<ScriptedWorldExit>) {
         let mut data = self.backend.get_world_exit_data(exits_index);
 
         // Exits to other locations.
@@ -220,6 +219,7 @@ impl FileSystem {
                     (y * 16) as i32 - 8,
                 ),
                 script_offset_index,
+                address: 0,
             });
         }
 
@@ -228,12 +228,21 @@ impl FileSystem {
         data.seek(SeekFrom::Current(unknown_count * 3)).unwrap();
 
         // World script offsets. The world script can refer to these.
-        let mut script_offsets = Vec::<usize>::new();
+        let mut script_offsets = Vec::<u64>::new();
         let script_offset_count = data.read_u8().unwrap() as usize;
         for _ in 0..script_offset_count {
-            script_offsets.push(data.read_u16::<LittleEndian>().unwrap() as usize);
+            let mut offset = data.read_u16::<LittleEndian>().unwrap() as u64;
+            if offset > 0 {
+                offset -= 0x400;
+            }
+            script_offsets.push(offset);
         }
 
-        (exits, scripted_exits, script_offsets)
+        // Patch in scripted exit addresses.
+        for scripted_exit in scripted_exits.iter_mut() {
+            scripted_exit.address = script_offsets[scripted_exit.script_offset_index];
+        }
+
+        (exits, scripted_exits)
     }
 }

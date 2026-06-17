@@ -167,7 +167,7 @@ impl GameStateTrait for GameStateWorld {
             let state = ctx.sprite_states.add_state();
             state.pos.x = actor.x;
             state.pos.y = actor.y;
-            state.palette = self.world.palette.palette.clone();
+            state.palette = self.state.palette.palette.clone();
             state.palette_offset = 128 + ((actor.palette_priority >> 1) & 0x07) as usize * 16;
             state.assembly_key = actor.sprite_assembly_key;
 
@@ -385,7 +385,7 @@ impl GameStateTrait for GameStateWorld {
 
         self.state.sprites.dump(ctx, &self.world.palette.palette);
         self.state.animations.disassemble();
-        world_script_disassemble(&ctx, self.state.script_data.get_ref());
+        world_script_disassemble(&ctx, self.state.script_data.get_ref(), &self.world.scripted_exits);
     }
 }
 

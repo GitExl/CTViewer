@@ -12,7 +12,7 @@ pub enum WorldActorFunction {
 
     SeagullRandomPosition,
     SeagullRandomVector,
-    IsOffscreen,
+    IsOffScreen,
 }
 
 impl WorldActorFunction {
@@ -22,7 +22,7 @@ impl WorldActorFunction {
                 match address {
                     0x7575 => WorldActorFunction::SeagullRandomPosition,
                     0x7598 => WorldActorFunction::SeagullRandomVector,
-                    0x78A1 => WorldActorFunction::IsOffscreen,
+                    0x78A1 => WorldActorFunction::IsOffScreen,
 
                     _ => WorldActorFunction::Unknown { address },
                 }
@@ -30,10 +30,20 @@ impl WorldActorFunction {
                 match address {
                     0x74C9 => WorldActorFunction::SeagullRandomPosition,
                     0x74EC => WorldActorFunction::SeagullRandomVector,
-                    0x77F5 => WorldActorFunction::IsOffscreen,
+                    0x77F5 => WorldActorFunction::IsOffScreen,
 
                     _ => WorldActorFunction::Unknown { address },
                 }
+        }
+    }
+
+    pub fn as_string(&self) -> String {
+        match self {
+            WorldActorFunction::None => "NULL".to_string(),
+            WorldActorFunction::SeagullRandomPosition => "SeagullRandomPosition()".to_string(),
+            WorldActorFunction::SeagullRandomVector => "SeagullRandomVector()".to_string(),
+            WorldActorFunction::IsOffScreen => "IsOffScreen()".to_string(),
+            WorldActorFunction::Unknown { address } => format!("Unknown{:06X}()", address),
         }
     }
 }
@@ -42,7 +52,7 @@ pub fn function_dispatch(ctx: &mut Context, world_state: &mut WorldState, actor:
     match func {
         WorldActorFunction::SeagullRandomPosition => func_seagull_random_pos(ctx, actor, world_state),
         WorldActorFunction::SeagullRandomVector => func_seagull_random_vector(ctx, actor),
-        WorldActorFunction::IsOffscreen => func_actor_is_offscreen(ctx, actor, world_state),
+        WorldActorFunction::IsOffScreen => func_actor_is_offscreen(ctx, actor, world_state),
         _ => {},
     }
 }

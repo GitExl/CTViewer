@@ -92,10 +92,7 @@ These are some screenshots from various scenes. They have been scaled to a 4/3 a
 
 ### General
 
-- The format of world sprite animation and assembly data is still not entirely understood.
-- World layer 3 animation is currently hardcoded. It is unknown where this information is stored.
 - Scanline animation effects (usually on layer 3) are not present. This requires a different tilemap rendering approach.
-- World palette animations are hardcoded. It is unknown where this information is stored.
 - World camera wrapping works, but not smoothly.
 - There are many scripting features not implemented, and plenty of bugs or incompatibilities left to resolve in the ones
 that are.

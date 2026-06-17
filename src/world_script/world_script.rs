@@ -1,5 +1,6 @@
 use crate::Context;
 use crate::gamestate::gamestate_world::WorldState;
+use crate::world::world_exit::ScriptedWorldExit;
 use crate::world_script::task_dispatch::{task_dispatch, WorldActorTask};
 use crate::world_script::world_actor::WorldActor;
 use crate::world_script::world_script_disassembler::WorldScriptDisassembler;
@@ -51,8 +52,8 @@ pub fn world_script_add_actor(world_state: &mut WorldState, source_actor: &World
     panic!("Out of world actor slots!");
 }
 
-pub fn world_script_disassemble(ctx: &Context, data: &Vec<u8>) {
-    let mut disassembler = WorldScriptDisassembler::new(data, ctx.mode);
+pub fn world_script_disassemble(ctx: &Context, data: &Vec<u8>, scripted_exits: &Vec<ScriptedWorldExit>) {
+    let mut disassembler = WorldScriptDisassembler::new(data, scripted_exits, ctx.mode);
     disassembler.disassemble();
     disassembler.dump();
 }
