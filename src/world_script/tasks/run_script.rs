@@ -25,11 +25,23 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
         if let Some(op) = op_decode(&mut world_state.script_data, ctx.mode) {
             result = match op {
                 Op::InitMemory => {
+                    actor.memory.clear();
+                    actor.script_current_address = 0;
+                    actor.sprite_assembly_key = 0;
+                    actor.animation_counter = 0;
+                    actor.x = 0.0;
+                    actor.y = 0.0;
+                    actor.vector_x = 0.0;
+                    actor.vector_y = 0.0;
                     OpResult::Continue
                 }
                 Op::Copy8 { lhs, rhs } => {
                     let value = rhs.get_world_u8(ctx, world_state, actor);
                     lhs.put_world_u8(ctx, world_state, actor, value);
+                    OpResult::Continue
+                }
+                Op::Unknown03 { .. } => {
+                    world_script_add_actor(world_state, &actor, WorldActorTask::UnknownGrp);
                     OpResult::Continue
                 }
                 Op::GoSub { address } => {
@@ -42,6 +54,10 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                 Op::GoTo { address } => {
                     OpResult::ContinueFrom { address }
                 }
+                Op::InitBackgroundLayer { .. } => {
+                    // No implementation needed.
+                    OpResult::Continue
+                },
                 Op::DecrementAndJumpIfNonZero { src, dest, offset } => {
                     let mut value = src.get_world_u8(ctx, world_state, actor);
                     value = value.wrapping_sub(1);
@@ -279,6 +295,31 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                 }
                 Op::CallFunctionFar { function, .. } => {
                     function_dispatch(ctx, world_state, actor, function);
+                    OpResult::Continue
+                }
+
+                Op::ExitOpen { exit_type, exit_index } => {
+                    match exit_type {
+                        0 => {
+                            world_state.exits[exit_index].is_available = true;
+                        },
+                        1 => {
+                            world_state.scripted_exits[exit_index].is_available = true;
+                        },
+                        _ => println!("Cannot open unsupported exit type {}", exit_type),
+                    }
+                    OpResult::Continue
+                }
+                Op::ExitClose { exit_type, exit_index } => {
+                    match exit_type {
+                        0 => {
+                            world_state.exits[exit_index].is_available = false;
+                        },
+                        1 => {
+                            world_state.scripted_exits[exit_index].is_available = false;
+                        },
+                        _ => println!("Cannot close unsupported exit type {}", exit_type),
+                    }
                     OpResult::Continue
                 }
 

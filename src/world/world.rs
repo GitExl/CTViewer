@@ -22,6 +22,7 @@ pub struct World {
 
     pub exits: Vec<WorldExit>,
     pub scripted_exits: Vec<ScriptedWorldExit>,
+    pub scripted_exit_offsets: Vec<u64>,
 
     pub sprite_graphics: [usize; 4],
 }

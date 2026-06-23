@@ -1,6 +1,6 @@
 use crate::{Context, GameMode};
 use crate::gamestate::gamestate_world::WorldState;
-use crate::world_script::tasks::common::{task_fade_in, task_fade_out, task_layer_animation, task_palette_load, task_palette_load_mode};
+use crate::world_script::tasks::common::{task_fade_in, task_fade_out, task_grp, task_layer_animation, task_palette_load, task_palette_load_mode};
 use crate::world_script::tasks::run_script::task_run_script;
 use crate::world_script::world_actor::WorldActor;
 
@@ -10,6 +10,7 @@ pub enum WorldActorTask {
     Unknown {
         address: u32
     },
+    UnknownGrp,
 
     RunScript,
 
@@ -43,6 +44,8 @@ impl WorldActorTask {
                     0x77F2 => WorldActorTask::ScrollWorldLayers { world: 4 },
                     0x7849 => WorldActorTask::ScrollWorldLayers { world: 5 },
 
+                    0x1CF5 => WorldActorTask::UnknownGrp,
+
                     _ => WorldActorTask::Unknown { address },
                 }
             GameMode::Pc =>
@@ -61,6 +64,8 @@ impl WorldActorTask {
                     0x7746 => WorldActorTask::ScrollWorldLayers { world: 4 },
                     0x779D => WorldActorTask::ScrollWorldLayers { world: 5 },
 
+                    0x1DA1 => WorldActorTask::UnknownGrp,
+
                     _ => WorldActorTask::Unknown { address },
                 }
         }
@@ -70,6 +75,7 @@ impl WorldActorTask {
         match self {
             WorldActorTask::None => "NULL".to_string(),
             WorldActorTask::Unknown { address } => format!("Unknown{:04X}", address),
+            WorldActorTask::UnknownGrp => "UnknownGrp".to_string(),
             WorldActorTask::RunScript => "RunScript".to_string(),
             WorldActorTask::FadeIn => "FadeIn".to_string(),
             WorldActorTask::FadeOut => "FadeOut".to_string(),
@@ -88,6 +94,8 @@ pub fn task_dispatch(ctx: &mut Context, world_state: &mut WorldState, actor: &mu
         WorldActorTask::ScrollWorldLayers { world } => task_layer_animation(world_state, world),
         WorldActorTask::FadeIn => task_fade_in(ctx, actor),
         WorldActorTask::FadeOut => task_fade_out(ctx, actor),
-        _ => {},
+        WorldActorTask::UnknownGrp => task_grp(ctx, actor),
+
+        WorldActorTask::Unknown { address: _ } | WorldActorTask::None => {},
     }
 }

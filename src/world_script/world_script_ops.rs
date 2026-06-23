@@ -168,7 +168,8 @@ pub enum Op {
         tile_index: u8,
     },
     ExitClose {
-        address: u16,
+        exit_type: u8,
+        exit_index: usize,
     },
     VectorX {
         magnitude: i32,
@@ -214,6 +215,7 @@ pub enum Op {
         steps: u8,
     },
     ExitOpen {
-        address: u16,
+        exit_type: u8,
+        exit_index: usize,
     },
 }

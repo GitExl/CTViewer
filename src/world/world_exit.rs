@@ -4,6 +4,16 @@ use crate::l10n::IndexedType;
 use crate::util::vec2di32::Vec2Di32;
 
 #[derive(Clone)]
+pub enum WorldExitType {
+    Destination {
+        destination: Destination,
+    },
+    Scripted {
+        pointer_index: usize,
+    }
+}
+
+#[derive(Clone)]
 pub struct WorldExit {
     pub index: usize,
 
@@ -11,7 +21,7 @@ pub struct WorldExit {
     pub is_available: bool,
     pub name_index: usize,
 
-    pub destination: Destination,
+    pub exit_type: WorldExitType,
     pub unknown: u32,
 }
 
@@ -20,8 +30,12 @@ impl WorldExit {
         println!("World exit {} - {}", self.index, ctx.l10n.get_indexed(IndexedType::WorldExit, self.name_index));
         println!("  At {}", self.pos);
         println!("  Available: {}", self.is_available);
-        self.destination.dump(ctx);
 
+        match self.exit_type {
+            WorldExitType::Destination { destination } => destination.dump(ctx),
+            WorldExitType::Scripted { pointer_index } => println!("Scripted pointer {}", pointer_index),
+        }
+        
         println!("  Unknown: {}", self.unknown);
         println!();
     }
@@ -31,15 +45,16 @@ impl WorldExit {
 pub struct ScriptedWorldExit {
     pub index: usize,
     pub pos: Vec2Di32,
-    pub address: u64,
     pub script_offset_index: usize,
+    pub is_available: bool,
 }
 
 impl ScriptedWorldExit {
     pub fn dump(&self) {
         println!("Scripted world exit {}", self.index);
         println!("  At {}", self.pos);
-        println!("  Script address: 0x{:04X} (index {})", self.address, self.script_offset_index);
+        println!("  Script offset index: {}", self.script_offset_index);
+        println!("  Available: {}", self.is_available);
         println!();
     }
 }

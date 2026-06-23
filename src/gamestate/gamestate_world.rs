@@ -23,7 +23,7 @@ use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
-use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
+use crate::world::world_exit::{ScriptedWorldExit, WorldExit, WorldExitType};
 use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 use crate::world::world_sprites::WorldSprites;
@@ -335,8 +335,15 @@ impl GameStateTrait for GameStateWorld {
                     let index = self.get_exit_at(self.mouse_pos);
                     if index.is_some() {
                         let exit = &self.world.exits[index.unwrap()];
-                        self.state.next_destination.set(exit.destination, true);
-                        ctx.screen_fade.start(0.0, 2);
+                        match exit.exit_type {
+                            WorldExitType::Destination { destination } => {
+                                self.state.next_destination.set(destination, true);
+                                ctx.screen_fade.start(0.0, 2);
+                            }
+                            WorldExitType::Scripted { pointer_index } => {
+                                // TODO: run script
+                            }
+                        }
                     }
                 }
             },
@@ -355,7 +362,7 @@ impl GameStateTrait for GameStateWorld {
         let index = self.get_exit_at(self.mouse_pos);
         if index.is_some() {
             let exit = &self.world.exits[index.unwrap()];
-            let text = exit.destination.title(&ctx);
+            let text = ctx.l10n.get_indexed(IndexedType::WorldExit, exit.name_index);
 
             self.debug_text = Some(TextRenderable::new(
                 text,
@@ -385,7 +392,7 @@ impl GameStateTrait for GameStateWorld {
 
         self.state.sprites.dump(ctx, &self.world.palette.palette);
         self.state.animations.disassemble();
-        world_script_disassemble(&ctx, self.state.script_data.get_ref(), &self.world.scripted_exits);
+        world_script_disassemble(&ctx, self.state.script_data.get_ref(), &self.world.scripted_exits, &self.world.scripted_exit_offsets);
     }
 }
 

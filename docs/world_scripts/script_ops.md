@@ -6,16 +6,17 @@
 - `[n]` array of n values
 - `destination` 2 byte destination data, formatted for SNES or PC
 
-The I column indicates if an implementation of the op is complete. / is a partial implementation, X a full.
+The I column indicates if an implementation of the op is complete. `/` is a partial implementation, `X` a full. `-` ops
+are not required.
 
 | Dec | Hex   | I | Name         | Arguments                                              | Description                                                                                    |
 |-----|-------|---|--------------|--------------------------------------------------------|------------------------------------------------------------------------------------------------|
-| 0   | `$00` |   | `initialize` |                                                        | Clears local memory.                                                                           |
+| 0   | `$00` | X | `initialize` |                                                        | Clears local memory.                                                                           |
 | 1   | `$01` | X | `colofs`     | u8 palette                                             | Sets current actor palette.                                                                    |
 | 2   | `$02` | X | `priset`     | u8 priority                                            | Sets current actor priority.                                                                   |
 | 3   | `$03` |   | `grp`        | u8[9] ?                                                | Unknown.                                                                                       |
 | 4   | `$04` | / | `pal`        | u8 address, u8 pal_index, u8 mode                      | Copies palette data into this actor's palette. 3 modes?                                        |
-| 5   | `$05` |   | `mapjump`    | destination                                            | Changes location.                                                                              |
+| 5   | `$05` | X | `mapjump`    | destination                                            | Changes location.                                                                              |
 | 6   | `$06` |   | `mappos`     |                                                        | Unused.                                                                                        |
 | 7   | `$07` | X | `putmap`     | u8 layer, u8 x, u8 y, u8 tile                          | Changes a single map tile.                                                                     |
 | 8   | `$08` |   | `bind`       | u16 address, u8 pc                                     | Binds actor to a player character.                                                             |
@@ -72,14 +73,14 @@ The I column indicates if an implementation of the op is complete. / is a partia
 | 59  | `$3b` |   | `effect1`    | u8 sound, i8 panning                                   | Play sound effect with sound command `$18`?                                                    |
 | 60  | `$3c` |   | `effect2`    | u8 sound, i8 panning                                   | Play sound effect with sound command `$19`?                                                    |
 | 61  | `$3d` |   | `sound`      | u8 music                                               | Play music. Does nothing if it is already playing.                                             |
-| 62  | `$3e` |   | `initscreen` | u8 layer                                               | Prepares tiles for the given camera position for the specified layer.                          |
+| 62  | `$3e` | - | `initscreen` | u8 layer                                               | Prepares tiles for the given camera position for the specified layer.                          |
 | 63  | `$3f` |   | `tpxmove`    | u16 x, u8 anim_l, u8 anim_r                            | Move actor to X, animate for moving left or right.                                             |
 | 64  | `$40` |   | `tpymove`    | u16 y, u8 anim_u, u8 anim_d                            | Move actor to Y, animate for moving up or down.                                                |
 | 65  | `$41` |   | `trigger`    |                                                        | Unused.                                                                                        |
 | 66  | `$42` | X | `slink`      | u16 address                                            | Creates a new special actor with the specified task function.                                  |
 | 67  | `$43` | X | `s_newevent` | u16 address, u8 unused                                 | Creates a new special actor executing script ops from the address.                             |
-| 68  | `$44` |   | `wake`       | u16 address                                            | Open up a (scripted) exit by address.                                                          |
-| 69  | `$45` |   | `sleep`      | u16 address                                            | Close down a (scripted) exit by address.                                                       |
+| 68  | `$44` | X | `wake`       | u8 exit_type, u8 index                                 | Open up a (scripted) exit.                                                                     |
+| 69  | `$45` | X | `sleep`      | u8 exit_type, u8 index                                 | Close down a (scripted) exit.                                                                  |
 | 70  | `$46` | X | `addr`       | u8 address, u8 value                                   | Adds a value to a local byte.                                                                  |
 | 71  | `$47` | X | `subr`       | u8 address, u8 value                                   | Subtracts a value from a local byte.                                                           |
 | 72  | `$48` | X | `memadd`     | u16 address, u8 value                                  | Adds a value to a global byte.                                                                 |

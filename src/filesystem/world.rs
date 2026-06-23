@@ -9,7 +9,7 @@ use crate::filesystem::filesystem::FileSystem;
 use crate::GameMode;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
-use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
+use crate::world::world_exit::{ScriptedWorldExit, WorldExit, WorldExitType};
 
 #[derive(Default)]
 struct WorldHeader {
@@ -99,7 +99,7 @@ impl FileSystem {
         let (world_map, map) = self.read_world_map(header.map_index, header.map_props_index, header.music_props_index, &tileset_l12, &tileset_l3);
         let palette = self.read_world_palette(header.palette_index);
         let palette_anim = self.read_world_palette_anim_data(header.palette_anim_index);
-        let (exits, scripted_exits) = self.read_world_exits(header.script_index);
+        let (exits, scripted_exits, scripted_exit_offsets) = self.read_world_exits(header.script_index);
         let script_data = self.backend.get_world_script_data(header.script_index);
 
         World {
@@ -116,12 +116,13 @@ impl FileSystem {
             world_map,
             exits,
             scripted_exits,
+            scripted_exit_offsets,
             script_data,
         }
     }
 
     // Read world exit data.
-    fn read_world_exits(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<ScriptedWorldExit>) {
+    fn read_world_exits(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<ScriptedWorldExit>, Vec<u64>) {
         let mut data = self.backend.get_world_exit_data(exits_index);
 
         // Exits to other locations.
@@ -181,7 +182,25 @@ impl FileSystem {
 
             let shift_x = if shift_left { -8 } else { 0 };
             let shift_y = if shift_up { -8 } else { 0 };
-            let destination = Destination::from_data(scene_index, Facing::from_data(facing), exit_data.scene_tile_x, exit_data.scene_tile_y, shift_x, shift_y, facing_byte);
+
+            // Scripted exit.
+            let exit_type = if scene_index == 0x1FF {
+                WorldExitType::Scripted {
+                    pointer_index: facing as usize,
+                }
+            // Normal exit to scene.
+            } else {
+                let destination = Destination::from_data(
+                    scene_index,
+                    Facing::from_data(facing),
+                    exit_data.scene_tile_x, exit_data.scene_tile_y,
+                    shift_x, shift_y,
+                    facing_byte
+                );
+                WorldExitType::Destination {
+                    destination,
+                }
+            };
 
             exits.push(WorldExit {
                 index: exit_index,
@@ -192,14 +211,15 @@ impl FileSystem {
                 ),
                 is_available,
                 name_index: exit_data.name_index as usize,
-
-                destination,
+                exit_type,
                 unknown,
             });
         }
 
-        // Scripted exits. These are associated with a world script address, purpose still unknown.
-        // For example, the Vortex Point in 1000 AD uses this.
+        // Scripted exits. These are associated with a world script address, triggered when the
+        // world is loaded and the player end up at the coordinates of the exit, the script
+        // will run. For example the world 0 Vortex Point exit from Heckran Cave.
+        // TODO: verify in code
         let mut scripted_exits = Vec::<ScriptedWorldExit>::new();
         let scripted_exit_count = data.read_u8().unwrap() as usize;
         for scripted_exit_index in 0..scripted_exit_count {
@@ -219,7 +239,7 @@ impl FileSystem {
                     (y * 16) as i32 - 8,
                 ),
                 script_offset_index,
-                address: 0,
+                is_available: false,
             });
         }
 
@@ -228,21 +248,16 @@ impl FileSystem {
         data.seek(SeekFrom::Current(unknown_count * 3)).unwrap();
 
         // World script offsets. The world script can refer to these.
-        let mut script_offsets = Vec::<u64>::new();
+        let mut scripted_exit_offsets = Vec::<u64>::new();
         let script_offset_count = data.read_u8().unwrap() as usize;
         for _ in 0..script_offset_count {
             let mut offset = data.read_u16::<LittleEndian>().unwrap() as u64;
             if offset > 0 {
                 offset -= 0x400;
             }
-            script_offsets.push(offset);
+            scripted_exit_offsets.push(offset);
         }
 
-        // Patch in scripted exit addresses.
-        for scripted_exit in scripted_exits.iter_mut() {
-            scripted_exit.address = script_offsets[scripted_exit.script_offset_index];
-        }
-
-        (exits, scripted_exits)
+        (exits, scripted_exits, scripted_exit_offsets)
     }
 }

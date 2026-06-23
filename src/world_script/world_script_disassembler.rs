@@ -17,10 +17,11 @@ pub struct WorldScriptDisassembler {
 }
 
 impl WorldScriptDisassembler {
-    pub fn new(data: &Vec<u8>, scripted_exits: &Vec<ScriptedWorldExit>, mode: GameMode) -> WorldScriptDisassembler {
+    pub fn new(data: &Vec<u8>, scripted_exits: &Vec<ScriptedWorldExit>, script_exit_offsets: &Vec<u64>, mode: GameMode) -> WorldScriptDisassembler {
         let mut scripted_exit_map = HashMap::new();
         for scripted_exit in scripted_exits {
-            scripted_exit_map.insert(scripted_exit.address, scripted_exit.index);
+            let address = script_exit_offsets[scripted_exit.script_offset_index];
+            scripted_exit_map.insert(address, scripted_exit.index);
         }
 
         WorldScriptDisassembler {
@@ -94,7 +95,7 @@ impl WorldScriptDisassembler {
                     Op::AddActor { address, unused } => format!("add_actor actor_{:04X}, {}", address, unused),
                     Op::AddActorSpecial { address, i0 } => format!("add_special_actor actor_special_{:04X}, {}", address, i0),
                     Op::WaitAndAnimate { steps: delay } => format!("wait_animate {}", delay),
-                    Op::Bind { address, pc } => format!("bind_pc pc_{:04X}, {}", address, pc_index(pc)),
+                    Op::Bind { address, pc } => format!("bind_pc pc_{:04X}, {}", address, pc),
                     Op::BitMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::ByteMath { dest, lhs, op, rhs } => format!("{} = {} {} {}", dest.as_string(), lhs.as_string(), op.as_string(), rhs.as_string()),
                     Op::GoSub { address } => format!("gosub sub_{:04X}", address),
@@ -140,7 +141,7 @@ impl WorldScriptDisassembler {
                     Op::SetPriority { priority } => format!("set_priority {}", priority),
                     Op::SetTile { layer, x, y, tile_index } => format!("set_tile {}, ({}, {}), {}", layer, x, y, tile_index),
                     Op::SetTileR { layer, x, y, tile_index } => format!("set_tile_r {}, ({}, {}), {}", layer, x, y, tile_index),
-                    Op::ExitClose { address } => format!("exit_close 0x{:04X}", address),
+                    Op::ExitClose { exit_type, exit_index } => format!("exit_close {} {}", exit_type, exit_index),
                     Op::VectorX { magnitude } => format!("vector_x {:.03}", (magnitude as f64) / 65536.0),
                     Op::VectorY { magnitude } => format!("vector_y {:.03}", (magnitude as f64) / 65536.0),
                     Op::Timer { value } => format!("timer {}", value),
@@ -156,7 +157,7 @@ impl WorldScriptDisassembler {
                     Op::PaletteLoad { address, palette_index: count, mode } => format!("palette_load 0x{:04X}, {}, {}", address, count, mode),
                     Op::CopyToVram { source_address, vram_dest_address, byte_count } => format!("copy_to_vram 0x{:06X}, 0x{:04X}, {}", source_address, vram_dest_address, byte_count),
                     Op::Wait { steps } => format!("wait {}", steps),
-                    Op::ExitOpen { address } => format!("exit_open 0x{:04X}", address),
+                    Op::ExitOpen { exit_type, exit_index } => format!("exit_open {} {}", exit_type, exit_index),
                 };
 
                 println!("  {:<48}  // {:04X}", statement, op_address);
@@ -165,8 +166,4 @@ impl WorldScriptDisassembler {
             op_address = self.data.position();
         }
     }
-}
-
-fn pc_index(index: u8) -> String {
-    format!("PC{:02}", index)
 }

@@ -85,3 +85,6 @@ pub fn task_fade_out(ctx: &mut Context, actor: &mut WorldActor) {
     ctx.screen_fade.start(0.0, delay);
 }
 
+pub fn task_grp(_ctx: &mut Context, actor: &mut WorldActor) {
+    actor.task = WorldActorTask::None;
+}

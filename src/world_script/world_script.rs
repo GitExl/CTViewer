@@ -52,8 +52,8 @@ pub fn world_script_add_actor(world_state: &mut WorldState, source_actor: &World
     panic!("Out of world actor slots!");
 }
 
-pub fn world_script_disassemble(ctx: &Context, data: &Vec<u8>, scripted_exits: &Vec<ScriptedWorldExit>) {
-    let mut disassembler = WorldScriptDisassembler::new(data, scripted_exits, ctx.mode);
+pub fn world_script_disassemble(ctx: &Context, data: &Vec<u8>, scripted_exits: &Vec<ScriptedWorldExit>, script_exit_offsets: &Vec<u64>) {
+    let mut disassembler = WorldScriptDisassembler::new(data, scripted_exits, script_exit_offsets, ctx.mode);
     disassembler.disassemble();
     disassembler.dump();
 }
