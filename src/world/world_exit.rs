@@ -42,18 +42,18 @@ impl WorldExit {
 }
 
 #[derive(Clone, Copy)]
-pub struct ScriptedWorldExit {
+pub struct WorldTrigger {
     pub index: usize,
     pub pos: Vec2Di32,
-    pub script_offset_index: usize,
+    pub script_address_index: usize,
     pub is_available: bool,
 }
 
-impl ScriptedWorldExit {
+impl WorldTrigger {
     pub fn dump(&self) {
-        println!("Scripted world exit {}", self.index);
+        println!("World trigger {}", self.index);
         println!("  At {}", self.pos);
-        println!("  Script offset index: {}", self.script_offset_index);
+        println!("  Script address index: {}", self.script_address_index);
         println!("  Available: {}", self.is_available);
         println!();
     }

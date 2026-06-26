@@ -304,7 +304,7 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                             world_state.exits[exit_index].is_available = true;
                         },
                         1 => {
-                            world_state.scripted_exits[exit_index].is_available = true;
+                            world_state.triggers[exit_index].is_available = true;
                         },
                         _ => println!("Cannot open unsupported exit type {}", exit_type),
                     }
@@ -316,7 +316,7 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                             world_state.exits[exit_index].is_available = false;
                         },
                         1 => {
-                            world_state.scripted_exits[exit_index].is_available = false;
+                            world_state.triggers[exit_index].is_available = false;
                         },
                         _ => println!("Cannot close unsupported exit type {}", exit_type),
                     }

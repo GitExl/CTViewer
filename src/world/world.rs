@@ -3,7 +3,7 @@ use crate::Context;
 use crate::game_palette::GamePalette;
 use crate::map::Map;
 use crate::tileset::TileSet;
-use crate::world::world_exit::{ScriptedWorldExit, WorldExit};
+use crate::world::world_exit::{WorldTrigger, WorldExit};
 use crate::world::world_map::WorldMap;
 
 pub struct World {
@@ -21,8 +21,8 @@ pub struct World {
     pub script_data: Vec<u8>,
 
     pub exits: Vec<WorldExit>,
-    pub scripted_exits: Vec<ScriptedWorldExit>,
-    pub scripted_exit_offsets: Vec<u64>,
+    pub triggers: Vec<WorldTrigger>,
+    pub script_offsets: Vec<u64>,
 
     pub sprite_graphics: [usize; 4],
 }
@@ -47,7 +47,7 @@ impl World {
             exit.dump(ctx);
         }
 
-        for scripted_exit in &self.scripted_exits {
+        for scripted_exit in &self.triggers {
             scripted_exit.dump();
         }
 

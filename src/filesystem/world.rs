@@ -9,7 +9,7 @@ use crate::filesystem::filesystem::FileSystem;
 use crate::GameMode;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
-use crate::world::world_exit::{ScriptedWorldExit, WorldExit, WorldExitType};
+use crate::world::world_exit::{WorldTrigger, WorldExit, WorldExitType};
 
 #[derive(Default)]
 struct WorldHeader {
@@ -99,7 +99,7 @@ impl FileSystem {
         let (world_map, map) = self.read_world_map(header.map_index, header.map_props_index, header.music_props_index, &tileset_l12, &tileset_l3);
         let palette = self.read_world_palette(header.palette_index);
         let palette_anim = self.read_world_palette_anim_data(header.palette_anim_index);
-        let (exits, scripted_exits, scripted_exit_offsets) = self.read_world_exits(header.script_index);
+        let (exits, triggers, scripted_exit_offsets) = self.read_world_exits(header.script_index);
         let script_data = self.backend.get_world_script_data(header.script_index);
 
         World {
@@ -115,14 +115,14 @@ impl FileSystem {
             map,
             world_map,
             exits,
-            scripted_exits,
-            scripted_exit_offsets,
+            triggers,
+            script_offsets: scripted_exit_offsets,
             script_data,
         }
     }
 
     // Read world exit data.
-    fn read_world_exits(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<ScriptedWorldExit>, Vec<u64>) {
+    fn read_world_exits(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<WorldTrigger>, Vec<u64>) {
         let mut data = self.backend.get_world_exit_data(exits_index);
 
         // Exits to other locations.
@@ -216,29 +216,29 @@ impl FileSystem {
             });
         }
 
-        // Scripted exits. These are associated with a world script address, triggered when the
-        // world is loaded and the player end up at the coordinates of the exit, the script
-        // will run. For example the world 0 Vortex Point exit from Heckran Cave.
-        // TODO: verify in code
-        let mut scripted_exits = Vec::<ScriptedWorldExit>::new();
-        let scripted_exit_count = data.read_u8().unwrap() as usize;
-        for scripted_exit_index in 0..scripted_exit_count {
+        // Triggers. These are associated with a world script address, triggered when the
+        // player touches their coordinates. For example the world 0 Vortex Point exit from Heckran
+        // Cave is such a trigger, activated when the Heckran Cave exits the player at it's
+        // coordinates. Once activated, they are disabled.
+        let mut triggers = Vec::<WorldTrigger>::new();
+        let trigger_count = data.read_u8().unwrap() as usize;
+        for trigger_index in 0..trigger_count {
             let x = data.read_u8().unwrap() as usize;
             let y = data.read_u8().unwrap() as usize;
-            let script_offset_index = data.read_u8().unwrap() as usize;
+            let script_address_index = data.read_u8().unwrap() as usize;
 
             // End at null entry.
-            if x == 0 && y == 0 && script_offset_index == 0 {
+            if x == 0 && y == 0 && script_address_index == 0 {
                 break;
             }
 
-            scripted_exits.push(ScriptedWorldExit {
-                index: scripted_exit_index,
+            triggers.push(WorldTrigger {
+                index: trigger_index,
                 pos: Vec2Di32::new(
                     (x * 16) as i32,
                     (y * 16) as i32 - 8,
                 ),
-                script_offset_index,
+                script_address_index,
                 is_available: false,
             });
         }
@@ -247,17 +247,17 @@ impl FileSystem {
         let unknown_count = data.read_u8().unwrap() as i64;
         data.seek(SeekFrom::Current(unknown_count * 3)).unwrap();
 
-        // World script offsets. The world script can refer to these.
-        let mut scripted_exit_offsets = Vec::<u64>::new();
-        let script_offset_count = data.read_u8().unwrap() as usize;
-        for _ in 0..script_offset_count {
-            let mut offset = data.read_u16::<LittleEndian>().unwrap() as u64;
-            if offset > 0 {
-                offset -= 0x400;
+        // World script addresses. Scripted exits and triggers can refer to these by index.
+        let mut script_addresses = Vec::<u64>::new();
+        let script_address_count = data.read_u8().unwrap() as usize;
+        for _ in 0..script_address_count {
+            let mut address = data.read_u16::<LittleEndian>().unwrap() as u64;
+            if address > 0 {
+                address -= 0x400;
             }
-            scripted_exit_offsets.push(offset);
+            script_addresses.push(address);
         }
 
-        (exits, scripted_exits, scripted_exit_offsets)
+        (exits, triggers, script_addresses)
     }
 }

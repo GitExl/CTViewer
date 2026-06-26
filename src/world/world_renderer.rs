@@ -55,9 +55,10 @@ impl WorldRenderer {
             blit_surface_to_surface(&self.debug_tiles, surface, src_x, src_y, 16, 16, pos.x, pos.y, SurfaceBlendOps::Blend);
         }
 
-        for scripted_exit in state.scripted_exits.iter() {
-            let pos = scripted_exit.pos - state.camera.pos_lerp.as_vec2d_i32();
-            blit_surface_to_surface(&self.debug_tiles, surface, 32, 8, 16, 16, pos.x, pos.y, SurfaceBlendOps::Blend);
+        for trigger in state.triggers.iter() {
+            let pos = trigger.pos - state.camera.pos_lerp.as_vec2d_i32();
+            let (src_x, src_y) = if trigger.is_available { (32, 8) } else { (48, 8) };
+            blit_surface_to_surface(&self.debug_tiles, surface, src_x, src_y, 16, 16, pos.x, pos.y, SurfaceBlendOps::Blend);
         }
     }
 

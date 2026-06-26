@@ -13,7 +13,8 @@
   - Worlds
     - Header
     - Maps
-    - Exits
+    - [Exits](worlds/exits.md)
+    - [Triggers](worlds/triggers.md)
     - Music transitions
   - [Tilesets](data/tilesets.md)
   - Palettes

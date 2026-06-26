@@ -23,7 +23,7 @@ use crate::tileset::TileSet;
 use crate::util::vec2df64::Vec2Df64;
 use crate::util::vec2di32::Vec2Di32;
 use crate::world::world::World;
-use crate::world::world_exit::{ScriptedWorldExit, WorldExit, WorldExitType};
+use crate::world::world_exit::{WorldTrigger, WorldExit, WorldExitType};
 use crate::world::world_map::WorldMap;
 use crate::world::world_renderer::{WorldDebugLayer, WorldRenderer};
 use crate::world::world_sprites::WorldSprites;
@@ -46,7 +46,7 @@ pub struct WorldState {
     pub palette: GamePalette,
     pub palette_animation: GamePalette,
     pub exits: Vec<WorldExit>,
-    pub scripted_exits: Vec<ScriptedWorldExit>,
+    pub triggers: Vec<WorldTrigger>,
     pub script_data: Cursor<Vec<u8>>,
     pub actors: [WorldActor; 64],
 }
@@ -106,7 +106,7 @@ impl GameStateWorld {
             palette: world.palette.clone(),
             palette_animation: world.palette_anim.clone(),
             exits: world.exits.clone(),
-            scripted_exits: world.scripted_exits.clone(),
+            triggers: world.triggers.clone(),
             animations: ctx.fs.read_world_animation_script(),
             sprites,
             script_data: Cursor::new(world.script_data.clone()),
@@ -392,7 +392,7 @@ impl GameStateTrait for GameStateWorld {
 
         self.state.sprites.dump(ctx, &self.world.palette.palette);
         self.state.animations.disassemble();
-        world_script_disassemble(&ctx, self.state.script_data.get_ref(), &self.world.scripted_exits, &self.world.scripted_exit_offsets);
+        world_script_disassemble(&ctx, self.state.script_data.get_ref(), &self.world.triggers, &self.world.script_offsets);
     }
 }
 

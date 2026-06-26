@@ -3,7 +3,7 @@ use std::io::Cursor;
 use crate::GameMode;
 use crate::music_list::get_music_title;
 use crate::sound_list::get_sound_name;
-use crate::world::world_exit::ScriptedWorldExit;
+use crate::world::world_exit::WorldTrigger;
 use crate::world_script::world_script_decoder::op_decode;
 use crate::world_script::world_script_ops::Op;
 use crate::world_script::world_animation_script::get_animation_description;
@@ -17,10 +17,10 @@ pub struct WorldScriptDisassembler {
 }
 
 impl WorldScriptDisassembler {
-    pub fn new(data: &Vec<u8>, scripted_exits: &Vec<ScriptedWorldExit>, script_exit_offsets: &Vec<u64>, mode: GameMode) -> WorldScriptDisassembler {
+    pub fn new(data: &Vec<u8>, scripted_exits: &Vec<WorldTrigger>, script_addresses: &Vec<u64>, mode: GameMode) -> WorldScriptDisassembler {
         let mut scripted_exit_map = HashMap::new();
         for scripted_exit in scripted_exits {
-            let address = script_exit_offsets[scripted_exit.script_offset_index];
+            let address = script_addresses[scripted_exit.script_address_index];
             scripted_exit_map.insert(address, scripted_exit.index);
         }
 
