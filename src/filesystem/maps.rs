@@ -299,7 +299,7 @@ fn read_world_tile_props(data: &mut Cursor<Vec<u8>>, layer: &MapLayer, world_chi
         // So the tile properties are decoded from the raw data and assigned to the map chips.
         for corner in 0..4 {
 
-            // Get a reference to chip in the world map.
+            // Get a reference to the chip in the world map.
             let world_chip = match corner {
                 0 => &mut world_chips[dest_index + 0],
                 1 => &mut world_chips[dest_index + 1],
@@ -316,13 +316,11 @@ fn read_world_tile_props(data: &mut Cursor<Vec<u8>>, layer: &MapLayer, world_chi
                 3 => (props_raw[src_index + 1] & 0x0F) >> 0,
                 _ => continue,
             };
-            if value == 4 {
-                world_chip.flags |= WorldChipFlags::HAS_EXIT;
-            }
             world_chip.flags |= match value {
                 1 => WorldChipFlags::BLOCK_WALK,
-                2 => WorldChipFlags::BLOCK_HOVER,
+                2 => WorldChipFlags::BLOCK_LANDING,
                 3 => WorldChipFlags::BLOCK_FLYING,
+                4 => WorldChipFlags::HAS_EXIT,
                 _ => continue,
             }
         }

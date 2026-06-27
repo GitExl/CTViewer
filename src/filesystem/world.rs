@@ -99,7 +99,7 @@ impl FileSystem {
         let (world_map, map) = self.read_world_map(header.map_index, header.map_props_index, header.music_props_index, &tileset_l12, &tileset_l3);
         let palette = self.read_world_palette(header.palette_index);
         let palette_anim = self.read_world_palette_anim_data(header.palette_anim_index);
-        let (exits, triggers, scripted_exit_offsets) = self.read_world_exits(header.script_index);
+        let (exits, triggers, scripted_exit_offsets) = self.read_world_exits_triggers(header.exits_index);
         let script_data = self.backend.get_world_script_data(header.script_index);
 
         World {
@@ -122,8 +122,8 @@ impl FileSystem {
     }
 
     // Read world exit data.
-    fn read_world_exits(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<WorldTrigger>, Vec<u64>) {
-        let mut data = self.backend.get_world_exit_data(exits_index);
+    fn read_world_exits_triggers(&self, exits_index: usize) -> (Vec<WorldExit>, Vec<WorldTrigger>, Vec<u64>) {
+        let mut data = self.backend.get_world_exits_triggers_data(exits_index);
 
         // Exits to other locations.
         let mut exits = Vec::<WorldExit>::new();
@@ -243,7 +243,10 @@ impl FileSystem {
             });
         }
 
-        // Unknown data, always 0x000001.
+        // First two bytes are a tile X and Y, third byte is a script address index.
+        // This starts overworld action 4 with the script address put into $1B47/$1B48.
+        // Overworld action 4 seems to be an infinite data copy loop.
+        // No overworld map uses this, it might be vestigial.
         let unknown_count = data.read_u8().unwrap() as i64;
         data.seek(SeekFrom::Current(unknown_count * 3)).unwrap();
 

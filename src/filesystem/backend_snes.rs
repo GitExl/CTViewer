@@ -234,7 +234,7 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         self.get_bytes_cursor_lz(self.world_music_entries[music_index].address)
     }
 
-    fn get_world_exit_data(&self, exits_index: usize) -> Cursor<Vec<u8>> {
+    fn get_world_exits_triggers_data(&self, exits_index: usize) -> Cursor<Vec<u8>> {
         self.get_bytes_cursor_lz(self.world_exit_entries[exits_index].address)
     }
 

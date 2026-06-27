@@ -5,7 +5,7 @@ bitflags! {
     pub struct WorldChipFlags: u32 {
         const HAS_EXIT     = 0x01;
         const BLOCK_WALK   = 0x02;
-        const BLOCK_HOVER  = 0x04;
+        const BLOCK_LANDING  = 0x04;
         const BLOCK_FLYING = 0x08;
     }
 }

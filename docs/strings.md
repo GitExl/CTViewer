@@ -48,7 +48,7 @@ for each substring in the dictionary. Each substring can be decoded as:
 ### Special characters
 
 Most special characters are output as one or more control codes for easier parsing. See
-[Dialogue](../scene_scripts/dialogue.md) for an explanation of what these control codes do.
+[Dialogue](scene_scripts/dialogue.md) for an explanation of what these control codes do.
 
 - `$04` - unknown purpose
 - `$05` - `<BR>`

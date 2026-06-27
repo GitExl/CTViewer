@@ -100,9 +100,9 @@ impl WorldRenderer {
                 } else if self.debug_layer == WorldDebugLayer::Solidity {
                     if chip.flags.contains(WorldChipFlags::BLOCK_WALK) {
                         (src_x, src_y) = (0, 0);
-                    } else if chip.flags.contains(WorldChipFlags::BLOCK_HOVER) {
+                    } else if chip.flags.contains(WorldChipFlags::BLOCK_LANDING) {
                         (src_x, src_y) = (1, 0);
-                    } else if chip.flags.contains(WorldChipFlags::BLOCK_HOVER) {
+                    } else if chip.flags.contains(WorldChipFlags::BLOCK_LANDING) {
                         (src_x, src_y) = (2, 0);
                     } else {
                         continue;

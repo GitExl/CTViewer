@@ -185,13 +185,13 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.get_file_cursor(&format!("Game/world/SeId/SeId_{:0>4}.dat", music_index), None, None)
     }
 
-    fn get_world_exit_data(&self, exits_index: usize) -> Cursor<Vec<u8>> {
+    fn get_world_exits_triggers_data(&self, exits_index: usize) -> Cursor<Vec<u8>> {
         self.get_file_cursor(&format!("Game/world/EventTable/EventTable_{:04}.dat", exits_index), None, None)
     }
 
     fn get_world_exit_names(&self, language: &str) -> Vec<String> {
         let data = self.get_file_cursor(&format!("Localize/{}/msg/w_map.txt", language), None, None);
-        self.read_text_string_list(data, None, None)
+        self.read_text_string_list(data, None, Some(106))
     }
 
     fn get_world_names(&self, language: &str) -> Vec<String> {

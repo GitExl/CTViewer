@@ -104,7 +104,7 @@ pub trait FileSystemBackendTrait {
     fn get_world_tileset12_assembly_data(&self, assembly_index: usize) -> Cursor<Vec<u8>>;
     fn get_world_tileset3_assembly_data(&self, assembly_index: usize) -> Cursor<Vec<u8>>;
     fn get_world_music_data(&self, music_index: usize) -> Cursor<Vec<u8>>;
-    fn get_world_exit_data(&self, exits_index: usize) -> Cursor<Vec<u8>>;
+    fn get_world_exits_triggers_data(&self, exits_index: usize) -> Cursor<Vec<u8>>;
     fn get_world_exit_names(&self, language: &str) -> Vec<String>;
     fn get_world_names(&self, language: &str) -> Vec<String>;
     fn get_world_sprite_data(&self) -> Vec<u8>;

@@ -2,27 +2,25 @@
 
 ## Table of contents
 
-- Data formats
-  - Scenes
-    - Header
-    - Maps
-    - Exits
-    - Treasure
-    - Scripts
-    - Palette animation
-  - Worlds
-    - Header
-    - Maps
-    - [Exits](worlds/exits.md)
-    - [Triggers](worlds/triggers.md)
-    - Music transitions
-  - [Tilesets](data/tilesets.md)
-  - Palettes
+- Scenes
+  - Header
+  - Maps
+  - Exits
+  - Treasure
+  - Scripts
+  - Palette animation
+  - [Tilesets](scenes/tilesets.md)
+  - [Palettes](scenes/palettes.md)
   - Sprites
     - Graphics
     - Assemblies
     - Animations
-  - [Strings](data/strings.md)
+- [Worlds](worlds/index.md)
+  - [Map data](worlds/map_data.md)
+  - [Exit and trigger data](worlds/exits_triggers.md)
+  - [Graphics](worlds/graphics.md)
+  - [Strings](worlds/strings.md)
+- [Strings](strings.md)
 - Scene scripts
   - [Memory areas](scene_scripts/memory_areas.md)
   - [Script execution flow](scene_scripts/script_execution_flow.md)

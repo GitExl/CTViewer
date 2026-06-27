@@ -9,7 +9,7 @@ currently set table.
 
 In the SNES version string tables are spread throughout the ROM and are referenced by their full 24-bit address. They
 start with up to 256 segment-relative pointers to the start of each string. Each string itself is compressed as
-described in [Strings](../data/strings.md). The PC version only refers to string tables by an index. The mapping to
+described in [Strings](../strings.md). The PC version only refers to string tables by an index. The mapping to
 files in the `Localize/<language>/msg` directory is as follows:
 
 0. `cmes0.txt`
@@ -56,7 +56,7 @@ word wrapping.
 
 Both the SNES and PC version dialogue can be decoded into a similar set of control codes. In this document, the PC
 version codes are used as a basis. Note that some of the control codes listed are split from a single control code in
-the SNES dialogue text, as described in [Strings](../data/strings.md).
+the SNES dialogue text, as described in [Strings](../strings.md).
 
 ### Text flow
 
