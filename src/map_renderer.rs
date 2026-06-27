@@ -222,20 +222,10 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
     let chip_height = layer.chip_height as i32;
 
     for chip_y in chip1.y..chip2.y {
-        let chip_y_wrap;
-        if chip_y < 0 {
-            chip_y_wrap = chip_height - (chip_y.abs() % chip_height) - 1;
-        } else {
-            chip_y_wrap = chip_y % chip_height;
-        }
+        let chip_y_wrap = ((chip_y % chip_height) + chip_height) % chip_height;
 
         for chip_x in chip1.x..chip2.x {
-            let chip_x_wrap;
-            if chip_x < 0 {
-                chip_x_wrap = chip_width - (chip_x.abs() % chip_width) - 1;
-            } else {
-                chip_x_wrap = chip_x % chip_width;
-            }
+            let chip_x_wrap = ((chip_x % chip_width) + chip_width) % chip_width;
 
             let chip_offset = (chip_x_wrap + chip_y_wrap * chip_width) as usize;
             let chip = &layer.chips[chip_offset];

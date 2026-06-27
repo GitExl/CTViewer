@@ -527,8 +527,8 @@ impl GameStateTrait for GameStateScene {
 
         // Keep world coordinate mouse position.
         self.mouse_pos = Vec2Di32::new(
-            (x as f64 + self.state.camera.pos.x) as i32,
-            (y as f64 + self.state.camera.pos.y) as i32,
+            (x as f64 + self.state.camera.pos_lerp.x) as i32,
+            (y as f64 + self.state.camera.pos_lerp.y) as i32,
         );
 
         let mut index = self.get_actor_at(self.mouse_pos);

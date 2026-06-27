@@ -202,7 +202,6 @@ impl GameStateTrait for GameStateWorld {
         else if self.key_right {
             self.state.camera.pos.x += 300.0 * delta;
         }
-        self.state.camera.wrap();
 
         if let Some(next_destination) = self.state.next_destination.destination {
             if !ctx.screen_fade.is_active() {
@@ -354,8 +353,8 @@ impl GameStateTrait for GameStateWorld {
 
     fn mouse_motion(&mut self, ctx: &Context, x: i32, y: i32) {
         self.mouse_pos = Vec2Di32::new(
-            (x as f64 + self.state.camera.pos.x) as i32,
-            (y as f64 + self.state.camera.pos.y) as i32,
+            (x as f64 + self.state.camera.pos_lerp.x) as i32,
+            (y as f64 + self.state.camera.pos_lerp.y) as i32,
         );
 
         // Output exit or treasure data at mouse position.

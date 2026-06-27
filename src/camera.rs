@@ -76,6 +76,9 @@ impl Camera {
 
     pub fn lerp(&mut self, lerp: f64) {
         self.pos_lerp = Vec2Df64::interpolate(self.pos_last, self.pos, lerp);
+
+        self.pos_lerp.x = ((self.pos_lerp.x % self.x2) + self.x2) % self.x2;
+        self.pos_lerp.y = ((self.pos_lerp.y % self.y2) + self.y2) % self.y2;
     }
 
     pub fn clamp(&mut self) {
@@ -98,24 +101,6 @@ impl Camera {
         }
 
         new
-    }
-
-    pub fn wrap(&mut self) {
-        let mut center = self.pos + self.size / 2.0;
-
-        if center.x < self.x1 {
-            center.x = self.x2 - (self.x1 - center.x);
-        } else if center.x >= self.x2 {
-            center.x = self.x1 + (center.x - self.x2);
-        }
-
-        if center.y < self.y1 {
-            center.y = self.y2 - (self.y1 - center.y);
-        } else if center.y >= self.y2 {
-            center.y = self.y1 + (center.y - self.y2);
-        }
-
-        self.pos = center - self.size / 2.0;
     }
 
     pub fn set_to(&mut self, pos: Vec2Df64) {
