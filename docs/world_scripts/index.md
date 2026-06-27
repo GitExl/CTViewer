@@ -26,6 +26,10 @@ ops inside the script are sometimes offset by `+$400`.
 Global memory refers to the range of `$000000` to `$00FFFF`. Local memory refers to the 64 bytes that store each
 actor's data. In theory local memory ops can access memory past their own, up to and including the next 3 actors.
 
+When a world is loaded, 16 bytes from `$7F01F0` are copied to `$7E1BA7`. These contain persistent story-related
+variables. Additionally the main storyline variable from `$7F0000` is copied to `$7E1BA6`. When a world is exited to
+a scene or another world, the data is copied back to the original addresses.
+
 ## Execution
 
 When the world is initialized, an actor is created that starts executing ops from byte 0 in the script. Every frame
