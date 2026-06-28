@@ -53,3 +53,15 @@ pub fn func_actor_is_offscreen(ctx: &mut Context, actor: &mut WorldActor, world_
         ctx.memory.put_u8(0x7E0000, 0);
     }
 }
+
+pub fn func_copy_party_indices(ctx: &mut Context) {
+    let party = ctx.party.get_party();
+
+    ctx.memory.put_u8(0x7E1BA3, 0x80);
+    ctx.memory.put_u8(0x7E1BA4, 0x80);
+    ctx.memory.put_u8(0x7E1BA5, 0x80);
+
+    for (index, character_id) in party.iter().enumerate() {
+        ctx.memory.put_u8(0x7E1BA3 + index, *character_id as u8);
+    }
+}

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::io::Cursor;
 use sdl3::event::Event;
-use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
@@ -9,6 +8,7 @@ use crate::scene::actor::{SceneActor, SceneActorClass, SceneActorFlags, SceneAct
 use crate::character::CharacterId;
 use crate::facing::Facing;
 use crate::gamestate::gamestate::GameStateTrait;
+use crate::input::InputAction;
 use crate::l10n::IndexedType;
 use crate::map::Map;
 use crate::map_renderer::LayerFlags;
@@ -50,12 +50,6 @@ pub struct GameStateScene {
 
     map_renderer: MapRenderer,
     scene_renderer: SceneRenderer,
-
-    key_up: bool,
-    key_down: bool,
-    key_left: bool,
-    key_right: bool,
-    key_activate: bool,
 
     mouse_pos: Vec2Di32,
 
@@ -143,12 +137,6 @@ impl GameStateScene {
             scene_renderer,
             map_renderer,
 
-            key_down: false,
-            key_left: false,
-            key_right: false,
-            key_up: false,
-            key_activate: false,
-
             mouse_pos: Vec2Di32::default(),
 
             debug_text: None,
@@ -164,44 +152,27 @@ impl GameStateScene {
 
 impl GameStateTrait for GameStateScene {
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
-
-        // Tick map.
         self.state.map.tick(delta);
+        self.state.camera.tick(delta);
+        self.scene.tileset_l12.tick(delta);
+        self.scene.palette_anims.tick(delta, &mut self.scene.palette.palette);
+        self.state.textbox.tick(ctx, delta);
 
-        // Tick script.
+        if let Some(debug_actor) = self.debug_actor {
+            self.state.camera.pos = self.state.actors[debug_actor].pos - Vec2Df64::new(self.state.camera.size.x - 64.0, self.state.camera.size.y / 2.0);
+        }
+
+        self.process_input(ctx, delta);
+
         self.scene.script.run(ctx, &mut self.state);
 
-        // Tick actors.
+        self.state.camera.clamp();
+
         for (index, actor) in self.state.actors.iter_mut().enumerate() {
             actor.tick(delta, &self.state.scene_map, &ctx.assets);
             let state = ctx.sprite_states.get_state_mut(index);
             actor.update_sprite_state(state, &ctx.assets);
         }
-
-        self.scene.tileset_l12.tick(delta);
-        self.scene.palette_anims.tick(delta, &mut self.scene.palette.palette);
-
-        self.state.camera.tick(delta);
-        if let Some(debug_actor) = self.debug_actor {
-            self.state.camera.pos = self.state.actors[debug_actor].pos - Vec2Df64::new(self.state.camera.size.x - 64.0, self.state.camera.size.y / 2.0);
-            self.state.camera.clamp();
-        } else {
-            if self.key_up {
-                self.state.camera.pos.y -= 300.0 * delta;
-            }
-            else if self.key_down {
-                self.state.camera.pos.y += 300.0 * delta;
-            }
-            if self.key_left {
-                self.state.camera.pos.x -= 300.0 * delta;
-            }
-            else if self.key_right {
-                self.state.camera.pos.x += 300.0 * delta;
-            }
-            self.state.camera.clamp();
-        }
-
-        self.state.textbox.tick(ctx, delta);
 
         // Freeze debug actor script state.
         if let Some(debug_actor) = self.debug_actor {
@@ -341,118 +312,6 @@ impl GameStateTrait for GameStateScene {
 
     fn event(&mut self, ctx: &mut Context, event: &Event) {
         match event {
-            Event::KeyDown { keycode, .. } => {
-                match keycode {
-                    Some(Keycode::W) => {
-                        if self.state.textbox.is_active() && self.state.textbox.has_choices() {
-                            self.state.textbox.choice_previous();
-                        } else {
-                            self.key_up = true;
-                        }
-                    },
-                    Some(Keycode::A) => self.key_left = true,
-                    Some(Keycode::S) => {
-                        if self.state.textbox.is_active() && self.state.textbox.has_choices() {
-                            self.state.textbox.choice_next();
-                        } else {
-                            self.key_down = true;
-                        }
-                    },
-                    Some(Keycode::D) => self.key_right = true,
-
-                    Some(Keycode::F) => {
-                        if self.state.textbox.is_active() {
-                            self.state.textbox.progress(ctx);
-                        } else {
-                            self.key_activate = true;
-                        }
-                    },
-
-                    Some(Keycode::_1) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
-                        println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
-                    },
-                    Some(Keycode::_2) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Layer2);
-                        println!("Render layer 2: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer2));
-                    },
-                    Some(Keycode::_3) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Layer3);
-                        println!("Render layer 3: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer3));
-                    },
-                    Some(Keycode::_4) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Sprites);
-                        println!("Render sprites: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Sprites));
-                    },
-
-                    Some(Keycode::_5) => {
-                        self.scene_renderer.debug_palette = !self.scene_renderer.debug_palette;
-                        println!("Render palette.");
-                    }
-
-                    Some(Keycode::Z) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Disabled;
-                        println!("Debug layer disabled.");
-                    },
-                    Some(Keycode::X) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::PcCollision;
-                        println!("Debug layer for player collision.");
-                    },
-                    Some(Keycode::C) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::NpcCollision;
-                        println!("Debug layer for NPC collision.");
-                    },
-                    Some(Keycode::V) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::ZPlane;
-                        println!("Debug layer for Z plane data & flags.");
-                    },
-                    Some(Keycode::B) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Movement;
-                        println!("Debug layer for movement.");
-                    },
-                    Some(Keycode::N) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::DoorTrigger;
-                        println!("Debug layer for door triggers.");
-                    },
-                    Some(Keycode::M) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::SpritePriority;
-                        println!("Debug layer for sprite priority data.");
-                    },
-                    Some(Keycode::Comma) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Exits;
-                        println!("Debug layer for exits.");
-                    },
-                    Some(Keycode::Period) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Treasure;
-                        println!("Debug layer for treasure.");
-                    },
-                    Some(Keycode::Slash) => {
-                        self.scene_renderer.debug_layer = SceneDebugLayer::Actors;
-                        println!("Debug layer for actors.");
-                    },
-
-                    Some(Keycode::Space) => {
-                        if let Some(debug_actor) = self.debug_actor {
-                            let state = self.state.script_states.get_mut(debug_actor).unwrap();
-                            state.delay_counter = 0;
-                        }
-                    },
-
-                    _ => {},
-                }
-            },
-
-            Event::KeyUp { keycode, .. } => {
-                match keycode {
-                    Some(Keycode::W) => self.key_up = false,
-                    Some(Keycode::A) => self.key_left = false,
-                    Some(Keycode::S) => self.key_down = false,
-                    Some(Keycode::D) => self.key_right = false,
-                    Some(Keycode::F) => self.key_activate = false,
-                    _ => {},
-                }
-            },
-
             Event::MouseButtonDown { mouse_btn, .. } => {
                 if *mouse_btn == MouseButton::Middle {
                     let index = self.get_actor_at(self.mouse_pos);
@@ -613,6 +472,110 @@ impl GameStateTrait for GameStateScene {
 }
 
 impl GameStateScene {
+
+    fn process_input(&mut self, ctx: &mut Context, delta: f64) {
+        if self.state.textbox.is_active() {
+            if ctx.input.was_pressed(InputAction::DialogueChoiceConfirm) {
+                self.state.textbox.progress(ctx);
+            }
+
+            if self.state.textbox.has_choices() {
+                if ctx.input.was_pressed(InputAction::DialogueChoicePrevious) {
+                    self.state.textbox.choice_previous();
+                }
+                else if ctx.input.was_pressed(InputAction::DialogueChoiceNext) {
+                    if self.state.textbox.is_active() && self.state.textbox.has_choices() {
+                        self.state.textbox.choice_next();
+                    }
+                }
+            }
+        }
+
+        if let None = self.debug_actor {
+            if !self.state.textbox.is_active() && !self.state.textbox.has_choices() {
+                if ctx.input.is_down(InputAction::DebugCameraUp) {
+                    self.state.camera.pos.y -= 300.0 * delta;
+                } else if ctx.input.is_down(InputAction::DebugCameraDown) {
+                    self.state.camera.pos.y += 300.0 * delta;
+                }
+            }
+
+            if ctx.input.is_down(InputAction::DebugCameraLeft) {
+                self.state.camera.pos.x -= 300.0 * delta;
+            }
+            else if ctx.input.is_down(InputAction::DebugCameraRight) {
+                self.state.camera.pos.x += 300.0 * delta;
+            }
+        }
+
+        if ctx.input.was_pressed(InputAction::DebugToggleLayer1) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
+            println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
+        }
+        if ctx.input.was_pressed(InputAction::DebugToggleLayer2) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer2);
+            println!("Render layer 2: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer2));
+        }
+        if ctx.input.was_pressed(InputAction::DebugToggleLayer3) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer3);
+            println!("Render layer 3: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer3));
+        }
+        if ctx.input.was_pressed(InputAction::DebugToggleSprites) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Sprites);
+            println!("Render sprites: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Sprites));
+        }
+        if ctx.input.was_pressed(InputAction::DebugTogglePalette) {
+            self.scene_renderer.debug_palette = !self.scene_renderer.debug_palette;
+            println!("Render palette.");
+        }
+
+        if ctx.input.was_pressed(InputAction::DebugOverlaysDisable) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::Disabled;
+            println!("Debug layer disabled.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays1) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::PcCollision;
+            println!("Debug layer for player collision.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays2) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::NpcCollision;
+            println!("Debug layer for NPC collision.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays3) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::ZPlane;
+            println!("Debug layer for Z plane data & flags.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays4) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::Movement;
+            println!("Debug layer for movement.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays5) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::DoorTrigger;
+            println!("Debug layer for door triggers.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays6) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::SpritePriority;
+            println!("Debug layer for sprite priority data.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays7) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::Exits;
+            println!("Debug layer for exits.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays8) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::Treasure;
+            println!("Debug layer for treasure.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays9) {
+            self.scene_renderer.debug_layer = SceneDebugLayer::Actors;
+            println!("Debug layer for actors.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugActorStep) {
+            if let Some(debug_actor) = self.debug_actor {
+                let state = self.state.script_states.get_mut(debug_actor).unwrap();
+                state.delay_counter = 0;
+            }
+        }
+    }
 
     fn get_exit_at(&self, pos: Vec2Di32) -> Option<usize> {
         for (index, exit) in self.scene.exits.iter().enumerate() {

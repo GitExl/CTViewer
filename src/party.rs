@@ -4,7 +4,7 @@ use crate::items::{Item, ItemId};
 
 #[derive(PartialEq, Debug)]
 pub enum CharacterPartyState {
-    Active,
+    Available,
     InReserve,
     Unavailable,
 }
@@ -13,6 +13,9 @@ pub struct Party {
 
     /// All known characters and their state.
     pub characters: HashMap<CharacterId, Character>,
+
+    /// Current list of character in party.
+    pub party: Vec<CharacterId>,
 
     /// All known items.
     pub items: HashMap<ItemId, Item>,
@@ -32,7 +35,7 @@ impl Party {
             id: 0,
             name: "Crono".into(),
             text_key: "NAME_CRO".into(),
-            party_state: CharacterPartyState::Active,
+            party_state: CharacterPartyState::Available,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -140,7 +143,7 @@ impl Party {
             id: 4,
             name: "Frog".into(),
             text_key: "NAME_FRO".into(),
-            party_state: CharacterPartyState::Unavailable,
+            party_state: CharacterPartyState::Available,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -194,7 +197,7 @@ impl Party {
             id: 6,
             name: "Magus".into(),
             text_key: "NAME_MAG".into(),
-            party_state: CharacterPartyState::Unavailable,
+            party_state: CharacterPartyState::Available,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -219,6 +222,7 @@ impl Party {
 
         Party {
             characters,
+            party: vec![0, 1, 2],
 
             inventory: HashMap::new(),
             items: HashMap::new(),
@@ -228,7 +232,7 @@ impl Party {
 
     pub fn character_add_to_reserve(&mut self, character_id: CharacterId) {
         let character = self.characters.get_mut(&character_id).unwrap();
-        if character.party_state == CharacterPartyState::Active {
+        if character.party_state == CharacterPartyState::Available {
             return;
         }
         character.party_state = CharacterPartyState::InReserve;
@@ -237,14 +241,19 @@ impl Party {
 
     pub fn character_remove_from_active(&mut self, character_id: CharacterId) {
         let character = self.characters.get_mut(&character_id).unwrap();
-        // todo really removes from active and to out of party
+        if let Some(index) = self.party.iter().position(|&r| r == character_id) {
+            self.party.remove(index);
+        }
         character.party_state = CharacterPartyState::InReserve;
         println!("Moved {} ({}) to reserve.", character.name, character_id);
     }
 
     pub fn character_add_to_active(&mut self, character_id: CharacterId) {
         let character = self.characters.get_mut(&character_id).unwrap();
-        character.party_state = CharacterPartyState::Active;
+        character.party_state = CharacterPartyState::Available;
+        if let None = self.party.iter().position(|&r| r == character_id) {
+            self.party.push(character_id);
+        }
         println!("Moved {} ({}) to active.", character.name, character_id);
     }
 
@@ -272,12 +281,16 @@ impl Party {
         character.party_state != CharacterPartyState::Unavailable
     }
 
-    pub fn is_character_active(&self, character_id: CharacterId) -> bool {
+    pub fn is_character_available(&self, character_id: CharacterId) -> bool {
         if !self.characters.contains_key(&character_id) {
             return false;
         }
         let character = self.characters.get(&character_id).unwrap();
-        character.party_state == CharacterPartyState::Active
+        character.party_state == CharacterPartyState::Available
+    }
+
+    pub fn get_party(&self) -> Vec<CharacterId> {
+        self.party.clone()
     }
 
     pub fn gold_give(&mut self, amount: u32) {

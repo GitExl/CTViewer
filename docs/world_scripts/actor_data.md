@@ -11,8 +11,7 @@
 | `$0B`  | `BBB` | The address of currently displaying world sprite assembly data.                              |
 | `$0E`  | `B`   | Current animation frame timer.                                                               |
 | `$0F`  | `B`   | Palette and sprite priority. Bits `$F1` are set by `colofs`, bits `$4F` are set by `priset`. |
-| `$10`  | `?`   |                                                                                              |
-| `$11`  | `?`   |                                                                                              |
+| `$10`  | `W`   | Sprite assembly source graphics tile offset                                                  |
 | `$12`  | `L`   | Current sprite X pixel in 16.16 fixed point                                                  |
 | `$16`  | `L`   | Current sprite Y pixel in 16.16 fixed point                                                  |
 | `$1A`  | `L`   | X movement vector in 16.16 fixed point                                                       |
@@ -23,7 +22,7 @@
 | `$25`  | `?`   |                                                                                              |
 | `$26`  | `?`   | Used by player character sprite assembly ops 0, 1 and 2.                                     |
 | `$27`  | `?`   |                                                                                              |
-| `$28`  | `?`   |                                                                                              |
+| `$28`  | `B`   | Facing. Bit `$80` unknown.                                                                   |
 | `$29`  | `?`   |                                                                                              |
 | `$2A`  | `W`   | Current X tile for player characters                                                         |
 | `$2C`  | `?`   |                                                                                              |

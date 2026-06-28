@@ -11,7 +11,6 @@ use crate::gamestate::gamestate_world::GameStateWorld;
 use crate::l10n::L10n;
 use clap::Parser;
 use sdl3::event::Event;
-use sdl3::keyboard::Keycode;
 use crate::destination::Destination;
 use crate::facing::Facing;
 use crate::memory::Memory;
@@ -19,6 +18,7 @@ use crate::party::Party;
 use crate::renderer::Renderer;
 use crate::screen_fade::ScreenFade;
 use assets::Assets;
+use crate::input::{InputAction, InputManager};
 use crate::sprites::sprite_state_list::SpriteStateList;
 use crate::text_processor::TextProcessor;
 use crate::ui_theme::UiTheme;
@@ -57,6 +57,7 @@ mod music_list;
 mod sound_list;
 pub mod assets;
 mod scroll_state;
+mod input;
 
 const UPDATES_PER_SECOND: f64 = 60.0;
 const UPDATE_INTERVAL: f64 = 1.0 / UPDATES_PER_SECOND;
@@ -128,6 +129,7 @@ pub struct Context<'a> {
     text_processor: TextProcessor,
     screen_fade: ScreenFade,
     mode: GameMode,
+    input: InputManager,
 }
 
 fn main() -> Result<(), String> {
@@ -145,6 +147,7 @@ fn main() -> Result<(), String> {
     let random = Random::new();
     let ui_theme = fs.read_ui_theme(args.ui_theme);
     let screen_fade = ScreenFade::new(0.0);
+    let input = InputManager::new();
     let mode = fs.mode;
 
     let mut memory = Memory::new();
@@ -170,6 +173,7 @@ fn main() -> Result<(), String> {
         party,
         text_processor,
         screen_fade,
+        input,
         mode,
     };
 
@@ -201,7 +205,7 @@ fn main() -> Result<(), String> {
     let mut event_pump = sdl.event_pump().unwrap();
     'running: loop {
 
-        // Process input.
+        // Process events.
         for event in event_pump.poll_iter() {
             match event {
                 Event::MouseMotion { x, y, .. } => {
@@ -209,21 +213,16 @@ fn main() -> Result<(), String> {
                     gamestate.mouse_motion(&ctx, x, y);
                 },
                 Event::Quit {..} => break 'running,
-                Event::KeyDown { keycode, .. } => {
-                    match keycode {
-                        Some(Keycode::Escape) => break 'running,
-                        Some(Keycode::Backspace) => {
-                            ctx.assets.dump();
-                            ctx.ui_theme.dump();
-                            gamestate.dump(&ctx)
-                        },
-                        Some(Keycode::Backslash) => {
-                            ctx.render.target.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
-                            println!("Saved render target to debug_output/screenshot.bmp");
-                        },
-                        _ => {},
+                Event::KeyUp { keycode, .. } => {
+                    if let Some(keycode) = keycode {
+                        ctx.input.key_up(keycode);
                     }
                 },
+                Event::KeyDown { keycode, .. } => {
+                    if let Some(keycode) = keycode {
+                        ctx.input.key_down(keycode);
+                    }
+                }
                 _ => {},
             }
 
@@ -241,7 +240,18 @@ fn main() -> Result<(), String> {
         while accumulator > UPDATE_INTERVAL {
             timer_update.start();
 
+            if ctx.input.was_pressed(InputAction::DebugDump) {
+                ctx.assets.dump();
+                ctx.ui_theme.dump();
+                gamestate.dump(&ctx);
+                ctx.render.target.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
+            }
+            if ctx.input.was_pressed(InputAction::Exit) {
+                break 'running;
+            }
+
             ctx.screen_fade.tick(UPDATE_INTERVAL);
+
             let game_event = gamestate.tick(&mut ctx, UPDATE_INTERVAL);
             if game_event.is_some() {
                 match game_event.unwrap() {
@@ -267,6 +277,8 @@ fn main() -> Result<(), String> {
                     },
                 }
             }
+
+            ctx.input.clear();
 
             stat_update_time += timer_update.stop();
             stat_update_count += 1;

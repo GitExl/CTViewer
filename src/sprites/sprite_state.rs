@@ -31,6 +31,8 @@ pub struct SpriteState {
 
     pub assembly_key: u64,
     pub bitmap_key: u64,
+    pub tile_offset_x: i32,
+    pub tile_offset_y: i32,
 
     pub palette: Palette,
     pub palette_offset: usize,
@@ -49,6 +51,8 @@ impl SpriteState {
 
             assembly_key: 0,
             bitmap_key: 0,
+            tile_offset_x: 0,
+            tile_offset_y: 0,
 
             palette: Palette::new(0),
             palette_offset: 0,

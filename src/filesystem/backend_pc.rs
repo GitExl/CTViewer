@@ -279,6 +279,19 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.get_file_cursor(&format!("Game/world/colanim_bin/{}_colanim.bin", world_palette_index), None, None)
     }
 
+    fn get_world_player_palettes(&self) -> Palette {
+        // TODO: PC version does not have this, since there are no original SNES sprites...
+        let mut data = self.get_file_cursor(&"Game/world/plt_bin/plt4.bin".to_string(), None, None);
+        data.seek(SeekFrom::Start(2)).unwrap();
+
+        let mut colors = Vec::<Color>::new();
+        for _ in 0..128 {
+            colors.push(FileSystem::read_color(&mut data));
+        }
+
+        Palette::from_colors(&colors)
+    }
+
     fn get_world_script_data(&self, script_index: usize) -> Vec<u8> {
         self.get_file_bytes(&format!("Game/world/esl/Event_{:04}.dat", script_index), None, None)
     }

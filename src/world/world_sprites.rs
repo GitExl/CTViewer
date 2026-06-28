@@ -1,5 +1,6 @@
 use std::path::Path;
 use crate::assets::Assets;
+use crate::character::CharacterId;
 use crate::Context;
 use crate::software_renderer::blit::{blit_bitmap_to_surface, BitmapBlitFlags};
 use crate::software_renderer::palette::Palette;
@@ -34,26 +35,23 @@ impl WorldSprites {
     }
 
     // Read player character sprites.
-    pub fn load_player_sprites(&mut self, ctx: &mut Context, characters: [usize; 3]) {
+    pub fn load_player_sprites(&mut self, ctx: &mut Context, party_index: usize, character: CharacterId) {
         let bitmap = ctx.assets.get_bitmap_mut(self.bitmap_key);
         let src_pixels = ctx.fs.read_world_player_sprite_tiles();
 
         // Copy player world sprites from external bitmap data into sprite bitmap data.
-        // Only 3 characters these are loaded at a time.
-        for (index, src_index) in characters.iter().enumerate() {
 
-            // Copy regular sprites to 0x4000 in tile memory + the start of the player character.
-            // Each row is 0x80 bytes, 16 rows is 0x800 bytes.
-            let src_offset = src_index * 0x800;
-            let dest_offset = 0x4000 + (index * 0x800);
-            bitmap.data[dest_offset..dest_offset + 0x800].copy_from_slice(&src_pixels[src_offset..src_offset + 0x800]);
+        // Copy regular sprites to 0x4000 in tile memory + the start of the player character.
+        // Each row is 0x80 bytes, 16 rows is 0x800 bytes.
+        let src_offset = character * 0x800;
+        let dest_offset = 0x4000 + (party_index * 0x800);
+        bitmap.data[dest_offset..dest_offset + 0x800].copy_from_slice(&src_pixels[src_offset..src_offset + 0x800]);
 
-            // Copy the loose idle sprite.
-            for row in 0..16 {
-                let src_offset = 0x3800 + src_index * 0x10 + (row * 0x80);
-                let dest_offset = 0x5800 + src_index * 0x10 + (row * 0x80);
-                bitmap.data[dest_offset..dest_offset + 0x10].copy_from_slice(&src_pixels[src_offset..src_offset + 0x10]);
-            }
+        // Copy the loose idle sprite.
+        for row in 0..16 {
+            let src_offset = 0x3800 + character * 0x10 + (row * 0x80);
+            let dest_offset = 0x5800 + party_index * 0x10 + (row * 0x80);
+            bitmap.data[dest_offset..dest_offset + 0x10].copy_from_slice(&src_pixels[src_offset..src_offset + 0x10]);
         }
     }
 

@@ -340,7 +340,14 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
 
             let assembly_frame = assets.get_assembly_frame(sprite_state.assembly_key);
             let bitmap = assets.get_bitmap(sprite_state.bitmap_key);
-            render_sprite(target, pixel_source, LayerFlags::Sprites.bits(), render_top, render_bottom, assembly_frame, bitmap, pos.x, pos.y, &sprite_state.palette, sprite_state.palette_offset);
+            render_sprite(
+                target, pixel_source, LayerFlags::Sprites.bits(),
+                render_top, render_bottom,
+                assembly_frame, bitmap,
+                sprite_state.tile_offset_x, sprite_state.tile_offset_y,
+                pos.x, pos.y,
+                &sprite_state.palette, sprite_state.palette_offset
+            );
         }
     }
 }

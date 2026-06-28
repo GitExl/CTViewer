@@ -61,7 +61,7 @@ impl TextProcessor {
         // Add names for active party members.
         for (index, character) in party.characters.iter() {
             self.replacements.insert(character.text_key.clone(), character.name.clone());
-            if character.party_state == CharacterPartyState::Active {
+            if character.party_state == CharacterPartyState::Available {
                 self.replacements.insert(format!("NAME_PT{}", index + 1), character.name.clone());
             }
         }

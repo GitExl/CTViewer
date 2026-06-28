@@ -26,7 +26,7 @@ impl SpritePriority {
     }
 }
 
-pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, render_top: bool, render_bottom: bool, assembly_frame: &SpriteAssemblyFrame, bitmap: &Bitmap, x: i32, y: i32, palette: &Palette, palette_offset: usize) {
+pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_value: u8, render_top: bool, render_bottom: bool, assembly_frame: &SpriteAssemblyFrame, bitmap: &Bitmap, tile_offset_x: i32, tile_offset_y: i32, x: i32, y: i32, palette: &Palette, palette_offset: usize) {
     for tile in assembly_frame.chips.iter().rev() {
         if tile.flags.contains(SpriteAssemblyChipFlags::UNUSED) {
             continue;
@@ -37,7 +37,10 @@ pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_va
         if tile.flags.contains(SpriteAssemblyChipFlags::IS_BOTTOM) && !render_bottom {
             continue;
         }
-        if tile.src_x >= bitmap.width as i32 || tile.src_y >= bitmap.height as i32 {
+
+        let src_x = tile.src_x + tile_offset_x;
+        let src_y = tile.src_y + tile_offset_y;
+        if src_x >= bitmap.width as i32 || src_y >= bitmap.height as i32 {
             continue;
         }
 
@@ -53,7 +56,7 @@ pub fn render_sprite(surface: &mut Surface, pixel_source: &mut Bitmap, source_va
             &bitmap,
             surface,
             pixel_source,
-            tile.src_x, tile.src_y,
+            src_x, src_y,
             tile.width, tile.height,
             x + tile.x, y + tile.y,
             palette, palette_offset,

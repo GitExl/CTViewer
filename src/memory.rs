@@ -283,7 +283,7 @@ impl DataSource {
             DataSource::PartyCharacter(index) => *scene_state.player_actors.get(&index).unwrap_or(&0) as u8,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u8,
-            DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Active) as u8,
+            DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Available) as u8,
             DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u8,
 
             _ => panic!("Unhandled get_u8 scene."),
@@ -319,7 +319,7 @@ impl DataSource {
             DataSource::PartyCharacter(index) => *scene_state.player_actors.get(&index).unwrap_or(&0) as u16,
             DataSource::Input(..) => 0,
             DataSource::CurrentInput(is_current) => is_current as u16,
-            DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Active) as u16,
+            DataSource::PCIsActive(pc) => (ctx.party.characters.get(&pc).unwrap().party_state == CharacterPartyState::Available) as u16,
             DataSource::PCIsActiveOrReserve(pc) => (ctx.party.characters.get(&pc).unwrap().party_state != CharacterPartyState::Unavailable) as u16,
 
             DataSource::WorldActor(_actor_address) => 0,
@@ -394,6 +394,8 @@ impl DataDest {
             DataDest::WorldActor(address) => {
                 if *address == 0x0F {
                     actor.palette_priority = value;
+                } else if *address == 0x10 {
+                    actor.sprite_tile_offset = value as i32;
                 } else if *address == 0x14 {
                     // actor pixel x 3rd byte
                     actor.x += 1.0;
@@ -474,9 +476,10 @@ fn address_to_variable(address: usize) -> String {
         0x7E1B48 => format!("WorldUnknown{:04X}", address),
         0x7E1B9B => String::from("WorldMusic"),
 
-        0x7E1BA3 => format!("WorldFlags{:04X}", address - 0x7E0000),
-        0x7E1BA4 => format!("WorldFlags{:04X}", address - 0x7E0000),
-        0x7E1BA6 => format!("WorldFlags{:04X}", address - 0x7E0000),
+        0x7E1BA3 => String::from("PlayerCharacter1"),
+        0x7E1BA4 => String::from("PlayerCharacter2"),
+        0x7E1BA5 => String::from("PlayerCharacter3"),
+
         0x7E1BA7 .. 0x7E1BBB => format!("WorldStoryFlags{:02X}", address - 0x7E1BA7),
 
         0x7EA214 => format!("WorldUnknown{:06X}", address),

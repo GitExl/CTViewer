@@ -88,3 +88,9 @@ pub fn task_fade_out(ctx: &mut Context, actor: &mut WorldActor) {
 pub fn task_grp(_ctx: &mut Context, actor: &mut WorldActor) {
     actor.task = WorldActorTask::None;
 }
+
+pub fn task_update_music(_ctx: &mut Context, _actor: &mut WorldActor) {
+}
+
+pub fn task_unknown_string(_ctx: &mut Context, _actor: &mut WorldActor) {
+}

@@ -203,7 +203,7 @@ impl WorldAnimationScript {
                         }
                     }
                     WorldAnimationOp::Animate { duration, assembly_address } => {
-                        println!("  {:04X} animate 0x{:02X} {}", op_address, assembly_address, duration);
+                        println!("  {:04X} animate 0x{:02X} {}", op_address, assembly_address - 0xE000, duration);
                         if duration == 0 {
                             break;
                         }

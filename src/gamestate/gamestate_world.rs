@@ -1,13 +1,11 @@
-use std::collections::HashMap;
 use std::io::Cursor;
 use sdl3::event::Event;
-use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use crate::camera::Camera;
 use crate::{Context, GameEvent};
-use crate::character::CharacterId;
 use crate::game_palette::GamePalette;
 use crate::gamestate::gamestate::GameStateTrait;
+use crate::input::InputAction;
 use crate::l10n::IndexedType;
 use crate::map::Map;
 use crate::map_renderer::LayerFlags;
@@ -34,8 +32,9 @@ use crate::world_script::world_script::{world_script_disassemble, world_script_i
 
 /// Mutable state for a world.
 pub struct WorldState {
-    pub player_actors: HashMap<CharacterId, usize>,
     pub next_destination: NextDestination,
+    pub enter_pos: Vec2Df64,
+    pub world_index: usize,
     pub camera: Camera,
     pub world_map: WorldMap,
     pub map: Map,
@@ -58,11 +57,6 @@ pub struct GameStateWorld {
     map_renderer: MapRenderer,
     world_renderer: WorldRenderer,
 
-    key_up: bool,
-    key_down: bool,
-    key_left: bool,
-    key_right: bool,
-
     mouse_pos: Vec2Di32,
 
     debug_text: Option<TextRenderable>,
@@ -75,6 +69,26 @@ pub struct GameStateWorld {
 
 impl GameStateWorld {
     pub fn new(ctx: &mut Context, world_index: usize, pos: Vec2Df64, fade_in: bool) -> GameStateWorld {
+        println!("Entering world {}: {}", world_index, ctx.l10n.get_indexed(IndexedType::World, world_index));
+
+        let mut world = ctx.fs.read_world(world_index);
+
+        // Initialize sprites.
+        let mut sprites = WorldSprites::new(ctx, world_index, world.sprite_graphics);
+        for (index, character) in ctx.party.get_party().iter().enumerate() {
+            sprites.load_player_sprites(ctx, index, *character);
+        }
+
+        // Initialize world and player palettes.
+        let mut palette = world.palette.clone();
+        let player_palettes = ctx.fs.backend.get_world_player_palettes();
+        for (index, character) in ctx.party.get_party().iter().enumerate() {
+            let dest = 192 + index * 16;
+            let src = character * 16;
+            palette.palette.colors[dest..dest + 16].copy_from_slice(&player_palettes.colors[src..src + 16]);
+        }
+
+        // Clear ?
         ctx.memory.put_u8(0x7E1B59, 0);
         ctx.memory.put_u8(0x7E1BF7, 0);
 
@@ -83,14 +97,11 @@ impl GameStateWorld {
         ctx.memory.put_bytes(0x7E1BA7, &story_flags);
         ctx.memory.put_u8(0x7E1BA6, ctx.memory.get_u8(0x7F0000));
 
-        let mut world = ctx.fs.read_world(world_index);
-
-        let mut sprites = WorldSprites::new(ctx, world_index, world.sprite_graphics);
-        sprites.load_player_sprites(ctx, [0, 1, 2]);
-
-        // Create new shared world state.
+        // Create new world state.
         let mut state = WorldState {
             next_destination: NextDestination::new(),
+            enter_pos: pos,
+            world_index,
             camera: Camera::new(
                 0.0, 0.0,
                 ctx.render.target.width as f64, ctx.render.target.height as f64,
@@ -98,12 +109,11 @@ impl GameStateWorld {
                 (world.world_map.width * 8) as f64, (world.world_map.height * 8) as f64,
             ),
             actors: std::array::from_fn::<_, 64, _>(|_| WorldActor::new()),
-            player_actors: HashMap::new(),
             world_map: world.world_map.clone(),
             map: world.map.clone(),
             tileset_l12: world.tileset_l12.clone(),
             tileset_l3: world.tileset_l3.clone(),
-            palette: world.palette.clone(),
+            palette,
             palette_animation: world.palette_anim.clone(),
             exits: world.exits.clone(),
             triggers: world.triggers.clone(),
@@ -112,12 +122,13 @@ impl GameStateWorld {
             script_data: Cursor::new(world.script_data.clone()),
         };
 
+        // Setup script execution.
         world_script_initialize(&mut state);
 
+        // Setup renderer.
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut world.map);
-
         state.camera.center_to(pos);
         if fade_in {
             ctx.screen_fade.start(1.0, 2);
@@ -125,19 +136,12 @@ impl GameStateWorld {
             ctx.screen_fade.set(1.0);
         }
 
-        println!("Entering world {}: {}", world.index, ctx.l10n.get_indexed(IndexedType::World, world.index));
-
         GameStateWorld {
             world,
             state,
 
             world_renderer,
             map_renderer,
-
-            key_down: false,
-            key_left: false,
-            key_right: false,
-            key_up: false,
 
             mouse_pos: Vec2Di32::default(),
 
@@ -155,53 +159,13 @@ impl GameStateTrait for GameStateWorld {
 
     fn tick(&mut self, ctx: &mut Context, delta: f64) -> Option<GameEvent> {
         self.state.map.tick(delta);
+        self.state.camera.tick(delta);
+
+        self.process_input(ctx, delta);
 
         world_script_run(ctx, &mut self.state);
 
-        ctx.sprite_states.clear();
-        for actor in self.state.actors.iter() {
-            if actor.sprite_assembly_key == 0 || matches!(actor.task, WorldActorTask::None) {
-                continue;
-            }
-
-            let state = ctx.sprite_states.add_state();
-            state.pos.x = actor.x;
-            state.pos.y = actor.y;
-            state.palette = self.state.palette.palette.clone();
-            state.palette_offset = 128 + ((actor.palette_priority >> 1) & 0x07) as usize * 16;
-            state.assembly_key = actor.sprite_assembly_key;
-
-            state.flags = SpriteStateFlags::empty();
-            state.flags.insert(SpriteStateFlags::ENABLED);
-            if actor.palette_priority & 0x01 != 0 {
-                state.flags.insert(SpriteStateFlags::CAMERA_RELATIVE);
-            }
-
-            let priority = match actor.palette_priority & 0x30 {
-                0x30 => SpritePriority::AboveAll,
-                0x20 => SpritePriority::BelowL2AboveL1,
-                0x10 => SpritePriority::BelowL1L2,
-                _ => SpritePriority::BelowAll,
-            };
-            state.priority_top = priority;
-            state.priority_bottom = priority;
-
-            state.bitmap_key = self.state.sprites.get_bitmap_key();
-        }
-
-        self.state.camera.tick(delta);
-        if self.key_up {
-            self.state.camera.pos.y -= 300.0 * delta;
-        }
-        else if self.key_down {
-            self.state.camera.pos.y += 300.0 * delta;
-        }
-        if self.key_left {
-            self.state.camera.pos.x -= 300.0 * delta;
-        }
-        else if self.key_right {
-            self.state.camera.pos.x += 300.0 * delta;
-        }
+        self.update_sprite_states(ctx);
 
         if let Some(next_destination) = self.state.next_destination.destination {
             if !ctx.screen_fade.is_active() {
@@ -271,64 +235,6 @@ impl GameStateTrait for GameStateWorld {
 
     fn event(&mut self, ctx: &mut Context, event: &Event) {
         match event {
-            Event::KeyDown { keycode, .. } => {
-                match keycode {
-                    Some(Keycode::W) => self.key_up = true,
-                    Some(Keycode::A) => self.key_left = true,
-                    Some(Keycode::S) => self.key_down = true,
-                    Some(Keycode::D) => self.key_right = true,
-
-                    Some(Keycode::_1) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
-                        println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
-                    },
-                    Some(Keycode::_2) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Layer2);
-                        println!("Render layer 2: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer2));
-                    },
-                    Some(Keycode::_3) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Layer3);
-                        println!("Render layer 3: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer3));
-                    },
-                    Some(Keycode::_4) => {
-                        self.map_renderer.layer_enabled.toggle(LayerFlags::Sprites);
-                        println!("Render sprites: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Sprites));
-                    },
-                    Some(Keycode::_5) => {
-                        self.world_renderer.debug_palette = !self.world_renderer.debug_palette;
-                        println!("Render palette.");
-                    }
-
-                    Some(Keycode::Z) => {
-                        self.world_renderer.debug_layer = WorldDebugLayer::Disabled;
-                        println!("Debug layer disabled.");
-                    },
-                    Some(Keycode::X) => {
-                        self.world_renderer.debug_layer = WorldDebugLayer::Solidity;
-                        println!("Debug layer for solidity.");
-                    },
-                    Some(Keycode::C) => {
-                        self.world_renderer.debug_layer = WorldDebugLayer::Exits;
-                        println!("Debug layer for exits.");
-                    },
-                    Some(Keycode::V) => {
-                        self.world_renderer.debug_layer = WorldDebugLayer::Music;
-                        println!("Debug layer for music transitions.");
-                    },
-                    _ => {},
-                }
-            },
-
-            Event::KeyUp { keycode, .. } => {
-                match keycode {
-                    Some(Keycode::W) => self.key_up = false,
-                    Some(Keycode::A) => self.key_left = false,
-                    Some(Keycode::S) => self.key_down = false,
-                    Some(Keycode::D) => self.key_right = false,
-                    _ => {},
-                }
-            },
-
             Event::MouseButtonDown { mouse_btn, .. } => {
                 if *mouse_btn == MouseButton::Left {
                     let index = self.get_exit_at(self.mouse_pos);
@@ -339,14 +245,13 @@ impl GameStateTrait for GameStateWorld {
                                 self.state.next_destination.set(destination, true);
                                 ctx.screen_fade.start(0.0, 2);
                             }
-                            WorldExitType::Scripted { pointer_index } => {
+                            WorldExitType::Scripted { .. } => {
                                 // TODO: run script
                             }
                         }
                     }
                 }
             },
-
             _ => {},
         }
     }
@@ -396,6 +301,95 @@ impl GameStateTrait for GameStateWorld {
 }
 
 impl GameStateWorld {
+    fn process_input(&mut self, ctx: &mut Context, delta: f64) {
+        if ctx.input.was_pressed(InputAction::DebugToggleLayer1) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
+            println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
+        }
+        if ctx.input.was_pressed(InputAction::DebugToggleLayer2) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer2);
+            println!("Render layer 2: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer2));
+        }
+        if ctx.input.was_pressed(InputAction::DebugToggleLayer3) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer3);
+            println!("Render layer 3: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer3));
+        }
+        if ctx.input.was_pressed(InputAction::DebugToggleSprites) {
+            self.map_renderer.layer_enabled.toggle(LayerFlags::Sprites);
+            println!("Render sprites: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Sprites));
+        }
+        if ctx.input.was_pressed(InputAction::DebugTogglePalette) {
+            self.world_renderer.debug_palette = !self.world_renderer.debug_palette;
+            println!("Render palette.");
+        }
+
+        if ctx.input.was_pressed(InputAction::DebugOverlaysDisable) {
+            self.world_renderer.debug_layer = WorldDebugLayer::Disabled;
+            println!("Debug overlay disabled.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays1) {
+            self.world_renderer.debug_layer = WorldDebugLayer::Solidity;
+            println!("Debug layer for solidity.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays2) {
+            self.world_renderer.debug_layer = WorldDebugLayer::Exits;
+            println!("Debug layer for exits.");
+        }
+        if ctx.input.was_pressed(InputAction::DebugOverlays3) {
+            self.world_renderer.debug_layer = WorldDebugLayer::Music;
+            println!("Debug layer for music transitions.");
+        }
+
+        if ctx.input.is_down(InputAction::DebugCameraUp) {
+            self.state.camera.pos.y -= 300.0 * delta;
+        }
+        else if ctx.input.is_down(InputAction::DebugCameraDown) {
+            self.state.camera.pos.y += 300.0 * delta;
+        }
+        if ctx.input.is_down(InputAction::DebugCameraLeft) {
+            self.state.camera.pos.x -= 300.0 * delta;
+        }
+        else if ctx.input.is_down(InputAction::DebugCameraRight) {
+            self.state.camera.pos.x += 300.0 * delta;
+        }
+    }
+
+    fn update_sprite_states(&mut self, ctx: &mut Context) {
+        ctx.sprite_states.clear();
+        for actor in self.state.actors.iter() {
+            if actor.sprite_assembly_key == 0 || matches!(actor.task, WorldActorTask::None) {
+                continue;
+            }
+
+            let state = ctx.sprite_states.add_state();
+            state.pos.x = actor.x; // TODO lerp by also tracking last pos?
+            state.pos.y = actor.y;
+            state.palette = self.state.palette.palette.clone();    // TODO: something more efficient
+            state.palette_offset = 128 + ((actor.palette_priority >> 1) & 0x07) as usize * 16;
+            state.assembly_key = actor.sprite_assembly_key;
+
+            state.tile_offset_x = (actor.sprite_tile_offset % 16) * 8;
+            state.tile_offset_y = (actor.sprite_tile_offset / 16) * 8;
+
+            state.flags = SpriteStateFlags::empty();
+            state.flags.insert(SpriteStateFlags::ENABLED);
+            if actor.palette_priority & 0x01 != 0 {
+                state.flags.insert(SpriteStateFlags::CAMERA_RELATIVE);
+            }
+
+            let priority = match actor.palette_priority & 0x30 {
+                0x30 => SpritePriority::AboveAll,
+                0x20 => SpritePriority::BelowL2AboveL1,
+                0x10 => SpritePriority::BelowL1L2,
+                _ => SpritePriority::BelowAll,
+            };
+            state.priority_top = priority;
+            state.priority_bottom = priority;
+
+            state.bitmap_key = self.state.sprites.get_bitmap_key();
+        }
+    }
+
     fn get_exit_at(&self, pos: Vec2Di32) -> Option<usize> {
         for (index, exit) in self.world.exits.iter().enumerate() {
             if pos.x < exit.pos.x || pos.x >= exit.pos.x + 16 ||

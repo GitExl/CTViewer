@@ -113,6 +113,7 @@ pub trait FileSystemBackendTrait {
     fn get_world_epoch_sprite_graphics(&self) -> Option<Vec<u8>>;
     fn get_world_palette(&self, world_palette_index: usize) -> Palette;
     fn get_world_palette_anim_data(&self, world_palette_index: usize) -> Cursor<Vec<u8>>;
+    fn get_world_player_palettes(&self) -> Palette;
     fn get_world_script_data(&self, script_index: usize) -> Vec<u8>;
 
     fn get_scene_palette_anim_data(&self) -> (Cursor<Vec<u8>>, Cursor<Vec<u8>>, Cursor<Vec<u8>>);
