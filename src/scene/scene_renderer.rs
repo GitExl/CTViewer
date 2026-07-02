@@ -47,21 +47,23 @@ impl SceneRenderer {
         }
     }
 
-    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene_map: &SceneMap, exits: &Vec<SceneExit>, treasure: &Vec<Treasure>, actors: &Vec<SceneActor>, palette: &Palette, sprite_scroll: Vec2Df64, surface: &mut Surface) {
-        if self.debug_layer != SceneDebugLayer::Disabled {
-            self.render_debug_layer(&scene_map, &camera, surface);
-        }
+    pub fn render(&mut self, _lerp: f64, camera: &Camera, scene_map: &SceneMap, exits: &Vec<SceneExit>, treasure: &Vec<Treasure>, actors: &Vec<SceneActor>, palette: &Palette, sprite_scroll: Vec2Df64, surface: &mut Surface, debug_mode: bool) {
+        if debug_mode {
+            if self.debug_layer != SceneDebugLayer::Disabled {
+                self.render_debug_layer(&scene_map, &camera, surface);
+            }
 
-        if self.debug_layer == SceneDebugLayer::Exits {
-            self.render_debug_exits(&exits, &camera, surface);
-        } else if self.debug_layer == SceneDebugLayer::Treasure {
-            self.render_debug_treasure(&treasure, &camera, surface);
-        } else if self.debug_layer == SceneDebugLayer::Actors {
-            self.render_debug_actors(&actors, &camera, sprite_scroll, surface);
-        }
+            if self.debug_layer == SceneDebugLayer::Exits {
+                self.render_debug_exits(&exits, &camera, surface);
+            } else if self.debug_layer == SceneDebugLayer::Treasure {
+                self.render_debug_treasure(&treasure, &camera, surface);
+            } else if self.debug_layer == SceneDebugLayer::Actors {
+                self.render_debug_actors(&actors, &camera, sprite_scroll, surface);
+            }
 
-        if self.debug_palette {
-            render_palette(&palette, surface, 8);
+            if self.debug_palette {
+                render_palette(&palette, surface, 8);
+            }
         }
     }
 

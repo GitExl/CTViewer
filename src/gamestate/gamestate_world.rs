@@ -59,6 +59,7 @@ pub struct GameStateWorld {
 
     mouse_pos: Vec2Di32,
 
+    debug_mode: bool,
     debug_text: Option<TextRenderable>,
     debug_text_x: i32,
     debug_text_y: i32,
@@ -129,7 +130,7 @@ impl GameStateWorld {
         let world_renderer = WorldRenderer::new();
         let mut map_renderer = MapRenderer::new(ctx.render.target.width, ctx.render.target.height);
         map_renderer.setup_for_map(&mut world.map);
-        state.camera.center_to(pos);
+        state.camera.center_to(pos, false, false);
         if fade_in {
             ctx.screen_fade.start(1.0, 2);
         } else {
@@ -145,6 +146,7 @@ impl GameStateWorld {
 
             mouse_pos: Vec2Di32::default(),
 
+            debug_mode: false,
             debug_text: None,
             debug_text_x: 0,
             debug_text_y: 0,
@@ -163,9 +165,11 @@ impl GameStateTrait for GameStateWorld {
 
         self.process_input(ctx, delta);
 
-        world_script_run(ctx, &mut self.state);
+        for actor in self.state.actors.iter_mut() {
+            actor.pos_last = actor.pos;
+        }
 
-        self.update_sprite_states(ctx);
+        world_script_run(ctx, &mut self.state);
 
         if let Some(next_destination) = self.state.next_destination.destination {
             if !ctx.screen_fade.is_active() {
@@ -195,6 +199,11 @@ impl GameStateTrait for GameStateWorld {
         self.state.map.lerp(lerp);
         self.state.camera.lerp(lerp);
 
+        for actor in self.state.actors.iter_mut() {
+            actor.pos_lerp = Vec2Df64::interpolate(actor.pos_last, actor.pos, lerp);
+        }
+        self.update_sprite_states(ctx);
+
         self.map_renderer.render(
             lerp,
             &self.state.camera,
@@ -207,25 +216,29 @@ impl GameStateTrait for GameStateWorld {
             Vec2Df64::default(),
             &ctx.assets,
         );
+
         self.world_renderer.render(
             lerp,
             &self.state,
             &mut ctx.render.target,
+            self.debug_mode,
         );
 
-        if self.debug_text.is_some() {
-            ctx.render.render_text(
-                &mut self.debug_text.as_mut().unwrap(),
-                self.debug_text_x - self.state.camera.pos_lerp.x as i32, self.debug_text_y - self.state.camera.pos_lerp.y as i32,
-                TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
-            );
-        }
-        if self.debug_box.is_some() {
-            ctx.render.render_box_filled(
-                self.debug_box.as_mut().unwrap().moved_by(-self.state.camera.pos_lerp.x as i32, -self.state.camera.pos_lerp.y as i32),
-                [255, 255, 255, 127],
-                SurfaceBlendOps::Blend,
-            );
+        if self.debug_mode {
+            if self.debug_text.is_some() {
+                ctx.render.render_text(
+                    &mut self.debug_text.as_mut().unwrap(),
+                    self.debug_text_x - self.state.camera.pos_lerp.x as i32, self.debug_text_y - self.state.camera.pos_lerp.y as i32,
+                    TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
+                );
+            }
+            if self.debug_box.is_some() {
+                ctx.render.render_box_filled(
+                    self.debug_box.as_mut().unwrap().moved_by(-self.state.camera.pos_lerp.x as i32, -self.state.camera.pos_lerp.y as i32),
+                    [255, 255, 255, 127],
+                    SurfaceBlendOps::Blend,
+                );
+            }
         }
     }
 
@@ -301,56 +314,63 @@ impl GameStateTrait for GameStateWorld {
 }
 
 impl GameStateWorld {
-    fn process_input(&mut self, ctx: &mut Context, delta: f64) {
-        if ctx.input.was_pressed(InputAction::DebugToggleLayer1) {
-            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
-            println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
+    fn process_input(&mut self, ctx: &mut Context, _delta: f64) {
+        if ctx.input.was_pressed(InputAction::ToggleDebug) {
+            self.debug_mode = !self.debug_mode;
+            println!("Debug mode: {}.", self.debug_mode);
+            if !self.debug_mode {
+                self.map_renderer.layer_enabled = LayerFlags::all();
+            }
         }
-        if ctx.input.was_pressed(InputAction::DebugToggleLayer2) {
-            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer2);
-            println!("Render layer 2: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer2));
-        }
-        if ctx.input.was_pressed(InputAction::DebugToggleLayer3) {
-            self.map_renderer.layer_enabled.toggle(LayerFlags::Layer3);
-            println!("Render layer 3: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer3));
-        }
-        if ctx.input.was_pressed(InputAction::DebugToggleSprites) {
-            self.map_renderer.layer_enabled.toggle(LayerFlags::Sprites);
-            println!("Render sprites: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Sprites));
-        }
-        if ctx.input.was_pressed(InputAction::DebugTogglePalette) {
-            self.world_renderer.debug_palette = !self.world_renderer.debug_palette;
-            println!("Render palette.");
-        }
+        if self.debug_mode {
+            if ctx.input.was_pressed(InputAction::DebugToggleLayer1) {
+                self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
+                println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
+            }
+            if ctx.input.was_pressed(InputAction::DebugToggleLayer2) {
+                self.map_renderer.layer_enabled.toggle(LayerFlags::Layer2);
+                println!("Render layer 2: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer2));
+            }
+            if ctx.input.was_pressed(InputAction::DebugToggleLayer3) {
+                self.map_renderer.layer_enabled.toggle(LayerFlags::Layer3);
+                println!("Render layer 3: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer3));
+            }
+            if ctx.input.was_pressed(InputAction::DebugToggleSprites) {
+                self.map_renderer.layer_enabled.toggle(LayerFlags::Sprites);
+                println!("Render sprites: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Sprites));
+            }
+            if ctx.input.was_pressed(InputAction::DebugTogglePalette) {
+                self.world_renderer.debug_palette = !self.world_renderer.debug_palette;
+                println!("Render palette.");
+            }
 
-        if ctx.input.was_pressed(InputAction::DebugOverlaysDisable) {
-            self.world_renderer.debug_layer = WorldDebugLayer::Disabled;
-            println!("Debug overlay disabled.");
-        }
-        if ctx.input.was_pressed(InputAction::DebugOverlays1) {
-            self.world_renderer.debug_layer = WorldDebugLayer::Solidity;
-            println!("Debug layer for solidity.");
-        }
-        if ctx.input.was_pressed(InputAction::DebugOverlays2) {
-            self.world_renderer.debug_layer = WorldDebugLayer::Exits;
-            println!("Debug layer for exits.");
-        }
-        if ctx.input.was_pressed(InputAction::DebugOverlays3) {
-            self.world_renderer.debug_layer = WorldDebugLayer::Music;
-            println!("Debug layer for music transitions.");
-        }
+            if ctx.input.was_pressed(InputAction::DebugOverlaysDisable) {
+                self.world_renderer.debug_layer = WorldDebugLayer::Disabled;
+                println!("Debug overlay disabled.");
+            }
+            if ctx.input.was_pressed(InputAction::DebugOverlays1) {
+                self.world_renderer.debug_layer = WorldDebugLayer::Solidity;
+                println!("Debug layer for solidity.");
+            }
+            if ctx.input.was_pressed(InputAction::DebugOverlays2) {
+                self.world_renderer.debug_layer = WorldDebugLayer::Exits;
+                println!("Debug layer for exits.");
+            }
+            if ctx.input.was_pressed(InputAction::DebugOverlays3) {
+                self.world_renderer.debug_layer = WorldDebugLayer::Music;
+                println!("Debug layer for music transitions.");
+            }
 
-        if ctx.input.is_down(InputAction::DebugCameraUp) {
-            self.state.camera.pos.y -= 300.0 * delta;
-        }
-        else if ctx.input.is_down(InputAction::DebugCameraDown) {
-            self.state.camera.pos.y += 300.0 * delta;
-        }
-        if ctx.input.is_down(InputAction::DebugCameraLeft) {
-            self.state.camera.pos.x -= 300.0 * delta;
-        }
-        else if ctx.input.is_down(InputAction::DebugCameraRight) {
-            self.state.camera.pos.x += 300.0 * delta;
+            // if ctx.input.is_down(InputAction::DebugCameraUp) {
+            //     self.state.camera.pos.y -= 300.0 * delta;
+            // } else if ctx.input.is_down(InputAction::DebugCameraDown) {
+            //     self.state.camera.pos.y += 300.0 * delta;
+            // }
+            // if ctx.input.is_down(InputAction::DebugCameraLeft) {
+            //     self.state.camera.pos.x -= 300.0 * delta;
+            // } else if ctx.input.is_down(InputAction::DebugCameraRight) {
+            //     self.state.camera.pos.x += 300.0 * delta;
+            // }
         }
     }
 
@@ -362,8 +382,8 @@ impl GameStateWorld {
             }
 
             let state = ctx.sprite_states.add_state();
-            state.pos.x = actor.x; // TODO lerp by also tracking last pos?
-            state.pos.y = actor.y;
+            state.pos.x = actor.pos_lerp.x;
+            state.pos.y = actor.pos_lerp.y;
             state.palette = self.state.palette.palette.clone();    // TODO: something more efficient
             state.palette_offset = 128 + ((actor.palette_priority >> 1) & 0x07) as usize * 16;
             state.assembly_key = actor.sprite_assembly_key;

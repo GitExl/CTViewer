@@ -1,5 +1,6 @@
 use crate::facing::Facing;
 use crate::memory::MemoryRegion;
+use crate::util::vec2df64::Vec2Df64;
 use crate::world_script::task_dispatch::WorldActorTask;
 
 #[derive(Clone)]
@@ -18,10 +19,10 @@ pub struct WorldActor {
     pub sprite_tile_offset: i32,
 
     pub memory: MemoryRegion,
-    pub x: f64,
-    pub y: f64,
-    pub vector_x: f64,
-    pub vector_y: f64,
+    pub pos: Vec2Df64,
+    pub pos_last: Vec2Df64,
+    pub pos_lerp: Vec2Df64,
+    pub vec: Vec2Df64,
     pub facing: Facing,
 }
 
@@ -46,11 +47,12 @@ impl WorldActor {
             sprite_assembly_key: 0,
             sprite_tile_offset: 0,
 
+            pos: Vec2Df64::default(),
+            pos_last: Vec2Df64::default(),
+            pos_lerp: Vec2Df64::default(),
+            vec: Vec2Df64::default(),
+
             memory: MemoryRegion::new(64),
-            x: 0.0,
-            y: 0.0,
-            vector_x: 0.0,
-            vector_y: 0.0,
             facing: Facing::Down,
         }
     }

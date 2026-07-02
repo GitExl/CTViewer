@@ -30,8 +30,10 @@ impl WorldRenderer {
         }
     }
 
-    pub fn render(&mut self, _lerp: f64, state: &WorldState, surface: &mut Surface) {
-        self.render_debug(state, surface);
+    pub fn render(&mut self, _lerp: f64, state: &WorldState, surface: &mut Surface, debug_mode: bool) {
+        if debug_mode {
+            self.render_debug(state, surface);
+        }
     }
 
     fn render_debug(&mut self, state: &WorldState, surface: &mut Surface) {

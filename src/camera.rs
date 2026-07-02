@@ -112,12 +112,16 @@ impl Camera {
         self.pos_lerp = self.pos;
     }
 
-    pub fn center_to(&mut self, center: Vec2Df64) {
+    pub fn center_to(&mut self, center: Vec2Df64, clamp: bool, lerp: bool) {
         self.pos = center - self.size / 2.0;
 
+        if clamp {
         self.clamp();
+        }
 
-        self.pos_last = self.pos;
-        self.pos_lerp = self.pos;
+        if !lerp {
+            self.pos_last = self.pos;
+            self.pos_lerp = self.pos;
+        }
     }
 }

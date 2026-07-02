@@ -39,33 +39,36 @@ When viewing scenes or worlds, the following keys are available:
 - `wasd` to move around
 - `esc` to exit
 - `f` to advance dialog text
+- `backspace` to toggle debug mopde
+- `\` to dump information and debug data to `stdout` and `/debug_output`, and write a screenshot of the internal render buffer to `debug_output/screenshot.bmp`
+
+When in debug mode, the following keys are available everywhere:
+
 - `1` toggle rendering of layer 1
 - `2` toggle rendering of layer 2
 - `3` toggle rendering of layer 3
 - `4` toggle rendering of sprites
 - `5` toggle rendering of the map palette
-- `backspace` to dump information and debug data to `stdout` and `/debug_output`
-- `\` to write a screenshot of the internal render buffer to `debug_output/screenshot.bmp`
 
-When viewing worlds, the following keys are available:
+When viewing worlds, the following keys are available in debug mode:
 
-- `z` disable debug rendering
-- `x` render collision data 
-- `c` render exits
-- `v` render music data
+- `z` disable debug overlay
+- `x` render collision overlay 
+- `c` render exit overlay
+- `v` render music overlay
 
-When viewing scenes, the following keys are available:
+When viewing scenes, the following keys are available in debug mode:
 
-- `z` disable debug rendering
-- `x` render player collision data
-- `c` render NPC and battle collision data
-- `v` render Z plane data and flags
-- `b` render tile movement data
-- `n` render door data
-- `m` render sprite priority data
-- `,` render exits
-- `.` render treasures
-- `/` render actor data
+- `z` disable debug overlay
+- `x` render player collision overlay
+- `c` render NPC and battle collision overlay
+- `v` render Z plane overlay
+- `b` render tile movement overlay
+- `n` render door overlay
+- `m` render sprite priority overlay
+- `,` render exit overlay
+- `.` render treasure overlay
+- `/` render actor overlay
 
 Information about exits, treasure and actors is displayed when the mouse is over them. You can move to another scene
 or world by clicking on exits.

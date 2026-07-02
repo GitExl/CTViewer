@@ -53,6 +53,7 @@ pub struct GameStateScene {
 
     mouse_pos: Vec2Di32,
 
+    debug_mode: bool,
     debug_text: Option<TextRenderable>,
     debug_text_x: i32,
     debug_text_y: i32,
@@ -104,7 +105,7 @@ impl GameStateScene {
         }
 
         // Center to target position. Offset by 0, -26 to match the SNES version.
-        state.camera.center_to(pos - Vec2Df64::new(0.0, 26.0));
+        state.camera.center_to(pos - Vec2Df64::new(0.0, 26.0), true, false);
 
         // Create actors and setup their state.
         for (actor_index, actor_script) in scene.script.get_actor_scripts().iter().enumerate() {
@@ -139,6 +140,7 @@ impl GameStateScene {
 
             mouse_pos: Vec2Di32::default(),
 
+            debug_mode: false,
             debug_text: None,
             debug_text_x: 0,
             debug_text_y: 0,
@@ -158,7 +160,7 @@ impl GameStateTrait for GameStateScene {
         self.scene.palette_anims.tick(delta, &mut self.scene.palette.palette);
         self.state.textbox.tick(ctx, delta);
 
-        if let Some(debug_actor) = self.debug_actor {
+        if self.debug_mode && let Some(debug_actor) = self.debug_actor {
             self.state.camera.pos = self.state.actors[debug_actor].pos - Vec2Df64::new(self.state.camera.size.x - 64.0, self.state.camera.size.y / 2.0);
         }
 
@@ -175,7 +177,7 @@ impl GameStateTrait for GameStateScene {
         }
 
         // Freeze debug actor script state.
-        if let Some(debug_actor) = self.debug_actor {
+        if self.debug_mode && let Some(debug_actor) = self.debug_actor {
             let state = self.state.script_states.get_mut(debug_actor).unwrap();
             state.delay_counter = state.delay;
         }
@@ -236,71 +238,74 @@ impl GameStateTrait for GameStateScene {
             &self.scene.palette.palette,
             self.state.map.layers[0].scroll_lerp,
             &mut ctx.render.target,
+            self.debug_mode,
         );
 
-        if let Some(debug_text) = &mut self.debug_text {
-            ctx.render.render_text(
-                debug_text,
-                self.debug_text_x - self.state.camera.pos_lerp.x as i32, self.debug_text_y - self.state.camera.pos_lerp.y as i32,
-                TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
-            );
-        }
+        if self.debug_mode {
+            if let Some(debug_text) = &mut self.debug_text {
+                ctx.render.render_text(
+                    debug_text,
+                    self.debug_text_x - self.state.camera.pos_lerp.x as i32, self.debug_text_y - self.state.camera.pos_lerp.y as i32,
+                    TextFlags::AlignHCenter | TextFlags::AlignVEnd | TextFlags::ClampToTarget,
+                );
+            }
 
-        if let Some(debug_box) = self.debug_box {
-            ctx.render.render_box_filled(
-                debug_box.moved_by(-self.state.camera.pos_lerp.x as i32, -self.state.camera.pos_lerp.y as i32),
-                [255, 255, 255, 127],
-                SurfaceBlendOps::Blend,
-            );
-        }
+            if let Some(debug_box) = self.debug_box {
+                ctx.render.render_box_filled(
+                    debug_box.moved_by(-self.state.camera.pos_lerp.x as i32, -self.state.camera.pos_lerp.y as i32),
+                    [255, 255, 255, 127],
+                    SurfaceBlendOps::Blend,
+                );
+            }
 
-        if let Some(debug_actor) = self.debug_actor {
-            let actor = &self.state.actors[debug_actor];
-            let pos = (actor.pos_lerp.floor() - self.state.camera.pos_lerp.floor()).as_vec2d_i32();
-            ctx.render.render_box_filled(
-                Rect::new(pos.x - 8, pos.y - 16, pos.x + 8, pos.y),
-                [0, 255, 0, 127],
-                SurfaceBlendOps::Blend,
-            );
+            if let Some(debug_actor) = self.debug_actor {
+                let actor = &self.state.actors[debug_actor];
+                let pos = (actor.pos_lerp.floor() - self.state.camera.pos_lerp.floor()).as_vec2d_i32();
+                ctx.render.render_box_filled(
+                    Rect::new(pos.x - 8, pos.y - 16, pos.x + 8, pos.y),
+                    [0, 255, 0, 127],
+                    SurfaceBlendOps::Blend,
+                );
 
-            ctx.render.render_box_filled(
-                Rect::new(0, 0, 128, 224),
-                [0, 0, 0, 191],
-                SurfaceBlendOps::Blend,
-            );
+                ctx.render.render_box_filled(
+                    Rect::new(0, 0, 128, 224),
+                    [0, 0, 0, 191],
+                    SurfaceBlendOps::Blend,
+                );
 
-            let script_state = &self.state.script_states[debug_actor];
-            let op: String = if let Some(current_op) = script_state.current_op {
-                format!("{:?}", current_op)
-            } else {
-                "None".to_string()
-            };
+                let script_state = &self.state.script_states[debug_actor];
+                let op: String = if let Some(current_op) = script_state.current_op {
+                    format!("{:?}", current_op)
+                } else {
+                    "None".to_string()
+                };
 
-            // Spit out a bunch of internal actor state.
-            let text_actor = format!(
-                "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}\nSprite {:?}, frame {}\nPalette {}\nTop: {:?}\nBottom: {:?}\nAnim {} frame {} delay {}\nAnimationMode::{:?}\nLoop anim {}, {} loops",
-                debug_actor, actor.class,
-                actor.pos, actor.move_speed, actor.facing,
-                actor.draw_mode,
-                actor.flags,
-                actor.sprite_info_key, actor.sprite_frame,
-                actor.palette_offset,
-                actor.sprite_priority_top,
-                actor.sprite_priority_bottom,
-                actor.anim_index, actor.anim_frame, actor.anim_delay,
-                actor.anim_mode,
-                actor.anim_index_looped, actor.anim_loops_remaining,
-            );
-            let text_script = format!(
-                "0x{:04X}, d {} / {}, p {}\nPrio {}, waiting: {}\n{:04X?}\n\n{}",
-                script_state.current_address, script_state.delay_counter, script_state.delay, script_state.pause_counter,
-                script_state.current_priority, script_state.call_waiting,
-                script_state.priority_return_ptrs,
-                op,
-            );
+                // Spit out a bunch of internal actor state.
+                let text_actor = format!(
+                    "Actor {}: {:?}\n{} {:.2} {:?}\nDrawMode::{:?}\n{:?}\nSprite {:?}, frame {}\nPalette {}\nTop: {:?}\nBottom: {:?}\nAnim {} frame {} delay {}\nAnimationMode::{:?}\nLoop anim {}, {} loops",
+                    debug_actor, actor.class,
+                    actor.pos, actor.move_speed, actor.facing,
+                    actor.draw_mode,
+                    actor.flags,
+                    actor.sprite_info_key, actor.sprite_frame,
+                    actor.palette_offset,
+                    actor.sprite_priority_top,
+                    actor.sprite_priority_bottom,
+                    actor.anim_index, actor.anim_frame, actor.anim_delay,
+                    actor.anim_mode,
+                    actor.anim_index_looped, actor.anim_loops_remaining,
+                );
+                let text_script = format!(
+                    "0x{:04X}, d {} / {}, p {}\nPrio {}, waiting: {}\n{:04X?}\n\n{}",
+                    script_state.current_address, script_state.delay_counter, script_state.delay, script_state.pause_counter,
+                    script_state.current_priority, script_state.call_waiting,
+                    script_state.priority_return_ptrs,
+                    op,
+                );
 
-            let mut header = TextRenderable::new(format!("{}\n\n{}", text_actor, text_script), TextFont::Small, [255, 255, 255, 255], TextDrawFlags::empty(), 124);
-            ctx.render.render_text(&mut header, 2, 2, TextFlags::empty());
+                let mut header = TextRenderable::new(format!("{}\n\n{}", text_actor, text_script), TextFont::Small, [255, 255, 255, 255], TextDrawFlags::empty(), 124);
+                ctx.render.render_text(&mut header, 2, 2, TextFlags::empty());
+            }
         }
 
         self.state.textbox.render(ctx, lerp);
@@ -491,7 +496,7 @@ impl GameStateScene {
             }
         }
 
-        if let None = self.debug_actor {
+        if self.debug_mode && let None = self.debug_actor {
             if !self.state.textbox.is_active() && !self.state.textbox.has_choices() {
                 if ctx.input.is_down(InputAction::DebugCameraUp) {
                     self.state.camera.pos.y -= 300.0 * delta;
@@ -508,6 +513,13 @@ impl GameStateScene {
             }
         }
 
+        if ctx.input.was_pressed(InputAction::ToggleDebug) {
+            self.debug_mode = !self.debug_mode;
+            println!("Debug mode: {}.", self.debug_mode);
+            if !self.debug_mode {
+                self.map_renderer.layer_enabled = LayerFlags::all();
+            }
+        }
         if ctx.input.was_pressed(InputAction::DebugToggleLayer1) {
             self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
             println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));

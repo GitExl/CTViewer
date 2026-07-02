@@ -4,8 +4,8 @@ use crate::util::rect::Rect;
 use crate::world_script::world_actor::WorldActor;
 
 pub fn func_seagull_random_pos(ctx: &mut Context, actor: &mut WorldActor, world_state: &mut WorldState) {
-    actor.x = world_state.camera.pos.x + world_state.camera.size.x / 2.0 - 128.0 + ctx.random.get_u8() as f64;
-    actor.y = world_state.camera.pos.y + world_state.camera.size.y + 32.0;
+    actor.pos.x = world_state.camera.pos.x + world_state.camera.size.x / 2.0 - 128.0 + ctx.random.get_u8() as f64;
+    actor.pos.y = world_state.camera.pos.y + world_state.camera.size.y + 32.0;
 }
 
 pub fn func_seagull_random_vector(ctx: &mut Context, actor: &mut WorldActor) {
@@ -29,8 +29,8 @@ pub fn func_seagull_random_vector(ctx: &mut Context, actor: &mut WorldActor) {
     ];
 
     let index = (ctx.random.get_u8() & 0x0F) as usize;
-    actor.vector_x = VECTORS[index][0];
-    actor.vector_y = VECTORS[index][1];
+    actor.vec.x = VECTORS[index][0];
+    actor.vec.y = VECTORS[index][1];
 }
 
 pub fn func_actor_is_offscreen(ctx: &mut Context, actor: &mut WorldActor, world_state: &mut WorldState) {
@@ -41,10 +41,10 @@ pub fn func_actor_is_offscreen(ctx: &mut Context, actor: &mut WorldActor, world_
         world_state.camera.pos.y as i32 + world_state.camera.size.y as i32,
     );
     let actor_rect = Rect::new(
-        actor.x as i32 - 32,
-        actor.y as i32 - 32,
-        actor.x as i32 + 32,
-        actor.y as i32 + 32,
+        actor.pos.x as i32 - 32,
+        actor.pos.y as i32 - 32,
+        actor.pos.x as i32 + 32,
+        actor.pos.y as i32 + 32,
     );
 
     if actor_rect.intersects(&camera_rect) {

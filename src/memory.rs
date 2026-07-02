@@ -28,8 +28,16 @@ impl MemoryRegion {
         self.data[address] = value;
     }
 
+    pub fn put_i8(&mut self, address: usize, value: i8) {
+        self.data[address] = value as u8;
+    }
+
     pub fn get_u8(&self, address: usize) -> u8 {
         self.data[address]
+    }
+
+    pub fn get_i8(&self, address: usize) -> i8 {
+        self.data[address] as i8
     }
 
     pub fn put_u16(&mut self, address: usize, value: u16) {
@@ -398,7 +406,7 @@ impl DataDest {
                     actor.sprite_tile_offset = value as i32;
                 } else if *address == 0x14 {
                     // actor pixel x 3rd byte
-                    actor.x += 1.0;
+                    actor.pos.x += 1.0;
                 } else {
                     actor.memory.put_u8(*address, value);
                 }

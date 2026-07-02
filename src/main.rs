@@ -182,7 +182,7 @@ fn main() -> Result<(), String> {
     if args.scene > -1 {
         gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(128.0, 112.0), Facing::Down, true));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(504.0, 448.0), true));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(392.0, 280.0), true));
     } else {
         println!("No scene or world specified, loading world 0.");
         gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(504.0, 448.0), true));
@@ -246,6 +246,7 @@ fn main() -> Result<(), String> {
                 gamestate.dump(&ctx);
                 ctx.render.target.write_to_bmp((&"debug_output/screenshot.bmp").as_ref());
             }
+
             if ctx.input.was_pressed(InputAction::Exit) {
                 break 'running;
             }

@@ -24,6 +24,8 @@ pub struct SpriteState {
     pub flags: SpriteStateFlags,
 
     pub pos: Vec2Df64,
+    pub pos_last: Vec2Df64,
+    pub pos_lerp: Vec2Df64,
 
     pub priority_top: SpritePriority,
     pub priority_bottom: SpritePriority,
@@ -44,6 +46,8 @@ impl SpriteState {
             flags: SpriteStateFlags::empty(),
 
             pos: Vec2Df64::default(),
+            pos_last: Vec2Df64::default(),
+            pos_lerp: Vec2Df64::default(),
 
             priority_top: SpritePriority::default(),
             priority_bottom: SpritePriority::default(),

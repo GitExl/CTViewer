@@ -29,10 +29,10 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                     actor.script_current_address = 0;
                     actor.sprite_assembly_key = 0;
                     actor.animation_counter = 0;
-                    actor.x = 0.0;
-                    actor.y = 0.0;
-                    actor.vector_x = 0.0;
-                    actor.vector_y = 0.0;
+                    actor.pos.x = 0.0;
+                    actor.pos.y = 0.0;
+                    actor.vec.x = 0.0;
+                    actor.vec.y = 0.0;
                     OpResult::Continue
                 }
                 Op::Copy8 { lhs, rhs } => {
@@ -176,8 +176,8 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                     OpResult::Continue
                 }
                 Op::SetPosition { x, y } => {
-                    actor.x = x as f64;
-                    actor.y = y as f64;
+                    actor.pos.x = x as f64;
+                    actor.pos.y = y as f64;
                     OpResult::Continue
                 }
                 Op::SetPriority { priority } => {
@@ -208,11 +208,11 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                     }
                 }
                 Op::VectorX { magnitude } => {
-                    actor.vector_x = magnitude as f64 / 65536.0;
+                    actor.vec.x = magnitude as f64 / 65536.0;
                     OpResult::Continue
                 }
                 Op::VectorY { magnitude } => {
-                    actor.vector_y = magnitude as f64 / 65536.0;
+                    actor.vec.y = magnitude as f64 / 65536.0;
                     OpResult::Continue
                 }
                 Op::Scroll { steps } => {
@@ -222,11 +222,11 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                         actor.counter = steps;
                     }
                     if actor.counter != 0 {
-                        actor.x += actor.vector_x;
-                        actor.y += actor.vector_y;
+                        actor.pos.x += actor.vec.x;
+                        actor.pos.y += actor.vec.y;
 
-                        world_state.camera.pos.x += actor.vector_x;
-                        world_state.camera.pos.y += actor.vector_y;
+                        world_state.camera.pos.x += actor.vec.x;
+                        world_state.camera.pos.y += actor.vec.y;
 
                         OpResult::Yield
                     } else {
@@ -240,11 +240,11 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                         actor.counter = steps;
                     }
                     if actor.counter != 0 {
-                        actor.x += actor.vector_x;
-                        actor.y += actor.vector_y;
+                        actor.pos.x += actor.vec.x;
+                        actor.pos.y += actor.vec.y;
 
-                        world_state.map.layers[layer].scroll.x += actor.vector_x;
-                        world_state.map.layers[layer].scroll.y += actor.vector_x;
+                        world_state.map.layers[layer].scroll.x += actor.vec.x;
+                        world_state.map.layers[layer].scroll.y += actor.vec.x;
 
                         OpResult::Yield
                     } else {
@@ -265,12 +265,12 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                     if actor.counter != 0 {
 
                         // Move actor by vector.
-                        actor.x += actor.vector_x;
-                        actor.y += actor.vector_y;
+                        actor.pos.x += actor.vec.x;
+                        actor.pos.y += actor.vec.y;
 
                         // Clamp to map.
-                        actor.x = actor.x.min(world_state.world_map.pixel_width as f64).max(0.0);
-                        actor.y = actor.y.min(world_state.world_map.pixel_height as f64).max(0.0);
+                        actor.pos.x = actor.pos.x.min(world_state.world_map.pixel_width as f64).max(0.0);
+                        actor.pos.y = actor.pos.y.min(world_state.world_map.pixel_height as f64).max(0.0);
 
                         world_state.animations.run(ctx, actor);
 

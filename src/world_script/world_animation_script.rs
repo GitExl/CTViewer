@@ -66,71 +66,78 @@ impl WorldAnimationScript {
             return;
         }
 
-        let op = self.decode(actor.animation_address);
-        match op {
-            WorldAnimationOp::Reset { address } => {
-                actor.memory.put_u8(address, 0);
-                actor.animation_address += 2;
-            },
-            WorldAnimationOp::Increment { address } => {
-                let value = actor.memory.get_u8(address);
-                actor.memory.put_u8(address, value + 1);
-                actor.animation_address += 2;
-            },
-            WorldAnimationOp::Decrement { address } => {
-                let value = actor.memory.get_u8(address);
-                actor.memory.put_u8(address, value - 1);
-                actor.animation_address += 2;
-            },
-            WorldAnimationOp::Goto { offset } => {
-                actor.animation_address = (actor.animation_address as i64 + offset) as u64
-            },
-            WorldAnimationOp::Animate { assembly_address, duration } => {
+        loop {
+            let op = self.decode(actor.animation_address);
+            match op {
+                WorldAnimationOp::Reset { address } => {
+                    actor.memory.put_u8(address, 0);
+                    actor.animation_address += 2;
+                },
+                WorldAnimationOp::Increment { address } => {
+                    let value = actor.memory.get_u8(address);
+                    actor.memory.put_u8(address, value + 1);
+                    actor.animation_address += 2;
+                },
+                WorldAnimationOp::Decrement { address } => {
+                    let value = actor.memory.get_u8(address);
+                    actor.memory.put_u8(address, value - 1);
+                    actor.animation_address += 2;
+                },
+                WorldAnimationOp::Goto { offset } => {
+                    actor.animation_address = (actor.animation_address as i64 + offset) as u64;
+                    break;
+                },
+                WorldAnimationOp::Animate { assembly_address, duration } => {
 
-                // Always set frame.
-                if actor.palette_priority & 0x40 != 0 {
-                    actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
+                    // Always set frame.
+                    if actor.palette_priority & 0x40 != 0 {
+                        actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
 
-                // Countdown.
-                } else if actor.animation_counter != 0 {
-                    actor.animation_counter -= 1;
+                    // Countdown.
+                    } else if actor.animation_counter != 0 {
+                        actor.animation_counter -= 1;
 
-                    // Countdown complete, advance to next op.
-                    if actor.animation_counter == 0 {
-                        actor.animation_address += 4;
+                        // Countdown complete, advance to next op.
+                        if actor.animation_counter == 0 {
+                            actor.animation_address += 4;
+                        } else {
+                            actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
+                        }
+
+                    // Start wait.
                     } else {
+                        actor.animation_counter = duration;
                         actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
                     }
+                    break;
+                },
+                WorldAnimationOp::Wait { duration } => {
 
-                // Start wait.
-                } else {
-                    actor.animation_counter = duration;
-                    actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
-                }
-            },
-            WorldAnimationOp::Wait { duration } => {
+                    // Countdown.
+                    if actor.animation_counter != 0 {
+                        actor.animation_counter -= 1;
 
-                // Countdown.
-                if actor.animation_counter != 0 {
-                    actor.animation_counter -= 1;
+                        // Countdown complete, advance to next op.
+                        if actor.animation_counter == 0 {
+                            actor.animation_address += 2;
+                        }
 
-                    // Countdown complete, advance to next op.
-                    if actor.animation_counter == 0 {
-                        actor.animation_address += 2;
+                    // Start wait.
+                    } else {
+                        actor.animation_counter = duration;
                     }
 
-                // Start wait.
-                } else {
-                    actor.animation_counter = duration;
-                }
-            },
-            WorldAnimationOp::CopyToVram { .. } => {
-                // Copies from source_address to vram_dest_address for byte_count bytes
-                actor.animation_address += 8;
-            },
-            WorldAnimationOp::Nop => {
-                actor.animation_address += 1;
-            },
+                    break;
+                },
+                WorldAnimationOp::CopyToVram { .. } => {
+                    // Copies from source_address to vram_dest_address for byte_count bytes
+                    actor.animation_address += 8;
+                    break;
+                },
+                WorldAnimationOp::Nop => {
+                    actor.animation_address += 1;
+                },
+            }
         }
     }
 

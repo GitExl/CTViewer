@@ -30,6 +30,19 @@ pub struct WorldMap {
 }
 
 impl WorldMap {
+    pub fn is_walkable(&self, x: i32, y: i32, width: i32, height: i32) -> bool {
+        for chip_y in y..y + height {
+            for chip_x in x..x + width {
+                let offset = (chip_x + chip_y * self.width as i32) as usize;
+                if self.chips[offset].flags.contains(WorldChipFlags::BLOCK_WALK) || self.chips[offset].flags.contains(WorldChipFlags::BLOCK_LANDING) {
+                    return false;
+                }
+            }
+        }
+
+        true
+    }
+
     pub fn dump(&self) {
         println!("World map {}", self.index);
         println!();
