@@ -11,6 +11,7 @@ use crate::gamestate::gamestate_world::GameStateWorld;
 use crate::l10n::L10n;
 use clap::Parser;
 use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
 use crate::destination::Destination;
 use crate::facing::Facing;
 use crate::memory::Memory;
@@ -147,8 +148,57 @@ fn main() -> Result<(), String> {
     let random = Random::new();
     let ui_theme = fs.read_ui_theme(args.ui_theme);
     let screen_fade = ScreenFade::new(0.0);
-    let input = InputManager::new();
     let mode = fs.mode;
+
+    let mut input = InputManager::new();
+
+    // Default bindings.
+    input.bind(InputAction::Exit, Keycode::Escape);
+
+    input.bind(InputAction::TogglePause, Keycode::P);
+    input.bind(InputAction::OpenMap, Keycode::Tab);
+    input.bind(InputAction::OpenSettingsMenu, Keycode::R);
+    input.bind(InputAction::OpenPartyMenu, Keycode::C);
+
+    input.bind(InputAction::MenuPrevious, Keycode::Q);
+    input.bind(InputAction::MenuNext, Keycode::E);
+    input.bind(InputAction::MenuDown, Keycode::S);
+    input.bind(InputAction::MenuLeft, Keycode::A);
+    input.bind(InputAction::MenuRight, Keycode::D);
+
+    input.bind(InputAction::MoveUp, Keycode::W);
+    input.bind(InputAction::MoveDown, Keycode::S);
+    input.bind(InputAction::MoveLeft, Keycode::A);
+    input.bind(InputAction::MoveRight, Keycode::D);
+    input.bind(InputAction::Activate, Keycode::F);
+    input.bind(InputAction::Run, Keycode::LShift);
+
+    input.bind(InputAction::DialogueChoicePrevious, Keycode::W);
+    input.bind(InputAction::DialogueChoiceNext, Keycode::S);
+    input.bind(InputAction::DialogueChoiceConfirm, Keycode::F);
+
+    input.bind(InputAction::ToggleDebug, Keycode::Backspace);
+    input.bind(InputAction::DebugCameraUp, Keycode::W);
+    input.bind(InputAction::DebugCameraDown, Keycode::S);
+    input.bind(InputAction::DebugCameraLeft, Keycode::A);
+    input.bind(InputAction::DebugCameraRight, Keycode::D);
+    input.bind(InputAction::DebugToggleLayer1, Keycode::_1);
+    input.bind(InputAction::DebugToggleLayer2, Keycode::_2);
+    input.bind(InputAction::DebugToggleLayer3, Keycode::_3);
+    input.bind(InputAction::DebugToggleSprites, Keycode::_4);
+    input.bind(InputAction::DebugTogglePalette, Keycode::_5);
+    input.bind(InputAction::DebugOverlaysDisable, Keycode::Z);
+    input.bind(InputAction::DebugOverlays1, Keycode::X);
+    input.bind(InputAction::DebugOverlays2, Keycode::C);
+    input.bind(InputAction::DebugOverlays3, Keycode::V);
+    input.bind(InputAction::DebugOverlays4, Keycode::B);
+    input.bind(InputAction::DebugOverlays5, Keycode::N);
+    input.bind(InputAction::DebugOverlays6, Keycode::M);
+    input.bind(InputAction::DebugOverlays7, Keycode::Comma);
+    input.bind(InputAction::DebugOverlays8, Keycode::Period);
+    input.bind(InputAction::DebugOverlays9, Keycode::Backslash);
+    input.bind(InputAction::DebugDump, Keycode::Slash);
+    input.bind(InputAction::DebugActorStep, Keycode::Space);
 
     let mut memory = Memory::new();
     memory.put_u8(0x7F0061, 1);     // Initialized at 0xC28D8A.
@@ -182,7 +232,7 @@ fn main() -> Result<(), String> {
     if args.scene > -1 {
         gamestate = Box::new(GameStateScene::new(&mut ctx, args.scene as usize, Vec2Df64::new(128.0, 112.0), Facing::Down, true));
     } else if args.world > -1 {
-        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(392.0, 280.0), true));
+        gamestate = Box::new(GameStateWorld::new(&mut ctx, args.world as usize, Vec2Df64::new(384.0, 296.0), true));
     } else {
         println!("No scene or world specified, loading world 0.");
         gamestate = Box::new(GameStateWorld::new(&mut ctx, 0, Vec2Df64::new(504.0, 448.0), true));
