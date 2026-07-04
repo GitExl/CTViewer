@@ -51,6 +51,7 @@ pub enum BitMathOp {
     Or,
     And,
     Xor,
+    AndXor,
     ShiftLeft,
     ShiftRight,
 }
@@ -61,6 +62,7 @@ impl BitMathOp {
             BitMathOp::Or => "|",
             BitMathOp::And => "&",
             BitMathOp::Xor => "^",
+            BitMathOp::AndXor => "&^",
             BitMathOp::ShiftLeft => "<<",
             BitMathOp::ShiftRight => ">>",
         }

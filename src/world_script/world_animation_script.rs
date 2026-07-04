@@ -92,24 +92,25 @@ impl WorldAnimationScript {
                     // Always set frame.
                     if actor.palette_priority & 0x40 != 0 {
                         actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
-
-                    // Countdown.
-                    } else if actor.animation_counter != 0 {
-                        actor.animation_counter -= 1;
-
-                        // Countdown complete, advance to next op.
-                        if actor.animation_counter == 0 {
-                            actor.animation_address += 4;
-                        } else {
-                            actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
-                        }
+                        break;
+                    }
 
                     // Start wait.
-                    } else {
+                    if actor.animation_counter == 0 {
                         actor.animation_counter = duration;
                         actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
+                        break;
                     }
-                    break;
+
+                    // Countdown.
+                    actor.animation_counter -= 1;
+                    if actor.animation_counter != 0 {
+                        actor.sprite_assembly_key = self.read_sprite_assembly(ctx, assembly_address);
+                        break;
+                    }
+
+                    actor.animation_address += 4;
+
                 },
                 WorldAnimationOp::Wait { duration } => {
 

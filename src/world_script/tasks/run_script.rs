@@ -156,6 +156,7 @@ pub fn task_run_script(ctx: &mut Context, world_state: &mut WorldState, actor: &
                         BitMathOp::And => lhs_value & rhs_value,
                         BitMathOp::Or => lhs_value | rhs_value,
                         BitMathOp::Xor => lhs_value ^ rhs_value,
+                        BitMathOp::AndXor => lhs_value & (rhs_value ^ 0xFF),
                         BitMathOp::ShiftLeft => lhs_value << rhs_value,
                         BitMathOp::ShiftRight => lhs_value >> rhs_value,
                     };

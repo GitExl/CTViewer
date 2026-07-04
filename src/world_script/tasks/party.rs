@@ -14,6 +14,7 @@ pub fn task_party_leader(ctx: &mut Context, state: &mut WorldState, actor: &mut 
     let mut idle_counter = actor.memory.get_u8(0x3F);
     let mut next_anim_index = current_anim_index;
 
+    // Initialize.
     if actor.memory.get_u8(0x02) == 0 {
         actor.pos.x = state.enter_pos.x;
         actor.pos.y = state.enter_pos.y;
@@ -27,6 +28,7 @@ pub fn task_party_leader(ctx: &mut Context, state: &mut WorldState, actor: &mut 
         actor.memory.put_u8(0x02, 1);
     }
 
+    // Move steps.
     let did_move = move_dist > 0;
     if move_dist > 0 {
         move_dist -= 1;
@@ -37,6 +39,7 @@ pub fn task_party_leader(ctx: &mut Context, state: &mut WorldState, actor: &mut 
         }
     }
 
+    // Take input if we are no longer moving.
     if move_dist == 0 {
         let tile_x = (actor.pos.x / 8.0).floor() as i32 - 1;
         let tile_y = (actor.pos.y / 8.0).floor() as i32 - 1;
@@ -117,6 +120,7 @@ pub fn task_party_leader(ctx: &mut Context, state: &mut WorldState, actor: &mut 
             }
         }
 
+        // Idle animation.
         let anim_facing_index = match actor.facing {
             Facing::Down => 0,
             Facing::Up => 3,
@@ -153,15 +157,10 @@ pub fn task_party_leader(ctx: &mut Context, state: &mut WorldState, actor: &mut 
     state.animations.run(ctx, actor);
     state.camera.center_to(Vec2Df64::new(actor.pos.x, actor.pos.y), false, true);
 
-    // if not initialized, initialize position and facing from destination
-    // if movement is disabled, run script ops
-    // if movement is enabled, take input, move object, set correct animation
-    // set anim from facing if needed, animate when needed with world_state.animations.run(ctx, actor),
-
-    // movement enabled flag is global to world, $000280, movement is disabled by a trigger or scripted exit
-    // x and y is kept in actor memory $12 and $16
-
-    // $02B1 tracks time without input, increments whenever input is checked every frame, FE will start idle anim $A2
+    // TODO
+    //  if movement is disabled, run script ops
+    //  if movement is enabled, take input, move object, set correct animation (already done)
+    //  movement enabled flag is global to world, $000280, movement is disabled by a trigger or scripted exit
 }
 
 pub fn task_party_followers(_ctx: &mut Context, _state: &mut WorldState, actor: &mut WorldActor) {

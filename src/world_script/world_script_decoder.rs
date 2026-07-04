@@ -104,7 +104,7 @@ fn op_decode_internal(op_byte: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -
                 dest: DataDest::for_world_actor_memory(lhs_address),
                 lhs: DataSource::for_world_actor_memory(lhs_address),
                 rhs: DataSource::Immediate(rhs_address),
-                op: BitMathOp::Xor,
+                op: BitMathOp::AndXor,
             }
         },
         // "memclr"
@@ -156,7 +156,7 @@ fn op_decode_internal(op_byte: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -
                 dest: DataDest::for_system_memory(lhs_address),
                 lhs: DataSource::for_system_memory(lhs_address),
                 rhs: DataSource::Immediate(rhs_address),
-                op: BitMathOp::Xor,
+                op: BitMathOp::AndXor,
             }
         },
         // "trnlg"

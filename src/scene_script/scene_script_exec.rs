@@ -168,6 +168,7 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
                 BitMathOp::And => lhs_value & rhs_value,
                 BitMathOp::Or => lhs_value | rhs_value,
                 BitMathOp::Xor => lhs_value ^ rhs_value,
+                BitMathOp::AndXor => lhs_value & (rhs_value ^ 0xFF),
                 BitMathOp::ShiftLeft => lhs_value << rhs_value,
                 BitMathOp::ShiftRight => lhs_value >> rhs_value,
             };
