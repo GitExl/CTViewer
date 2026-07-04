@@ -1,9 +1,9 @@
 use crate::scene::actor::SceneActorFlags;
-use crate::character::CharacterId;
 use crate::Context;
 use crate::gamestate::gamestate_scene::SceneState;
 use crate::gamestate::gamestate_world::WorldState;
-use crate::party::CharacterPartyState;
+use crate::party::character::CharacterId;
+use crate::party::party::CharacterPartyState;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::util::vec2df64::Vec2Df64;
 use crate::world_script::world_actor::WorldActor;

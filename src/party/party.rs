@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use crate::character::{Character, CharacterEquipment, CharacterId, CharacterStats, EquipmentSlot, StatusEffect};
-use crate::items::{Item, ItemId};
+use crate::party::character::{Character, CharacterEquipment, CharacterId, CharacterStats, EquipmentSlot, StatusEffect};
+use crate::party::items::{Item, ItemId};
 
 #[derive(PartialEq, Debug)]
 pub enum CharacterPartyState {

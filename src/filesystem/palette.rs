@@ -7,9 +7,9 @@ use byteorder::ReadBytesExt;
 
 use crate::filesystem::filesystem::FileSystem;
 use crate::game_palette::GamePalette;
-use crate::palette_anim::PaletteAnim;
-use crate::palette_anim::PaletteAnimSet;
-use crate::palette_anim::PaletteAnimType;
+use crate::scene::palette_anim::PaletteAnim;
+use crate::scene::palette_anim::PaletteAnimSet;
+use crate::scene::palette_anim::PaletteAnimType;
 use crate::software_renderer::palette::Color;
 use crate::software_renderer::palette::Palette;
 

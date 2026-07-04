@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use regex::Regex;
-use crate::party::{CharacterPartyState, Party};
+use crate::party::party::{CharacterPartyState, Party};
 
 #[derive(Debug, PartialEq)]
 pub enum TextPart {

@@ -1,12 +1,12 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::scene::actor::DrawMode;
-use crate::character::CharacterId;
 use crate::GameMode;
 use crate::shared_op::CompareOp;
 use crate::scene_script::scene_script_ops::Op;
 use crate::scene_script::scene_script_decoder::{ActorRef, InputBinding};
 use crate::memory::DataSource;
+use crate::party::character::CharacterId;
 
 pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op {
     match op {

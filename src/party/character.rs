@@ -1,5 +1,5 @@
-use crate::items::ItemId;
-use crate::party::CharacterPartyState;
+use crate::party::items::ItemId;
+use crate::party::party::CharacterPartyState;
 
 pub type CharacterId = usize;
 pub type StatsModifierId = usize;

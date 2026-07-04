@@ -1,8 +1,8 @@
-use crate::character::CharacterId;
 use crate::Context;
 use crate::facing::Facing;
 use crate::gamestate::gamestate_world::WorldState;
 use crate::input::InputAction;
+use crate::party::character::CharacterId;
 use crate::util::vec2df64::Vec2Df64;
 use crate::world_script::world_actor::WorldActor;
 

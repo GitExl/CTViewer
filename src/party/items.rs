@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use bitflags::bitflags;
-use crate::character::{CharacterId, EquipmentSlot, StatusEffect};
+use crate::party::character::{CharacterId, EquipmentSlot, StatusEffect};
 
 pub type ItemId = usize;
 pub type ItemModifierId = usize;

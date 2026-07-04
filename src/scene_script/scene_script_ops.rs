@@ -1,5 +1,4 @@
 use crate::scene::actor::{SceneActorFlags, DrawMode};
-use crate::character::CharacterId;
 use crate::shared_op::{BitMathOp, ByteMathOp, CompareOp};
 use crate::destination::Destination;
 use crate::scene::textbox::TextBoxPosition;
@@ -8,6 +7,7 @@ use crate::scene_script::decoder::ops_textbox::UiType;
 use crate::scene_script::decoder::ops_palette::{ColorMathMode, SubPalette};
 use crate::scene_script::scene_script_decoder::{ActorRef, BattleFlags, CopyTilesFlags, ScrollLayerFlags, SpecialEffect};
 use crate::memory::{DataDest, DataSource};
+use crate::party::character::CharacterId;
 use crate::sprites::sprite_renderer::SpritePriority;
 
 #[derive(Copy, Clone, PartialEq, Debug)]

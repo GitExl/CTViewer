@@ -3,7 +3,7 @@ use crate::Context;
 use crate::game_palette::GamePalette;
 use crate::l10n::IndexedType;
 use crate::map::Map;
-use crate::palette_anim::PaletteAnimSet;
+use crate::scene::palette_anim::PaletteAnimSet;
 use crate::scene::scene_exit::SceneExit;
 use crate::scene::scene_map::SceneMap;
 use crate::scene::treasure::Treasure;

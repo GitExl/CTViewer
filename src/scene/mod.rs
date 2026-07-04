@@ -6,3 +6,4 @@ pub mod textbox_layout;
 pub mod actor;
 pub mod treasure;
 pub mod scene_exit;
+pub mod palette_anim;

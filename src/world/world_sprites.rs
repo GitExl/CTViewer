@@ -1,7 +1,7 @@
 use std::path::Path;
 use crate::assets::Assets;
-use crate::character::CharacterId;
 use crate::Context;
+use crate::party::character::CharacterId;
 use crate::software_renderer::blit::{blit_bitmap_to_surface, BitmapBlitFlags};
 use crate::software_renderer::palette::Palette;
 use crate::software_renderer::surface::Surface;
