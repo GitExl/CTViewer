@@ -84,9 +84,9 @@ impl GameStateWorld {
         let mut palette = world.palette.clone();
         let player_palettes = ctx.fs.backend.get_world_player_palettes();
         for (index, character) in ctx.party.get_party().iter().enumerate() {
-            let dest = 192 + index * 16;
+            let dest = 192 + index * 8;
             let src = character * 16;
-            palette.palette.colors[dest..dest + 16].copy_from_slice(&player_palettes.colors[src..src + 16]);
+            palette.palette.colors[dest..dest + 8].copy_from_slice(&player_palettes.colors[src..src + 8]);
         }
 
         // Clear ?
