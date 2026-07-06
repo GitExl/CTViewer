@@ -148,7 +148,7 @@ impl GameStateWorld {
 
             mouse_pos: Vec2Di32::default(),
 
-            debug_mode: false,
+            debug_mode: ctx.debug_mode,
             debug_text: None,
             debug_text_x: 0,
             debug_text_y: 0,
@@ -252,6 +252,10 @@ impl GameStateTrait for GameStateWorld {
         match event {
             Event::MouseButtonDown { mouse_btn, .. } => {
                 if *mouse_btn == MouseButton::Left {
+                    if !ctx.debug_mode {
+                        return;
+                    }
+
                     let index = self.get_exit_at(self.mouse_pos);
                     if index.is_some() {
                         let exit = &self.world.exits[index.unwrap()];
@@ -261,7 +265,7 @@ impl GameStateTrait for GameStateWorld {
                                 ctx.screen_fade.start(0.0, 2);
                             }
                             WorldExitType::Scripted { .. } => {
-                                // TODO: run script
+                                // TODO: run script?
                             }
                         }
                     }
@@ -276,6 +280,10 @@ impl GameStateTrait for GameStateWorld {
             (x as f64 + self.state.camera.pos_lerp.x) as i32,
             (y as f64 + self.state.camera.pos_lerp.y) as i32,
         );
+
+        if !ctx.debug_mode {
+            return;
+        }
 
         // Output exit or treasure data at mouse position.
         let index = self.get_exit_at(self.mouse_pos);
@@ -313,18 +321,29 @@ impl GameStateTrait for GameStateWorld {
         self.state.animations.disassemble();
         world_script_disassemble(&ctx, self.state.script_data.get_ref(), &self.world.triggers, &self.world.script_offsets);
     }
+
+    fn set_debug_mode(&mut self, mode: bool) {
+        self.debug_mode = mode;
+        if !self.debug_mode {
+            self.map_renderer.layer_enabled = LayerFlags::all();
+        }
+    }
 }
 
 impl GameStateWorld {
-    fn process_input(&mut self, ctx: &mut Context, _delta: f64) {
-        if ctx.input.was_pressed(InputAction::ToggleDebug) {
-            self.debug_mode = !self.debug_mode;
-            println!("Debug mode: {}.", self.debug_mode);
-            if !self.debug_mode {
-                self.map_renderer.layer_enabled = LayerFlags::all();
-            }
-        }
+    fn process_input(&mut self, ctx: &mut Context, delta: f64) {
         if self.debug_mode {
+            if ctx.input.is_down(InputAction::DebugCameraUp) {
+                self.state.camera.pos.y -= 300.0 * delta;
+            } else if ctx.input.is_down(InputAction::DebugCameraDown) {
+                self.state.camera.pos.y += 300.0 * delta;
+            }
+            if ctx.input.is_down(InputAction::DebugCameraLeft) {
+                self.state.camera.pos.x -= 300.0 * delta;
+            } else if ctx.input.is_down(InputAction::DebugCameraRight) {
+                self.state.camera.pos.x += 300.0 * delta;
+            }
+
             if ctx.input.was_pressed(InputAction::DebugToggleLayer1) {
                 self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
                 println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));
@@ -362,17 +381,6 @@ impl GameStateWorld {
                 self.world_renderer.debug_layer = WorldDebugLayer::Music;
                 println!("Debug layer for music transitions.");
             }
-
-            // if ctx.input.is_down(InputAction::DebugCameraUp) {
-            //     self.state.camera.pos.y -= 300.0 * delta;
-            // } else if ctx.input.is_down(InputAction::DebugCameraDown) {
-            //     self.state.camera.pos.y += 300.0 * delta;
-            // }
-            // if ctx.input.is_down(InputAction::DebugCameraLeft) {
-            //     self.state.camera.pos.x -= 300.0 * delta;
-            // } else if ctx.input.is_down(InputAction::DebugCameraRight) {
-            //     self.state.camera.pos.x += 300.0 * delta;
-            // }
         }
     }
 

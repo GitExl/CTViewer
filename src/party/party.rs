@@ -230,13 +230,13 @@ impl Party {
         Party {
             characters,
             party_slots: vec![
-                PartySlot::new(3, false),
+                PartySlot::new(0, false),
                 PartySlot::new(1, false),
                 PartySlot::new(2, false),
-                PartySlot::new(6, false),
-                PartySlot::new(4, false),
+                PartySlot::new(3, true),
+                PartySlot::new(4, true),
                 PartySlot::new(5, true),
-                PartySlot::new(0, true),
+                PartySlot::new(6, true),
             ],
             inventory: HashMap::new(),
             items: HashMap::new(),

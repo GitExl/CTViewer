@@ -40,7 +40,7 @@ pub fn task_party_leader(ctx: &mut Context, state: &mut WorldState, actor: &mut 
     }
 
     // Take input if we are no longer moving.
-    if move_dist == 0 {
+    if !ctx.debug_mode && move_dist == 0 {
         let tile_x = (actor.pos.x / 8.0).floor() as i32 - 1;
         let tile_y = (actor.pos.y / 8.0).floor() as i32 - 1;
         let mut have_input = false;
@@ -155,7 +155,9 @@ pub fn task_party_leader(ctx: &mut Context, state: &mut WorldState, actor: &mut 
     actor.memory.put_u8(0x3F, idle_counter);
 
     state.animations.run(ctx, actor);
-    state.camera.center_to(Vec2Df64::new(actor.pos.x, actor.pos.y), false, true);
+    if !ctx.debug_mode {
+        state.camera.center_to(Vec2Df64::new(actor.pos.x, actor.pos.y), false, true);
+    }
 
     // TODO
     //  if movement is disabled, run script ops

@@ -140,7 +140,7 @@ impl GameStateScene {
 
             mouse_pos: Vec2Di32::default(),
 
-            debug_mode: false,
+            debug_mode: ctx.debug_mode,
             debug_text: None,
             debug_text_x: 0,
             debug_text_y: 0,
@@ -318,6 +318,10 @@ impl GameStateTrait for GameStateScene {
     fn event(&mut self, ctx: &mut Context, event: &Event) {
         match event {
             Event::MouseButtonDown { mouse_btn, .. } => {
+                if !ctx.debug_mode {
+                    return;
+                }
+
                 if *mouse_btn == MouseButton::Middle {
                     let index = self.get_actor_at(self.mouse_pos);
                     if let Some(index) = index {
@@ -394,6 +398,10 @@ impl GameStateTrait for GameStateScene {
             (x as f64 + self.state.camera.pos_lerp.x) as i32,
             (y as f64 + self.state.camera.pos_lerp.y) as i32,
         );
+
+        if !ctx.debug_mode {
+            return;
+        }
 
         let mut index = self.get_actor_at(self.mouse_pos);
         if let Some(index) = index {
@@ -474,6 +482,13 @@ impl GameStateTrait for GameStateScene {
     fn dump(&mut self, ctx: &Context) {
         self.scene.dump(ctx);
     }
+
+    fn set_debug_mode(&mut self, mode: bool) {
+        self.debug_mode = mode;
+        if !self.debug_mode {
+            self.map_renderer.layer_enabled = LayerFlags::all();
+        }
+    }
 }
 
 impl GameStateScene {
@@ -513,13 +528,6 @@ impl GameStateScene {
             }
         }
 
-        if ctx.input.was_pressed(InputAction::ToggleDebug) {
-            self.debug_mode = !self.debug_mode;
-            println!("Debug mode: {}.", self.debug_mode);
-            if !self.debug_mode {
-                self.map_renderer.layer_enabled = LayerFlags::all();
-            }
-        }
         if ctx.input.was_pressed(InputAction::DebugToggleLayer1) {
             self.map_renderer.layer_enabled.toggle(LayerFlags::Layer1);
             println!("Render layer 1: {}.", self.map_renderer.layer_enabled.contains(LayerFlags::Layer1));

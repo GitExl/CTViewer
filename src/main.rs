@@ -128,6 +128,7 @@ pub struct Context<'a> {
     screen_fade: ScreenFade,
     mode: GameMode,
     input: InputManager,
+    debug_mode: bool,
 }
 
 fn main() -> Result<(), String> {
@@ -222,6 +223,7 @@ fn main() -> Result<(), String> {
         screen_fade,
         input,
         mode,
+        debug_mode: false,
     };
 
 
@@ -297,6 +299,12 @@ fn main() -> Result<(), String> {
             if ctx.input.was_pressed(InputAction::Exit) {
                 break 'running;
             }
+            if ctx.input.was_pressed(InputAction::ToggleDebug) {
+                ctx.debug_mode = !ctx.debug_mode;
+                println!("Debug mode: {}.", ctx.debug_mode);
+                gamestate.set_debug_mode(ctx.debug_mode);
+                update_window_title(&mut ctx, &gamestate);
+            }
 
             ctx.screen_fade.tick(UPDATE_INTERVAL);
 
@@ -319,9 +327,7 @@ fn main() -> Result<(), String> {
                                 gamestate = Box::new(GameStateWorld::new(&mut ctx, index, pos.as_vec2d_f64(), fade_in));
                             },
                         };
-
-                        let title = format!("Chrono Trigger - {}", gamestate.get_title(&ctx));
-                        ctx.render.set_title(title.as_str());
+                        update_window_title(&mut ctx, &gamestate);
                     },
                 }
             }
@@ -366,6 +372,15 @@ fn main() -> Result<(), String> {
     };
 
     Ok(())
+}
+
+fn update_window_title(ctx: &mut Context, gamestate: &Box<dyn GameStateTrait>) {
+    let title = if ctx.debug_mode {
+        format!("Chrono Trigger - DEBUG - {}", gamestate.get_title(&ctx))
+    } else {
+        format!("Chrono Trigger - {}", gamestate.get_title(&ctx))
+    };
+    ctx.render.set_title(title.as_str());
 }
 
 fn create_filesystem(path: String) -> FileSystem {

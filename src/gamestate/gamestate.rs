@@ -8,4 +8,5 @@ pub trait GameStateTrait {
     fn event(&mut self, ctx: &mut Context, event: &Event);
     fn mouse_motion(&mut self, ctx: &Context, x: i32, y: i32);
     fn dump(&mut self, ctx: &Context);
+    fn set_debug_mode(&mut self, mode: bool);
 }
