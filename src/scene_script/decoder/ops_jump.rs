@@ -254,7 +254,7 @@ pub fn op_decode_jump(op: u8, data: &mut Cursor<Vec<u8>>, mode: GameMode) -> Op 
             offset: data.read_u8().unwrap() as i64 + 2,
         },
         // Party member is in active party.
-        // "partyQ"
+        // "partyQ", party action 0x00
         0xD2 => Op::JumpConditional8 {
             lhs: DataSource::PCIsActive(data.read_u8().unwrap() as CharacterId),
             rhs: DataSource::Immediate(1),

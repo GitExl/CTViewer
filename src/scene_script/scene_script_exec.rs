@@ -709,23 +709,23 @@ pub fn op_execute(ctx: &mut Context, scene_state: &mut SceneState, this_actor: u
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PartyMemberAddToReserve { pc } => {
-            ctx.party.character_add_to_reserve(pc);
+            ctx.party.add_character_to_reserve(pc);
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PartyMemberRemoveFromActive { pc } => {
-            ctx.party.character_remove_from_active(pc);
+            ctx.party.deactivate_character(pc);
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PartyMemberAddToActive { pc } => {
-            ctx.party.character_add_to_active(pc);
+            ctx.party.add_character_to_party(pc);
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PartyMemberMoveToReserve { pc } => {
-            ctx.party.character_move_to_reserve(pc);
+            ctx.party.move_character_from_party_into_reserve(pc);
             OpResult::YIELD | OpResult::COMPLETE
         },
         Op::PartyMemberMoveOutOfParty { pc } => {
-            ctx.party.character_remove_from_active(pc);
+            ctx.party.deactivate_character(pc);
             let pc_actor_index = scene_state.player_actors.get(&pc).unwrap();
             let pc_actor = &mut scene_state.actors[*pc_actor_index];
             pc_actor.class = SceneActorClass::PCOutOfParty;

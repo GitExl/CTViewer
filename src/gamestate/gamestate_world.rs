@@ -11,6 +11,7 @@ use crate::map::Map;
 use crate::map_renderer::LayerFlags;
 use crate::map_renderer::MapRenderer;
 use crate::next_destination::NextDestination;
+use crate::party::character::CharacterId;
 use crate::renderer::{TextFlags, TextFont, TextRenderable};
 use crate::software_renderer::blit::SurfaceBlendOps;
 use crate::util::rect::Rect;
@@ -76,16 +77,17 @@ impl GameStateWorld {
 
         // Initialize sprites.
         let mut sprites = WorldSprites::new(ctx, world_index, world.sprite_graphics);
-        for (index, character) in ctx.party.get_party().iter().enumerate() {
-            sprites.load_player_sprites(ctx, index, *character);
+        let character_ids: Vec<CharacterId> = ctx.party.get_active_party_slots().map(|x| x.character_id).collect();
+        for (index, id) in character_ids.iter().enumerate() {
+            sprites.load_player_sprites(ctx, index, *id);
         }
 
         // Initialize world and player palettes.
         let mut palette = world.palette.clone();
         let player_palettes = ctx.fs.backend.get_world_player_palettes();
-        for (index, character) in ctx.party.get_party().iter().enumerate() {
-            let dest = 192 + index * 8;
-            let src = character * 16;
+        for (index, slot) in ctx.party.get_active_party_slots().enumerate() {
+            let dest = 192 + index * 16;
+            let src = slot.character_id * 16;
             palette.palette.colors[dest..dest + 8].copy_from_slice(&player_palettes.colors[src..src + 8]);
         }
 

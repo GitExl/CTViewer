@@ -1,5 +1,4 @@
 use crate::party::items::ItemId;
-use crate::party::party::CharacterPartyState;
 
 pub type CharacterId = usize;
 pub type StatsModifierId = usize;
@@ -71,7 +70,7 @@ pub struct Character {
     pub id: CharacterId,
     pub name: String,
     pub text_key: String,
-    pub party_state: CharacterPartyState,
+    pub recruited: bool,
     pub hp: u32,
     pub mp: u32,
     pub xp: u32,

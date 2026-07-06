@@ -2,29 +2,36 @@ use std::collections::HashMap;
 use crate::party::character::{Character, CharacterEquipment, CharacterId, CharacterStats, EquipmentSlot, StatusEffect};
 use crate::party::items::{Item, ItemId};
 
-#[derive(PartialEq, Debug)]
-pub enum CharacterPartyState {
-    Available,
-    InReserve,
-    Unavailable,
+#[derive(Clone, Copy)]
+pub struct PartySlot {
+    pub character_id: CharacterId,
+    pub disabled: bool,
 }
+
+impl PartySlot {
+    fn new(character_id: CharacterId, disabled: bool) -> Self {
+        Self { character_id, disabled }
+    }
+}
+
+const PARTY_LEN: usize = 3;
 
 pub struct Party {
 
     /// All known characters and their state.
-    pub characters: HashMap<CharacterId, Character>,
+    characters: HashMap<CharacterId, Character>,
 
-    /// Current list of character in party.
-    pub party: Vec<CharacterId>,
+    /// List and order of characters in the current party.
+    party_slots: Vec<PartySlot>,
 
     /// All known items.
-    pub items: HashMap<ItemId, Item>,
+    items: HashMap<ItemId, Item>,
 
     /// Items and their amounts held in the party inventory.
-    pub inventory: HashMap<ItemId, u32>,
+    inventory: HashMap<ItemId, u32>,
 
     /// Amount of gold.
-    pub gold: u32,
+    gold: u32,
 }
 
 impl Party {
@@ -35,7 +42,7 @@ impl Party {
             id: 0,
             name: "Crono".into(),
             text_key: "NAME_CRO".into(),
-            party_state: CharacterPartyState::Available,
+            recruited: true,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -62,7 +69,7 @@ impl Party {
             id: 1,
             name: "Marle".into(),
             text_key: "NAME_MAR".into(),
-            party_state: CharacterPartyState::Unavailable,
+            recruited: true,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -89,7 +96,7 @@ impl Party {
             id: 2,
             name: "Lucca".into(),
             text_key: "NAME_LUC".into(),
-            party_state: CharacterPartyState::Unavailable,
+            recruited: true,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -116,7 +123,7 @@ impl Party {
             id: 3,
             name: "Robo".into(),
             text_key: "NAME_ROB".into(),
-            party_state: CharacterPartyState::Unavailable,
+            recruited: true,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -143,7 +150,7 @@ impl Party {
             id: 4,
             name: "Frog".into(),
             text_key: "NAME_FRO".into(),
-            party_state: CharacterPartyState::Available,
+            recruited: true,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -170,7 +177,7 @@ impl Party {
             id: 5,
             name: "Ayla".into(),
             text_key: "NAME_AYL".into(),
-            party_state: CharacterPartyState::Unavailable,
+            recruited: true,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -197,7 +204,7 @@ impl Party {
             id: 6,
             name: "Magus".into(),
             text_key: "NAME_MAG".into(),
-            party_state: CharacterPartyState::Available,
+            recruited: true,
             level: 1,
             xp: 0,
             status: StatusEffect::None,
@@ -222,45 +229,19 @@ impl Party {
 
         Party {
             characters,
-            party: vec![0, 1, 2],
-
+            party_slots: vec![
+                PartySlot::new(3, false),
+                PartySlot::new(1, false),
+                PartySlot::new(2, false),
+                PartySlot::new(6, false),
+                PartySlot::new(4, false),
+                PartySlot::new(5, true),
+                PartySlot::new(0, true),
+            ],
             inventory: HashMap::new(),
             items: HashMap::new(),
             gold: 0,
         }
-    }
-
-    pub fn character_add_to_reserve(&mut self, character_id: CharacterId) {
-        let character = self.characters.get_mut(&character_id).unwrap();
-        if character.party_state == CharacterPartyState::Available {
-            return;
-        }
-        character.party_state = CharacterPartyState::InReserve;
-        println!("Added {} ({}) to reserve.", character.name, character_id);
-    }
-
-    pub fn character_remove_from_active(&mut self, character_id: CharacterId) {
-        let character = self.characters.get_mut(&character_id).unwrap();
-        if let Some(index) = self.party.iter().position(|&r| r == character_id) {
-            self.party.remove(index);
-        }
-        character.party_state = CharacterPartyState::InReserve;
-        println!("Moved {} ({}) to reserve.", character.name, character_id);
-    }
-
-    pub fn character_add_to_active(&mut self, character_id: CharacterId) {
-        let character = self.characters.get_mut(&character_id).unwrap();
-        character.party_state = CharacterPartyState::Available;
-        if let None = self.party.iter().position(|&r| r == character_id) {
-            self.party.push(character_id);
-        }
-        println!("Moved {} ({}) to active.", character.name, character_id);
-    }
-
-    pub fn character_move_to_reserve(&mut self, character_id: CharacterId) {
-        let character = self.characters.get_mut(&character_id).unwrap();
-        character.party_state = CharacterPartyState::InReserve;
-        println!("Moved {} ({}) to reserve.", character.name, character_id);
     }
 
     pub fn character_equip(&mut self, character_id: CharacterId, slot: EquipmentSlot, item_id: Option<ItemId>) {
@@ -273,24 +254,102 @@ impl Party {
         };
     }
 
+    pub fn find_character_index(&self, character_id: CharacterId) -> Option<usize> {
+        for (index, slot) in self.party_slots.iter().enumerate() {
+            if !slot.disabled && slot.character_id == character_id {
+                return Some(index);
+            }
+        }
+        None
+    }
+
+    pub fn find_active_character_index(&self, character_id: CharacterId) -> Option<usize> {
+        for index in 0..PARTY_LEN {
+            let slot = &self.party_slots[index];
+            if !slot.disabled && slot.character_id == character_id {
+                return Some(index);
+            }
+        }
+        None
+    }
+
+    pub fn deactivate_character(&mut self, character_id: CharacterId) {
+        if let Some(index) = self.find_character_index(character_id) {
+            self.party_slots[index].disabled = true;
+        }
+    }
+
+    pub fn recruit_character_at_index(&mut self, index: usize, character_id: CharacterId) {
+        self.characters.get_mut(&character_id).unwrap().recruited = true;
+        self.party_slots[index].disabled = false;
+    }
+
+    fn insert_slot_at_top_of_reserve(&mut self, slot: PartySlot) {
+        let mut current_slot = slot;
+        for i in PARTY_LEN..9 {
+            let next_slot = self.party_slots[i];
+            self.party_slots[i] = current_slot;
+            if next_slot.disabled {
+                return;
+            }
+            current_slot = next_slot;
+        }
+    }
+
+    pub fn add_character_to_party(&mut self, character_id: CharacterId) {
+        self.deactivate_character(character_id);
+
+        // Look for empty slot in party.
+        for i in 0..PARTY_LEN {
+            let slot = self.party_slots[i];
+            if slot.disabled && slot.character_id == character_id {
+                self.recruit_character_at_index(i, character_id);
+                return;
+            }
+        }
+
+        // No empty slot found: Shift party and push index 2 into reserve
+        let old_slot_state_end = self.party_slots[PARTY_LEN - 1];
+        self.party_slots[2] = PartySlot::new(character_id, false);
+        self.insert_slot_at_top_of_reserve(old_slot_state_end);
+    }
+
+    pub fn move_character_from_party_into_reserve(&mut self, character_id: CharacterId) {
+        let index = match self.find_active_character_index(character_id) {
+            Some(i) => i,
+            None => return,
+        };
+
+        // Shift active party members up to fill the gap
+        for i in index..PARTY_LEN - 1 {
+            self.party_slots[i] = self.party_slots[i + 1];
+        }
+
+        // Mark the last party slot as inactive and move removed char to reserve
+        self.party_slots[PARTY_LEN - 1].disabled = true;
+        self.insert_slot_at_top_of_reserve(PartySlot::new(character_id, false));
+    }
+
+    pub fn add_character_to_reserve(&mut self, character_id: CharacterId) {
+        if self.find_character_index(character_id).is_some() {
+            return;
+        }
+
+        // Look for first available position in reserve.
+        for i in PARTY_LEN..9 {
+            let slot = self.party_slots[i];
+            if slot.disabled {
+                self.recruit_character_at_index(i, character_id);
+                return;
+            }
+        }
+    }
+
     pub fn is_character_recruited(&self, character_id: CharacterId) -> bool {
-        if !self.characters.contains_key(&character_id) {
-            return false;
+        if let Some(character) = self.characters.get(&character_id) {
+            return character.recruited;
         }
-        let character = self.characters.get(&character_id).unwrap();
-        character.party_state != CharacterPartyState::Unavailable
-    }
-
-    pub fn is_character_available(&self, character_id: CharacterId) -> bool {
-        if !self.characters.contains_key(&character_id) {
-            return false;
-        }
-        let character = self.characters.get(&character_id).unwrap();
-        character.party_state == CharacterPartyState::Available
-    }
-
-    pub fn get_party(&self) -> Vec<CharacterId> {
-        self.party.clone()
+        false
     }
 
     pub fn gold_give(&mut self, amount: u32) {
@@ -300,4 +359,21 @@ impl Party {
     pub fn gold_take(&mut self, amount: u32) {
         self.gold -= amount;
     }
+
+    pub fn get_characters_iter(&self) -> impl Iterator<Item = &Character> + '_ {
+        self.characters.values()
+    }
+
+    pub fn get_character(&self, character_id: CharacterId) -> Option<&Character> {
+        self.characters.get(&character_id)
+    }
+
+    pub fn get_party_slots(&self) -> impl Iterator<Item = &PartySlot> + '_ {
+        self.party_slots.iter()
+    }
+
+    pub fn get_active_party_slots(&self) -> impl Iterator<Item = &PartySlot> + '_ {
+        self.party_slots[0..PARTY_LEN].iter()
+    }
+
 }

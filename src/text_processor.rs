@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use regex::Regex;
-use crate::party::party::{CharacterPartyState, Party};
+use crate::party::party::Party;
 
 #[derive(Debug, PartialEq)]
 pub enum TextPart {
@@ -59,15 +59,13 @@ impl TextProcessor {
     pub fn update_party_names(&mut self, party: &Party) {
 
         // Add names for active party members.
-        for (index, character) in party.characters.iter() {
+        for (index, character) in party.get_characters_iter().enumerate() {
             self.replacements.insert(character.text_key.clone(), character.name.clone());
-            if character.party_state == CharacterPartyState::Available {
-                self.replacements.insert(format!("NAME_PT{}", index + 1), character.name.clone());
-            }
+            self.replacements.insert(format!("NAME_PT{}", index + 1), character.name.clone());
         }
 
         // Crono nickname.
-        self.replacements.insert("NICK_CRO".into(), party.characters[&0].name.clone());
+        self.replacements.insert("NICK_CRO".into(), party.get_character(0).unwrap().name.clone());
 
         // Epoch.
         self.replacements.insert("NAME_SIL".into(), "Epoch".into());

@@ -7,22 +7,23 @@ offsets are referred to by the `anmseq`, `tpxmove` and `tpymove` world script op
 
 ## Ops
 
-| Dec | Hex    | Name        | Arguments                                                    | Description                                                                             |
-|-----|--------|-------------|--------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| 0   | `0x00` | `set`       | u8 address                                                   | Resets current actor memory address to 0. Only used by PC animations.                   |
-| 1   | `0x01` | `inc`       | u8 address                                                   | Increments current actor memory address value by 1. Only used by PC animations.         |
-| 2   | `0x02` | `dec`       | u8 address                                                   | Decrements current actor memory address value by 1. Only used by PC animations. Unused. |
-| 3   | `0x03` | `goto`      | i8 offset                                                    | Change execution position by number of bytes.                                           |                                                                                                                                   
-| 4   | `0x04` | `anm`       | u8[3] pointer, u8 duration                                   | A local pointer to frame assembly data, and a frame duration.                           |
-| 5   | `0x05` | `wait`      | u8 frames                                                    | Waits for a number of frames before continuing.                                         |
-| 6   | `0x06` | `trncgx`    | u8 src_bank, u16 src_address, u16 dest_vram_address, u16 len | Sets up a DMA transfer of data from the source address into VRAM.                       |
-| 7   | `0x07` | `unknown07` |                                                              | Unknown. Unused.                                                                        |
+| Dec | Hex    | Name        | Break          | Arguments                                          | Description                                                                             |
+|-----|--------|-------------|----------------|----------------------------------------------------|-----------------------------------------------------------------------------------------|
+| 0   | `0x00` | `set`       |                | u8 address                                         | Resets current actor memory address to 0. Only used by PC animations.                   |
+| 1   | `0x01` | `inc`       |                | u8 address                                         | Increments current actor memory address value by 1. Only used by PC animations.         |
+| 2   | `0x02` | `dec`       |                | u8 address                                         | Decrements current actor memory address value by 1. Only used by PC animations. Unused. |
+| 3   | `0x03` | `goto`      | Y              | i8 offset                                          | Change execution position by number of bytes.                                           |                                                                                                                                   
+| 4   | `0x04` | `anm`       | When animating | u8[3] pointer, u8 duration                         | A local pointer to frame assembly data, and a frame duration.                           |
+| 5   | `0x05` | `wait`      | When waiting   | u8 frames                                          | Waits for a number of frames before continuing.                                         |
+| 6   | `0x06` | `trncgx`    | Y              | u8 src_bank, u16 src_ad, u16 dest_vram_ad, u16 len | Sets up a DMA transfer of data from the source address into VRAM.                       |
+| 7   | `0x07` | `unknown07` |                |                                                    | Unknown. Unused.                                                                        |
 
 ## Execution
 
 `anm` sets up the sprite data to be displayed, then waits until the frame duration has passed before advancing to the
 next op. If actor memory byte `$0F` has bit `$40` set, then an `anm` op will immediately show the animation frame and
-will not advance to the next op.
+will not advance to the next op. If an op breaks, no further ops are executed until the sprite animation is continued
+from an world script.
 
 Animations have no real end except for a 0-duration `anm`, which will show that frame forever.
 

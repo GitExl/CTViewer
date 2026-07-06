@@ -4,23 +4,23 @@ use crate::scene_script::scene_script_ops::Op;
 
 pub fn op_decode_party(op: u8, data: &mut Cursor<Vec<u8>>) -> Op {
     match op {
-        // "memberP"
+        // "memberP", party action 0x04
         0xD0 => Op::PartyMemberAddToReserve {
             pc: data.read_u8().unwrap() as usize,
         },
-        // "memberM"
+        // "memberM", party action 0x05
         0xD1 => Op::PartyMemberRemoveFromActive {
             pc: data.read_u8().unwrap() as usize,
         },
-        // "partyP"
+        // "partyP", party action 0x01
         0xD3 => Op::PartyMemberAddToActive {
             pc: data.read_u8().unwrap() as usize,
         },
-        // "partyM"
+        // "partyM", party action 0x02
         0xD4 => Op::PartyMemberMoveToReserve {
             pc: data.read_u8().unwrap() as usize,
         },
-        // "partyMM"
+        // "partyMM", no party action
         0xD6 => Op::PartyMemberMoveOutOfParty {
             pc: data.read_u8().unwrap() as usize,
         },

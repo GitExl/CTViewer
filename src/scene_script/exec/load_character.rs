@@ -73,7 +73,7 @@ pub fn exec_load_character_player(ctx: &mut Context, scene_state: &mut SceneStat
     let actor = scene_state.actors.get_mut(actor_index).unwrap();
 
     // Player characters that are not active are considered dead.
-    let is_active = ctx.party.is_character_available(character_index);
+    let is_active = ctx.party.find_active_character_index(character_index).is_some();
     let is_recruited = ctx.party.is_character_recruited(character_index);
     if !is_recruited || (must_be_active && !is_active) {
         actor.flags.insert(SceneActorFlags::DEAD);
