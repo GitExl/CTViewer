@@ -5,11 +5,11 @@ edition = "2024"
 
 [dependencies]
 byteorder = "1.5.0"
-bitflags = "2.11.1"
-png = "0.18.0"
-clap = { version = "4.6.1", features = ["derive"] }
+bitflags = "2.13.1"
+png = "0.18.1"
+clap = { version = "4.6.2", features = ["derive"] }
 flate2 = "1.1.9"
-regex = "1.12.3"
+regex = "1.13.1"
 
 [dependencies.sdl3]
 version = "0.18.4"
