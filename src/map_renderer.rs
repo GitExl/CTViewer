@@ -222,10 +222,10 @@ fn render_layer(target: &mut Surface, pixel_source: &mut Bitmap, source_value: L
     let chip_height = layer.chip_height as i32;
 
     for chip_y in chip1.y..chip2.y {
-        let chip_y_wrap = ((chip_y % chip_height) + chip_height) % chip_height;
+        let chip_y_wrap = chip_y.rem_euclid(chip_height);
 
         for chip_x in chip1.x..chip2.x {
-            let chip_x_wrap = ((chip_x % chip_width) + chip_width) % chip_width;
+            let chip_x_wrap = chip_x.rem_euclid(chip_width);
 
             let chip_offset = (chip_x_wrap + chip_y_wrap * chip_width) as usize;
             let chip = &layer.chips[chip_offset];
@@ -338,6 +338,7 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
                 (sprite_state.pos.floor() - scroll.floor() - camera.pos_lerp.floor()).as_vec2d_i32()
             };
 
+            // Y + 1 to match SNES sprite positioning.
             let assembly_frame = assets.get_assembly_frame(sprite_state.assembly_key);
             let bitmap = assets.get_bitmap(sprite_state.bitmap_key);
             render_sprite(
@@ -345,7 +346,7 @@ fn render_sprites(target: &mut Surface, pixel_source: &mut Bitmap, sprite_states
                 render_top, render_bottom,
                 assembly_frame, bitmap,
                 sprite_state.tile_offset_x, sprite_state.tile_offset_y,
-                pos.x, pos.y,
+                pos.x, pos.y + 1,
                 &sprite_state.palette, sprite_state.palette_offset
             );
         }
