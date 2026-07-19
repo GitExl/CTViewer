@@ -449,6 +449,19 @@ impl FileSystemBackendTrait for FileSystemBackendSnes {
         strings
     }
 
+    fn get_player_names(&self, _language: &str) -> Vec<String> {
+        [
+            String::from("Crono"),
+            String::from("Marle"),
+            String::from("Lucca"),
+            String::from("Robo"),
+            String::from("Frog"),
+            String::from("Ayla"),
+            String::from("Magus"),
+            String::from("Epoch"),
+        ].to_vec()
+    }
+
     fn get_textbox_string_table(&self, address: usize, _language: &str) -> Vec<String> {
         let page_start = address & 0xFF0000;
         const MAX_STR_LEN: usize = 512;

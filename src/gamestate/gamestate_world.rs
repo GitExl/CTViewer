@@ -289,7 +289,7 @@ impl GameStateTrait for GameStateWorld {
         let index = self.get_exit_at(self.mouse_pos);
         if index.is_some() {
             let exit = &self.world.exits[index.unwrap()];
-            let text = ctx.l10n.get_indexed(IndexedType::WorldExit, exit.name_index);
+            let text = ctx.text_processor.replace_variables(ctx.l10n.get_indexed(IndexedType::WorldExit, exit.name_index));
 
             self.debug_text = Some(TextRenderable::new(
                 text,

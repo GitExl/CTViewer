@@ -164,7 +164,7 @@ impl TextProcessor {
         pages
     }
 
-    fn replace_variables(&self, text: String) -> String {
+    pub fn replace_variables(&self, text: String) -> String {
         let mut new_text = String::with_capacity(text.len());
         let mut last_match = 0;
         for capture in self.regex_tag_variable.captures_iter(&text) {

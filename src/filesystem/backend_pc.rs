@@ -507,6 +507,11 @@ impl FileSystemBackendTrait for FileSystemBackendPc {
         self.read_text_string_list(data, None, None)
     }
 
+    fn get_player_names(&self, language: &str) -> Vec<String> {
+        let data = self.get_file_cursor(&format!("Localize/{}/msg/player.txt", language), None, None);
+        self.read_text_string_list(data, None, Some(8))
+    }
+
     fn get_textbox_string_table(&self, address: usize, language: &str) -> Vec<String> {
         let message_file = match address {
             0 => "cmes0.txt",

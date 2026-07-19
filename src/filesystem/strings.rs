@@ -33,4 +33,8 @@ impl FileSystem {
         strings.clear();
         strings.extend(self.backend.get_textbox_string_table(address, language));
     }
+
+    pub fn read_player_character_names(&self, language: &str) -> Vec<String> {
+        self.backend.get_player_names(language)
+    }
 }
